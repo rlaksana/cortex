@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import type { Scope } from '../../utils/scope.js';
 
 export function buildScopeFilter(scope?: Scope): { where: string; params: unknown[] } {

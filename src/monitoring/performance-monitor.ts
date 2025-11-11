@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Performance Monitoring System
  *
@@ -6,10 +6,10 @@
  * for the MCP-Cortex system with configurable thresholds and alerts.
  */
 
-import { performance } from 'node:perf_hooks';
-import { writeFileSync, readFileSync, existsSync } from 'fs';
-import { join } from 'path';
 import { EventEmitter } from 'node:events';
+import { performance } from 'node:perf_hooks';
+import { existsSync,readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
 
 export interface PerformanceMetrics {
   timestamp: number;

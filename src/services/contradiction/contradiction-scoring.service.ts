@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Contradiction Scoring and Prioritization Service
  *
@@ -12,13 +12,15 @@
  */
 
 import { randomUUID } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
-import { zaiClientService } from '../ai/zai-client.service';
+
 import type {
   ContradictionResult,
   ContradictionType,
   KnowledgeItem,
 } from '../../types/contradiction-detector.interface';
+import { zaiClientService } from '../ai/zai-client.service';
 
 /**
  * Scoring factors
@@ -33,6 +35,17 @@ interface ScoringFactors {
   stakeholder_impact: number;
   resolution_complexity: number;
   risk_exposure: number;
+  weighted_scores?: {
+    confidence: number;
+    severity: number;
+    impact: number;
+    urgency: number;
+    business_value: number;
+    dependency_count: number;
+    stakeholder_impact: number;
+    resolution_complexity: number;
+    risk_exposure: number;
+  };
 }
 
 /**
@@ -60,8 +73,7 @@ interface ScoreBreakdown {
   };
   explanation: string;
   recommendations: string[];
-
-  items?: unknown
+  items: KnowledgeItem[];
 }
 
 /**
@@ -187,13 +199,27 @@ export class ContradictionScoringService {
       const totalScore = this.calculateTotalScore(weightedScores);
       const priority = this.determinePriority(totalScore);
 
+      // Ensure weightedScores is not undefined
+      const safeWeightedScores = weightedScores || {
+        confidence: 0,
+        severity: 0,
+        impact: 0,
+        urgency: 0,
+        business_value: 0,
+        dependency_count: 0,
+        stakeholder_impact: 0,
+        resolution_complexity: 0,
+        risk_exposure: 0,
+      };
+
       const score: ScoreBreakdown = {
         total_score: totalScore,
         priority,
         factors,
-        weighted_scores: weightedScores,
-        explanation: this.generateScoreExplanation(factors, weightedScores, totalScore),
+        weighted_scores: safeWeightedScores,
+        explanation: this.generateScoreExplanation(factors, safeWeightedScores, totalScore),
         recommendations: this.generateRecommendations(factors, priority, contradiction),
+        items,
       };
 
       this.setToCache(cacheKey, score);
@@ -268,10 +294,10 @@ export class ContradictionScoringService {
     contradiction: ContradictionResult,
     items: KnowledgeItem[]
   ): Promise<ScoringFactors> {
-    // Base factors from contradiction data
+    // Base factors from contradiction data with safe defaults
     const factors: ScoringFactors = {
-      confidence: contradiction.confidence_score,
-      severity: this.getSeverityScore(contradiction.severity),
+      confidence: contradiction.confidence_score ?? 0,
+      severity: this.getSeverityScore(contradiction.severity ?? ''),
       impact: await this.assessImpact(contradiction, items),
       urgency: this.assessUrgency(contradiction, items),
       business_value: await this.assessBusinessValue(contradiction, items),
@@ -285,7 +311,18 @@ export class ContradictionScoringService {
     if (this.config.enable_ai_analysis) {
       try {
         const aiEnhancedFactors = await this.enhanceWithAI(contradiction, items, factors);
-        Object.assign(factors, aiEnhancedFactors);
+        // Merge with safe defaults to ensure all properties exist
+        Object.assign(factors, {
+          confidence: aiEnhancedFactors.confidence ?? factors.confidence,
+          severity: aiEnhancedFactors.severity ?? factors.severity,
+          impact: aiEnhancedFactors.impact ?? factors.impact,
+          urgency: aiEnhancedFactors.urgency ?? factors.urgency,
+          business_value: aiEnhancedFactors.business_value ?? factors.business_value,
+          dependency_count: aiEnhancedFactors.dependency_count ?? factors.dependency_count,
+          stakeholder_impact: aiEnhancedFactors.stakeholder_impact ?? factors.stakeholder_impact,
+          resolution_complexity: aiEnhancedFactors.resolution_complexity ?? factors.resolution_complexity,
+          risk_exposure: aiEnhancedFactors.risk_exposure ?? factors.risk_exposure,
+        });
       } catch (error) {
         logger.warn(
           { error, contradictionId: contradiction.id },
@@ -294,7 +331,18 @@ export class ContradictionScoringService {
       }
     }
 
-    return factors;
+    // Ensure all factors have valid numeric values
+    return {
+      confidence: typeof factors.confidence === 'number' ? factors.confidence : 0,
+      severity: typeof factors.severity === 'number' ? factors.severity : 0,
+      impact: typeof factors.impact === 'number' ? factors.impact : 0,
+      urgency: typeof factors.urgency === 'number' ? factors.urgency : 0,
+      business_value: typeof factors.business_value === 'number' ? factors.business_value : 0,
+      dependency_count: typeof factors.dependency_count === 'number' ? factors.dependency_count : 0,
+      stakeholder_impact: typeof factors.stakeholder_impact === 'number' ? factors.stakeholder_impact : 0,
+      resolution_complexity: typeof factors.resolution_complexity === 'number' ? factors.resolution_complexity : 0,
+      risk_exposure: typeof factors.risk_exposure === 'number' ? factors.risk_exposure : 0,
+    };
   }
 
   /**
@@ -638,16 +686,29 @@ Respond with a JSON object containing these adjusted scores and your reasoning:
   private calculateWeightedScores(factors: ScoringFactors): ScoringFactors['weighted_scores'] {
     const weights = this.config.weights;
 
+    // Ensure all factors have valid numeric values
+    const safeFactors = {
+      confidence: factors.confidence ?? 0,
+      severity: factors.severity ?? 0,
+      impact: factors.impact ?? 0,
+      urgency: factors.urgency ?? 0,
+      business_value: factors.business_value ?? 0,
+      dependency_count: factors.dependency_count ?? 0,
+      stakeholder_impact: factors.stakeholder_impact ?? 0,
+      resolution_complexity: factors.resolution_complexity ?? 0,
+      risk_exposure: factors.risk_exposure ?? 0,
+    };
+
     return {
-      confidence: factors.confidence * weights.confidence,
-      severity: factors.severity * weights.severity,
-      impact: factors.impact * weights.impact,
-      urgency: factors.urgency * weights.urgency,
-      business_value: factors.business_value * weights.business_value,
-      dependency_count: factors.dependency_count * weights.dependency_count,
-      stakeholder_impact: factors.stakeholder_impact * weights.stakeholder_impact,
-      resolution_complexity: factors.resolution_complexity * weights.resolution_complexity,
-      risk_exposure: factors.risk_exposure * weights.risk_exposure,
+      confidence: safeFactors.confidence * weights.confidence,
+      severity: safeFactors.severity * weights.severity,
+      impact: safeFactors.impact * weights.impact,
+      urgency: safeFactors.urgency * weights.urgency,
+      business_value: safeFactors.business_value * weights.business_value,
+      dependency_count: safeFactors.dependency_count * weights.dependency_count,
+      stakeholder_impact: safeFactors.stakeholder_impact * weights.stakeholder_impact,
+      resolution_complexity: safeFactors.resolution_complexity * weights.resolution_complexity,
+      risk_exposure: safeFactors.risk_exposure * weights.risk_exposure,
     };
   }
 
@@ -655,7 +716,21 @@ Respond with a JSON object containing these adjusted scores and your reasoning:
    * Calculate total score
    */
   private calculateTotalScore(weightedScores: ScoringFactors['weighted_scores']): number {
-    return Object.values(weightedScores).reduce((sum, score) => sum + score, 0);
+    if (!weightedScores) {
+      return 0;
+    }
+    const {
+      confidence = 0,
+      severity = 0,
+      impact = 0,
+      urgency = 0,
+      business_value = 0,
+      dependency_count = 0,
+      stakeholder_impact = 0,
+      resolution_complexity = 0,
+      risk_exposure = 0
+    } = weightedScores;
+    return confidence + severity + impact + urgency + business_value + dependency_count + stakeholder_impact + resolution_complexity + risk_exposure;
   }
 
   /**
@@ -680,20 +755,33 @@ Respond with a JSON object containing these adjusted scores and your reasoning:
   ): string {
     const explanations: string[] = [];
 
-    // Add explanations for significant factors
-    if (weightedScores.severity > 0.15) {
+    // Ensure weightedScores is not undefined and provide safe defaults
+    if (!weightedScores) {
+      return `Total score: ${totalScore.toFixed(2)} - Unable to provide detailed breakdown`;
+    }
+
+    // Use optional chaining and nullish coalescing for safe property access
+    const safeWeightedScores = {
+      severity: weightedScores.severity ?? 0,
+      confidence: weightedScores.confidence ?? 0,
+      impact: weightedScores.impact ?? 0,
+      urgency: weightedScores.urgency ?? 0,
+    };
+
+    // Add explanations for significant factors with safe property access
+    if (safeWeightedScores.severity > 0.15) {
       explanations.push(
-        `High severity (${factors.severity.toFixed(2)}) significantly impacts priority`
+        `High severity (${(factors.severity ?? 0).toFixed(2)}) significantly impacts priority`
       );
     }
-    if (weightedScores.confidence > 0.1) {
-      explanations.push(`High confidence (${factors.confidence.toFixed(2)}) increases urgency`);
+    if (safeWeightedScores.confidence > 0.1) {
+      explanations.push(`High confidence (${(factors.confidence ?? 0).toFixed(2)}) increases urgency`);
     }
-    if (weightedScores.impact > 0.15) {
-      explanations.push(`Significant impact (${factors.impact.toFixed(2)}) on operations`);
+    if (safeWeightedScores.impact > 0.15) {
+      explanations.push(`Significant impact (${(factors.impact ?? 0).toFixed(2)}) on operations`);
     }
-    if (weightedScores.urgency > 0.1) {
-      explanations.push(`High urgency (${factors.urgency.toFixed(2)}) requires prompt attention`);
+    if (safeWeightedScores.urgency > 0.1) {
+      explanations.push(`High urgency (${(factors.urgency ?? 0).toFixed(2)}) requires prompt attention`);
     }
 
     return (
@@ -712,6 +800,13 @@ Respond with a JSON object containing these adjusted scores and your reasoning:
   ): string[] {
     const recommendations: string[] = [];
 
+    // Ensure factor values have safe defaults
+    const safeFactors = {
+      resolution_complexity: factors.resolution_complexity ?? 0,
+      stakeholder_impact: factors.stakeholder_impact ?? 0,
+      dependency_count: factors.dependency_count ?? 0,
+    };
+
     // Priority-based recommendations
     if (priority === 'critical') {
       recommendations.push('Address immediately - critical impact on operations');
@@ -721,24 +816,25 @@ Respond with a JSON object containing these adjusted scores and your reasoning:
       recommendations.push('Monitor for escalation indicators');
     }
 
-    // Factor-based recommendations
-    if (factors.resolution_complexity > 0.7) {
+    // Factor-based recommendations with safe value checks
+    if (safeFactors.resolution_complexity > 0.7) {
       recommendations.push('Allocate dedicated team for resolution');
       recommendations.push('Break down into smaller, manageable tasks');
     }
 
-    if (factors.stakeholder_impact > 0.7) {
+    if (safeFactors.stakeholder_impact > 0.7) {
       recommendations.push('Communicate with affected stakeholders');
       recommendations.push('Prepare mitigation strategies');
     }
 
-    if (factors.dependency_count > 0.5) {
+    if (safeFactors.dependency_count > 0.5) {
       recommendations.push('Review and update dependent items');
       recommendations.push('Consider cascading effects');
     }
 
-    // Type-specific recommendations
-    switch (contradiction.contradiction_type) {
+    // Type-specific recommendations with safe contradiction type access
+    const contradictionType = contradiction.contradiction_type;
+    switch (contradictionType) {
       case 'temporal':
         recommendations.push('Verify timeline accuracy and update schedules');
         break;
@@ -989,8 +1085,3 @@ Respond with a JSON object containing these adjusted scores and your reasoning:
  * Export singleton instance
  */
 export const contradictionScoringService = new ContradictionScoringService();
-
-/**
- * Export class for testing
- */
-export { ContradictionScoringService };

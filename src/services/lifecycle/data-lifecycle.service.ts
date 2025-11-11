@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * P3 Data Management: Data Lifecycle Service
  *
@@ -21,8 +21,10 @@
  * @since 2025
  */
 
-import { logger } from '@/utils/logger.js';
 import { createHash } from 'crypto';
+
+import { logger } from '@/utils/logger.js';
+
 import type { IVectorAdapter } from '../../db/interfaces/vector-adapter.interface.js';
 import type { KnowledgeItem } from '../../types/core-interfaces.js';
 import { systemMetricsService } from '../metrics/system-metrics.js';
@@ -387,7 +389,7 @@ export interface LifecycleReport {
   };
   /** Recommendations */
   recommendations: Array<{
-    priority: 'high' | 'medium' | 'low';
+    priority: 'critical' | 'high' | 'medium' | 'low';
     category: 'policy' | 'process' | 'compliance' | 'storage';
     description: string;
     action_items: string[];

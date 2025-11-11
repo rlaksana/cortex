@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Production Error Handler
  *
@@ -11,8 +11,10 @@
  */
 
 import { EventEmitter } from 'events';
-import { ProductionLogger } from '@/utils/logger.js';
-import { ProductionMonitoringService } from './production-monitoring-service.js';
+
+import { createChildLogger,ProductionLogger, type SimpleLogger } from '@/utils/logger.js';
+
+import { type ProductionMonitoringService } from './production-monitoring-service.js';
 
 export interface ErrorContext {
   requestId?: string;
@@ -65,7 +67,7 @@ export interface RecoveryStrategy {
 
 export class ProductionErrorHandler extends EventEmitter {
   private config: ErrorHandlingConfig;
-  private logger: ProductionLogger;
+  private logger: SimpleLogger;
   private monitoring?: ProductionMonitoringService;
   private errors: Map<string, ErrorReport> = new Map();
   private recoveryStrategies: RecoveryStrategy[] = [];
@@ -78,7 +80,7 @@ export class ProductionErrorHandler extends EventEmitter {
   ) {
     super();
 
-    this.logger = new ProductionLogger('production-error-handler');
+    this.logger = createChildLogger({ component: 'production-error-handler' });
     this.monitoring = monitoring;
 
     this.config = {

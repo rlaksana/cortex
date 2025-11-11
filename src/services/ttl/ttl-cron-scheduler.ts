@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * TTL Cron Scheduler Service
  *
@@ -18,12 +18,13 @@
  */
 
 import { logger } from '@/utils/logger.js';
+
+import type { TTLBulkOperationOptions } from './ttl-management-service.js';
 import {
-  runExpiryWorker,
   type ExpiryWorkerConfig,
   type ExpiryWorkerResult,
+  runExpiryWorker,
 } from '../expiry-worker.js';
-import type { TTLBulkOperationOptions } from './ttl-management-service.js';
 
 export interface TTLCronSchedule {
   id: string;

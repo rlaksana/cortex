@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Temporal Contradiction Detection Strategy
  *
@@ -12,12 +12,13 @@
  */
 
 import { randomUUID } from 'crypto';
-import { logger } from '../../../utils/logger';
-import { zaiClientService } from '../../ai/zai-client.service';
+
 import type {
-  KnowledgeItem,
   ContradictionResult,
+  KnowledgeItem,
 } from '../../../types/contradiction-detector.interface';
+import { logger } from '../../../utils/logger.js';
+import { zaiClientService } from '../../ai/zai-client.service';
 
 /**
  * Temporal contradiction types
@@ -739,7 +740,6 @@ Provide detailed temporal analysis focusing on timeline consistency and sequence
       metadata: {
         detection_method: 'zai_temporal_analysis',
         algorithm_version: '3.0.0',
-        model: 'zai-glm-4.6',
         processing_time_ms: 0,
         comparison_details: {
           contradiction_subtype: analysis.contradiction_type,
@@ -749,7 +749,7 @@ Provide detailed temporal analysis focusing on timeline consistency and sequence
         evidence: analysis.evidence.map((ev) => ({
           ...ev,
           evidence_type: ev.type,
-          item_id: ev.source_item === 1 ? item1.id : item2.id,
+          item_id: (ev.source_item === 1 ? item1.id : item2.id) || '',
         })),
       },
       resolution_suggestions: this.generateResolutionSuggestions(
@@ -791,7 +791,7 @@ Provide detailed temporal analysis focusing on timeline consistency and sequence
         evidence: analysis.evidence.map((ev) => ({
           ...ev,
           evidence_type: ev.type,
-          item_id: ev.source_item === 1 ? item1.id : item2.id,
+          item_id: (ev.source_item === 1 ? item1.id : item2.id) || '',
         })),
       },
       resolution_suggestions: this.generateResolutionSuggestions(
@@ -835,7 +835,12 @@ Provide detailed temporal analysis focusing on timeline consistency and sequence
     effort: 'low' | 'medium' | 'high';
     description: string;
   }> {
-    const suggestions = [];
+    const suggestions: Array<{
+      suggestion: string;
+      priority: 'low' | 'medium' | 'high';
+      effort: 'low' | 'medium' | 'high';
+      description: string;
+    }> = [];
 
     const basePriority =
       severity === 'critical'
@@ -877,7 +882,7 @@ Provide detailed temporal analysis focusing on timeline consistency and sequence
       case 'deadline_conflict':
         suggestions.push({
           suggestion: 'Review and adjust deadlines to be realistic and consistent',
-          priority: 'critical',
+          priority: 'high',
           effort: 'high',
           description: "Ensure deadlines are feasible and don't conflict with other constraints",
         });
@@ -886,7 +891,7 @@ Provide detailed temporal analysis focusing on timeline consistency and sequence
       case 'causality_violation':
         suggestions.push({
           suggestion: 'Fix causality violations (effects before causes)',
-          priority: 'critical',
+          priority: 'high',
           effort: 'high',
           description: 'Ensure causes always precede their effects in the timeline',
         });
@@ -895,7 +900,7 @@ Provide detailed temporal analysis focusing on timeline consistency and sequence
       case 'temporal_impossibility':
         suggestions.push({
           suggestion: 'Resolve logically impossible temporal scenarios',
-          priority: 'critical',
+          priority: 'high',
           effort: 'high',
           description: 'Review and fix temporal relationships that violate logical constraints',
         });
@@ -957,7 +962,3 @@ Provide detailed temporal analysis focusing on timeline consistency and sequence
  */
 export const temporalContradictionStrategy = new TemporalContradictionStrategy();
 
-/**
- * Export class for testing
- */
-export { TemporalContradictionStrategy };

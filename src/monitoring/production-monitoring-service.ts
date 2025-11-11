@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Production Monitoring Service
  *
@@ -10,11 +10,14 @@
  * @version 2.0.1
  */
 
-import { EventEmitter } from 'events';
-import { ProductionHealthChecker } from './production-health-checker.js';
-import { ProductionLogger } from '@/utils/logger.js';
 import * as os from 'os';
+
+import { EventEmitter } from 'events';
 import { performance } from 'perf_hooks';
+
+import { createChildLogger,ProductionLogger, type SimpleLogger } from '@/utils/logger.js';
+
+import { ProductionHealthChecker } from './production-health-checker.js';
 
 export interface MonitoringMetrics {
   system: {
@@ -91,7 +94,7 @@ export interface Alert {
 
 export class ProductionMonitoringService extends EventEmitter {
   private config: MonitoringConfig;
-  private logger: ProductionLogger;
+  private logger: SimpleLogger;
   private healthChecker: ProductionHealthChecker;
   private metrics: MonitoringMetrics;
   private metricsHistory: MonitoringMetrics[] = [];
@@ -103,7 +106,7 @@ export class ProductionMonitoringService extends EventEmitter {
   constructor(config?: Partial<MonitoringConfig>) {
     super();
 
-    this.logger = new ProductionLogger('production-monitoring');
+    this.logger = createChildLogger({ component: 'production-monitoring' });
     this.healthChecker = new ProductionHealthChecker();
 
     this.config = {

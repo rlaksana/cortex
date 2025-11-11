@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * P3-2: Comprehensive Cleanup Worker Service
  *
@@ -10,11 +10,12 @@
  */
 
 import { logger } from '@/utils/logger.js';
+
 import {
+  getPurgeStatistics,
+  getRecentPurgeReports,
   runExpiryWorker,
   runExpiryWorkerWithReport,
-  getRecentPurgeReports,
-  getPurgeStatistics,
 } from './expiry-worker.js';
 import { memoryFind } from './memory-find.js';
 import { memoryStore } from './memory-store.js';

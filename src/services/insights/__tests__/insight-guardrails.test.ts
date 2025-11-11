@@ -1,12 +1,13 @@
-// @ts-nocheck
+
 /**
  * Comprehensive test suite for insight generation guardrails
  * Tests token caps, deterministic templates, provenance tracking, and reproducible outputs
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { insightGenerationGuardrails } from '../insight-guardrails.js';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+
 import type { InsightTypeUnion } from '../../../types/insight-interfaces.js';
+import { insightGenerationGuardrails } from '../insight-guardrails.js';
 
 // Mock logger to avoid console output during tests
 jest.mock('../../../utils/logger.js', () => ({

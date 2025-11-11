@@ -9,20 +9,23 @@
  * @version 2.0.1
  */
 
-import { EventEmitter } from 'events';
 import * as crypto from 'crypto';
+
+import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { calculateItemExpiry } from '../../utils/expiry-utils.js';
-import type {
-  KnowledgeItem,
-  StoreResult,
-  StoreError,
-  SearchResult,
-  SearchQuery,
-  ItemResult,
-  BatchSummary,
-} from '../../types/core-interfaces.js';
+
 import type { ExpiryTimeLabel } from '../../constants/expiry-times.js';
+import type {
+  BatchSummary,
+  ItemResult,
+  KnowledgeItem,
+  SearchQuery,
+  SearchResult,
+  StoreError,
+  StoreResult,
+} from '../../types/core-interfaces.js';
+import { calculateItemExpiry } from '../../utils/expiry-utils.js';
 
 /**
  * In-memory storage configuration

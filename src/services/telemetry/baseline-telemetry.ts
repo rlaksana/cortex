@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Minimal baseline telemetry for 1-day observation
  * Tracks only the essential pain points before fixes

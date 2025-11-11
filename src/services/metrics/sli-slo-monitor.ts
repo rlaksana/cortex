@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * P2-P3: SLI/SLO Monitoring and Alerting System
  *
@@ -17,8 +17,9 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { systemMetricsService, type SystemMetrics } from './system-metrics.js';
-import { performanceTrendingService, type PerformanceAlert } from './performance-trending.js';
+
+import { type PerformanceAlert,performanceTrendingService } from './performance-trending.js';
+import { type SystemMetrics,systemMetricsService } from './system-metrics.js';
 
 // === Type Definitions ===
 

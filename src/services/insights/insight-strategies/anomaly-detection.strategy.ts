@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Anomaly Detection Strategy
  *
@@ -12,15 +12,17 @@
  */
 
 import { randomUUID } from 'crypto';
-import { logger } from '../../../utils/logger';
-import type { ZAIClientService } from '../../ai/zai-client.service';
-import type { ZAIChatRequest, ZAIChatResponse } from '../../../types/zai-interfaces';
+
+import type { KnowledgeItem } from '../../../types/core-interfaces.js';
 import type {
-  InsightGenerationRequest,
   AnomalyInsight,
-  TrendInsight,
+  InsightGenerationRequest,
   InsightTypeUnion,
-} from '../../../types/insight-interfaces';
+  TrendInsight,
+} from '../../../types/insight-interfaces.js';
+import type { ZAIChatRequest, ZAIChatResponse } from '../../../types/zai-interfaces.js';
+import { logger } from '../../../utils/logger.js';
+import type { ZAIClientService } from '../../ai/zai-client.service';
 
 export interface AnomalyDetectionOptions {
   confidence_threshold: number;
@@ -152,7 +154,7 @@ export class AnomalyDetectionStrategy {
    * Detect anomalies in knowledge items
    */
   private async detectAnomalies(
-    items: any[],
+    items: KnowledgeItem[],
     options: AnomalyDetectionOptions
   ): Promise<AnomalyAnalysis[]> {
     const analyses: AnomalyAnalysis[] = [];
@@ -190,7 +192,7 @@ export class AnomalyDetectionStrategy {
    * Analyze trends in knowledge items
    */
   private async analyzeTrends(
-    items: any[],
+    items: KnowledgeItem[],
     options: AnomalyDetectionOptions
   ): Promise<TrendAnalysis[]> {
     const analyses: TrendAnalysis[] = [];
@@ -224,7 +226,7 @@ export class AnomalyDetectionStrategy {
    * Detect statistical outliers
    */
   private async detectStatisticalOutliers(
-    items: any[],
+    items: KnowledgeItem[],
     options: AnomalyDetectionOptions
   ): Promise<AnomalyAnalysis[]> {
     const analyses: AnomalyAnalysis[] = [];
@@ -255,7 +257,7 @@ export class AnomalyDetectionStrategy {
         severity: outliers.length > items.length * 0.1 ? 'medium' : 'low',
         confidence: 0.7,
         affected_items: outliers.map((item) => ({
-          item_id: item.id,
+          item_id: item.id || '',
           item_type: item.type,
           anomaly_context: `Content length: ${item.length} (avg: ${Math.round(avgLength)})`,
           confidence: 0.7,
@@ -287,7 +289,7 @@ export class AnomalyDetectionStrategy {
    * Detect pattern deviations
    */
   private async detectPatternDeviations(
-    items: any[],
+    items: KnowledgeItem[],
     options: AnomalyDetectionOptions
   ): Promise<AnomalyAnalysis[]> {
     const analyses: AnomalyAnalysis[] = [];
@@ -319,7 +321,7 @@ export class AnomalyDetectionStrategy {
         affected_items: items
           .filter((item) => item.kind === deviation.kind)
           .map((item) => ({
-            item_id: item.id,
+            item_id: item.id || '',
             item_type: item.kind,
             anomaly_context: `High concentration of this item type`,
             confidence: Math.min(deviation.deviation / 4.0, 1.0),
@@ -349,7 +351,7 @@ export class AnomalyDetectionStrategy {
    * Detect temporal anomalies
    */
   private async detectTemporalAnomalies(
-    items: any[],
+    items: KnowledgeItem[],
     options: AnomalyDetectionOptions
   ): Promise<AnomalyAnalysis[]> {
     const analyses: AnomalyAnalysis[] = [];
@@ -387,7 +389,7 @@ export class AnomalyDetectionStrategy {
           affected_items: timeItems
             .filter((item) => new Date(item.created_at!).toISOString().split('T')[0] === day)
             .map((item) => ({
-              item_id: item.id,
+              item_id: item.id || '',
               item_type: item.kind,
               anomaly_context: `Created during activity spike`,
               confidence: 0.7,
@@ -418,7 +420,7 @@ export class AnomalyDetectionStrategy {
    * Detect volume anomalies
    */
   private async detectVolumeAnomalies(
-    items: any[],
+    items: KnowledgeItem[],
     options: AnomalyDetectionOptions
   ): Promise<AnomalyAnalysis[]> {
     const analyses: AnomalyAnalysis[] = [];
@@ -452,7 +454,7 @@ export class AnomalyDetectionStrategy {
           severity: rateIncrease > 5.0 ? 'critical' : rateIncrease > 3.0 ? 'high' : 'medium',
           confidence: Math.min(rateIncrease / 5.0, 1.0),
           affected_items: recentItems.map((item) => ({
-            item_id: item.id,
+            item_id: item.id || '',
             item_type: item.kind,
             anomaly_context: 'Part of recent volume spike',
             confidence: 0.8,
@@ -487,7 +489,7 @@ export class AnomalyDetectionStrategy {
    * Detect semantic anomalies using ZAI
    */
   private async detectSemanticAnomalies(
-    items: any[],
+    items: KnowledgeItem[],
     options: AnomalyDetectionOptions
   ): Promise<AnomalyAnalysis[]> {
     try {
@@ -522,7 +524,7 @@ export class AnomalyDetectionStrategy {
   /**
    * Analyze volume trends
    */
-  private analyzeVolumeTrends(items: any[], options: AnomalyDetectionOptions): TrendAnalysis[] {
+  private analyzeVolumeTrends(items: KnowledgeItem[], options: AnomalyDetectionOptions): TrendAnalysis[] {
     const analyses: TrendAnalysis[] = [];
 
     const timeItems = items.filter((item) => item.created_at);
@@ -583,7 +585,7 @@ export class AnomalyDetectionStrategy {
    * Analyze semantic trends using ZAI
    */
   private async analyzeSemanticTrends(
-    items: any[],
+    items: KnowledgeItem[],
     options: AnomalyDetectionOptions
   ): Promise<TrendAnalysis[]> {
     try {
@@ -619,7 +621,7 @@ export class AnomalyDetectionStrategy {
    * Analyze behavioral trends using ZAI
    */
   private async analyzeBehavioralTrends(
-    items: any[],
+    items: KnowledgeItem[],
     options: AnomalyDetectionOptions
   ): Promise<TrendAnalysis[]> {
     try {
@@ -654,7 +656,7 @@ export class AnomalyDetectionStrategy {
   /**
    * Analyze temporal trends
    */
-  private analyzeTemporalTrends(items: any[], options: AnomalyDetectionOptions): TrendAnalysis[] {
+  private analyzeTemporalTrends(items: KnowledgeItem[], options: AnomalyDetectionOptions): TrendAnalysis[] {
     const analyses: TrendAnalysis[] = [];
 
     // Analyze creation patterns by time of day/day of week
@@ -713,7 +715,7 @@ export class AnomalyDetectionStrategy {
   /**
    * Build semantic anomaly detection prompt
    */
-  private buildSemanticAnomalyPrompt(items: any[]): string {
+  private buildSemanticAnomalyPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Content: ${this.extractKeyContent(item)}`;
@@ -754,7 +756,7 @@ Return only the JSON response, no additional text.
   /**
    * Build semantic trend analysis prompt
    */
-  private buildSemanticTrendPrompt(items: any[]): string {
+  private buildSemanticTrendPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Created: ${item.created_at || 'unknown'}, Content: ${this.extractKeyContent(item)}`;
@@ -797,7 +799,7 @@ Return only the JSON response, no additional text.
   /**
    * Build behavioral trend analysis prompt
    */
-  private buildBehavioralTrendPrompt(items: any[]): string {
+  private buildBehavioralTrendPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Created: ${item.created_at || 'unknown'}, Content: ${this.extractKeyContent(item)}`;
@@ -842,7 +844,7 @@ Return only the JSON response, no additional text.
    */
   private parseAnomalyResponse(
     response: any,
-    items: any[],
+    items: KnowledgeItem[],
     anomalyType: AnomalyAnalysis['anomaly_type']
   ): AnomalyAnalysis[] {
     try {
@@ -890,7 +892,7 @@ Return only the JSON response, no additional text.
    */
   private parseTrendResponse(
     response: any,
-    items: any[],
+    items: KnowledgeItem[],
     trendType: TrendAnalysis['trend_type']
   ): TrendAnalysis[] {
     try {
@@ -940,12 +942,12 @@ Return only the JSON response, no additional text.
   /**
    * Utility methods
    */
-  private getContentLength(item: any): number {
+  private getContentLength(item: KnowledgeItem): number {
     const content = this.extractKeyContent(item);
     return content.length;
   }
 
-  private extractKeyContent(item: any): string {
+  private extractKeyContent(item: KnowledgeItem): string {
     const content = [
       item.data?.content,
       item.data?.title,

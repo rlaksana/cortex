@@ -18,17 +18,18 @@
  */
 
 import { logger } from '@/utils/logger.js';
+
 import { Environment } from '../../config/environment.js';
 import { QdrantAdapter } from '../adapters/qdrant-adapter.js';
 import {
-  IDatabaseFactory,
-  DatabaseFactoryConfig,
-  DatabaseType,
-  DatabaseAdapters,
-  AdapterCapabilities,
-  DatabaseFactoryError,
-  ConfigurationError,
+  type AdapterCapabilities,
   AdapterCreationError,
+  ConfigurationError,
+  type DatabaseAdapters,
+  type DatabaseFactoryConfig,
+  DatabaseFactoryError,
+  type DatabaseType,
+  type IDatabaseFactory,
   UnsupportedDatabaseError,
 } from '../interfaces/database-factory.interface.js';
 import type { IVectorAdapter, VectorConfig } from '../interfaces/vector-adapter.interface.js';

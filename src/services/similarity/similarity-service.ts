@@ -1,9 +1,10 @@
-// @ts-nocheck
+
 import { logger } from '@/utils/logger.js';
+
 import { qdrant } from '../../db/qdrant-client.js';
 import type {
-  SimilarityService as ISimilarityService,
   KnowledgeItem,
+  SimilarityService as ISimilarityService,
 } from '../../types/core-interfaces.js';
 
 /**

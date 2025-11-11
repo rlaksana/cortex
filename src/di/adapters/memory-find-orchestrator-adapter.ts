@@ -9,14 +9,14 @@
  * @since 2025
  */
 
-import type { IMemoryFindOrchestrator } from '../service-interfaces.js';
+import { type MemoryFindOrchestrator } from '../../services/orchestrators/memory-find-orchestrator.js';
 import type {
-  SearchQuery,
-  MemoryFindResponse,
-  SearchResult,
   KnowledgeItem,
+  MemoryFindResponse,
+  SearchQuery,
+  SearchResult,
 } from '../../types/core-interfaces.js';
-import { MemoryFindOrchestrator } from '../../services/orchestrators/memory-find-orchestrator.js';
+import type { IMemoryFindOrchestrator } from '../service-interfaces.js';
 
 /**
  * Adapter for Memory Find Orchestrator service

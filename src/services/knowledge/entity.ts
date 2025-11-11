@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Entity storage service (10th knowledge type - flexible entity storage)
  *
@@ -10,6 +10,7 @@
 
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import { createHash } from 'crypto';
+
 import type { EntityItem } from '../../schemas/knowledge-types.js';
 
 /**

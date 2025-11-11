@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Enhanced MCP Server Health Monitor
  *
@@ -11,17 +11,18 @@
  */
 
 import { EventEmitter } from 'events';
-import {
-  HealthStatus,
-  SystemHealthResult,
-  ComponentHealth,
-  DependencyStatus,
-  DependencyType
-} from '../types/unified-health-interfaces.js';
-import { circuitBreakerManager, type CircuitBreakerStats } from '../services/circuit-breaker.service.js';
+
 import { logger } from '@/utils/logger.js';
-import { performanceCollector } from './performance-collector.js';
+
 import { metricsService } from './metrics-service.js';
+import { performanceCollector } from './performance-collector.js';
+import { circuitBreakerManager, type CircuitBreakerStats } from '../services/circuit-breaker.service.js';
+import {
+  type ComponentHealth,
+  DependencyStatus,
+  DependencyType,
+  HealthStatus,
+  type SystemHealthResult} from '../types/unified-health-interfaces.js';
 
 /**
  * MCP Server specific health metrics

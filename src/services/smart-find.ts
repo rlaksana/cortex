@@ -1,7 +1,8 @@
-// @ts-nocheck
+
 import { logger } from '@/utils/logger.js';
+
 import { coreMemoryFind } from './core-memory-find.js';
-import { sanitizeQuery, type SanitizationLevel } from '../utils/query-sanitizer.js';
+import { type SanitizationLevel,sanitizeQuery } from '../utils/query-sanitizer.js';
 
 /**
  * Smart Memory Find - Auto-correcting query wrapper with feedback
@@ -77,7 +78,7 @@ export interface SmartFindResult {
   autonomous_metadata: AutonomousMetadata;
   corrections?: CorrectionMetadata;
   debug?: Record<string, unknown>;
-  graph?: any;
+  graph?: unknown;
 }
 
 /**
@@ -174,7 +175,7 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
 
     // Convert MemoryFindResponse to SmartFindResult format
     const smartFindResult: SmartFindResult = {
-      hits: (result.results || []).map((resultItem: any) => ({
+      hits: (result.results || []).map((resultItem: Record<string, any>) => ({
         kind: resultItem.kind,
         id: resultItem.id,
         title: resultItem.data.title || resultItem.id,
@@ -320,7 +321,7 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
 
             // Convert MemoryFindResponse to SmartFindResult format
             const smartFindResult: SmartFindResult = {
-              hits: (memoryFindResult.results || []).map((result: any) => ({
+              hits: (memoryFindResult.results || []).map((result: Record<string, any>) => ({
                 kind: result.kind,
                 id: result.id,
                 title: result.data.title || result.id,
@@ -412,7 +413,7 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
 
   // Convert memoryFind result to SmartFindResult format
   const smartFindResult: SmartFindResult = {
-    hits: (finalResult.results || []).map((result: any) => ({
+    hits: (finalResult.results || []).map((result: Record<string, any>) => ({
       kind: result.kind,
       id: result.id,
       title: result.data.title || result.id,

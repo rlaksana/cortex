@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Workflow Service
  *
@@ -14,21 +14,22 @@
  */
 
 import { logger } from '@/utils/logger.js';
+
 import type {
-  WorkflowExecution,
-  WorkflowExecutionRequest,
-  WorkflowTemplate,
-  WorkflowVersion,
-  TaskAssignment,
-  HumanTask,
   ApprovalTask,
   EscalationTask,
+  HumanTask,
   ServiceTask,
-  WorkflowNotification,
-  WorkflowEvent,
-  WorkflowReport,
-  WorkflowPerformanceData,
+  TaskAssignment,
   WorkflowBottleneck,
+  WorkflowEvent,
+  WorkflowExecution,
+  WorkflowExecutionRequest,
+  WorkflowNotification,
+  WorkflowPerformanceData,
+  WorkflowReport,
+  WorkflowTemplate,
+  WorkflowVersion,
 } from '../../types/workflow-interfaces.js';
 
 /**

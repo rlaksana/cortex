@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Notification Channel Implementations for MCP Cortex Alerting
  *
@@ -16,7 +16,8 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { Alert, AlertAction, NotificationAttempt } from './alert-management-service.js';
+
+import { type Alert, AlertAction, NotificationAttempt } from './alert-management-service.js';
 
 // ============================================================================
 // Base Notification Channel Interface

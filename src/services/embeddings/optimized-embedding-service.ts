@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Optimized Embedding Service
  *
@@ -11,11 +11,14 @@
  */
 
 import { createHash } from 'crypto';
+
 import { OpenAI } from 'openai';
+
 import { logger } from '@/utils/logger.js';
+
 import { DatabaseError, ValidationError } from '../../db/database-interface.js';
-import { getKeyVaultService } from '../security/key-vault-service.js';
 import { memoryManager } from '../memory/memory-manager-service.js';
+import { getKeyVaultService } from '../security/key-vault-service.js';
 
 /**
  * Enhanced cache entry with memory metadata
@@ -27,7 +30,7 @@ interface OptimizedCacheEntry {
   lastAccessed: number;
   accessCount: number;
   sizeBytes: number;
-  priority: 'high' | 'medium' | 'low';
+  priority: 'critical' | 'high' | 'medium' | 'low';
 }
 
 /**
@@ -327,7 +330,7 @@ export class OptimizedEmbeddingService {
    * Evict by priority (keep high priority items)
    */
   private evictByPriority(targetSize: number): void {
-    const priorityOrder = { low: 0, medium: 1, high: 2 };
+    const priorityOrder = { low: 0, medium: 1, high: 2, critical: 3 };
     const entries = Array.from(this.cache.entries())
       .sort(([, a], [, b]) => priorityOrder[a.priority] - priorityOrder[b.priority]);
 
@@ -368,7 +371,7 @@ export class OptimizedEmbeddingService {
   /**
    * Generate embedding with memory optimization
    */
-  async generateEmbedding(text: string, priority: 'high' | 'medium' | 'low' = 'medium'): Promise<{
+  async generateEmbedding(text: string, priority: 'critical' | 'high' | 'medium' | 'low' = 'medium'): Promise<{
     vector: number[];
     cached: boolean;
     model: string;

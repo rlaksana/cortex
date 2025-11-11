@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Deduplication Strategy Factory
  *
@@ -6,35 +6,31 @@
  * Supports creating strategies by name and with custom configurations.
  */
 
-import type { DeduplicationStrategyConfig, DeduplicationStrategy } from './base-strategy.js';
-import type { MergeStrategy } from '../../../config/deduplication-config.js';
-import { SkipStrategy, type SkipStrategyConfig } from './skip-strategy.js';
+import { logger } from '@/utils/logger.js';
+
+import type { DeduplicationStrategy,DeduplicationStrategyConfig } from './base-strategy.js';
+import { CombineStrategy, type CombineStrategyConfig } from './combine-strategy.js';
+import { IntelligentStrategy, type IntelligentStrategyConfig } from './intelligent-strategy.js';
 import {
   PreferExistingStrategy,
   type PreferExistingStrategyConfig,
 } from './prefer-existing-strategy.js';
 import { PreferNewerStrategy, type PreferNewerStrategyConfig } from './prefer-newer-strategy.js';
-import { CombineStrategy, type CombineStrategyConfig } from './combine-strategy.js';
-import { IntelligentStrategy, type IntelligentStrategyConfig } from './intelligent-strategy.js';
-import { logger } from '@/utils/logger.js';
+import { SkipStrategy, type SkipStrategyConfig } from './skip-strategy.js';
+import type { MergeStrategy } from '../../../config/deduplication-config.js';
 
 // Re-export strategy types for convenience
 export type {
+  DeduplicationResult,
   DeduplicationStrategy,
   DeduplicationStrategyConfig,
-  DeduplicationResult,
   DuplicateAnalysis,
 } from './base-strategy.js';
-
-export type { SkipStrategyConfig } from './skip-strategy.js';
-
-export type { PreferExistingStrategyConfig } from './prefer-existing-strategy.js';
-
-export type { PreferNewerStrategyConfig } from './prefer-newer-strategy.js';
-
 export type { CombineStrategyConfig } from './combine-strategy.js';
-
 export type { IntelligentStrategyConfig } from './intelligent-strategy.js';
+export type { PreferExistingStrategyConfig } from './prefer-existing-strategy.js';
+export type { PreferNewerStrategyConfig } from './prefer-newer-strategy.js';
+export type { SkipStrategyConfig } from './skip-strategy.js';
 
 // Strategy class union type
 export type StrategyClass =

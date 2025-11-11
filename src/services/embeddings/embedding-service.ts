@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Vector Embedding Service
  *
@@ -21,8 +21,11 @@
  */
 
 import { createHash } from 'crypto';
+
 import { OpenAI } from 'openai';
+
 import { logger } from '@/utils/logger.js';
+
 import { DatabaseError, ValidationError } from '../../db/database-interface.js';
 import { getKeyVaultService } from '../security/key-vault-service.js';
 

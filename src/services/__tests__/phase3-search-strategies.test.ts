@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Phase 3 Search Strategies Test Suite
  *
@@ -10,9 +10,10 @@
  * - Enhanced response metadata
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { coreMemoryFind, type CoreFindParams } from '../core-memory-find.js';
-import { memoryFind, memoryFindWithStrategy, getSearchStrategies } from '../memory-find.js';
+import { afterEach,beforeEach, describe, expect, it } from '@jest/globals';
+
+import { type CoreFindParams,coreMemoryFind } from '../core-memory-find.js';
+import { getSearchStrategies,memoryFind, memoryFindWithStrategy } from '../memory-find.js';
 
 // Mock the logger to avoid noise in tests
 jest.mock('../../utils/logger.js', () => ({

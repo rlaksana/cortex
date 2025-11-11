@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Production Startup Integration
  *
@@ -11,8 +11,8 @@
  */
 
 import { productionConfig } from './config/production-config.js';
-import { ProductionLogger } from '@/utils/logger.js';
 import { ProductionEnvironmentValidator } from './config/production-validator.js';
+import { ProductionLogger } from './monitoring/production-logger.js';
 
 export interface StartupOptions {
   skipValidation?: boolean;

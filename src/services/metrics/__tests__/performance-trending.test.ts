@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * P4-1: Performance Trending Service Tests
  *
@@ -6,7 +6,8 @@
  * data collection functionality.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { afterEach,beforeEach, describe, expect, it } from '@jest/globals';
+
 import { PerformanceTrendingService } from '../performance-trending.js';
 import { systemMetricsService } from '../system-metrics.js';
 

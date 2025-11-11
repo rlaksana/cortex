@@ -9,9 +9,9 @@
  * @since 2025
  */
 
-import type { IDeduplicationService } from '../service-interfaces.js';
+import { type DeduplicationService } from '../../services/deduplication/deduplication-service.js';
 import type { KnowledgeItem } from '../../types/core-interfaces.js';
-import { DeduplicationService } from '../../services/deduplication/deduplication-service.js';
+import type { IDeduplicationService } from '../service-interfaces.js';
 
 /**
  * Adapter for Deduplication service

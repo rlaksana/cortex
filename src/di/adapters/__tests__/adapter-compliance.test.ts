@@ -8,26 +8,24 @@
  * @since 2025
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { afterEach,beforeEach, describe, expect, it } from 'vitest';
 
-// Import adapters
-import { DatabaseServiceAdapter } from '../database-service-adapter.js';
-import { CircuitBreakerServiceAdapter } from '../circuit-breaker-service-adapter.js';
-import { MemoryStoreOrchestratorAdapter } from '../memory-store-orchestrator-adapter.js';
-
+import type { IDatabase } from '../../../db/database-interface.js';
 // Import implementations to wrap
 import { DatabaseManager } from '../../../db/database-manager.js';
 import { circuitBreakerManager } from '../../../services/circuit-breaker.service.js';
 import { MemoryStoreOrchestrator } from '../../../services/orchestrators/memory-store-orchestrator.js';
-
 // Import interfaces for type checking
 import type {
-  IDatabaseService,
   ICircuitBreakerService,
+  IDatabaseService,
   IMemoryStoreOrchestrator,
   KnowledgeItem,
 } from '../../service-interfaces.js';
-import type { IDatabase } from '../../../db/database-interface.js';
+import { CircuitBreakerServiceAdapter } from '../circuit-breaker-service-adapter.js';
+// Import adapters
+import { DatabaseServiceAdapter } from '../database-service-adapter.js';
+import { MemoryStoreOrchestratorAdapter } from '../memory-store-orchestrator-adapter.js';
 
 describe('Adapter Interface Compliance', () => {
   describe('DatabaseServiceAdapter', () => {

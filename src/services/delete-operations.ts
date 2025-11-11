@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Delete operations service
  *
@@ -8,11 +8,12 @@
  * @module services/delete-operations
  */
 
-import { getQdrantClient } from '../db/qdrant.js';
-import { softDeleteEntity } from './knowledge/entity.js';
-import { softDeleteRelation } from './knowledge/relation.js';
-import { deleteObservation } from './knowledge/observation.js';
 import { logger } from '@/utils/logger.js';
+
+import { softDeleteEntity } from './knowledge/entity.js';
+import { deleteObservation } from './knowledge/observation.js';
+import { softDeleteRelation } from './knowledge/relation.js';
+import { getQdrantClient } from '../db/qdrant.js';
 
 export interface DeleteRequest {
   entity_type: string; // "entity", "relation", "observation", or any typed knowledge type

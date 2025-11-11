@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Slow Query Logger for Cortex MCP
  *
@@ -10,10 +10,12 @@
  * - Query pattern analysis for optimization opportunities
  */
 
+import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
+
 import { OperationType } from './operation-types.js';
 import { performanceCollector } from './performance-collector.js';
-import { EventEmitter } from 'events';
 
 /**
  * Slow query entry with detailed analysis

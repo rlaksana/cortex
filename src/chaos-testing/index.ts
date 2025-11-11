@@ -5,25 +5,25 @@
  * integrating all components and providing a simple API for chaos testing.
  */
 
-import { ChaosExperimentRunner, type ExperimentExecutionReport } from './runner/chaos-experiment-runner';
-import { SafetyController } from './safety/safety-controller';
-import { ChaosInjectionEngine } from './engine/chaos-injection-engine';
-import { GracefulDegradationVerifier } from './verification/graceful-degradation-verifier';
-import { AlertVerifier } from './verification/alert-verifier';
-import { MTTRMeasurer } from './measurement/mttr-measurer';
+import { ChaosInjectionEngine } from './engine/chaos-injection-engine.js';
+import { MTTRMeasurer } from './measurement/mttr-measurer.js';
+import { ChaosExperimentRunner, type ExperimentExecutionReport } from './runner/chaos-experiment-runner.js';
+import { SafetyController } from './safety/safety-controller.js';
 import {
-  ChaosExperimentConfig,
-  ChaosScenario,
-  ExperimentExecutionContext
-} from './types/chaos-testing-types';
+  type ChaosExperimentConfig,
+  type ChaosScenario,
+  type ExperimentExecutionContext
+} from './types/chaos-testing-types.js';
+import { AlertVerifier } from './verification/alert-verifier.js';
+import { GracefulDegradationVerifier } from './verification/graceful-degradation-verifier.js';
 
-export * from './types/chaos-testing-types';
-export * from './engine/chaos-injection-engine';
-export * from './verification/graceful-degradation-verifier';
-export * from './verification/alert-verifier';
-export * from './measurement/mttr-measurer';
-export * from './runner/chaos-experiment-runner';
-export * from './safety/safety-controller';
+export * from './engine/chaos-injection-engine.js';
+export * from './measurement/mttr-measurer.js';
+export * from './runner/chaos-experiment-runner.js';
+export * from './safety/safety-controller.js';
+export * from './types/chaos-testing-types.js';
+export * from './verification/alert-verifier.js';
+export * from './verification/graceful-degradation-verifier.js';
 
 /**
  * Main Chaos Testing Framework class

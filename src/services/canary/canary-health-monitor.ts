@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Canary Health Monitor
  *
@@ -17,10 +17,11 @@
  */
 
 import { EventEmitter } from 'events';
+
+import { monitoringHealthCheckService } from '../../monitoring/health-check-service.js';
+import { metricsService } from '../../monitoring/metrics-service.js';
+import { AlertSeverity,HealthStatus } from '../../types/unified-health-interfaces.js';
 import { logger } from '../../utils/logger.js';
-import { metricsService } from '../metrics/metrics-service.js';
-import { HealthStatus, AlertSeverity } from '../../types/unified-health-interfaces.js';
-import { monitoringHealthCheckService } from '../health/health-check-service.js';
 
 // ============================================================================
 // Types and Interfaces
@@ -628,26 +629,26 @@ export class CanaryHealthMonitor extends EventEmitter {
     const responseTimeDelta = canary.performance.averageResponseTime - stable.performance.averageResponseTime;
     const throughputDelta = canary.performance.throughput - stable.performance.throughput;
 
-    const resourceDelta = {
+    const resourceDelta: ComparisonMetrics['resourceDelta'] = {
       memoryUsage: canary.resources.memoryUsage - stable.resources.memoryUsage,
       cpuUsage: canary.resources.cpuUsage - stable.resources.cpuUsage,
     };
 
     // Detect regressions (significant degradation)
-    const regressionDetected =
+    const regressionDetected: boolean =
       availabilityDelta < -tolerance * 100 ||
       errorRateDelta > tolerance * stable.errors.errorRate ||
       responseTimeDelta > tolerance * stable.performance.averageResponseTime ||
       resourceDelta.memoryUsage > tolerance * stable.resources.memoryUsage;
 
     // Detect improvements (significant enhancement)
-    const improvementDetected =
+    const improvementDetected: boolean =
       availabilityDelta > tolerance * 10 ||
       errorRateDelta < -tolerance * stable.errors.errorRate ||
       responseTimeDelta < -tolerance * stable.performance.averageResponseTime;
 
     // Calculate statistical significance (simplified)
-    const statisticalSignificance = Math.abs(availabilityDelta) / 100;
+    const statisticalSignificance: number = Math.abs(availabilityDelta) / 100;
 
     return {
       availabilityDelta,
@@ -895,7 +896,7 @@ export class CanaryHealthMonitor extends EventEmitter {
     for (const violation of thresholdViolations) {
       const issue: HealthIssue = {
         id: this.generateId(),
-        type: 'threshold_violation',
+        type: 'threshold_violation' as const,
         severity: violation.severity,
         metric: violation.threshold.metric,
         value: violation.value,
@@ -914,7 +915,7 @@ export class CanaryHealthMonitor extends EventEmitter {
     for (const regression of regressions) {
       const issue: HealthIssue = {
         id: this.generateId(),
-        type: 'regression',
+        type: 'regression' as const,
         severity: AlertSeverity.WARNING,
         metric: regression.metric as HealthMetricType,
         value: regression.delta,
@@ -934,7 +935,7 @@ export class CanaryHealthMonitor extends EventEmitter {
       if (trend.direction === 'degrading' && trend.confidence > 0.7) {
         const issue: HealthIssue = {
           id: this.generateId(),
-          type: 'trend',
+          type: 'trend' as const,
           severity: AlertSeverity.WARNING,
           metric: trend.metric,
           value: 0,
@@ -1121,7 +1122,7 @@ export class CanaryHealthMonitor extends EventEmitter {
 
     // Send critical alerts immediately
     for (const issue of criticalIssues) {
-      await this.sendAlert(deploymentId, issue, config, AlertSeverity.CRITICAL);
+      await this.sendAlert(deploymentId, issue, config, AlertSeverity.CRITICAL, snapshot);
     }
 
     // Send warning alerts if not in cooldown
@@ -1132,7 +1133,7 @@ export class CanaryHealthMonitor extends EventEmitter {
 
       if (cooldownExpired) {
         for (const issue of warningIssues) {
-          await this.sendAlert(deploymentId, issue, config, AlertSeverity.WARNING);
+          await this.sendAlert(deploymentId, issue, config, AlertSeverity.WARNING, snapshot);
         }
       }
     }
@@ -1145,7 +1146,8 @@ export class CanaryHealthMonitor extends EventEmitter {
     deploymentId: string,
     issue: HealthIssue,
     config: CanaryHealthConfig,
-    severity: AlertSeverity
+    severity: AlertSeverity,
+    snapshot?: HealthMetricsSnapshot
   ): Promise<void> {
     const alert: HealthAlert = {
       id: this.generateId(),
@@ -1155,7 +1157,7 @@ export class CanaryHealthMonitor extends EventEmitter {
       message: issue.description,
       metrics: {
         [issue.metric]: issue.value,
-        health_score: snapshot.overall.score,
+        health_score: snapshot?.overall.score ?? 0,
       },
       timestamp: new Date(),
       acknowledged: false,

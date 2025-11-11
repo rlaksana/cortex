@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Pattern Recognition Strategy
  *
@@ -12,14 +12,16 @@
  */
 
 import { randomUUID } from 'crypto';
-import { logger } from '../../../utils/logger';
-import type { ZAIClientService } from '../../ai/zai-client.service';
-import type { ZAIChatRequest, ZAIChatResponse } from '../../../types/zai-interfaces';
+
+import type { KnowledgeItem } from '../../../types/core-interfaces.js';
 import type {
   InsightGenerationRequest,
-  PatternInsight,
   InsightTypeUnion,
-} from '../../../types/insight-interfaces';
+  PatternInsight,
+} from '../../../types/insight-interfaces.js';
+import type { ZAIChatRequest, ZAIChatResponse } from '../../../types/zai-interfaces.js';
+import { logger } from '../../../utils/logger.js';
+import type { ZAIClientService } from '../../ai/zai-client.service';
 
 export interface PatternRecognitionOptions {
   confidence_threshold: number;
@@ -120,7 +122,7 @@ export class PatternRecognitionStrategy {
    * Analyze semantic patterns using ZAI
    */
   private async analyzeSemanticPatterns(
-    items: any[],
+    items: KnowledgeItem[],
     options: PatternRecognitionOptions
   ): Promise<PatternAnalysis[]> {
     try {
@@ -156,7 +158,7 @@ export class PatternRecognitionStrategy {
    * Analyze structural patterns in knowledge items
    */
   private async analyzeStructuralPatterns(
-    items: any[],
+    items: KnowledgeItem[],
     options: PatternRecognitionOptions
   ): Promise<PatternAnalysis[]> {
     try {
@@ -173,7 +175,7 @@ export class PatternRecognitionStrategy {
             confidence: Math.min(groupItems.length / items.length, 1.0),
             frequency: groupItems.length,
             items: groupItems.map((item) => ({
-              item_id: item.id,
+              item_id: item.id || '',
               content: this.extractKeyContent(item),
               context: `Structure: ${structure}`,
               confidence: 0.8,
@@ -201,7 +203,7 @@ export class PatternRecognitionStrategy {
    * Analyze temporal patterns
    */
   private async analyzeTemporalPatterns(
-    items: any[],
+    items: KnowledgeItem[],
     options: PatternRecognitionOptions
   ): Promise<PatternAnalysis[]> {
     try {
@@ -225,8 +227,8 @@ export class PatternRecognitionStrategy {
           description: pattern.description,
           confidence: pattern.confidence,
           frequency: pattern.items.length,
-          items: pattern.items.map((item) => ({
-            item_id: item.id,
+          items: pattern.items.map((item: KnowledgeItem) => ({
+            item_id: item.id || '',
             content: this.extractKeyContent(item),
             context: `Time: ${new Date(item.created_at!).toLocaleString()}`,
             confidence: 0.7,
@@ -253,7 +255,7 @@ export class PatternRecognitionStrategy {
    * Analyze behavioral patterns
    */
   private async analyzeBehavioralPatterns(
-    items: any[],
+    items: KnowledgeItem[],
     options: PatternRecognitionOptions
   ): Promise<PatternAnalysis[]> {
     try {
@@ -288,13 +290,14 @@ export class PatternRecognitionStrategy {
   /**
    * Prepare items for analysis
    */
-  private prepareAnalyzableItems(items: any[]): any[] {
+  private prepareAnalyzableItems(items: KnowledgeItem[]): KnowledgeItem[] {
     return items.filter((item) => {
+      const data = item.data as any;
       return (
         item.data &&
-        (item['data.content'] ||
-          item['data.title'] ||
-          item['data.description'] ||
+        (data.content ||
+          data.title ||
+          data.description ||
           Object.keys(item.data).length > 0)
       );
     });
@@ -303,7 +306,7 @@ export class PatternRecognitionStrategy {
   /**
    * Build semantic pattern analysis prompt
    */
-  private buildSemanticPatternPrompt(items: any[]): string {
+  private buildSemanticPatternPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         const content = this.extractKeyContent(item);
@@ -345,7 +348,7 @@ Return only the JSON response, no additional text.
   /**
    * Build behavioral pattern analysis prompt
    */
-  private buildBehavioralPatternPrompt(items: any[]): string {
+  private buildBehavioralPatternPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Content: ${this.extractKeyContent(item)}`;
@@ -386,7 +389,7 @@ Return only the JSON response, no additional text.
   /**
    * Parse semantic pattern response
    */
-  private parseSemanticPatternResponse(response: any, items: any[]): PatternAnalysis[] {
+  private parseSemanticPatternResponse(response: any, items: KnowledgeItem[]): PatternAnalysis[] {
     try {
       const content = response.choices?.[0]?.message?.content;
       if (!content) {
@@ -428,7 +431,7 @@ Return only the JSON response, no additional text.
   /**
    * Parse behavioral pattern response
    */
-  private parseBehavioralPatternResponse(response: any, items: any[]): PatternAnalysis[] {
+  private parseBehavioralPatternResponse(response: any, items: KnowledgeItem[]): PatternAnalysis[] {
     try {
       const content = response.choices?.[0]?.message?.content;
       if (!content) {
@@ -470,8 +473,8 @@ Return only the JSON response, no additional text.
   /**
    * Group items by structure
    */
-  private groupByStructure(items: any[]): Map<string, any[]> {
-    const groups = new Map<string, any[]>();
+  private groupByStructure(items: KnowledgeItem[]): Map<string, KnowledgeItem[]> {
+    const groups = new Map<string, KnowledgeItem[]>();
 
     for (const item of items) {
       const structure = this.getItemStructure(item);
@@ -487,10 +490,11 @@ Return only the JSON response, no additional text.
   /**
    * Get item structure signature
    */
-  private getItemStructure(item: any): string {
-    const dataKeys = Object.keys(item.data || {}).sort();
-    const hasContent = !!(item.data?.content || item.data?.title || item.data?.description);
-    const hasMetadata = !!(item.data?.metadata || item.data?.tags || item.data?.categories);
+  private getItemStructure(item: KnowledgeItem): string {
+    const data = item.data as any || {};
+    const dataKeys = Object.keys(data).sort();
+    const hasContent = !!(data.content || data.title || data.description);
+    const hasMetadata = !!(data.metadata || data.tags || data.categories);
 
     return `keys:${dataKeys.length},content:${hasContent},metadata:${hasMetadata}`;
   }
@@ -498,7 +502,7 @@ Return only the JSON response, no additional text.
   /**
    * Identify time patterns
    */
-  private identifyTimePatterns(sortedItems: any[]): any[] {
+  private identifyTimePatterns(sortedItems: KnowledgeItem[]): any[] {
     const patterns = [];
 
     // Look for clustering of items in time
@@ -522,7 +526,7 @@ Return only the JSON response, no additional text.
   /**
    * Find time clusters in sorted items
    */
-  private findTimeClusters(sortedItems: any[]): any[] {
+  private findTimeClusters(sortedItems: KnowledgeItem[]): any[] {
     const clusters = [];
     const windowHours = 24; // 24-hour window
 
@@ -565,7 +569,7 @@ Return only the JSON response, no additional text.
   /**
    * Extract key content from item
    */
-  private extractKeyContent(item: any): string {
+  private extractKeyContent(item: KnowledgeItem): string {
     const content = [
       item.data?.content,
       item.data?.title,

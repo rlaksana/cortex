@@ -1,11 +1,12 @@
-// @ts-nocheck
+
 import { logger } from '@/utils/logger.js';
+
+import { insightGenerationService } from './insights/insight-generation-service.js';
+import { systemMetricsService } from './metrics/system-metrics.js';
 import { memoryStoreOrchestrator } from './orchestrators/memory-store-orchestrator.js';
+import { truncationService } from './truncation/truncation-service.js';
 import type { MemoryStoreResponse } from '../types/core-interfaces.js';
 import { createStoreObservability } from '../utils/observability-helper.js';
-import { truncationService } from './truncation/truncation-service.js';
-import { systemMetricsService } from './metrics/system-metrics.js';
-import { insightGenerationService } from './insights/insight-generation-service.js';
 
 // Type definitions for truncation results
 interface TruncationResult {

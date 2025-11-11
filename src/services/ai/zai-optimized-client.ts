@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Optimized ZAI Client with Advanced Caching and Performance Features
  *
@@ -18,7 +18,7 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { performanceMonitor } from '../../utils/performance-monitor';
+
 import {
   circuitBreakerManager,
   type CircuitBreakerStats,
@@ -28,7 +28,8 @@ import type {
   ZAIChatResponse,
   ZAIMetrics,
   ZAIServiceStatus,
-} from '../../types/zai-interfaces';
+} from '../../types/zai-interfaces.js';
+import { performanceMonitor } from '../../utils/performance-monitor.js';
 
 /**
  * Cache entry with TTL and metadata
@@ -127,19 +128,25 @@ export interface ZAIOptimizedClientOptions {
   /** Model to use */
   model: string;
   /** Cache configuration */
-  cache: CacheConfig;
+  cache?: CacheConfig;
   /** Deduplication configuration */
-  deduplication: DeduplicationConfig;
+  deduplication?: DeduplicationConfig;
   /** Rate limiting configuration */
-  rateLimit: RateLimitConfig;
+  rateLimit?: RateLimitConfig;
   /** Performance configuration */
-  performance: PerformanceConfig;
+  performance?: PerformanceConfig;
   /** Enable circuit breaker */
-  enableCircuitBreaker: boolean;
+  enableCircuitBreaker?: boolean;
   /** Circuit breaker threshold */
-  circuitBreakerThreshold: number;
+  circuitBreakerThreshold?: number;
   /** Circuit breaker timeout */
-  circuitBreakerTimeout: number;
+  circuitBreakerTimeout?: number;
+  /** Enable logging */
+  enableLogging?: boolean;
+  /** Maximum retries */
+  maxRetries?: number;
+  /** Request timeout */
+  timeout?: number;
 }
 
 /**
@@ -215,18 +222,18 @@ export class ZAIOptimizedClient {
     }
 
     // Initialize rate limiting
-    this.rateLimitTokens = this.options.rateLimit.burstCapacity;
+    this.rateLimitTokens = this.options.rateLimit?.burstCapacity || 20;
     this.rateLimitResetTime = Date.now() + 60000; // 1 minute from now
 
     // Start background tasks
     this.startBackgroundTasks();
 
     logger.info('ZAI optimized client initialized', {
-      cacheEnabled: this.options.cache.enableMemoryCache || this.options.cache.enableRedisCache,
-      deduplicationEnabled: this.options.deduplication.enableDeduplication,
-      rateLimitEnabled: this.options.rateLimit.enableRateLimit,
-      batchingEnabled: this.options.performance.enableBatching,
-      streamingEnabled: this.options.performance.enableStreaming,
+      cacheEnabled: this.options.cache?.enableMemoryCache || this.options.cache?.enableRedisCache || false,
+      deduplicationEnabled: this.options.deduplication?.enableDeduplication || false,
+      rateLimitEnabled: this.options.rateLimit?.enableRateLimit || false,
+      batchingEnabled: this.options.performance?.enableBatching || false,
+      streamingEnabled: this.options.performance?.enableStreaming || false,
     });
   }
 
@@ -239,7 +246,7 @@ export class ZAIOptimizedClient {
 
     try {
       // Check cache first
-      if (this.options.cache.enableMemoryCache || this.options.cache.enableRedisCache) {
+      if (this.options.cache?.enableMemoryCache || this.options.cache?.enableRedisCache) {
         const cachedResponse = await this.getFromCache(request);
         if (cachedResponse) {
           this.updateCacheMetrics(true);
@@ -249,7 +256,7 @@ export class ZAIOptimizedClient {
       }
 
       // Check request deduplication
-      if (this.options.deduplication.enableDeduplication) {
+      if (this.options.deduplication?.enableDeduplication) {
         const deduplicatedResponse = await this.checkDeduplication(request);
         if (deduplicatedResponse) {
           this.metrics.successfulRequests++;
@@ -258,21 +265,21 @@ export class ZAIOptimizedClient {
       }
 
       // Check rate limiting
-      if (this.options.rateLimit.enableRateLimit) {
+      if (this.options.rateLimit?.enableRateLimit) {
         await this.checkRateLimit();
       }
 
       // Execute request based on configuration
       let response: ZAIChatResponse;
 
-      if (this.options.performance.enableBatching && this.shouldBatch(request)) {
+      if (this.options.performance?.enableBatching && this.shouldBatch(request)) {
         response = await this.addToBatch(request);
       } else {
         response = await this.executeRequest(request);
       }
 
       // Cache response
-      if (this.options.cache.enableMemoryCache || this.options.cache.enableRedisCache) {
+      if (this.options.cache?.enableMemoryCache || this.options.cache?.enableRedisCache) {
         await this.setCache(request, response);
       }
 
@@ -293,7 +300,7 @@ export class ZAIOptimizedClient {
    * Generate streaming completion
    */
   async *generateStreamingCompletion(request: ZAIChatRequest): AsyncGenerator<any> {
-    if (!this.options.performance.enableStreaming) {
+    if (!this.options.performance?.enableStreaming) {
       throw new Error('Streaming is not enabled');
     }
 
@@ -325,7 +332,7 @@ export class ZAIOptimizedClient {
     const cacheKey = this.generateCacheKey(request);
 
     // Check memory cache first
-    if (this.options.cache.enableMemoryCache) {
+    if (this.options.cache?.enableMemoryCache) {
       const memoryEntry = this.memoryCache.get(cacheKey);
       if (memoryEntry && this.isCacheEntryValid(memoryEntry)) {
         memoryEntry.accessCount++;
@@ -335,12 +342,12 @@ export class ZAIOptimizedClient {
     }
 
     // Check Redis cache
-    if (this.options.cache.enableRedisCache) {
+    if (this.options.cache?.enableRedisCache) {
       try {
         const redisEntry = await this.getFromRedis(cacheKey);
         if (redisEntry) {
           // Store in memory cache for faster access
-          if (this.options.cache.enableMemoryCache) {
+          if (this.options.cache?.enableMemoryCache) {
             this.memoryCache.set(cacheKey, redisEntry);
           }
           return redisEntry.data;
@@ -358,12 +365,13 @@ export class ZAIOptimizedClient {
    */
   private async setCache(request: ZAIChatRequest, response: ZAIChatResponse): Promise<void> {
     const cacheKey = this.generateCacheKey(request);
-    const ttl = this.options.cache.defaultTTL;
+    const ttl = this.options.cache?.defaultTTL || 300000;
     const now = Date.now();
 
     // Determine if compression is needed
     const serialized = JSON.stringify(response);
-    const shouldCompress = serialized.length > this.options.cache.compressionThreshold;
+    const compressionThreshold = this.options.cache?.compressionThreshold || 1024;
+    const shouldCompress = serialized.length > compressionThreshold;
 
     const cacheEntry: CacheEntry<ZAIChatResponse> = {
       data: response,
@@ -376,13 +384,13 @@ export class ZAIOptimizedClient {
     };
 
     // Store in memory cache
-    if (this.options.cache.enableMemoryCache) {
+    if (this.options.cache?.enableMemoryCache) {
       this.evictIfNecessary();
       this.memoryCache.set(cacheKey, cacheEntry);
     }
 
     // Store in Redis cache
-    if (this.options.cache.enableRedisCache) {
+    if (this.options.cache?.enableRedisCache) {
       try {
         await this.setToRedis(cacheKey, cacheEntry, ttl);
       } catch (error) {
@@ -428,7 +436,7 @@ export class ZAIOptimizedClient {
     request: ZAIChatRequest,
     responsePromise: Promise<ZAIChatResponse>
   ): void {
-    if (!this.options.deduplication.enableDeduplication) {
+    if (!this.options.deduplication?.enableDeduplication) {
       return;
     }
 
@@ -447,13 +455,15 @@ export class ZAIOptimizedClient {
 
     // Clean up old requests
     const now = Date.now();
+    const deduplicationWindow = this.options.deduplication.deduplicationWindow || 5000;
     this.pendingRequests.set(
       deduplicationKey,
-      pending.filter((p) => now - p.timestamp < this.options.deduplication.deduplicationWindow)
+      pending.filter((p) => now - p.timestamp < deduplicationWindow)
     );
 
     // Limit pending requests
-    if (pending.length > this.options.deduplication.maxPendingRequests) {
+    const maxPendingRequests = this.options.deduplication.maxPendingRequests || 10;
+    if (pending.length > maxPendingRequests) {
       pending.shift();
     }
   }
@@ -462,7 +472,7 @@ export class ZAIOptimizedClient {
    * Check rate limiting
    */
   private async checkRateLimit(): Promise<void> {
-    if (!this.options.rateLimit.enableRateLimit) {
+    if (!this.options.rateLimit?.enableRateLimit) {
       return;
     }
 
@@ -470,7 +480,7 @@ export class ZAIOptimizedClient {
 
     // Reset tokens if needed
     if (now > this.rateLimitResetTime) {
-      this.rateLimitTokens = this.options.rateLimit.burstCapacity;
+      this.rateLimitTokens = this.options.rateLimit?.burstCapacity || 20;
       this.rateLimitResetTime = now + 60000;
     }
 
@@ -502,7 +512,8 @@ export class ZAIOptimizedClient {
    */
   private async makeRequest(request: ZAIChatRequest): Promise<ZAIChatResponse> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.options.performance.requestTimeout);
+    const requestTimeout = this.options.performance?.requestTimeout || 30000;
+    const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
 
     try {
       const response = await fetch(`${this.options.baseURL}/chat/completions`, {
@@ -510,7 +521,7 @@ export class ZAIOptimizedClient {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.options.apiKey}`,
-          ...(this.options.performance.enableCompression && {
+          ...(this.options.performance?.enableCompression && {
             'Accept-Encoding': 'gzip, deflate, br',
           }),
         },
@@ -553,7 +564,8 @@ export class ZAIOptimizedClient {
    */
   private async *executeStreamingRequest(request: ZAIChatRequest): AsyncGenerator<any> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.options.performance.requestTimeout);
+    const requestTimeout = this.options.performance?.requestTimeout || 30000;
+    const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
 
     try {
       const response = await fetch(`${this.options.baseURL}/chat/completions`, {
@@ -646,14 +658,16 @@ export class ZAIOptimizedClient {
 
       // Set batch timeout if not already set
       if (!this.batchTimeout) {
+        const batchTimeout = this.options.performance?.batchTimeout || 100;
         this.batchTimeout = setTimeout(
           () => this.processBatch(),
-          this.options.performance.batchTimeout
+          batchTimeout
         );
       }
 
       // Process batch immediately if max size reached
-      if (this.batchRequests.length >= this.options.performance.maxBatchSize) {
+      const maxBatchSize = this.options.performance?.maxBatchSize || 5;
+      if (this.batchRequests.length >= maxBatchSize) {
         if (this.batchTimeout) {
           clearTimeout(this.batchTimeout);
           this.batchTimeout = undefined;
@@ -669,7 +683,8 @@ export class ZAIOptimizedClient {
   private async processBatch(): Promise<void> {
     if (this.batchRequests.length === 0) return;
 
-    const batch = this.batchRequests.splice(0, this.options.performance.maxBatchSize);
+    const maxBatchSize = this.options.performance?.maxBatchSize || 5;
+    const batch = this.batchRequests.splice(0, maxBatchSize);
     this.batchTimeout = undefined;
 
     logger.debug(`Processing batch of ${batch.length} requests`);
@@ -758,13 +773,14 @@ export class ZAIOptimizedClient {
    * Evict cache entries if necessary
    */
   private evictIfNecessary(): void {
-    if (this.memoryCache.size >= this.options.cache.memoryCacheSize) {
+    const memoryCacheSize = this.options.cache?.memoryCacheSize || 1000;
+    if (this.memoryCache.size >= memoryCacheSize) {
       // LRU eviction
       const entries = Array.from(this.memoryCache.entries()).sort(
         ([, a], [, b]) => a.lastAccessed - b.lastAccessed
       );
 
-      const toEvict = Math.floor(this.options.cache.memoryCacheSize * 0.2);
+      const toEvict = Math.floor(memoryCacheSize * 0.2);
       for (let i = 0; i < toEvict; i++) {
         this.memoryCache.delete(entries[i][0]);
       }

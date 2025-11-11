@@ -1,15 +1,16 @@
-// @ts-nocheck
+
 import { logger } from '@/utils/logger.js';
-import type {
-  ValidationService as IValidationService,
-  KnowledgeItem,
-  StoreError,
-} from '../../types/core-interfaces.js';
+
 import {
-  MemoryStoreRequestSchema,
   MemoryFindRequestSchema,
+  MemoryStoreRequestSchema,
   validateKnowledgeItems,
 } from '../../schemas/enhanced-validation.js';
+import type {
+  KnowledgeItem,
+  StoreError,
+  ValidationService as IValidationService,
+} from '../../types/core-interfaces.js';
 
 /**
  * Validation service for input validation and business rule enforcement

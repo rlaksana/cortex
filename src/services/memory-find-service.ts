@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Memory Find Service - Class Wrapper for Memory Find Functionality
  *
@@ -20,8 +20,9 @@
  * @since 2025
  */
 
-import { memoryFind } from './memory-find.js';
 import { logger } from '@/utils/logger.js';
+
+import { memoryFind } from './memory-find.js';
 import type { MemoryFindResponse, SearchQuery } from '../types/core-interfaces.js';
 
 /**

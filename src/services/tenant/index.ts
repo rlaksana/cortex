@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Multi-Tenant Services Module
  *
@@ -17,63 +17,46 @@
  */
 
 export {
-  // Core isolation service
-  TenantIsolationService,
-  TenantRateLimiter,
-  TenantCircuitBreaker,
-  ResourceAllocationManager,
-  TenantMonitoringService,
-  MultiTenantLoadTestFramework,
-
-  // Service factory functions
-  createTenantIsolationService,
-  getTenantIsolationService,
-} from './tenant-isolation-service.js';
-
-export type {
-  // Configuration and types
-  TenantConfig,
-  TenantMetrics,
-  TenantAlert,
-  LoadTestScenario,
-  LoadTestResult,
-  DEFAULT_TENANT_CONFIG,
-} from './tenant-isolation-service.js';
-
-export {
-  // Governance service
-  TenantGovernanceService,
-
   // Service factory functions
   createTenantGovernanceService,
   getTenantGovernanceService,
+  // Governance service
+  TenantGovernanceService,
 } from './tenant-governance-service.js';
-
 export type {
-  // Governance types
-  TenantOnboardingRequest,
-  TenantOffboardingRequest,
-  TenantComplianceReport,
-  TenantCostAllocation,
-  TenantConfigurationTemplate,
-  TenantGovernancePolicy,
-} from './tenant-governance-service.js';
-
+  DEFAULT_TENANT_CONFIG,
+  LoadTestResult,
+  LoadTestScenario,
+  TenantAlert,
+  // Configuration and types
+  TenantConfig,
+  TenantMetrics,
+} from './tenant-isolation-service.js';
 export {
-  // Purge service
-  TenantPurgeService,
-
+  // Service factory functions
+  createTenantIsolationService,
+  getTenantIsolationService,
+  MultiTenantLoadTestFramework,
+  ResourceAllocationManager,
+  TenantCircuitBreaker,
+  // Core isolation service
+  TenantIsolationService,
+  TenantMonitoringService,
+  TenantRateLimiter,
+} from './tenant-isolation-service.js';
+export type {
+  TenantPurgeAuditLog,
+  // Purge types
+  TenantPurgeConfig,
+  TenantPurgeExecution,
+  TenantPurgePlan,
+} from './tenant-purge.service.js';
+export {
   // Service factory functions
   createTenantPurgeService,
   getTenantPurgeService,
-} from './tenant-purge.service.js';
-
-export type {
-  // Purge types
-  TenantPurgeConfig,
-  TenantPurgePlan,
-  TenantPurgeExecution,
-  TenantPurgeAuditLog,
+  // Purge service
+  TenantPurgeService,
 } from './tenant-purge.service.js';
 
 // === Module Information ===

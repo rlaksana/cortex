@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Health Aggregation Service
  *
@@ -23,28 +23,30 @@
 
 import { EventEmitter } from 'node:events';
 import { createHash } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
+
 import {
-  DependencyRegistry,
-  DependencyStatus,
-  DependencyState,
   AggregatedHealthStatus,
-  HealthCheckResult as DependencyHealthResult,
   type DependencyConfig,
+  type DependencyRegistry,
+  type DependencyState,
+  DependencyStatus,
+  HealthCheckResult as DependencyHealthResult,
 } from './deps-registry.js';
 import {
-  HealthAnalysis,
-  HealthSnapshot,
-  HealthAlert,
-  SLADefinition,
-  SLACompliance,
-  HealthAggregationConfig,
   AlertSeverity,
+  dependencyStatusToHealthStatus,
+  type HealthAggregationConfig,
+  type HealthAlert,
+  type HealthAnalysis,
+  type HealthSnapshot,
   HealthTrend,
+  isDependencyHealthResult,
+  type SLACompliance,
+  type SLADefinition,
   SLAStatus,
   ValidationPerformanceMonitor,
-  isDependencyHealthResult,
-  dependencyStatusToHealthStatus,
 } from '../types/unified-health-interfaces.js';
 
 // Note: All health-related interfaces (AlertSeverity, HealthTrend, SLAStatus, HealthAlert,
@@ -1334,4 +1336,4 @@ export class HealthAggregationService extends EventEmitter {
 export { HealthAggregationService as default };
 
 // Re-export required enums for isolatedModules compliance
-export { AlertSeverity, SLAStatus, HealthTrend } from '../types/unified-health-interfaces.js';
+export { AlertSeverity, HealthTrend,SLAStatus } from '../types/unified-health-interfaces.js';

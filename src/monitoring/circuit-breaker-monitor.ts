@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Enhanced Circuit Breaker Monitor
  *
@@ -11,14 +11,15 @@
  */
 
 import { EventEmitter } from 'events';
-import {
-  circuitBreakerManager,
-  CircuitBreaker,
-  CircuitBreakerStats,
-  type CircuitBreakerConfig
-} from '../services/circuit-breaker.service.js';
-import { HealthStatus, DependencyType } from '../types/unified-health-interfaces.js';
+
 import { logger } from '@/utils/logger.js';
+
+import {
+  CircuitBreaker,
+  type CircuitBreakerConfig,
+  circuitBreakerManager,
+  type CircuitBreakerStats} from '../services/circuit-breaker.service.js';
+import { DependencyType,HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**
  * Circuit breaker monitoring event types

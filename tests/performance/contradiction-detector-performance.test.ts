@@ -290,7 +290,7 @@ describe('Contradiction Detector Performance Tests', () => {
         mixedRequests.map(({ size, priority }, i) => {
           const items = generateTestItems(size);
           return pipelineIntegration.batchCheckExistingItems(items, {
-            priority: priority as 'high' | 'medium' | 'low',
+            priority: priority as 'critical' | 'high' | 'medium' | 'low',
           });
         })
       );

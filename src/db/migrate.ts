@@ -11,11 +11,13 @@
  */
 
 import { promises as fs } from 'fs';
-import { join, dirname } from 'path';
+import { dirname,join } from 'path';
 import { fileURLToPath } from 'url';
 import * as crypto from 'crypto';
-import { qdrantConnectionManager } from './pool.js';
+
 import { logger } from '@/utils/logger.js';
+
+import { qdrantConnectionManager } from './pool.js';
 
 /**
  * Migration interface
@@ -550,7 +552,7 @@ export const qdrantMigrationManager = new QdrantMigrationManager();
 export { QdrantMigrationManager };
 
 // Export types
-export type { Migration, MigrationResult, MigrationOptions, MigrationStep, MigrationOperation };
+export type { Migration, MigrationOperation,MigrationOptions, MigrationResult, MigrationStep };
 
 // CLI support
 if (import.meta.url === `file://${process.argv[1]}`) {

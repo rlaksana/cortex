@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Enhanced Deduplication Service with Configurable Merge Strategies
  *
@@ -10,19 +10,21 @@
  * - Performance optimization
  */
 
-import { logger } from '@/utils/logger.js';
-import { qdrant } from '../../db/qdrant-client.js';
 import { createHash } from 'crypto';
-import type { KnowledgeItem } from '../../types/core-interfaces.js';
+
+import { logger } from '@/utils/logger.js';
+
 import {
-  DeduplicationConfig,
-  MergeStrategy,
-  DeduplicationResult,
-  AuditLogEntry,
+  type AuditLogEntry,
+  type DeduplicationConfig,
+  type DeduplicationResult,
   DEFAULT_DEDUPLICATION_CONFIG,
-  mergeDeduplicationConfig,
   loadDeduplicationConfigFromEnv,
+  mergeDeduplicationConfig,
+  type MergeStrategy,
 } from '../../config/deduplication-config.js';
+import { qdrant } from '../../db/qdrant-client.js';
+import type { KnowledgeItem } from '../../types/core-interfaces.js';
 
 /**
  * Enhanced duplicate analysis with detailed merge information

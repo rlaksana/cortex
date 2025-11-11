@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * On-Call Management and Escalation Service for MCP Cortex
  *
@@ -16,8 +16,10 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { Alert, AlertSeverity, EscalationPolicy, EscalationRule } from './alert-management-service.js';
+
+import { type Alert, AlertSeverity, type EscalationPolicy, EscalationRule } from './alert-management-service.js';
 
 // ============================================================================
 // On-Call Management Interfaces

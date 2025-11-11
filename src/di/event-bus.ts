@@ -10,10 +10,10 @@
  */
 
 import { EventEmitter } from 'node:events';
-import type { IEventService } from './service-interfaces.js';
+
 import { Injectable } from './di-container.js';
+import type { IEventService, ILoggerService  } from './service-interfaces.js';
 import { ServiceTokens } from './service-interfaces.js';
-import type { ILoggerService } from './service-interfaces.js';
 
 /**
  * Event interface with metadata

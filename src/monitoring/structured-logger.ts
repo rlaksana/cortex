@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Structured Logging Service
  *
@@ -11,10 +11,11 @@
 
 // @ts-ignore next import
 import { logger } from '@/utils/logger.js';
-import type { AuthContext } from '../types/auth-types.js';
-import { OperationType } from './operation-types.js';
-import { metricsService } from './metrics-service.js';
 import { slowQueryLogger } from '@/utils/logger.js';
+
+import { metricsService } from './metrics-service.js';
+import { OperationType } from './operation-types.js';
+import type { AuthContext } from '../types/auth-types.js';
 
 /**
  * Search strategies for logging

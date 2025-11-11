@@ -7,6 +7,7 @@
  */
 
 import pino from 'pino';
+
 import { getCorrelationId } from './correlation-id.js';
 
 interface LogEntry {

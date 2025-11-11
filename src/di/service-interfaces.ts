@@ -9,21 +9,21 @@
  * @since 2025
  */
 
-import type {
-  KnowledgeItem,
-  SearchResult,
-  SearchQuery,
-  PerformanceMetrics,
-  MemoryStoreResponse,
-  MemoryFindResponse,
-} from '../types/core-interfaces.js';
+import type { IDatabase } from '../db/database-interface.js';
 import type {
   PerformanceBaseline,
-  PerformanceThresholds,
   PerformanceReport,
+  PerformanceThresholds,
 } from '../monitoring/performance-monitor.js';
-import type { IDatabase } from '../db/database-interface.js';
 import type { DependencyRegistry } from '../services/deps-registry.js';
+import type {
+  KnowledgeItem,
+  MemoryFindResponse,
+  MemoryStoreResponse,
+  PerformanceMetrics,
+  SearchQuery,
+  SearchResult,
+} from '../types/core-interfaces.js';
 
 /**
  * Configuration service interface
@@ -242,18 +242,18 @@ export type ServiceType = (typeof ServiceTokens)[keyof typeof ServiceTokens];
 /**
  * Re-export commonly used types for convenience
  */
-export type {
-  KnowledgeItem,
-  MemoryStoreResponse,
-  SearchResult,
-  SearchQuery,
-  PerformanceMetrics,
-  MemoryFindResponse,
-} from '../types/core-interfaces.js';
+export type { IDatabase } from '../db/database-interface.js';
 export type {
   PerformanceBaseline,
-  PerformanceThresholds,
   PerformanceReport,
+  PerformanceThresholds,
 } from '../monitoring/performance-monitor.js';
-export type { IDatabase } from '../db/database-interface.js';
 export type { DependencyRegistry } from '../services/deps-registry.js';
+export type {
+  KnowledgeItem,
+  MemoryFindResponse,
+  MemoryStoreResponse,
+  PerformanceMetrics,
+  SearchQuery,
+  SearchResult,
+} from '../types/core-interfaces.js';

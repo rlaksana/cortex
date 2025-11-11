@@ -9,7 +9,7 @@
  * @since 2025
  */
 
-import { HealthStatus } from '../types/unified-health-interfaces';
+import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 // ============================================================================
 // Core SLO/SLI Interfaces
@@ -1204,16 +1204,27 @@ export interface DashboardTemplate {
   widgets: Array<{
     type: string;
     title: string;
-    query: string;
+    query?: string;
     defaultPosition: { x: number; y: number; width: number; height: number };
+    config?: Record<string, any>;
   }>;
-  variables: Array<{
-    name: string;
-    type: 'query' | 'constant' | 'list';
-    values: string[];
+  refreshInterval?: number;
+  layout?: {
+    type: string;
+    columns: number;
+    rowHeight: number;
+  };
+  variables: Record<string, {
+    type: 'query' | 'interval';
+    query?: string;
+    values?: string[];
+    includeAll?: boolean;
+    default?: string;
   }>;
-
   tags?: unknown
+  createdAt?: Date;
+  updatedAt?: Date;
+  version?: string;
 }
 
 /**
@@ -1495,13 +1506,16 @@ export interface AutomatedResponse {
   };
   actions: Array<{
     type: 'custom' | 'rollback' | 'notification' | 'scaling' | 'restart';
-    target: string;
-    parameters: Record<string, any>;
-    status: 'pending' | 'executing' | 'completed' | 'failed';
+    condition?: string;
+    target?: string;
+    delay?: number;
+    parameters?: Record<string, any>;
+    status?: 'pending' | 'executing' | 'completed' | 'failed';
     result?: any;
     error?: string;
   }>;
   status: 'pending' | 'executing' | 'completed' | 'failed' | 'cancelled';
+  enabled?: boolean;
   startedAt: Date;
   completedAt?: Date;
   effectiveness: {

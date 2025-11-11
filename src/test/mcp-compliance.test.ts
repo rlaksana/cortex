@@ -6,10 +6,10 @@
  */
 
 import {
-  MCPErrorCode,
-  validateToolInput,
   createToolResponse,
   errorToMCPResponse,
+  MCPErrorCode,
+  validateToolInput,
 } from '../utils/mcp-compliance.js';
 
 describe('MCP 2025 Compliance Tests', () => {

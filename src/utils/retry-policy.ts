@@ -16,17 +16,19 @@
  * @module utils/retry-policy
  */
 
+import { v4 as uuidv4 } from 'uuid';
+
 import { logger } from '@/utils/logger.js';
+
 import {
   BaseError,
-  SystemError,
+  ErrorCategory,
+  ErrorCode,
+  ErrorSeverity,
   NetworkError,
   RateLimitError,
-  ErrorCode,
-  ErrorCategory,
-  ErrorSeverity,
+  SystemError,
 } from './error-handler.js';
-import { v4 as uuidv4 } from 'uuid';
 
 // === Type Definitions ===
 

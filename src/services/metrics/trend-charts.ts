@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * P2-P3: Performance Trend Charts and Visualization Service
  *
@@ -18,14 +18,15 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { systemMetricsService, type SystemMetrics } from './system-metrics.js';
+
+import { type BenchmarkResult,performanceBenchmarkService } from './performance-benchmark.js';
 import {
   performanceTrendingService,
-  type TrendAnalysis,
   type TimeSeriesDataPoint,
+  type TrendAnalysis,
 } from './performance-trending.js';
-import { sliSloMonitorService, type RAGStatus, type SLIMetrics } from './sli-slo-monitor.js';
-import { performanceBenchmarkService, type BenchmarkResult } from './performance-benchmark.js';
+import { type RAGStatus, type SLIMetrics,sliSloMonitorService } from './sli-slo-monitor.js';
+import { type SystemMetrics,systemMetricsService } from './system-metrics.js';
 
 // === Type Definitions ===
 

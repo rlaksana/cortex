@@ -1,33 +1,36 @@
-// @ts-nocheck
+
 /**
  * Authentication Service for Cortex MCP
  * Implements JWT-based authentication with RBAC and scope-based authorization
  */
 
-import * as jwt from 'jsonwebtoken';
-import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
+
+import * as bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
+
 import { logger } from '@/utils/logger.js';
+
 import { qdrant } from '../../db/qdrant-client.js';
-import { getKeyVaultService } from '../security/key-vault-service.js';
+import { AsyncErrorHandler,ServiceErrorHandler } from '../../middleware/error-middleware.js';
 import {
-  ConfigurationError,
-  AuthenticationError,
-  ValidationError,
-  ErrorCategory,
-} from '../../utils/error-handler.js';
-import { ServiceErrorHandler, AsyncErrorHandler } from '../../middleware/error-middleware.js';
-import {
-  User,
-  ApiKey,
-  AuthToken,
-  TokenPayload,
-  AuthSession,
-  UserRole,
+  type ApiKey,
+  type AuthContext,
   AuthScope,
-  AuthContext,
+  type AuthSession,
+  type AuthToken,
   DEFAULT_ROLE_PERMISSIONS,
+  type TokenPayload,
+  type User,
+  UserRole,
 } from '../../types/auth-types.js';
+import {
+  AuthenticationError,
+  ConfigurationError,
+  ErrorCategory,
+  ValidationError,
+} from '../../utils/error-handler.js';
+import { getKeyVaultService } from '../security/key-vault-service.js';
 
 export interface AuthServiceConfig {
   jwt_secret: string;

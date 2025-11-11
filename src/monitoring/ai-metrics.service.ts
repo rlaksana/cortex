@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * AI Metrics Service - Comprehensive Monitoring for AI Operations
  *
@@ -29,16 +29,16 @@ const toSeverity = (s: ExternalSeverity): InternalSeverity => {
   if (k === 'warn' || k === 'warning')  return 'warning';
   return 'info';
 };
-import { performanceMonitor } from '../utils/performance-monitor';
 import type {
-  ZAIMetrics,
-  AIOrchestratorMetrics,
-  BackgroundProcessorMetrics,
   AIMetricsSnapshot,
+  AIOperationMetrics,
+  AIOrchestratorMetrics,
   AIQualityMetrics,
   AIResourceMetrics,
-  AIOperationMetrics,
-} from '../types/zai-interfaces';
+  BackgroundProcessorMetrics,
+  ZAIMetrics,
+} from '../types/zai-interfaces.js';
+import { performanceMonitor } from '../utils/performance-monitor.js';
 
 /**
  * AI Metrics Configuration

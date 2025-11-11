@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Similarity Detection Service (Legacy Interface)
  *
@@ -10,8 +10,10 @@
  */
 
 import * as crypto from 'crypto';
-import { UnifiedSimilarityService } from './similarity/unified-similarity-service.js';
+
 import { logger } from '@/utils/logger.js';
+
+import { UnifiedSimilarityService } from './similarity/unified-similarity-service.js';
 import type { KnowledgeItem } from '../types/core-interfaces.js';
 
 export interface SimilarItem {

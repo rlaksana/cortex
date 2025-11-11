@@ -18,6 +18,7 @@
  */
 
 import { logger } from '@/utils/logger.js';
+
 import type { MigrationConfig } from './database-config.js';
 
 export type MigrationMode = 'pg-to-qdrant' | 'qdrant-to-pg' | 'sync' | 'validate' | 'cleanup';

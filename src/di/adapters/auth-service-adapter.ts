@@ -9,8 +9,8 @@
  * @since 2025
  */
 
+import { type AuthService } from '../../services/auth/auth-service.js';
 import type { IAuthService } from '../service-interfaces.js';
-import { AuthService } from '../../services/auth/auth-service.js';
 
 /**
  * Adapter for Auth service

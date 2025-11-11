@@ -180,23 +180,11 @@ process.on('SIGTERM', () => {
 
 // Handle uncaught exceptions in silent mode
 process.on('uncaughtException', (error) => {
-  // Always restore console for uncaught exceptions
-  console.error = console.error;
-  console.log = console.log;
-  console.warn = console.warn;
-  console.debug = console.debug;
-
   console.error('💥 Uncaught exception in Silent MCP Server:', error);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  // Always restore console for unhandled rejections
-  console.error = console.error;
-  console.log = console.log;
-  console.warn = console.warn;
-  console.debug = console.debug;
-
   console.error('💥 Unhandled rejection in Silent MCP Server at:', promise, 'reason:', reason);
   process.exit(1);
 });
@@ -204,12 +192,6 @@ process.on('unhandledRejection', (reason, promise) => {
 // Self-executing block for direct running
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((error) => {
-    // Restore console output before final error
-    console.error = console.error;
-    console.log = console.log;
-    console.warn = console.warn;
-    console.debug = console.debug;
-
     console.error('💥 Silent MCP Server startup failed catastrophically:', error);
     process.exit(1);
   });

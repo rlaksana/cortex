@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Qdrant Degradation Detector
  *
@@ -11,9 +11,11 @@
  */
 
 import { EventEmitter } from 'events';
-import { QdrantHealthMonitor, QdrantConnectionStatus } from './qdrant-health-monitor.js';
-import { CircuitBreakerMonitor } from './circuit-breaker-monitor.js';
+
 import { logger } from '@/utils/logger.js';
+
+import { type CircuitBreakerMonitor } from './circuit-breaker-monitor.js';
+import { QdrantConnectionStatus,type QdrantHealthMonitor } from './qdrant-health-monitor.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**

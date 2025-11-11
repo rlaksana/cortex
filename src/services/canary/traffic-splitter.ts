@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Traffic Splitter Service
  *
@@ -17,8 +17,10 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { metricsService } from '../monitoring/metrics-service.js';
+
+import { metricsService } from '../../monitoring/metrics-service.js';
 import { featureFlagService } from '../feature-flag/feature-flag-service.js';
 
 // ============================================================================

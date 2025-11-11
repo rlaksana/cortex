@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Emergency Kill Switch Service
  *
@@ -16,10 +16,13 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { metricsService } from '../monitoring/metrics-service.js';
-import { HealthStatus, AlertSeverity } from '../types/unified-health-interfaces.js';
-import { gracefulShutdownService } from '../monitoring/graceful-shutdown.js';
+
+import { gracefulShutdown } from '../../monitoring/graceful-shutdown.js';
+import { metricsService } from '../../monitoring/metrics-service.js';
+import { AlertSeverity, HealthStatus } from '../../types/unified-health-interfaces.js';
+import { OperationType } from '../../monitoring/operation-types.js';
 
 // ============================================================================
 // Types and Interfaces
@@ -38,6 +41,7 @@ export enum KillSwitchTrigger {
   EXTERNAL_SIGNAL = 'external_signal',
   SECURITY_BREACH = 'security_breach',
   CONFIGURATION_ERROR = 'configuration_error',
+  CUSTOM = 'custom',
 }
 
 /**
@@ -368,11 +372,12 @@ export class KillSwitchService extends EventEmitter {
     }
 
     // Record metrics
-    metricsService.recordCounter('kill_switch_triggered', 1, {
+    metricsService.recordOperation(OperationType.KILL_SWITCH_TRIGGERED, 0, true, {
+      result_count: 1,
       config_name: config.name,
       scope: config.scope,
       trigger: KillSwitchTrigger.MANUAL,
-    });
+    } as any);
 
     return true;
   }
@@ -410,10 +415,11 @@ export class KillSwitchService extends EventEmitter {
     this.emit('killSwitchDeactivated', event);
 
     // Record metrics
-    metricsService.recordCounter('kill_switch_deactivated', 1, {
+    metricsService.recordOperation(OperationType.KILL_SWITCH_DEACTIVATED, 0, true, {
+      result_count: 1,
       config_name: config.name,
       scope: config.scope,
-    });
+    } as any);
 
     return true;
   }
@@ -472,7 +478,7 @@ export class KillSwitchService extends EventEmitter {
 
       // Process component health
       if (healthResult.components) {
-        healthResult.components.forEach(component => {
+        healthResult.components.forEach((component: any) => {
           this.systemHealth!.components.set(component.name, {
             status: component.status,
             errorRate: component.error_rate,
@@ -742,10 +748,7 @@ export class KillSwitchService extends EventEmitter {
     });
 
     // Graceful shutdown
-    await gracefulShutdownService.shutdown('emergency_kill_switch', {
-      reason: event.reason,
-      timeout: config.gracePeriodMs,
-    });
+    await gracefulShutdown.shutdown('emergency_kill_switch');
 
     // In a real implementation, this would:
     // 1. Stop accepting new requests
@@ -911,10 +914,11 @@ export class KillSwitchService extends EventEmitter {
           await this.sendKillSwitchNotifications(config, event, 'recovered');
         }
 
-        metricsService.recordCounter('kill_switch_recovered', 1, {
+        metricsService.recordOperation(OperationType.KILL_SWITCH_RECOVERED, 0, true, {
+          result_count: 1,
           config_name: config.name,
           attempts: event.recoveryAttempts.toString(),
-        });
+        } as any);
       } else {
         // Schedule next recovery attempt with backoff
         const backoffDelay = config.autoRecovery.delayMs *

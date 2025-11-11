@@ -3,11 +3,12 @@
  * Provides comprehensive security hardening including rate limiting, input validation, and security headers
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { type NextFunction,type Request, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
+import { z, type ZodSchema } from 'zod';
+
 import { logger } from '@/utils/logger.js';
-import { z, ZodSchema } from 'zod';
 
 export interface SecurityConfig {
   enableRateLimit?: boolean;

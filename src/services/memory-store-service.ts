@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Memory Store Service - Class Wrapper for Memory Store Functionality
  *
@@ -20,9 +20,10 @@
  * @since 2025
  */
 
-import { memoryStore } from './memory-store.js';
 import { logger } from '@/utils/logger.js';
-import type { MemoryStoreResponse, KnowledgeItem } from '../types/core-interfaces.js';
+
+import { memoryStore } from './memory-store.js';
+import type { KnowledgeItem,MemoryStoreResponse } from '../types/core-interfaces.js';
 
 /**
  * Memory Store Service provides a class-based interface for memory storage

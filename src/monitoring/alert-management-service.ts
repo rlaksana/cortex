@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Alert Management System for MCP Cortex
  *
@@ -16,8 +16,10 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { HealthStatus, AlertSeverity, SystemHealthResult, ComponentHealth } from '../types/unified-health-interfaces.js';
+
+import { AlertSeverity, type ComponentHealth,HealthStatus, type SystemHealthResult } from '../types/unified-health-interfaces.js';
 
 // Re-export AlertSeverity for use by other modules
 export { AlertSeverity };
@@ -1011,12 +1013,46 @@ export class AlertManagementService extends EventEmitter {
       case 'uptime_percentage':
         return component.uptime_percentage;
       case 'memory_usage_percent':
-        return component.details?.memory_usage_percent || null;
+        return this.extractNumberFromDetails(component.details, 'memory_usage_percent');
       case 'circuit_breaker_state':
-        return component.details?.circuit_breaker?.state === 'open' ? 1 : 0;
+        return this.extractCircuitBreakerState(component.details);
       default:
-        return component.details?.[metric] || null;
+        return this.extractNumberFromDetails(component.details, metric);
     }
+  }
+
+  /**
+   * Safely extracts a numeric value from component details
+   */
+  private extractNumberFromDetails(details: Record<string, unknown> | undefined, key: string): number | null {
+    if (!details || !(key in details)) {
+      return null;
+    }
+
+    const value = details[key];
+    return typeof value === 'number' ? value : null;
+  }
+
+  /**
+   * Safely extracts circuit breaker state from component details
+   */
+  private extractCircuitBreakerState(details: Record<string, unknown> | undefined): number | null {
+    if (!details || !('circuit_breaker' in details)) {
+      return null;
+    }
+
+    const circuitBreaker = details.circuit_breaker;
+    if (!circuitBreaker || typeof circuitBreaker !== 'object' || circuitBreaker === null) {
+      return null;
+    }
+
+    const circuitBreakerObj = circuitBreaker as Record<string, unknown>;
+    if (!('state' in circuitBreakerObj)) {
+      return null;
+    }
+
+    const state = circuitBreakerObj.state;
+    return typeof state === 'string' && state === 'open' ? 1 : 0;
   }
 
   private evaluateCondition(

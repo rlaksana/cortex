@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Memory Find Orchestrator - Qdrant Implementation
  *
@@ -22,21 +22,22 @@
  */
 
 import { logger } from '@/utils/logger.js';
-// import { auditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
-import type {
-  SearchResult,
-  SearchQuery,
-  MemoryFindResponse,
-  SmartFindRequest,
-  SmartFindResult,
-} from '../../types/core-interfaces.js';
+
 import {
   ConnectionError,
   type IDatabase,
   type SearchOptions,
 } from '../../db/database-interface.js';
-import { ResultGroupingService } from '../search/result-grouping-service.js';
+// import { auditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
+import type {
+  MemoryFindResponse,
+  SearchQuery,
+  SearchResult,
+  SmartFindRequest,
+  SmartFindResult,
+} from '../../types/core-interfaces.js';
 import { createFindObservability } from '../../utils/observability-helper.js';
+import { ResultGroupingService } from '../search/result-grouping-service.js';
 
 /**
  * Search strategy configuration

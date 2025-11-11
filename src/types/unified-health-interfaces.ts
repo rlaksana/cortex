@@ -1,14 +1,3 @@
-/**
- * Unified Health Interface Contracts
- *
- * Consolidates all health-related interfaces across the MCP-Cortex system
- * to ensure consistency and eliminate conflicts between different services.
- *
- * @author Cortex Team
- * @version 2.0.0
- * @since 2025
- */
-
 import { DependencyStatus, DependencyType } from '../services/deps-registry.js';
 
 // Re-export DependencyStatus for centralized access
@@ -18,8 +7,8 @@ export { DependencyStatus, DependencyType };
 export type HealthCheckResult = ProductionHealthResult;
 
 // Import ValidationMode from schemas for re-export
-import { ValidationMode as SchemaValidationMode } from '../schemas/unified-knowledge-validator.js';
-import type { ValidationOptions } from '../schemas/unified-knowledge-validator.js';
+import { type ValidationMode as SchemaValidationMode, type ValidationOptions } from '../schemas/unified-knowledge-validator.js';
+
 
 // Re-export ValidationMode with a local name to avoid conflicts
 export { ValidationOptions };
@@ -52,8 +41,8 @@ export interface ComponentHealthResult {
   duration: number;
   responseTime?: number;
   error?: string;
-  details?: Record<string, any>;
-  metadata?: Record<string, any>;
+  details?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -64,7 +53,7 @@ export interface DependencyHealthResult {
   status: DependencyStatus;
   responseTime: number;
   error?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   timestamp: Date;
 }
 
@@ -124,7 +113,7 @@ export interface HealthDiagnostics {
     diskIO?: number;
     networkIO?: number;
   };
-  customMetrics?: Record<string, any>;
+  customMetrics?: Record<string, unknown>;
 }
 
 /**
@@ -152,7 +141,7 @@ export interface HealthCheckContext {
   startTime: number;
   timeout: number;
   retryCount: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // ============================================================================
@@ -182,7 +171,7 @@ export interface SystemHealthResult {
     unhealthy_components: number;
   };
   issues?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -200,7 +189,7 @@ export interface ProductionHealthResult {
     warnings: number;
   };
   issues: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -211,7 +200,7 @@ export interface HealthCheck {
   status: 'pass' | 'fail' | 'warn';
   duration: number;
   message?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   critical: boolean;
 }
 
@@ -227,7 +216,7 @@ export interface ComponentHealth {
   error_rate: number;
   uptime_percentage: number;
   error?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 // ============================================================================
@@ -286,7 +275,7 @@ export interface DependencyConfig {
     url: string;
     timeout?: number;
     apiKey?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   thresholds: {
     responseTimeWarning: number;
@@ -299,9 +288,9 @@ export interface DependencyConfig {
   fallback?: {
     enabled: boolean;
     service?: string;
-    config?: any;
+    config?: unknown;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -413,10 +402,10 @@ export interface HealthAlert {
   timestamp: Date;
   acknowledged: boolean;
   acknowledgedBy?: string;
-  acknowledgedAt?: Date;
+acknowledgedAt?: Date;
   resolved: boolean;
   resolvedAt?: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -445,7 +434,7 @@ export interface SLADefinition {
     duration: number; // Number of periods
   };
   dependencies: string[]; // Dependencies this SLA applies to
-  priority: 'high' | 'medium' | 'low';
+  priority: 'critical' | 'high' | 'medium' | 'low';
 }
 
 /**
@@ -562,8 +551,8 @@ export interface HealthSnapshot {
 /**
  * Type guard to check if a result is a dependency health result
  */
-export function isDependencyHealthResult(result: any): result is DependencyHealthResult {
-  return (
+export function isDependencyHealthResult(result: unknown): result is DependencyHealthResult {
+  return !!(
     result &&
     typeof result === 'object' &&
     'dependency' in result &&
@@ -575,8 +564,8 @@ export function isDependencyHealthResult(result: any): result is DependencyHealt
 /**
  * Type guard to check if a result is a system health result
  */
-export function isSystemHealthResult(result: any): result is SystemHealthResult {
-  return (
+export function isSystemHealthResult(result: unknown): result is SystemHealthResult {
+  return !!(
     result &&
     typeof result === 'object' &&
     'components' in result &&
@@ -588,8 +577,8 @@ export function isSystemHealthResult(result: any): result is SystemHealthResult 
 /**
  * Type guard to check if a result is an enhanced health result
  */
-export function isEnhancedHealthResult(result: any): result is EnhancedHealthResult {
-  return (
+export function isEnhancedHealthResult(result: unknown): result is EnhancedHealthResult {
+  return !!(
     result &&
     typeof result === 'object' &&
     'strategy' in result &&
@@ -601,12 +590,12 @@ export function isEnhancedHealthResult(result: any): result is EnhancedHealthRes
 /**
  * Type guard to check if a result is a health check diagnostics object
  */
-export function isHealthCheckDiagnostics(diagnostics: any): diagnostics is HealthCheckDiagnostics {
-  return (
+export function isHealthCheckDiagnostics(diagnostics: unknown): diagnostics is HealthCheckDiagnostics {
+  return !!(
     diagnostics &&
     typeof diagnostics === 'object' &&
     'executionTime' in diagnostics &&
-    typeof diagnostics.executionTime === 'number'
+    typeof (diagnostics as HealthCheckDiagnostics).executionTime === 'number'
   );
 }
 
@@ -659,43 +648,43 @@ export function healthStatusToDependencyStatus(status: HealthStatus): Dependency
 /**
  * Type guard to validate if a value is a valid HealthStatus
  */
-export function isValidHealthStatus(value: any): value is HealthStatus {
-  return Object.values(HealthStatus).includes(value);
+export function isValidHealthStatus(value: unknown): value is HealthStatus {
+  return Object.values(HealthStatus).includes(value as HealthStatus);
 }
 
 /**
  * Type guard to validate if a value is a valid DependencyStatus
  */
-export function isValidDependencyStatus(value: any): value is DependencyStatus {
-  return Object.values(DependencyStatus).includes(value);
+export function isValidDependencyStatus(value: unknown): value is DependencyStatus {
+  return Object.values(DependencyStatus).includes(value as DependencyStatus);
 }
 
 /**
  * Type guard to validate if a value is a valid HealthCheckStrategy
  */
-export function isValidHealthCheckStrategy(value: any): value is HealthCheckStrategy {
-  return Object.values(HealthCheckStrategy).includes(value);
+export function isValidHealthCheckStrategy(value: unknown): value is HealthCheckStrategy {
+  return Object.values(HealthCheckStrategy).includes(value as HealthCheckStrategy);
 }
 
 /**
  * Type guard to validate if a value is a valid AlertSeverity
  */
-export function isValidAlertSeverity(value: any): value is AlertSeverity {
-  return Object.values(AlertSeverity).includes(value);
+export function isValidAlertSeverity(value: unknown): value is AlertSeverity {
+  return Object.values(AlertSeverity).includes(value as AlertSeverity);
 }
 
 /**
  * Type guard to validate if a value is a valid SLAStatus
  */
-export function isValidSLAStatus(value: any): value is SLAStatus {
-  return Object.values(SLAStatus).includes(value);
+export function isValidSLAStatus(value: unknown): value is SLAStatus {
+  return Object.values(SLAStatus).includes(value as SLAStatus);
 }
 
 /**
  * Type guard to validate if a value is a valid HealthTrend
  */
-export function isValidHealthTrend(value: any): value is HealthTrend {
-  return Object.values(HealthTrend).includes(value);
+export function isValidHealthTrend(value: unknown): value is HealthTrend {
+  return Object.values(HealthTrend).includes(value as HealthTrend);
 }
 
 /**
@@ -874,7 +863,7 @@ export function getWorstDependencyStatus(statuses: DependencyStatus[]): Dependen
 
   return statuses.reduce((worst, current) => {
     return compareDependencyStatusSeverity(current, worst) > 0 ? current : worst;
-  });
+});
 }
 
 /**
@@ -903,7 +892,8 @@ export function getBestDependencyStatus(statuses: DependencyStatus[]): Dependenc
  * Validation Performance Monitor (placeholder for future implementation)
  */
 export class ValidationPerformanceMonitor {
-  static recordValidation(result: any): void {
+  static recordValidation(result: unknown): void {
     // Placeholder implementation
   }
 }
+

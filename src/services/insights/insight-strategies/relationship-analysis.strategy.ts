@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Relationship Analysis Strategy
  *
@@ -12,14 +12,16 @@
  */
 
 import { randomUUID } from 'crypto';
-import { logger } from '../../../utils/logger';
-import type { ZAIClientService } from '../../ai/zai-client.service';
-import type { ZAIChatRequest, ZAIChatResponse } from '../../../types/zai-interfaces';
+
+import type { KnowledgeItem } from '../../../types/core-interfaces.js';
 import type {
-  InsightGenerationRequest,
   ConnectionInsight,
+  InsightGenerationRequest,
   InsightTypeUnion,
-} from '../../../types/insight-interfaces';
+} from '../../../types/insight-interfaces.js';
+import type { ZAIChatRequest, ZAIChatResponse } from '../../../types/zai-interfaces.js';
+import { logger } from '../../../utils/logger.js';
+import type { ZAIClientService } from '../../ai/zai-client.service';
 
 export interface RelationshipAnalysisOptions {
   confidence_threshold: number;
@@ -128,7 +130,7 @@ export class RelationshipAnalysisStrategy {
    * Analyze semantic relationships using ZAI
    */
   private async analyzeSemanticRelationships(
-    items: any[],
+    items: KnowledgeItem[],
     options: RelationshipAnalysisOptions
   ): Promise<RelationshipAnalysis[]> {
     try {
@@ -164,7 +166,7 @@ export class RelationshipAnalysisStrategy {
    * Analyze dependency relationships
    */
   private async analyzeDependencyRelationships(
-    items: any[],
+    items: KnowledgeItem[],
     options: RelationshipAnalysisOptions
   ): Promise<RelationshipAnalysis[]> {
     try {
@@ -200,7 +202,7 @@ export class RelationshipAnalysisStrategy {
    * Analyze temporal relationships
    */
   private async analyzeTemporalRelationships(
-    items: any[],
+    items: KnowledgeItem[],
     options: RelationshipAnalysisOptions
   ): Promise<RelationshipAnalysis[]> {
     try {
@@ -228,13 +230,13 @@ export class RelationshipAnalysisStrategy {
             strength: cluster.items.length / sortedItems.length,
             source_items: cluster.items
               .slice(0, Math.ceil(cluster.items.length / 2))
-              .map((item) => ({
+              .map((item: KnowledgeItem) => ({
                 item_id: item.id,
                 item_type: item.kind,
                 role: 'cluster_member',
                 confidence: 0.7,
               })),
-            target_items: cluster.items.slice(Math.ceil(cluster.items.length / 2)).map((item) => ({
+            target_items: cluster.items.slice(Math.ceil(cluster.items.length / 2)).map((item: KnowledgeItem) => ({
               item_id: item.id,
               item_type: item.kind,
               role: 'cluster_member',
@@ -261,13 +263,13 @@ export class RelationshipAnalysisStrategy {
             description: `Sequential items suggesting workflow or progression`,
             confidence: 0.6,
             strength: sequence.items.length / sortedItems.length,
-            source_items: sequence.items.slice(0, -1).map((item) => ({
+            source_items: sequence.items.slice(0, -1).map((item: KnowledgeItem) => ({
               item_id: item.id,
               item_type: item.kind,
               role: 'predecessor',
               confidence: 0.6,
             })),
-            target_items: sequence.items.slice(1).map((item) => ({
+            target_items: sequence.items.slice(1).map((item: KnowledgeItem) => ({
               item_id: item.id,
               item_type: item.kind,
               role: 'successor',
@@ -297,7 +299,7 @@ export class RelationshipAnalysisStrategy {
    * Analyze causal relationships
    */
   private async analyzeCausalRelationships(
-    items: any[],
+    items: KnowledgeItem[],
     options: RelationshipAnalysisOptions
   ): Promise<RelationshipAnalysis[]> {
     try {
@@ -333,7 +335,7 @@ export class RelationshipAnalysisStrategy {
    * Analyze hierarchical relationships
    */
   private async analyzeHierarchicalRelationships(
-    items: any[],
+    items: KnowledgeItem[],
     options: RelationshipAnalysisOptions
   ): Promise<RelationshipAnalysis[]> {
     try {
@@ -369,7 +371,7 @@ export class RelationshipAnalysisStrategy {
    * Analyze collaborative relationships
    */
   private async analyzeCollaborativeRelationships(
-    items: any[],
+    items: KnowledgeItem[],
     options: RelationshipAnalysisOptions
   ): Promise<RelationshipAnalysis[]> {
     try {
@@ -385,13 +387,13 @@ export class RelationshipAnalysisStrategy {
             description: `Items showing collaborative work or shared effort`,
             confidence: 0.8,
             strength: group.items.length / items.length,
-            source_items: group.items.slice(0, Math.ceil(group.items.length / 2)).map((item) => ({
+            source_items: group.items.slice(0, Math.ceil(group.items.length / 2)).map((item: KnowledgeItem) => ({
               item_id: item.id,
               item_type: item.kind,
               role: 'collaborator',
               confidence: 0.8,
             })),
-            target_items: group.items.slice(Math.ceil(group.items.length / 2)).map((item) => ({
+            target_items: group.items.slice(Math.ceil(group.items.length / 2)).map((item: KnowledgeItem) => ({
               item_id: item.id,
               item_type: item.kind,
               role: 'collaborator',
@@ -420,7 +422,7 @@ export class RelationshipAnalysisStrategy {
   /**
    * Build semantic relationship prompt
    */
-  private buildSemanticRelationshipPrompt(items: any[]): string {
+  private buildSemanticRelationshipPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Content: ${this.extractKeyContent(item)}`;
@@ -464,7 +466,7 @@ Return only the JSON response, no additional text.
   /**
    * Build dependency relationship prompt
    */
-  private buildDependencyRelationshipPrompt(items: any[]): string {
+  private buildDependencyRelationshipPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Content: ${this.extractKeyContent(item)}`;
@@ -508,7 +510,7 @@ Return only the JSON response, no additional text.
   /**
    * Build causal relationship prompt
    */
-  private buildCausalRelationshipPrompt(items: any[]): string {
+  private buildCausalRelationshipPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Content: ${this.extractKeyContent(item)}`;
@@ -552,7 +554,7 @@ Return only the JSON response, no additional text.
   /**
    * Build hierarchical relationship prompt
    */
-  private buildHierarchicalRelationshipPrompt(items: any[]): string {
+  private buildHierarchicalRelationshipPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Content: ${this.extractKeyContent(item)}`;
@@ -598,7 +600,7 @@ Return only the JSON response, no additional text.
    */
   private parseRelationshipResponse(
     response: any,
-    items: any[],
+    items: KnowledgeItem[],
     relationshipType: RelationshipAnalysis['relationship_type']
   ): RelationshipAnalysis[] {
     try {
@@ -652,7 +654,7 @@ Return only the JSON response, no additional text.
   /**
    * Find temporal clusters
    */
-  private findTemporalClusters(sortedItems: any[]): any[] {
+  private findTemporalClusters(sortedItems: KnowledgeItem[]): any[] {
     const clusters = [];
     const windowHours = 24; // 24-hour window
 
@@ -689,7 +691,7 @@ Return only the JSON response, no additional text.
   /**
    * Find temporal sequences
    */
-  private findTemporalSequences(sortedItems: any[]): any[] {
+  private findTemporalSequences(sortedItems: KnowledgeItem[]): any[] {
     const sequences = [];
     let currentSequence = [sortedItems[0]];
 
@@ -725,10 +727,10 @@ Return only the JSON response, no additional text.
   /**
    * Find collaborative groups
    */
-  private findCollaborativeGroups(items: any[]): any[] {
+  private findCollaborativeGroups(items: KnowledgeItem[]): any[] {
     const groups = [];
-    const scopeGroups = new Map<string, any[]>();
-    const tagGroups = new Map<string, any[]>();
+    const scopeGroups = new Map<string, KnowledgeItem[]>();
+    const tagGroups = new Map<string, KnowledgeItem[]>();
 
     // Group by scope
     for (const item of items) {
@@ -743,8 +745,8 @@ Return only the JSON response, no additional text.
 
     // Group by common tags
     for (const item of items) {
-      if (item.data && item['data.tags']) {
-        for (const tag of item['data.tags']) {
+      if (item.data && (item.data as any).tags) {
+        for (const tag of (item.data as any).tags) {
           if (!tagGroups.has(tag)) {
             tagGroups.set(tag, []);
           }
@@ -765,7 +767,7 @@ Return only the JSON response, no additional text.
     }
 
     for (const [tag, tagItems] of tagGroups.entries()) {
-      if (tagItems.length >= 2 && !scopeGroups.has(tagItems[0].scope)) {
+      if (tagItems.length >= 2 && !scopeGroups.has(String(tagItems[0].scope))) {
         groups.push({
           description: `Shared tag: ${tag}`,
           items: tagItems,
@@ -780,7 +782,7 @@ Return only the JSON response, no additional text.
   /**
    * Extract key content from item
    */
-  private extractKeyContent(item: any): string {
+  private extractKeyContent(item: KnowledgeItem): string {
     const content = [
       item.data?.content,
       item.data?.title,

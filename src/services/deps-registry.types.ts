@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Result Type Definitions for Dependency Registry
  *
@@ -6,7 +6,7 @@
  * with proper error handling and type safety.
  */
 
-import { DependencyStatus, HealthCheckResult } from './deps-registry.js';
+import { type DependencyStatus, type HealthCheckResult } from './deps-registry.js';
 
 /**
  * Standard result type for dependency operations

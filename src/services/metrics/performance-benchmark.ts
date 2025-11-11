@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * P2-P3: Performance Benchmarking and Budget Management System
  *
@@ -18,9 +18,10 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { systemMetricsService, type SystemMetrics } from './system-metrics.js';
+
 import { performanceTrendingService } from './performance-trending.js';
 import { sliSloMonitorService } from './sli-slo-monitor.js';
+import { type SystemMetrics,systemMetricsService } from './system-metrics.js';
 
 // === Type Definitions ===
 

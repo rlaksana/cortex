@@ -1,10 +1,11 @@
-// @ts-nocheck
+
 /**
  * Performance Metrics Collector for Cortex MCP
  * Collects and aggregates performance metrics for key operations
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
 
 export interface PerformanceMetric {

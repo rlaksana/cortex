@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Partitioning and Sharding Service
  *
@@ -16,9 +16,11 @@
  */
 
 import { createHash } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
-import type { KnowledgeItem } from '../../types/core-interfaces.js';
+
 import { type IDatabase } from '../../db/database-interface.js';
+import type { KnowledgeItem } from '../../types/core-interfaces.js';
 
 export interface PartitioningConfig {
   enabled?: boolean;

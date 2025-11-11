@@ -1,12 +1,14 @@
-// @ts-nocheck
+
 /**
  * Performance Dashboard API for Cortex MCP
  * Provides HTTP endpoints for performance monitoring and alerting
  */
 
-import express, { Request, Response, NextFunction } from 'express';
-import { performanceCollector, PerformanceAlert } from './performance-collector.js';
+import express, { type NextFunction,type Request, type Response } from 'express';
+
 import { logger } from '@/utils/logger.js';
+
+import { type PerformanceAlert,performanceCollector } from './performance-collector.js';
 
 export interface DashboardConfig {
   enableMetricsEndpoint?: boolean;

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * ZAI Client Service
  *
@@ -10,32 +10,33 @@
  * @since 2025
  */
 
-import { randomUUID } from 'crypto';
 import { Readable } from 'node:stream';
+import { randomUUID } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
-import { zaiConfigManager } from '../../config/zai-config';
+
+import { InMemoryCache } from './utils/in-memory-cache.js';
+import { SimplePerformanceMonitor } from './utils/performance-monitor.js';
+import { SimpleRateLimiter } from './utils/rate-limiter.js';
+import { zaiConfigManager } from '../../config/zai-config.js';
 import type {
-  ZAIConfig,
-  ZAIChatRequest,
-  ZAIChatResponse,
-  ZAIStreamChunk,
-  ZAIMessage,
-  ZAIErrorResponse,
-  ZAIServiceStatus,
-  ZAIMetrics,
   CircuitBreaker,
   CircuitBreakerState,
-  ZAIEvent,
-  ZAIEventListener,
   RateLimiter,
   ZAICache,
+  ZAIChatRequest,
+  ZAIChatResponse,
+  ZAIConfig,
+  ZAIErrorResponse,
+  ZAIEvent,
+  ZAIEventListener,
+  ZAIMessage,
+  ZAIMetrics,
   ZAIPerformanceMonitor,
-} from '../../types/zai-interfaces';
-import { ZAIError, ZAIErrorType } from '../../types/zai-interfaces';
-
-import { InMemoryCache } from './utils/in-memory-cache';
-import { SimpleRateLimiter } from './utils/rate-limiter';
-import { SimplePerformanceMonitor } from './utils/performance-monitor';
+  ZAIServiceStatus,
+  ZAIStreamChunk,
+} from '../../types/zai-interfaces.js';
+import { ZAIError, ZAIErrorType } from '../../types/zai-interfaces.js';
 
 /**
  * Production-ready ZAI client service

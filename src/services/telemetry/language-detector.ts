@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Simple heuristic language detection for Indonesian vs English content
  * Provides basic language distribution tracking for quality metrics

@@ -22,12 +22,12 @@
  */
 
 import {
-  KnowledgeItem,
-  StoreError,
-  SearchResult,
-  SearchQuery,
-  MemoryStoreResponse,
-  MemoryFindResponse,
+  type KnowledgeItem,
+  type MemoryFindResponse,
+  type MemoryStoreResponse,
+  type SearchQuery,
+  type SearchResult,
+  type StoreError,
 } from '../types/core-interfaces.js';
 
 export interface DatabaseConfig {

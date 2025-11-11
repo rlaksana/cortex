@@ -14,13 +14,15 @@
  * @since 2025
  */
 
-import { QdrantClient } from '@qdrant/js-client-rest';
-import { logger } from '@/utils/logger.js';
 import { createHash } from 'crypto';
+
+import { type QdrantClient } from '@qdrant/js-client-rest';
+
+import { logger } from '@/utils/logger.js';
+
 import type {
-  ConsistencyValidationResult,
-  BackupMetadata
-} from './qdrant-backup-config.js';
+  BackupMetadata,
+  ConsistencyValidationResult} from './qdrant-backup-config.js';
 
 /**
  * Validation configuration

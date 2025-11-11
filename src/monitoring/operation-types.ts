@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Operation Types for Monitoring Services
  *
@@ -26,4 +26,7 @@ export enum OperationType {
   AUTHENTICATION = 'authentication',
   SYSTEM = 'system',
   ERROR = 'error',
+  KILL_SWITCH_TRIGGERED = 'kill_switch_triggered',
+  KILL_SWITCH_DEACTIVATED = 'kill_switch_deactivated',
+  KILL_SWITCH_RECOVERED = 'kill_switch_recovered',
 }

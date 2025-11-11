@@ -1,50 +1,50 @@
-// @ts-nocheck
+
 import { logger } from '@/utils/logger.js';
-import {
-  storeRunbook,
-  storeChange,
-  storeIssue,
-  storeTodo,
-  storeReleaseNote,
-  storeDDL,
-  storePRContext,
-  storeEntity,
-  storeRelation,
-  addObservation,
-  storeIncident,
-  updateIncident,
-  storeRelease,
-  updateRelease,
-  storeRisk,
-  updateRisk,
-  storeAssumption,
-  updateAssumption,
-} from '../knowledge/index.js';
-import { ChunkingService } from '../chunking/chunking-service.js';
-import { EmbeddingService } from '../embeddings/embedding-service.js';
-import { storeDecision, updateDecision } from '../knowledge/decision.js';
-import { storeSection } from '../knowledge/section.js';
+
+import type {
+  AutonomousContext,
+  BatchSummary,
+  ItemResult,
+  KnowledgeItem,
+  MemoryStoreResponse,
+  StoreError,
+  StoreResult,
+  ValidationResult,
+} from '../../types/core-interfaces.js';
 import {
   transformMcpInputToKnowledgeItems,
   transformToCoreKnowledgeItem,
   validateMcpInputFormat,
 } from '../../utils/mcp-transform.js';
-import type {
-  KnowledgeItem,
-  StoreResult,
-  StoreError,
-  AutonomousContext,
-  MemoryStoreResponse,
-  ItemResult,
-  BatchSummary,
-  ValidationResult,
-} from '../../types/core-interfaces.js';
-import { validatorRegistry } from '../validation/validator-registry.js';
-import { createBusinessValidators } from '../validation/business-validators.js';
-
+import { createStoreObservability } from '../../utils/observability-helper.js';
+import { ChunkingService } from '../chunking/chunking-service.js';
+import { EmbeddingService } from '../embeddings/embedding-service.js';
+import { storeDecision, updateDecision } from '../knowledge/decision.js';
+import {
+  addObservation,
+  storeAssumption,
+  storeChange,
+  storeDDL,
+  storeEntity,
+  storeIncident,
+  storeIssue,
+  storePRContext,
+  storeRelation,
+  storeRelease,
+  storeReleaseNote,
+  storeRisk,
+  storeRunbook,
+  storeTodo,
+  updateAssumption,
+  updateIncident,
+  updateRelease,
+  updateRisk,
+} from '../knowledge/index.js';
+import { storeSection } from '../knowledge/section.js';
 // P6-T6.1: Import TTL services
 import { ttlPolicyService } from '../ttl/index.js';
-import { createStoreObservability } from '../../utils/observability-helper.js';
+import { createBusinessValidators } from '../validation/business-validators.js';
+import { validatorRegistry } from '../validation/validator-registry.js';
 
 // Mock audit service for compilation
 const mockAuditService = {

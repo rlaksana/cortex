@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Enhanced Observability Service
  *
@@ -10,8 +10,10 @@
  */
 
 import { EventEmitter } from 'events';
-import { ObservabilityService, SocketServerLike } from '../types/slo-types.js';
-import type { DashboardWidget, WidgetConfig, MetricsData } from '../types/slo-types.js';
+
+import type { DashboardWidget, MetricsData, SocketServerLike, WidgetConfig } from '../types/slo-types.js';
+import { ObservabilityService } from '../types/slo-types.js';
+
 
 interface ConnectionConfig {
   maxRetries?: number;
@@ -134,7 +136,7 @@ export class EnhancedObservabilityService extends ObservabilityService {
     }
 
     try {
-      io?.emit('metrics', data);
+      io.emit?.('metrics', data);
       this.emit('metrics-sent', data);
     } catch (error) {
       console.error('Failed to emit metrics:', error);
@@ -192,7 +194,7 @@ export class EnhancedObservabilityService extends ObservabilityService {
     }
 
     try {
-      io?.emit('dashboard-update', { dashboardId, data, timestamp: Date.now() });
+      io.emit?.('dashboard-update', { dashboardId, data, timestamp: Date.now() });
       this.emit('dashboard-updated', dashboardId);
     } catch (error) {
       console.error('Failed to broadcast dashboard update:', error);
@@ -216,7 +218,8 @@ export class EnhancedObservabilityService extends ObservabilityService {
       }
 
       try {
-        this.socketServer?.io?.emit('heartbeat', { timestamp: Date.now() });
+        const io = this.socketServer?.io;
+        io.emit?.('heartbeat', { timestamp: Date.now() });
         this.emit('heartbeat-success');
       } catch (error) {
         console.error('Heartbeat failed:', error);

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Memory Store Orchestrator - Qdrant Implementation
  *
@@ -40,34 +40,34 @@
  */
 
 import { createHash } from 'crypto';
-// @ts-ignore next import
+
 import { logger } from '@/utils/logger.js';
+
+import { IdempotentStoreService } from './idempotent-store-service.js';
+import { ConnectionError, type IDatabase } from '../../db/database-interface.js';
+import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
+import { OperationType } from '../../monitoring/operation-types.js';
+import type { AuthContext } from '../../types/auth-types.js';
+import type {
+  AutonomousContext,
+  BatchSummary,
+  ItemResult,
+  KnowledgeItem,
+  MemoryStoreResponse,
+  StoreError,
+  StoreResult,
+} from '../../types/core-interfaces.js';
+import { generateCorrelationId } from '../../utils/correlation-id.js';
+import { createStoreObservability } from '../../utils/observability-helper.js';
+// import { auditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
+import { ChunkingService } from '../chunking/chunking-service.js';
+import { EmbeddingService } from '../embeddings/embedding-service.js';
+// import { ChunkingService } from '../chunking/chunking-service.js'; // Will be used when store orchestrator is integrated
+import { LanguageEnhancementService } from '../language/language-enhancement-service.js';
+import { BaselineTelemetry } from '../telemetry/baseline-telemetry.js';
 // import { violatesADRImmutability, violatesSpecWriteLock } from '../../schemas/knowledge-types.js';
 // import { ImmutabilityViolationError } from '../../utils/immutability.js';
 import { validationService } from '../validation/validation-service.js';
-// import { auditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
-import { ChunkingService } from '../chunking/chunking-service.js';
-import { IdempotentStoreService } from './idempotent-store-service.js';
-import type {
-  KnowledgeItem,
-  StoreResult,
-  StoreError,
-  AutonomousContext,
-  MemoryStoreResponse,
-  ItemResult,
-  BatchSummary,
-} from '../../types/core-interfaces.js';
-import { ConnectionError, type IDatabase } from '../../db/database-interface.js';
-import { BaselineTelemetry } from '../telemetry/baseline-telemetry.js';
-// import { ChunkingService } from '../chunking/chunking-service.js'; // Will be used when store orchestrator is integrated
-import { LanguageEnhancementService } from '../language/language-enhancement-service.js';
-import { EmbeddingService } from '../embeddings/embedding-service.js';
-import { structuredLogger } from '@/utils/logger.js';
-import { createStoreObservability } from '../../utils/observability-helper.js';
-import { OperationType } from '../../monitoring/operation-types.js';
-import { generateCorrelationId } from '../../utils/correlation-id.js';
-import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
-import type { AuthContext } from '../../types/auth-types.js';
 
 // Mock audit service for compilation
 const mockAuditService = {
@@ -426,12 +426,21 @@ export class MemoryStoreOrchestratorQdrant {
 
     // Log successful operation
     const latencyMs = Date.now() - context.startTime;
-    structuredLogger.logMemoryStore(context.correlationId, latencyMs, true, chunkedItems.length, {
-      stored: storedCount,
-      duplicates: skippedDedupeCount,
-      chunkingEnabled: true,
-      deduplicationEnabled: true,
-    });
+    logger.info(
+      {
+        correlationId: context.correlationId,
+        latency: latencyMs,
+        success: true,
+        itemCount: chunkedItems.length,
+        details: {
+          stored: storedCount,
+          duplicates: skippedDedupeCount,
+          chunkingEnabled: true,
+          deduplicationEnabled: true,
+        },
+      },
+      'Memory store operation successful'
+    );
 
     return {
       // Enhanced response format
@@ -465,15 +474,18 @@ export class MemoryStoreOrchestratorQdrant {
     const latency = Date.now() - context.startTime;
 
     // Log rate limit violation
-    structuredLogger.logRateLimit(
-      context.correlationId,
-      latency,
-      false,
-      context.authContext?.apiKeyId || 'anonymous',
-      'api_key',
-      OperationType.MEMORY_STORE,
-      0, // Will be updated with actual item count
-      rateLimitResult.error?.error || 'rate_limit_exceeded'
+    logger.warn(
+      {
+        correlationId: context.correlationId,
+        latency,
+        success: false,
+        apiKeyId: context.authContext?.apiKeyId || 'anonymous',
+        source: 'api_key',
+        operation: OperationType.MEMORY_STORE,
+        tokens: 0, // Will be updated with actual item count
+        error: rateLimitResult.error?.error || 'rate_limit_exceeded',
+      },
+      'Rate limit exceeded for memory store'
     );
 
     return {
@@ -522,15 +534,15 @@ export class MemoryStoreOrchestratorQdrant {
     const latencyMs = Date.now() - context.startTime;
 
     // Log operation failure
-    structuredLogger.logMemoryStore(
-      context.correlationId,
-      latencyMs,
-      false,
-      0, // Will be updated with actual item count
-      undefined,
-      undefined,
-      undefined,
-      error instanceof Error ? error : new Error('Unknown batch error')
+    logger.error(
+      {
+        correlationId: context.correlationId,
+        latency: latencyMs,
+        success: false,
+        itemCount: 0, // Will be updated with actual item count
+        error: error instanceof Error ? error : new Error('Unknown batch error'),
+      },
+      'Memory store operation failed'
     );
 
     logger.error({ error }, 'Memory store operation failed');

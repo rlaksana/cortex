@@ -7,16 +7,16 @@
  */
 
 import { EventEmitter } from 'events';
+
 import {
-  DegradationVerification,
-  SystemMetrics,
-  VerificationResults,
-  GracefulDegradationResult,
+  type ChaosScenario,
+  type DegradationVerification,
+  type ExperimentExecutionContext,
+  type GracefulDegradationResult,
+  type SystemMetrics,
   UserFacingErrorExpectation,
-  UserFacingErrorResult,
-  ChaosScenario,
-  ExperimentExecutionContext
-} from '../types/chaos-testing-types';
+  type UserFacingErrorResult,
+  VerificationResults} from '../types/chaos-testing-types.js';
 
 export interface DegradationMetrics {
   fallbackActivationTime: number;

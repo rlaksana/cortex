@@ -17,13 +17,15 @@
  * @since 2025
  */
 
-import { logger } from '@/utils/logger.js';
-import { getKeyVaultService } from '../services/security/key-vault-service.js';
 import * as crypto from 'crypto';
-import type { IDatabase, IDatabaseFactory, DatabaseConfig } from './database-interface.js';
-import type { IVectorAdapter } from './interfaces/vector-adapter.interface.js';
-import { ValidationError } from '../utils/error-handler.js';
+
+import { logger } from '@/utils/logger.js';
+
 import { QdrantAdapter } from './adapters/qdrant-adapter.js';
+import type { DatabaseConfig,IDatabase, IDatabaseFactory } from './database-interface.js';
+import type { IVectorAdapter } from './interfaces/vector-adapter.interface.js';
+import { getKeyVaultService } from '../services/security/key-vault-service.js';
+import { ValidationError } from '../utils/error-handler.js';
 import { createFindObservability } from '../utils/observability-helper.js';
 
 /**
@@ -40,11 +42,11 @@ async function checkKeyVaultForKey(keyName: string): Promise<boolean> {
 }
 import type {
   KnowledgeItem,
-  StoreError,
-  SearchResult,
-  SearchQuery,
-  MemoryStoreResponse,
   MemoryFindResponse,
+  MemoryStoreResponse,
+  SearchQuery,
+  SearchResult,
+  StoreError,
 } from '../types/core-interfaces.js';
 
 /**

@@ -6,11 +6,11 @@
  */
 
 import {
-  migrateHttpClientConfig,
-  validateHttpClientConfig,
   httpClientConfig,
-  type StandardHttpClientConfig,
   type LegacyHttpClientConfig,
+  migrateHttpClientConfig,
+  type StandardHttpClientConfig,
+  validateHttpClientConfig,
 } from '../config/configuration-migration.js';
 
 /**

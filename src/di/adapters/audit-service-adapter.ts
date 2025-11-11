@@ -9,8 +9,8 @@
  * @since 2025
  */
 
-import type { IAuditService } from '../service-interfaces.js';
 import { auditService } from '../../services/audit/audit-service.js';
+import type { IAuditService } from '../service-interfaces.js';
 
 /**
  * Adapter for Audit service

@@ -9,11 +9,11 @@
  * @since 2025
  */
 
-import { Injectable } from '../di-container.js';
-import type { IConfigService } from '../service-interfaces.js';
-import { ServiceTokens } from '../service-interfaces.js';
-import type { ILoggerService } from '../service-interfaces.js';
 import { logger } from '@/utils/logger.js';
+
+import { Injectable } from '../di-container.js';
+import type { IConfigService, ILoggerService  } from '../service-interfaces.js';
+import { ServiceTokens } from '../service-interfaces.js';
 
 /**
  * Configuration schema interface

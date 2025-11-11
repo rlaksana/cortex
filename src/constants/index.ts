@@ -7,38 +7,34 @@
 
 // Re-export all supported kinds functionality
 export {
-  // Core exports
-  SUPPORTED_KINDS,
-  KNOWLEDGE_TYPE_METADATA,
-
-  // Type definitions
-  type KnowledgeCategory,
-  type ValidationFeatures,
   type BusinessRules,
-  type KnowledgeTypeMetadata,
-
+  CORE_DOCUMENT_TYPES,
+  // Pre-defined groupings
+  CORE_GRAPH_EXTENSION_TYPES,
+  DEDUPLICATED_TYPES,
+  DEVELOPMENT_LIFECYCLE_TYPES,
+  EIGHT_LOG_SYSTEM_TYPES,
   // Utility functions
   getKnowledgeTypeMetadata,
   getKnowledgeTypesByCategory,
-  getKnowledgeTypesByValidationFeature,
   getKnowledgeTypesByTag,
+  getKnowledgeTypesByValidationFeature,
   getRelatedKnowledgeTypes,
-  supportsValidationFeature,
-  validateKnowledgeTypeMetadata,
-
+  IMMUTABLE_TYPES,
+  isKnowledgeCategory,
   // Type guards
   isSupportedKind,
-  isKnowledgeCategory,
-
-  // Pre-defined groupings
-  CORE_GRAPH_EXTENSION_TYPES,
-  CORE_DOCUMENT_TYPES,
-  DEVELOPMENT_LIFECYCLE_TYPES,
-  EIGHT_LOG_SYSTEM_TYPES,
-  IMMUTABLE_TYPES,
-  DEDUPLICATED_TYPES,
+  KNOWLEDGE_TYPE_METADATA,
+  // Type definitions
+  type KnowledgeCategory,
+  type KnowledgeTypeMetadata,
   SCOPE_ISOLATED_TYPES,
+  // Core exports
+  SUPPORTED_KINDS,
+  supportsValidationFeature,
   TTL_SUPPORTED_TYPES,
+  validateKnowledgeTypeMetadata,
+  type ValidationFeatures,
 } from './supported-kinds.js';
 
 // Future constants can be exported here as they are added

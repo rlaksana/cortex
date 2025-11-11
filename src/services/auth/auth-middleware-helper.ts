@@ -1,14 +1,15 @@
-// @ts-nocheck
+
 /**
  * Authentication Helper Functions for MCP Server
  * Simplified middleware functionality for MCP protocol authentication
  */
 
-import { AuthService } from './auth-service.js';
-import { AuthorizationService } from './authorization-service.js';
-// import { AuditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
-import { AuthContext, AuthScope, UserRole } from '../../types/auth-types.js';
 import { logger } from '@/utils/logger.js';
+
+import { type AuthService } from './auth-service.js';
+import { type AuthorizationService } from './authorization-service.js';
+// import { AuditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
+import { type AuthContext, type AuthScope, type UserRole } from '../../types/auth-types.js';
 
 export interface MCPAuthContext {
   user: {

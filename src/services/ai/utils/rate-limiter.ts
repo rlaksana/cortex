@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Rate Limiter Implementation
  *
@@ -10,7 +10,7 @@
  * @since 2025
  */
 
-import type { RateLimiter } from '../../../types/zai-interfaces';
+import type { RateLimiter } from '../../../types/zai-interfaces.js';
 
 /**
  * Simple token bucket rate limiter implementation

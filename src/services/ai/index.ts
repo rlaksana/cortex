@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * ZAI Services Integration Index
  *
@@ -11,22 +11,23 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { zaiConfigManager } from '../../config/zai-config';
-import { zaiClientService, ZAIClientService } from './zai-client.service';
-import { aiOrchestratorService, AIOrchestratorService } from './ai-orchestrator.service';
+
+import { AIOrchestratorService,aiOrchestratorService } from './ai-orchestrator.service';
 import {
-  backgroundProcessorService,
   BackgroundProcessorService,
+  backgroundProcessorService,
 } from './background-processor.service';
+import { ZAIClientService,zaiClientService } from './zai-client.service';
+import { zaiConfigManager } from '../../config/zai-config.js';
 import type {
-  ZAIConfig,
   AIOrchestratorConfig,
   BackgroundProcessorConfig,
   ZAIChatRequest,
   ZAIChatResponse,
+  ZAIConfig,
   ZAIHealthCheckResponse,
   ZAIMetrics,
-} from '../../types/zai-interfaces';
+} from '../../types/zai-interfaces.js';
 
 /**
  * ZAI services manager
@@ -164,6 +165,9 @@ export class ZAIServicesManager {
         return {
           status: 'unhealthy',
           timestamp,
+          uptime: 0,
+          errorRate: 1.0,
+          responseTime: 0,
           provider: {
             name: 'zai',
             status: {
@@ -218,13 +222,23 @@ export class ZAIServicesManager {
             ? 'healthy'
             : 'degraded',
         timestamp,
+        uptime: process.uptime(),
+        errorRate: zaiMetrics.errorRate,
+        responseTime: zaiMetrics.averageResponseTime,
         provider: {
           name: 'zai',
           status: await zaiClientService.getServiceStatus(),
           latency: zaiMetrics.averageResponseTime,
           lastSuccess: timestamp,
         },
-        orchestrator: orchestratorStatus,
+        orchestrator: {
+          status: orchestratorStatus.status,
+          activeProvider: orchestratorStatus.activeProvider,
+          fallbackProvider: typeof orchestratorStatus.fallbackProvider === 'string'
+            ? orchestratorStatus.fallbackProvider
+            : orchestratorStatus.fallbackProvider?.name || 'openai',
+          failoverCount: orchestratorStatus.failoverCount,
+        },
         backgroundProcessor: {
           status: processorStatus,
           queueSize: processorStatus.queuedJobs,
@@ -239,12 +253,15 @@ export class ZAIServicesManager {
           averageLatency: zaiMetrics.averageResponseTime,
           errorRate: zaiMetrics.errorRate,
         },
-      };
+      } as unknown as ZAIHealthCheckResponse;
     } catch (error) {
       logger.error({ error }, 'Health check failed');
       return {
         status: 'unhealthy',
         timestamp,
+        uptime: 0,
+        errorRate: 1.0,
+        responseTime: 0,
         provider: {
           name: 'zai',
           status: {
@@ -378,18 +395,21 @@ export class ZAIServicesManager {
    * Start health monitoring
    */
   private startHealthMonitoring(): void {
-    this.healthCheckInterval = setInterval(async () => {
-      try {
-        const health = await this.healthCheck();
+    this.healthCheckInterval = setInterval(
+      async function(this: ZAIServicesManager): Promise<void> {
+        try {
+          const health = await this.healthCheck();
 
-        // Log health status changes
-        if (health.status !== 'healthy') {
-          logger.warn({ health }, 'ZAI services health check warning');
+          // Log health status changes
+          if (health.status !== 'healthy') {
+            logger.warn({ health }, 'ZAI services health check warning');
+          }
+        } catch (error) {
+          logger.error({ error }, 'ZAI services health check failed');
         }
-      } catch (error) {
-        logger.error({ error }, 'ZAI services health check failed');
-      }
-    }, 60000); // Check every minute
+      }.bind(this),
+      60000
+    ); // Check every minute
 
     logger.info('Health monitoring started');
   }
@@ -403,7 +423,7 @@ export const zaiServicesManager = ZAIServicesManager.getInstance();
 /**
  * Export service classes for testing
  */
-export { ZAIClientService, AIOrchestratorService, BackgroundProcessorService };
+export { AIOrchestratorService, BackgroundProcessorService,ZAIClientService };
 
 /**
  * Export convenience functions
@@ -421,17 +441,17 @@ export const submitZAIJob = (type: any, payload: any, options?: any) =>
 /**
  * Export services and configuration
  */
-export { zaiClientService, aiOrchestratorService, backgroundProcessorService, zaiConfigManager };
+export { aiOrchestratorService, backgroundProcessorService, zaiClientService, zaiConfigManager };
 
 /**
  * Export types
  */
 export type {
-  ZAIConfig,
   AIOrchestratorConfig,
   BackgroundProcessorConfig,
   ZAIChatRequest,
   ZAIChatResponse,
+  ZAIConfig,
   ZAIHealthCheckResponse,
   ZAIMetrics,
 };

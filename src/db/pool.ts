@@ -11,7 +11,9 @@
  */
 
 import { QdrantClient } from '@qdrant/js-client-rest';
+
 import { logger } from '@/utils/logger.js';
+
 import { Environment } from '../config/environment.js';
 
 /**
@@ -370,7 +372,7 @@ export const getQdrantClient = () => qdrantConnectionManager.getClient();
 export { QdrantConnectionManager };
 
 // Export types
-export type { QdrantConfig, HealthCheckResult, ConnectionStats };
+export type { ConnectionStats,HealthCheckResult, QdrantConfig };
 
 // Graceful shutdown handlers
 if (typeof process !== 'undefined') {

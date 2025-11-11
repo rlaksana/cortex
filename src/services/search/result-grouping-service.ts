@@ -1,5 +1,5 @@
-// @ts-nocheck
-import { SearchResult } from '../../types/core-interfaces.js';
+
+import { type SearchResult } from '../../types/core-interfaces.js';
 
 export interface GroupedResult {
   parent_id: string;

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Deployment Artifact Manager
  *
@@ -10,11 +10,13 @@
  * @version 2.0.1
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync,writeFileSync } from 'fs';
+import { dirname,join } from 'path';
 import { createHash, createHmac } from 'crypto';
-import { join, dirname } from 'path';
-import { gzipSync, gunzipSync } from 'zlib';
+
 import { execSync } from 'child_process';
+import { gunzipSync,gzipSync } from 'zlib';
+
 import { ProductionLogger as productionLogger } from '@/utils/logger.js';
 
 export interface ArtifactMetadata {

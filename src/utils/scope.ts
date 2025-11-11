@@ -1,6 +1,8 @@
 import { execSync } from 'child_process';
-import { loadEnv } from '../config/environment.js';
+
 import { logger } from '@/utils/logger.js';
+
+import { loadEnv } from '../config/environment.js';
 
 export interface Scope {
   org?: string | undefined;

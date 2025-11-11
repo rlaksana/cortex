@@ -9,14 +9,13 @@
  */
 
 import {
-  DashboardWidget,
-  ModernDashboardWidget,
-  LegacyDashboardWidget,
   adaptWidget as baseAdaptWidget,
   BreachSeverity,
-  AlertSeverity,
-  IncidentStatus
-} from './slo-types';
+  DashboardWidget,
+  IncidentStatus,
+  LegacyDashboardWidget,
+  type ModernDashboardWidget} from './slo-types.js';
+import { AlertSeverity } from './unified-health-interfaces.js';
 
 // ============================================================================
 // Legacy Type Aliases for Backward Compatibility

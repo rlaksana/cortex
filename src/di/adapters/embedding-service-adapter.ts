@@ -9,8 +9,8 @@
  * @since 2025
  */
 
-import type { IEmbeddingService } from '../service-interfaces.js';
 import { EmbeddingService } from '../../services/embeddings/embedding-service.js';
+import type { IEmbeddingService } from '../service-interfaces.js';
 
 /**
  * Adapter for Embedding service

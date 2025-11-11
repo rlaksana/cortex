@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Combine Deduplication Strategy
  *
@@ -6,14 +6,15 @@
  * When duplicates are found, combines the best aspects of both items.
  */
 
+import { logger } from '@/utils/logger.js';
+
 import {
-  DeduplicationStrategy,
   type DeduplicationResult,
+  DeduplicationStrategy,
   type DeduplicationStrategyConfig,
   type DuplicateAnalysis,
 } from './base-strategy.js';
 import type { KnowledgeItem } from '../../../types/core-interfaces.js';
-import { logger } from '@/utils/logger.js';
 
 export interface CombineStrategyConfig extends DeduplicationStrategyConfig {
   similarityThreshold?: number;

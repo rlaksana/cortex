@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Production Health Checker
  *
@@ -10,21 +10,22 @@
  * @version 2.0.1
  */
 
-import {
-  ProductionHealthResult,
-  HealthCheck,
-  HealthCheckResult,
-  type HealthCheckConfig as UnifiedHealthCheckConfig,
-} from '../types/unified-health-interfaces.js';
-import {
-  migrateHealthCheckConfig,
-  validateHealthCheckConfig,
-  healthCheckConfig,
-  type StandardHealthCheckConfig,
-  type LegacyHealthCheckConfig,
-} from '../config/configuration-migration.js';
-import * as os from 'os';
 import * as fs from 'fs';
+import * as os from 'os';
+
+import {
+  healthCheckConfig,
+  type LegacyHealthCheckConfig,
+  migrateHealthCheckConfig,
+  type StandardHealthCheckConfig,
+  validateHealthCheckConfig,
+} from '../config/configuration-migration.js';
+import {
+  type HealthCheck,
+  type HealthCheckConfig as UnifiedHealthCheckConfig,
+  type HealthCheckResult,
+  type ProductionHealthResult,
+} from '../types/unified-health-interfaces.js';
 
 // Re-export for backward compatibility
 export type { ProductionHealthResult as HealthCheckResult };

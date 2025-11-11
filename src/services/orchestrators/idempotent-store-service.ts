@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Idempotent Store Service
  *
@@ -16,10 +16,12 @@
  */
 
 import { createHash } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
+
+import { type IDatabase } from '../../db/database-interface.js';
 // import { auditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
 import type { KnowledgeItem } from '../../types/core-interfaces.js';
-import { type IDatabase } from '../../db/database-interface.js';
 
 export interface IdempotentStoreConfig {
   enableConflictResolution?: boolean;

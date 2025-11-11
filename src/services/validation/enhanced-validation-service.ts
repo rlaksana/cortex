@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Enhanced Validation Service
  *
@@ -10,19 +10,20 @@
  */
 
 import { logger } from '@/utils/logger.js';
+
+import { ValidationMode as ValidationModeValues } from '../../schemas/unified-knowledge-validator.js';
 import {
   EnhancedValidationService,
   MCPValidationIntegration,
   ValidationPerformanceMonitor,
   type ValidationResult,
 } from '../../schemas/validation-migration.js';
-import { type ValidationMode } from '../../types/unified-health-interfaces.js';
-import { ValidationMode as ValidationModeValues } from '../../schemas/unified-knowledge-validator.js';
 import type {
-  ValidationService as IValidationService,
   KnowledgeItem,
   StoreError,
+  ValidationService as IValidationService,
 } from '../../types/core-interfaces.js';
+import { type ValidationMode } from '../../types/unified-health-interfaces.js';
 
 /**
  * Enhanced validation service implementation with unified validation
@@ -436,4 +437,4 @@ export const mcpToolValidator = new MCPToolValidator();
 
 // Legacy compatibility exports
 export type { ValidationService as IValidationService };
-export type { StoreError, KnowledgeItem };
+export type { KnowledgeItem,StoreError };

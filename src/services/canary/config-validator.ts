@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Canary Configuration Validator
  *
@@ -17,12 +17,13 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { CanaryDeploymentConfig } from './canary-orchestrator.js';
-import { CanaryHealthConfig } from './canary-health-monitor.js';
-import { RollbackConfig } from './rollback-service.js';
-import { TrafficRule } from './traffic-splitter.js';
-import { KillSwitchConfig } from './kill-switch-service.js';
-import { FeatureFlag } from '../feature-flag/feature-flag-service.js';
+
+import { type CanaryHealthConfig } from './canary-health-monitor.js';
+import { type CanaryDeploymentConfig } from './canary-orchestrator.js';
+import { type KillSwitchConfig } from './kill-switch-service.js';
+import { type RollbackConfig } from './rollback-service.js';
+import { type TrafficRule } from './traffic-splitter.js';
+import { type FeatureFlag } from '../feature-flag/feature-flag-service.js';
 
 // ============================================================================
 // Types and Interfaces
@@ -1279,7 +1280,8 @@ export class CanaryConfigValidator {
     const warningsAsErrors = result.warnings.map(warning => ({
       ...warning,
       severity: ValidationSeverity.ERROR as ValidationSeverity,
-      category: ValidationCategory.BEST_PRACTICE
+      category: ValidationCategory.BEST_PRACTICE,
+      fixable: warning.actionable
     } as ValidationError));
 
     result.errors.push(...warningsAsErrors);

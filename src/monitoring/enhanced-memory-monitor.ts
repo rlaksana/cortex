@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Enhanced Memory Monitor
  *
@@ -12,7 +12,9 @@
  */
 
 import { EventEmitter } from 'node:events';
+
 import { logger } from '@/utils/logger.js';
+
 import { memoryManager, type MemoryStats } from '../services/memory/memory-manager-service.js';
 
 /**

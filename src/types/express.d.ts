@@ -4,6 +4,7 @@
  */
 
 import { Request } from 'express';
+
 import type { AuthContext } from './auth-types.js';
 
 declare global {

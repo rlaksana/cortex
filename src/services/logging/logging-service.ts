@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Comprehensive Logging Service
  *
@@ -7,36 +7,39 @@
  */
 
 import { promises as fs } from 'fs';
-import { join, dirname } from 'path';
-import { createGzip } from 'zlib';
+import { dirname,join } from 'path';
+
 import { performance } from 'perf_hooks';
+import { createGzip } from 'zlib';
+
 import { logger } from '@/utils/logger.js';
+
 import type {
-  LogEntry,
-  LogLevel,
-  LogQueryOptions,
-  LogSearchResult,
-  LogFilterOptions,
-  LogRetentionConfig,
-  LogStreamingConfig,
-  LogAnalyticsConfig,
-  LogSecurityConfig,
-  LogAnalytics,
-  LogHealthStatus,
-  LogArchiveResult,
-  LogCleanupResult,
-  LogBatchResult,
-  LogAlert,
-  LogStream,
-  LogComplianceReport,
-  LogServiceIntegration,
-  LogAggregationOptions,
   LogAggregation,
+  LogAggregationOptions,
+  LogAlert,
+  LogAnalytics,
+  LogAnalyticsConfig,
+  LogArchiveResult,
+  LogBatchResult,
+  LogCleanupResult,
+  LogComplianceReport,
+  LogConfiguration,
   LogCorrelationContext,
+  LogEntry,
+  LogFilterOptions,
+  LogHealthStatus,
+  LogLevel,
+  LogMetrics,
+  LogQueryOptions,
+  LogRetentionConfig,
+  LogSearchResult,
+  LogSecurityConfig,
+  LogServiceIntegration,
+  LogStream,
+  LogStreamingConfig,
   LogWriteOptions,
   LogWriteResult,
-  LogMetrics,
-  LogConfiguration,
 } from '../../types/logging-interfaces.js';
 
 export class LoggingService {

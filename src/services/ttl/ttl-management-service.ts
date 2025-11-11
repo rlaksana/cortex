@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * TTL Management Service
  *
@@ -19,22 +19,23 @@
  */
 
 import { logger } from '@/utils/logger.js';
+
 import {
-  ttlPolicyService,
-  type TTLPolicyOptions,
   type TTLCalculationResult,
+  type TTLPolicyOptions,
+  ttlPolicyService,
 } from './ttl-policy-service.js';
+import { type QdrantOnlyDatabaseLayer } from '../../db/unified-database-layer-v2.js';
+import type {
+  KnowledgeItem,
+  MemoryFindResponse,
+  SearchQuery,
+  StoreResult,
+} from '../../types/core-interfaces.js';
 import {
   enhancedExpiryUtils,
   type ExpiryCalculationOptions,
 } from '../../utils/enhanced-expiry-utils.js';
-import { QdrantOnlyDatabaseLayer } from '../../db/unified-database-layer-v2.js';
-import type {
-  KnowledgeItem,
-  StoreResult,
-  SearchQuery,
-  MemoryFindResponse,
-} from '../../types/core-interfaces.js';
 
 /**
  * TTL management operation result interface
@@ -365,7 +366,7 @@ export class TTLManagementService {
   } {
     const policiesApplied: Record<string, number> = {};
     let permanentItemsPreserved = 0;
-    let extensionsGranted = 0;
+    const extensionsGranted = 0;
 
     expiredItems.forEach((item) => {
       const policy = item.policy || 'unknown';

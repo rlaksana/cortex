@@ -1,14 +1,16 @@
-// @ts-nocheck
+
 /**
  * API Key Management Service for Cortex MCP
  * Handles creation, validation, and management of API keys for MCP clients
  */
 
 import * as crypto from 'crypto';
+
 import { logger } from '@/utils/logger.js';
-import { AuthService } from './auth-service.js';
+
+import { type AuthService } from './auth-service.js';
 // import { AuditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
-import { ApiKey, User, AuthScope, SecurityAuditLog, AuthContext } from '../../types/auth-types.js';
+import { type ApiKey, type AuthContext,type AuthScope, type SecurityAuditLog, type User } from '../../types/auth-types.js';
 
 export interface CreateApiKeyRequest {
   name: string;

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * CI Performance Regression Guard
  *
@@ -6,10 +6,11 @@
  * with configurable thresholds, automated reporting, and failure handling
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-import type { PerformanceTestResult, PerformanceRegression } from './performance-harness.js';
+
+import type { PerformanceMetrics,PerformanceRegression,PerformanceTestResult } from './performance-harness.js';
 import type { PerformanceTestConfig } from './performance-targets.js';
 
 export interface RegressionGuardConfig {
@@ -368,7 +369,19 @@ export class CIRegressionGuard {
   /**
    * Evaluate CI gate status
    */
-  private evaluateCIGate(assessment: any, regressions: any[]): {
+  private evaluateCIGate(assessment: {
+    status: 'pass' | 'warning' | 'fail';
+    summary: string;
+    recommendations: string[];
+  }, regressions: Array<{
+    metric: string;
+    baseline: number;
+    current: number;
+    change: number;
+    changePercentage: number;
+    severity: 'critical' | 'major' | 'minor';
+    target: number;
+  }>): {
     passed: boolean;
     reason?: string;
     canProceed: boolean;
@@ -629,7 +642,7 @@ export class CIRegressionGuard {
    */
   private loadBaselines(): void {
     try {
-      const baselineFiles = require('fs').readdirSync(this.config.baselineDir);
+      const baselineFiles = readdirSync(this.config.baselineDir);
 
       for (const file of baselineFiles) {
         if (file.endsWith('.json')) {

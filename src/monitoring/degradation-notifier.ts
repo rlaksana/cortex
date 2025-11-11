@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Qdrant Degradation Notifier
  *
@@ -12,8 +12,10 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { DegradationEvent, DegradationLevel } from './degradation-detector.js';
+
+import { type DegradationEvent, DegradationLevel } from './degradation-detector.js';
 
 /**
  * Notification channel types

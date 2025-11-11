@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Background Processor Service
  *
@@ -10,8 +10,9 @@
  * @since 2025
  */
 
-import { logger } from '@/utils/logger.js';
 import { EventEmitter } from 'events';
+
+import { logger } from '@/utils/logger.js';
 
 /**
  * Background processor configuration
@@ -66,6 +67,8 @@ export interface JobStatus {
 /**
  * Background Processor Service
  */
+import type { BackgroundProcessorStatus } from '../../types/zai-interfaces.js';
+
 export class BackgroundProcessorService extends EventEmitter {
   private static instance: BackgroundProcessorService;
   private isRunning = false;
@@ -211,7 +214,10 @@ export class BackgroundProcessorService extends EventEmitter {
   /**
    * Get processor status
    */
-  getStatus(): JobStatus {
+  /**
+   * Get processor status
+   */
+  getStatus(): BackgroundProcessorStatus {
     const completedJobs = Array.from(this.jobs.values()).filter(job => job.status === 'completed');
     const failedJobs = Array.from(this.jobs.values()).filter(job => job.status === 'failed');
 

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Contradiction Resolution Suggestion Service
  *
@@ -12,13 +12,15 @@
  */
 
 import { randomUUID } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
-import { zaiClientService } from '../ai/zai-client.service';
+
 import type {
   ContradictionResult,
   ContradictionType,
   KnowledgeItem,
 } from '../../types/contradiction-detector.interface';
+import { zaiClientService } from '../ai/zai-client.service';
 
 /**
  * Resolution approach types
@@ -739,8 +741,3 @@ Consider:
  */
 export const contradictionResolutionSuggestionService =
   new ContradictionResolutionSuggestionService();
-
-/**
- * Export class for testing
- */
-export { ContradictionResolutionSuggestionService };

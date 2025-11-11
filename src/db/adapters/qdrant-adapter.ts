@@ -17,45 +17,48 @@
  * @since 2025
  */
 
+import * as crypto from 'crypto';
+
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAI } from 'openai';
-import * as crypto from 'crypto';
+
 import { logger } from '@/utils/logger.js';
-import { calculateItemExpiry } from '../../utils/expiry-utils.js';
-import { getKeyVaultService } from '../../services/security/key-vault-service.js';
-import { EmbeddingService } from '../../services/embeddings/embedding-service.js';
-import { createQdrantHealthProbe, type QdrantHealthStatus } from '../qdrant-health-probe.js';
-import { createQdrantBootstrap, type HAConfig } from '../qdrant-bootstrap.js';
+
 import type { ExpiryTimeLabel } from '../../constants/expiry-times.js';
-import type {
-  KnowledgeItem,
-  StoreResult,
-  StoreError,
-  SearchResult,
-  SearchQuery,
-  MemoryStoreResponse,
-  MemoryFindResponse,
-  AutonomousContext,
-  ItemResult,
-  BatchSummary,
-} from '../../types/core-interfaces.js';
-import type {
-  IVectorAdapter,
-  VectorConfig,
-  SearchOptions,
-  StoreOptions,
-  DeleteOptions,
-  DatabaseMetrics,
-} from '../interfaces/vector-adapter.interface.js';
-import { DatabaseError, ConnectionError, NotFoundError } from '../database-interface.js';
-import {
-  createStoreObservability,
-  createFindObservability,
-} from '../../utils/observability-helper.js';
 import {
   circuitBreakerManager,
   type CircuitBreakerStats,
 } from '../../services/circuit-breaker.service.js';
+import { EmbeddingService } from '../../services/embeddings/embedding-service.js';
+import { getKeyVaultService } from '../../services/security/key-vault-service.js';
+import type {
+  AutonomousContext,
+  BatchSummary,
+  ItemResult,
+  KnowledgeItem,
+  MemoryFindResponse,
+  MemoryStoreResponse,
+  SearchQuery,
+  SearchResult,
+  StoreError,
+  StoreResult,
+} from '../../types/core-interfaces.js';
+import { calculateItemExpiry } from '../../utils/expiry-utils.js';
+import {
+  createFindObservability,
+  createStoreObservability,
+} from '../../utils/observability-helper.js';
+import { ConnectionError, DatabaseError, NotFoundError } from '../database-interface.js';
+import type {
+  DatabaseMetrics,
+  DeleteOptions,
+  IVectorAdapter,
+  SearchOptions,
+  StoreOptions,
+  VectorConfig,
+} from '../interfaces/vector-adapter.interface.js';
+import { createQdrantBootstrap, type HAConfig } from '../qdrant-bootstrap.js';
+import { createQdrantHealthProbe, type QdrantHealthStatus } from '../qdrant-health-probe.js';
 
 /**
  * Qdrant collection information interface

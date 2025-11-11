@@ -1,12 +1,14 @@
-// @ts-nocheck
+
 /**
  * Performance Monitoring Middleware for Cortex MCP
  * Provides automatic performance tracking for HTTP requests and MCP operations
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { performanceCollector } from './performance-collector.js';
+import { type NextFunction,type Request, type Response } from 'express';
+
 import { logger } from '@/utils/logger.js';
+
+import { performanceCollector } from './performance-collector.js';
 
 export interface PerformanceMiddlewareOptions {
   trackRequestBody?: boolean;

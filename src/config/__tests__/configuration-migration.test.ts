@@ -5,28 +5,29 @@
  * ensuring proper handling of legacy and standard configuration properties.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach,describe, expect, it } from 'vitest';
+
 import {
-  migrateHealthCheckConfig,
-  migrateHttpClientConfig,
-  validateHealthCheckConfig,
-  validateHttpClientConfig,
   healthCheckConfig,
-  httpClientConfig,
   HealthCheckConfigBuilder,
   HttpClientBuilder,
+  httpClientConfig,
   isStandardHealthCheckConfig,
   isStandardHttpClientConfig,
-  type StandardHealthCheckConfig,
-  type StandardHttpClientConfig,
   type LegacyHealthCheckConfig,
   type LegacyHttpClientConfig,
+  migrateHealthCheckConfig,
+  migrateHttpClientConfig,
+  type StandardHealthCheckConfig,
+  type StandardHttpClientConfig,
+  validateHealthCheckConfig,
+  validateHttpClientConfig,
 } from '../configuration-migration.js';
 import {
   ConfigurationValidator,
-  validateConfigurationStrict,
-  validateConfigurationPermissive,
   isValidConfiguration,
+  validateConfigurationPermissive,
+  validateConfigurationStrict,
   type ValidationResult,
 } from '../configuration-validator.js';
 

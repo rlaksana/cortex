@@ -12,12 +12,12 @@
 import {
   HealthCheckConfigSchema,
   HttpClientConfigSchema,
-  validateHealthCheckConfig,
-  validateHttpClientConfig,
   isStandardHealthCheckConfig,
   isStandardHttpClientConfig,
   type StandardHealthCheckConfig,
   type StandardHttpClientConfig,
+  validateHealthCheckConfig,
+  validateHttpClientConfig,
 } from './configuration-migration.js';
 
 // ============================================================================

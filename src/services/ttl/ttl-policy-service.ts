@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * TTL Policy Service
  *
@@ -19,10 +19,11 @@
  */
 
 import { logger } from '@/utils/logger.js';
+
 import {
-  getExpiryTimestamp,
-  type ExpiryTimeLabel,
   EXPIRY_TIME_MAP,
+  type ExpiryTimeLabel,
+  getExpiryTimestamp,
 } from '../../constants/expiry-times.js';
 import type { KnowledgeItem } from '../../types/core-interfaces.js';
 

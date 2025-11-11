@@ -1,18 +1,19 @@
-// @ts-nocheck
+
 /**
  * Authorization Service for Cortex MCP
  * Implements scope-based access control with fine-grained permissions
  */
 
 import { logger } from '@/utils/logger.js';
+
 import {
+  type ApiKey,
+  type AuthContext,
   AuthScope,
-  UserRole,
-  User,
-  ApiKey,
-  AuthContext,
-  Permission,
   DEFAULT_ROLE_PERMISSIONS,
+  type Permission,
+  type User,
+  UserRole,
 } from '../../types/auth-types.js';
 
 export interface ResourceAccessRule {

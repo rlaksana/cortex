@@ -1,13 +1,14 @@
-// @ts-nocheck
+
 /**
  * Comprehensive test suite for enhanced deduplication service
  * Tests all 5 merge strategies and scope window configuration
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { EnhancedDeduplicationService } from '../enhanced-deduplication-service.js';
-import type { KnowledgeItem } from '../../../types/core-interfaces.js';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+
 import type { DeduplicationConfig } from '../../../config/deduplication-config.js';
+import type { KnowledgeItem } from '../../../types/core-interfaces.js';
+import { EnhancedDeduplicationService } from '../enhanced-deduplication-service.js';
 
 // Mock logger to avoid console output during tests
 jest.mock('../../../utils/logger.js', () => ({

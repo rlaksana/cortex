@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Production Environment Validator
  *
@@ -10,10 +10,13 @@
  * @version 2.0.1
  */
 
-import { ProductionEnvironmentValidator as BaseValidator } from '../config/production-validator.js';
-import { ProductionLogger } from '@/utils/logger.js';
-import { readFileSync, existsSync } from 'fs';
+import { existsSync,readFileSync } from 'fs';
 import { join } from 'path';
+
+import type { SimpleLogger } from '@/utils/logger.js';
+import { createChildLogger,ProductionLogger } from '@/utils/logger.js';
+
+import { type EnvironmentValidationResult,ProductionEnvironmentValidator as BaseValidator } from '../config/production-validator.js';
 
 export interface ValidationResult {
   category: string;
@@ -67,12 +70,12 @@ export interface ValidationConfig {
 }
 
 export class ProductionEnvironmentValidator extends BaseValidator {
-  private logger: ProductionLogger;
+  private logger: SimpleLogger;
   private config: ValidationConfig;
 
   constructor(config?: Partial<ValidationConfig>) {
     super();
-    this.logger = new ProductionLogger('environment-validator');
+    this.logger = createChildLogger({ component: 'environment-validator' });
 
     this.config = {
       strictMode: process.env.VALIDATION_STRICT_MODE === 'true',
@@ -93,6 +96,115 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       },
       ...config,
     };
+  }
+
+  /**
+   * Override the base class validation method to integrate enhanced validation
+   */
+  validateProductionEnvironment(): EnvironmentValidationResult {
+    // First run the base class validation
+    const baseResult = super.validateProductionEnvironment();
+
+    // Then enhance it with our additional checks
+    this.enhanceValidationWithAdvancedChecks(baseResult);
+
+    return baseResult;
+  }
+
+  /**
+   * Add advanced validation results to the base class result
+   */
+  private enhanceValidationWithAdvancedChecks(result: EnvironmentValidationResult): void {
+    this.logger.info('Running advanced environment validation checks...');
+
+    // Run enhanced security checks
+    this.runEnhancedSecurityValidation(result);
+
+    // Run enhanced performance checks
+    this.runEnhancedPerformanceValidation(result);
+  }
+
+  /**
+   * Run enhanced security validation
+   */
+  private runEnhancedSecurityValidation(result: EnvironmentValidationResult): void {
+    // Check security headers
+    const headersResult = this.validateSecurityHeaders();
+    this.addValidationResult(result, headersResult);
+
+    // Check SSL/TLS configuration
+    const sslResult = this.validateSSLConfiguration();
+    this.addValidationResult(result, sslResult);
+
+    // Check API key security
+    const apiKeyResult = this.validateAPIKeySecurity();
+    this.addValidationResult(result, apiKeyResult);
+
+    // Check authentication mechanisms
+    const authResult = this.validateAuthentication();
+    this.addValidationResult(result, authResult);
+
+    // Check rate limiting
+    const rateLimitResult = this.validateRateLimiting();
+    this.addValidationResult(result, rateLimitResult);
+
+    // Check CORS configuration
+    const corsResult = this.validateCORSConfiguration();
+    this.addValidationResult(result, corsResult);
+
+    // Skip async dependency security check for sync version
+    if (this.config.enableDeepChecks) {
+      result.warnings.push('Deep security checks (dependency vulnerability scanning) skipped in sync validation mode');
+    }
+  }
+
+  /**
+   * Run enhanced performance validation
+   */
+  private runEnhancedPerformanceValidation(result: EnvironmentValidationResult): void {
+    // Check memory usage
+    const memoryResult = this.validateMemoryUsage();
+    this.addValidationResult(result, memoryResult);
+
+    // Check CPU availability
+    const cpuResult = this.validateCPUAvailability();
+    this.addValidationResult(result, cpuResult);
+
+    // Check disk space
+    const diskResult = this.validateDiskSpace();
+    this.addValidationResult(result, diskResult);
+
+    // Check startup performance
+    const startupResult = this.validateStartupPerformance();
+    this.addValidationResult(result, startupResult);
+
+    // Skip async network connectivity and response time checks for sync version
+    if (this.config.enableDeepChecks) {
+      result.warnings.push('Deep performance checks (network connectivity, response times) skipped in sync validation mode');
+    }
+  }
+
+  /**
+   * Helper function for fetch with timeout using AbortController
+   */
+  private async fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs: number = 5000): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error(`Request timeout after ${timeoutMs}ms`);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -127,8 +239,8 @@ export class ProductionEnvironmentValidator extends BaseValidator {
 
     try {
       // Run validation categories
-      await this.validateSecurity(report.categories.security);
-      await this.validatePerformance(report.categories.performance);
+      await this.validateSecurityAsync(report.categories.security);
+      await this.validatePerformanceAsync(report.categories.performance);
       await this.validateInfrastructure(report.categories.infrastructure);
       await this.validateDependencies(report.categories.dependencies);
       await this.validateCompliance(report.categories.compliance);
@@ -169,10 +281,31 @@ export class ProductionEnvironmentValidator extends BaseValidator {
     }
   }
 
+  
   /**
-   * Validate security configuration
+   * Helper method to convert ValidationResult to EnvironmentValidationResult
    */
-  private async validateSecurity(results: ValidationResult[]): Promise<void> {
+  private addValidationResult(result: EnvironmentValidationResult, validationResult: ValidationResult): void {
+    switch (validationResult.status) {
+      case 'critical':
+        result.critical.push(validationResult.message);
+        break;
+      case 'fail':
+        result.errors.push(validationResult.message);
+        break;
+      case 'warn':
+        result.warnings.push(validationResult.message);
+        break;
+      case 'pass':
+        // Passed validations don't need to be added to the result
+        break;
+    }
+  }
+
+  /**
+   * Internal async security validation implementation
+   */
+  private async validateSecurityAsync(results: ValidationResult[]): Promise<void> {
     this.logger.info('Validating security configuration...');
 
     // Check for required security headers
@@ -199,10 +332,11 @@ export class ProductionEnvironmentValidator extends BaseValidator {
     }
   }
 
+  
   /**
-   * Validate performance characteristics
+   * Internal async performance validation implementation
    */
-  private async validatePerformance(results: ValidationResult[]): Promise<void> {
+  private async validatePerformanceAsync(results: ValidationResult[]): Promise<void> {
     this.logger.info('Validating performance characteristics...');
 
     // Check memory usage
@@ -459,7 +593,7 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       // Test connectivity to essential services
       const qdrantUrl = process.env.QDRANT_URL;
       if (qdrantUrl) {
-        const response = await fetch(`${qdrantUrl}/health`, { timeout: 5000 });
+        const response = await this.fetchWithTimeout(`${qdrantUrl}/health`, {}, 5000);
         return {
           category: 'performance',
           status: response.ok ? 'pass' : 'fail',
@@ -633,7 +767,7 @@ export class ProductionEnvironmentValidator extends BaseValidator {
         };
       }
 
-      const response = await fetch(`${qdrantUrl}/health`, { timeout: 10000 });
+      const response = await this.fetchWithTimeout(`${qdrantUrl}/health`, {}, 10000);
 
       return {
         category: 'dependencies',
@@ -667,10 +801,9 @@ export class ProductionEnvironmentValidator extends BaseValidator {
         };
       }
 
-      const response = await fetch('https://api.openai.com/v1/models', {
+      const response = await this.fetchWithTimeout('https://api.openai.com/v1/models', {
         headers: { 'Authorization': `Bearer ${apiKey}` },
-        timeout: 10000,
-      });
+      }, 10000);
 
       return {
         category: 'dependencies',

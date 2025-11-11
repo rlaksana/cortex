@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * ZAI-Enhanced Contradiction Detector
  *
@@ -15,21 +15,23 @@
  */
 
 import { randomUUID } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
-import { zaiClientService } from '../ai/zai-client.service';
+
 import type {
+  ContradictionDetail,
   ContradictionDetectionRequest,
   ContradictionDetectionResponse,
   ContradictionResult,
-  ContradictionType,
-  ContradictionDetail,
-  KnowledgeItem,
+  ContradictionScore,
   ContradictionStrategy,
   ContradictionStrategyType,
-  ContradictionScore,
+  ContradictionType,
+  KnowledgeItem,
   ResolutionSuggestion,
 } from '../../types/contradiction-detector.interface';
-import type { ZAIChatRequest } from '../../types/zai-interfaces';
+import type { ZAIChatRequest } from '../../types/zai-interfaces.js';
+import { zaiClientService } from '../ai/zai-client.service';
 
 /**
  * ZAI-Enhanced contradiction detector configuration

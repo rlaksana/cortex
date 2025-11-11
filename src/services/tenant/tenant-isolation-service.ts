@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * P8-T8.3: Multi-Tenant Isolation and Governance System
  *
@@ -20,9 +20,11 @@
  */
 
 import { EventEmitter } from 'node:events';
+
 import { logger } from '@/utils/logger.js';
-import { systemMetricsService } from '../metrics/system-metrics.js';
+
 import type { IVectorAdapter } from '../../db/interfaces/vector-adapter.interface.js';
+import { systemMetricsService } from '../metrics/system-metrics.js';
 
 // === Type Definitions ===
 
@@ -182,7 +184,7 @@ export interface TenantAlert {
   description: string;
 
   /** Current values */
-  current_values: Record<string, any>;
+  current_values: Record<string, unknown>;
 
   /** Threshold information */
   threshold_info: {
@@ -1644,9 +1646,9 @@ export class TenantIsolationService extends EventEmitter {
   async checkRequest(tenantId: string, toolName?: string): Promise<{
     allowed: boolean;
     reason?: string;
-    rateLimitResult?: any;
-    circuitBreakerResult?: any;
-    resourceResult?: any;
+    rateLimitResult?: Record<string, unknown>;
+    circuitBreakerResult?: Record<string, unknown>;
+    resourceResult?: Record<string, unknown>;
   }> {
     const config = this.tenants.get(tenantId);
     if (!config) {

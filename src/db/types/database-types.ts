@@ -14,29 +14,27 @@ import type { SearchResult as CoreSearchResult } from '../../types/core-interfac
 
 // Re-export core interfaces
 export type {
-  KnowledgeItem,
-  StoreResult,
-  StoreError,
-  SearchResult as CoreSearchResult,
-  SearchQuery,
-  MemoryStoreResponse,
-  MemoryFindResponse,
   AutonomousContext,
+  SearchResult as CoreSearchResult,
+  KnowledgeItem,
+  MemoryFindResponse,
+  MemoryStoreResponse,
+  SearchQuery,
+  StoreError,
+  StoreResult,
 } from '../../types/core-interfaces.js';
-
+export type {
+  AdapterCapabilities,
+  DatabaseAdapters,
+  DatabaseFactoryConfig,
+  DatabaseType,
+  IDatabaseFactory,
+} from '../interfaces/database-factory.interface.js';
 export type {
   IVectorAdapter,
   VectorConfig,
   SearchOptions as VectorSearchOptions,
 } from '../interfaces/vector-adapter.interface.js';
-
-export type {
-  IDatabaseFactory,
-  DatabaseFactoryConfig,
-  DatabaseType,
-  DatabaseAdapters,
-  AdapterCapabilities,
-} from '../interfaces/database-factory.interface.js';
 
 // Use alias to avoid conflicts
 // export type SearchResult = CoreSearchResult;

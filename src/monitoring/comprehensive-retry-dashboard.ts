@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Comprehensive Retry Budget Dashboard
  *
@@ -11,29 +11,27 @@
  */
 
 import { EventEmitter } from 'events';
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
+
 import { logger } from '@/utils/logger.js';
+
 import {
-  retryBudgetMonitor,
-  type RetryBudgetMetrics,
-  type RetryBudgetConfig
-} from './retry-budget-monitor.js';
+  type CircuitBreakerHealthStatus,
+  circuitBreakerMonitor} from './circuit-breaker-monitor.js';
 import {
-  circuitBreakerMonitor,
-  type CircuitBreakerHealthStatus
-} from './circuit-breaker-monitor.js';
-import {
-  retryAlertSystem,
   type Alert,
-  type AlertSeverity
-} from './retry-alert-system.js';
+  type AlertSeverity,
+  retryAlertSystem} from './retry-alert-system.js';
 import {
-  retryTrendAnalyzer,
-  type TrendAnalysis,
+  type RetryBudgetConfig,
+  type RetryBudgetMetrics,
+  retryBudgetMonitor} from './retry-budget-monitor.js';
+import {
   type AnomalyDetection,
   type PatternDetection,
-  type PredictiveAnalysis
-} from './retry-trend-analyzer.js';
+  type PredictiveAnalysis,
+  retryTrendAnalyzer,
+  type TrendAnalysis} from './retry-trend-analyzer.js';
 
 /**
  * Service dependency relationship

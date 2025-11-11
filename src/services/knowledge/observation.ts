@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Observation storage service (12th knowledge type - fine-grained facts)
  *

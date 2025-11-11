@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 export function computeFinalScore(hit: {
   fts_score: number;
   updated_at: string;

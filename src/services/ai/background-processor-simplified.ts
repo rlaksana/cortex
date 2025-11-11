@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Simplified Background Processor Service
  *
@@ -10,23 +10,25 @@
  * @since 2025
  */
 
-import { randomUUID } from 'crypto';
 import { EventEmitter } from 'node:events';
+import { randomUUID } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
-import { zaiConfigManager } from '../../config/zai-config';
-import { simplifiedAIOrchestratorService } from './ai-orchestrator-simplified';
-import { PriorityQueue } from './utils/priority-queue';
+
+import { simplifiedAIOrchestratorService } from './ai-orchestrator-simplified.js';
+import { PriorityQueue } from './utils/priority-queue.js';
+import { zaiConfigManager } from '../../config/zai-config.js';
 import type {
-  ZAIJob,
-  ZAIJobType,
   BackgroundProcessorConfig,
   BackgroundProcessorStatus,
   ZAIChatRequest,
   ZAIChatResponse,
+  ZAIError,
   ZAIEvent,
   ZAIEventListener,
-  ZAIError,
-} from '../../types/zai-interfaces';
+  ZAIJob,
+  ZAIJobType,
+} from '../../types/zai-interfaces.js';
 
 /**
  * Job execution result
@@ -177,12 +179,12 @@ export class SimplifiedBackgroundProcessorService extends EventEmitter {
     return {
       status: this.processing ? 'running' : 'stopped',
       activeJobs: this.activeJobs.size,
-      queuedJobs: this.jobQueue.size,
+      queuedJobs: this.jobQueue.size(),
       completedJobs: this.metrics.completedJobs,
       failedJobs: this.metrics.failedJobs,
       averageProcessingTime: this.metrics.averageProcessingTime,
       uptime: Date.now() - this.metrics.uptime,
-      queueSize: this.jobQueue.size,
+      queueSize: this.jobQueue.size(),
       memoryUsage: {
         used: process.memoryUsage().heapUsed,
         total: process.memoryUsage().heapTotal,
@@ -253,7 +255,7 @@ export class SimplifiedBackgroundProcessorService extends EventEmitter {
    * Clear all queued jobs
    */
   clearQueue(): number {
-    const count = this.jobQueue.size;
+    const count = this.jobQueue.size();
     this.jobQueue.clear();
     logger.info({ clearedJobs: count }, 'Cleared job queue');
     return count;

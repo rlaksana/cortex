@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Predictive Insight Strategy
  *
@@ -12,14 +12,16 @@
  */
 
 import { randomUUID } from 'crypto';
-import { logger } from '../../../utils/logger';
-import type { ZAIClientService } from '../../ai/zai-client.service';
-import type { ZAIChatRequest, ZAIChatResponse } from '../../../types/zai-interfaces';
+
+import type { KnowledgeItem } from '../../../types/core-interfaces.js';
 import type {
   InsightGenerationRequest,
-  RecommendationInsight,
   InsightTypeUnion,
-} from '../../../types/insight-interfaces';
+  RecommendationInsight,
+} from '../../../types/insight-interfaces.js';
+import type { ZAIChatRequest, ZAIChatResponse } from '../../../types/zai-interfaces.js';
+import { logger } from '../../../utils/logger.js';
+import type { ZAIClientService } from '../../ai/zai-client.service';
 
 export interface PredictiveInsightOptions {
   confidence_threshold: number;
@@ -139,7 +141,7 @@ export class PredictiveInsightStrategy {
    * Predict future knowledge needs
    */
   private async predictKnowledgeNeeds(
-    items: any[],
+    items: KnowledgeItem[],
     options: PredictiveInsightOptions
   ): Promise<PredictiveAnalysis[]> {
     try {
@@ -175,7 +177,7 @@ export class PredictiveInsightStrategy {
    * Predict content evolution
    */
   private async predictContentEvolution(
-    items: any[],
+    items: KnowledgeItem[],
     options: PredictiveInsightOptions
   ): Promise<PredictiveAnalysis[]> {
     try {
@@ -211,7 +213,7 @@ export class PredictiveInsightStrategy {
    * Predict collaboration patterns
    */
   private async predictCollaborationPatterns(
-    items: any[],
+    items: KnowledgeItem[],
     options: PredictiveInsightOptions
   ): Promise<PredictiveAnalysis[]> {
     try {
@@ -234,7 +236,7 @@ export class PredictiveInsightStrategy {
           likelihood: 'high',
           impact_assessment: 'medium',
           based_on_items: collaborationData.items.slice(0, 10).map((item) => ({
-            item_id: item.id,
+            item_id: item.id || '',
             item_type: item.kind,
             relevance: 0.8,
             context: 'Collaboration indicator',
@@ -267,7 +269,7 @@ export class PredictiveInsightStrategy {
    * Predict future skill requirements
    */
   private async predictSkillRequirements(
-    items: any[],
+    items: KnowledgeItem[],
     options: PredictiveInsightOptions
   ): Promise<PredictiveAnalysis[]> {
     try {
@@ -303,7 +305,7 @@ export class PredictiveInsightStrategy {
    * Predict process optimization opportunities
    */
   private async predictProcessOptimization(
-    items: any[],
+    items: KnowledgeItem[],
     options: PredictiveInsightOptions
   ): Promise<PredictiveAnalysis[]> {
     try {
@@ -312,7 +314,7 @@ export class PredictiveInsightStrategy {
         (item) =>
           item.kind === 'runbook' ||
           item.kind === 'todo' ||
-          (item.data && item['data.tags'] && item['data.tags'].includes('process'))
+          (item.data && (item.data as any).tags && (item.data as any).tags.includes('process'))
       );
 
       if (processItems.length < 3) {
@@ -351,7 +353,7 @@ export class PredictiveInsightStrategy {
    * Assess future risks
    */
   private async assessFutureRisks(
-    items: any[],
+    items: KnowledgeItem[],
     options: PredictiveInsightOptions
   ): Promise<PredictiveAnalysis[]> {
     try {
@@ -386,7 +388,7 @@ export class PredictiveInsightStrategy {
   /**
    * Build knowledge needs prediction prompt
    */
-  private buildKnowledgeNeedsPrompt(items: any[]): string {
+  private buildKnowledgeNeedsPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Created: ${item.created_at || 'unknown'}, Content: ${this.extractKeyContent(item)}`;
@@ -441,7 +443,7 @@ Return only the JSON response, no additional text.
   /**
    * Build content evolution prompt
    */
-  private buildContentEvolutionPrompt(items: any[]): string {
+  private buildContentEvolutionPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Created: ${item.created_at || 'unknown'}, Content: ${this.extractKeyContent(item)}`;
@@ -496,7 +498,7 @@ Return only the JSON response, no additional text.
   /**
    * Build skill requirements prompt
    */
-  private buildSkillRequirementsPrompt(items: any[]): string {
+  private buildSkillRequirementsPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Created: ${item.created_at || 'unknown'}, Content: ${this.extractKeyContent(item)}`;
@@ -551,7 +553,7 @@ Return only the JSON response, no additional text.
   /**
    * Build process optimization prompt
    */
-  private buildProcessOptimizationPrompt(items: any[]): string {
+  private buildProcessOptimizationPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Content: ${this.extractKeyContent(item)}`;
@@ -606,7 +608,7 @@ Return only the JSON response, no additional text.
   /**
    * Build risk assessment prompt
    */
-  private buildRiskAssessmentPrompt(items: any[]): string {
+  private buildRiskAssessmentPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Created: ${item.created_at || 'unknown'}, Content: ${this.extractKeyContent(item)}`;
@@ -663,7 +665,7 @@ Return only the JSON response, no additional text.
    */
   private parsePredictiveResponse(
     response: any,
-    items: any[],
+    items: KnowledgeItem[],
     predictionType: PredictiveAnalysis['prediction_type']
   ): PredictiveAnalysis[] {
     try {
@@ -721,7 +723,7 @@ Return only the JSON response, no additional text.
   /**
    * Extract collaboration data from items
    */
-  private extractCollaborationData(items: any[]): { items: any[]; patterns: any[] } {
+  private extractCollaborationData(items: KnowledgeItem[]): { items: KnowledgeItem[]; patterns: any[] } {
     const collaborationItems = items.filter((item) => {
       // Look for collaboration indicators
       const content = this.extractKeyContent(item).toLowerCase();
@@ -737,9 +739,10 @@ Return only the JSON response, no additional text.
         'aligned',
       ];
 
+      const scope = item.scope as any;
       return (
         collaborationKeywords.some((keyword) => content.includes(keyword)) ||
-        (item.scope && (item.scope.project || item.scope.team))
+        (item.scope && (item.scope.project || scope.team))
       );
     });
 
@@ -751,14 +754,15 @@ Return only the JSON response, no additional text.
   /**
    * Identify collaboration patterns
    */
-  private identifyCollaborationPatterns(items: any[]): any[] {
+  private identifyCollaborationPatterns(items: KnowledgeItem[]): any[] {
     const patterns = [];
 
     // Group by project/team scope
-    const scopeGroups = new Map<string, any[]>();
+    const scopeGroups = new Map<string, KnowledgeItem[]>();
     items.forEach((item) => {
-      if (item.scope && (item.scope.project || item.scope.team)) {
-        const scopeKey = `${item.scope.project || ''}-${item.scope.team || ''}`;
+      const scope = item.scope as any;
+      if (item.scope && (item.scope.project || scope.team)) {
+        const scopeKey = `${item.scope.project || ''}-${scope.team || ''}`;
         if (!scopeGroups.has(scopeKey)) {
           scopeGroups.set(scopeKey, []);
         }
@@ -784,12 +788,12 @@ Return only the JSON response, no additional text.
   /**
    * Predict collaboration trends
    */
-  private predictCollaborationTrends(collaborationData: any[]): any[] {
+  private predictCollaborationTrends(collaborationData: { items: KnowledgeItem[]; patterns: any[] }): any[] {
     const predictions = [];
 
     if (collaborationData.patterns.length > 0) {
       const avgIntensity =
-        collaborationData.patterns.reduce((sum, pattern) => sum + pattern.intensity, 0) /
+        collaborationData.patterns.reduce((sum: number, pattern: any) => sum + pattern.intensity, 0) /
         collaborationData.patterns.length;
 
       predictions.push({
@@ -813,12 +817,12 @@ Return only the JSON response, no additional text.
   /**
    * Extract key content from item
    */
-  private extractKeyContent(item: any): string {
+  private extractKeyContent(item: KnowledgeItem): string {
     const content = [
-      item.data?.content,
-      item.data?.title,
-      item.data?.description,
-      item.data?.summary,
+      (item.data as any)?.content,
+      (item.data as any)?.title,
+      (item.data as any)?.description,
+      (item.data as any)?.summary,
     ].filter(Boolean);
 
     if (content.length === 0) {
@@ -865,9 +869,9 @@ Return only the JSON response, no additional text.
       category: 'recommendation',
       recommendation_data: {
         action_type: 'preparatory_action',
-        priority: primaryRecommendation.priority,
+        priority: this.mapImpactToPriorityLevel(analysis.impact_assessment) as 'low' | 'medium' | 'high' | 'critical',
         effort_estimate: primaryRecommendation.effort_estimate,
-        impact_assessment: analysis.impact_assessment,
+        impact_assessment: (analysis.impact_assessment === 'critical' ? 'high' : analysis.impact_assessment) as 'low' | 'medium' | 'high' | undefined,
         dependencies: primaryRecommendation.dependencies,
         success_probability: analysis.confidence,
       },
@@ -889,6 +893,24 @@ Return only the JSON response, no additional text.
         return 4;
       default:
         return 3;
+    }
+  }
+
+  /**
+   * Map impact assessment to priority level string
+   */
+  private mapImpactToPriorityLevel(impact: string): 'critical' | 'high' | 'medium' | 'low' {
+    switch (impact) {
+      case 'critical':
+        return 'critical';
+      case 'high':
+        return 'high';
+      case 'medium':
+        return 'medium';
+      case 'low':
+        return 'low';
+      default:
+        return 'medium';
     }
   }
 }

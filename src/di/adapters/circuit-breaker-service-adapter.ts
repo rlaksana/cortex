@@ -12,9 +12,10 @@
  * @since 2025
  */
 
-import { CircuitBreakerManager } from '../../services/circuit-breaker.service.js';
-import type { ICircuitBreakerService } from '../service-interfaces.js';
 import { logger } from '@/utils/logger.js';
+
+import { type CircuitBreakerManager } from '../../services/circuit-breaker.service.js';
+import type { ICircuitBreakerService } from '../service-interfaces.js';
 
 /**
  * Adapter that wraps CircuitBreakerManager to implement ICircuitBreakerService interface

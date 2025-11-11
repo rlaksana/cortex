@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Enhanced Qdrant Health Monitor
  *
@@ -11,9 +11,11 @@
  */
 
 import { EventEmitter } from 'events';
-import { HealthStatus, DependencyType } from '../types/unified-health-interfaces.js';
-import { CircuitBreaker } from '../services/circuit-breaker.service.js';
+
 import { logger } from '@/utils/logger.js';
+
+import { CircuitBreaker } from '../services/circuit-breaker.service.js';
+import { DependencyType,HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**
  * Qdrant connection status types
@@ -170,16 +172,40 @@ export class QdrantHealthMonitor extends EventEmitter {
   private requestHistory: Array<{ timestamp: number; success: boolean; responseTime: number }> = [];
   private connectionHistory: Array<{ timestamp: number; success: boolean; connectionTime: number }> = [];
 
-  constructor(config: QdrantHealthMonitorConfig) {
+  constructor(config: Partial<QdrantHealthMonitorConfig>) {
     super();
 
-    this.config = {
+    // Default configuration
+    const defaultConfig: QdrantHealthMonitorConfig = {
+      // Required connection config
+      url: 'http://localhost:6333',
+
+      // Connection config with defaults
       timeoutMs: 10000,
       retryAttempts: 3,
       retryDelayMs: 1000,
+
+      // Health check config with defaults
       healthCheckIntervalMs: 30000,
       metricsCollectionIntervalMs: 10000,
       connectionTestIntervalMs: 60000,
+
+      // Circuit breaker config with defaults
+      circuitBreaker: {
+        enabled: true,
+        failureThreshold: 5,
+        recoveryTimeoutMs: 60000,
+        monitoringWindowMs: 300000,
+      },
+
+      // Alerts config with defaults
+      alerts: {
+        enabled: true,
+        consecutiveFailuresThreshold: 3,
+        performanceDegradationThreshold: 25,
+      },
+
+      // Performance thresholds with defaults
       thresholds: {
         responseTimeWarning: 1000,
         responseTimeCritical: 5000,
@@ -192,18 +218,31 @@ export class QdrantHealthMonitor extends EventEmitter {
         diskUsageWarning: 85,
         diskUsageCritical: 95,
       },
+    };
+
+    // Deep merge the configuration to avoid duplicates
+    this.config = {
+      ...defaultConfig,
+      url: config.url || defaultConfig.url,
+      apiKey: config.apiKey,
+      timeoutMs: config.timeoutMs ?? defaultConfig.timeoutMs,
+      retryAttempts: config.retryAttempts ?? defaultConfig.retryAttempts,
+      retryDelayMs: config.retryDelayMs ?? defaultConfig.retryDelayMs,
+      healthCheckIntervalMs: config.healthCheckIntervalMs ?? defaultConfig.healthCheckIntervalMs,
+      metricsCollectionIntervalMs: config.metricsCollectionIntervalMs ?? defaultConfig.metricsCollectionIntervalMs,
+      connectionTestIntervalMs: config.connectionTestIntervalMs ?? defaultConfig.connectionTestIntervalMs,
       circuitBreaker: {
-        enabled: true,
-        failureThreshold: 5,
-        recoveryTimeoutMs: 60000,
-        monitoringWindowMs: 300000,
+        ...defaultConfig.circuitBreaker,
+        ...config.circuitBreaker,
       },
       alerts: {
-        enabled: true,
-        consecutiveFailuresThreshold: 3,
-        performanceDegradationThreshold: 25,
+        ...defaultConfig.alerts,
+        ...config.alerts,
       },
-      ...config,
+      thresholds: {
+        ...defaultConfig.thresholds,
+        ...config.thresholds,
+      },
     };
 
     this.startTime = Date.now();
@@ -211,13 +250,15 @@ export class QdrantHealthMonitor extends EventEmitter {
 
     // Initialize circuit breaker if enabled
     if (this.config.circuitBreaker.enabled) {
-      this.circuitBreaker = new CircuitBreaker({
+      this.circuitBreaker = new CircuitBreaker('qdrant-health-monitor', {
         failureThreshold: this.config.circuitBreaker.failureThreshold,
         recoveryTimeoutMs: this.config.circuitBreaker.recoveryTimeoutMs,
         monitoringWindowMs: this.config.circuitBreaker.monitoringWindowMs,
         failureRateThreshold: 0.5,
         minimumCalls: 5,
         trackFailureTypes: true,
+        enablePerformanceLogging: true,
+        enableSLOAnnotations: true,
       });
     }
   }
@@ -448,7 +489,7 @@ export class QdrantHealthMonitor extends EventEmitter {
 
     // Determine health status
     let status = HealthStatus.HEALTHY;
-    let connectionStatus = QdrantConnectionStatus.CONNECTED;
+    const connectionStatus = QdrantConnectionStatus.CONNECTED;
     const issues: string[] = [];
 
     // Check response time
@@ -944,6 +985,17 @@ export class QdrantHealthMonitor extends EventEmitter {
     return limit ? history.slice(0, limit) : history;
   }
 
-  healthCheck?: unknown|undefined}
+  /**
+   * Public health check method for graceful degradation manager
+   */
+  public async healthCheck(): Promise<boolean> {
+    try {
+      const result = await this.performHealthCheck();
+      return result.status === HealthStatus.HEALTHY;
+    } catch {
+      return false;
+    }
+  }
+}
 
 export default QdrantHealthMonitor;

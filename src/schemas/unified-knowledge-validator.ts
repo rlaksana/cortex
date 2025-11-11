@@ -11,13 +11,14 @@
  * @version 2.0.0 - T20 Implementation
  */
 
-import { z, ZodSchema, ZodError } from 'zod';
+import { z, type ZodError,ZodSchema } from 'zod';
+
 import type {
   KnowledgeItem,
-  MemoryStoreRequest,
   MemoryFindRequest,
-  ValidationResult as IValidationResult,
+  MemoryStoreRequest,
   StoreError,
+  ValidationResult as IValidationResult,
 } from '../types/core-interfaces.js';
 
 // ============================================================================
@@ -1377,10 +1378,10 @@ export async function validateDeleteRequest(
 // ============================================================================
 
 export type {
-  KnowledgeItem,
-  MemoryStoreRequest,
-  MemoryFindRequest,
   ValidationResult as IValidationResult,
+  KnowledgeItem,
+  MemoryFindRequest,
+  MemoryStoreRequest,
   StoreError,
 };
 

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Procedural Contradiction Detection Strategy
  *
@@ -12,12 +12,13 @@
  */
 
 import { randomUUID } from 'crypto';
-import { logger } from '../../../utils/logger';
-import { zaiClientService } from '../../ai/zai-client.service';
+
 import type {
-  KnowledgeItem,
   ContradictionResult,
+  KnowledgeItem,
 } from '../../../types/contradiction-detector.interface';
+import { logger } from '../../../utils/logger.js';
+import { zaiClientService } from '../../ai/zai-client.service';
 
 /**
  * Procedural contradiction types
@@ -1061,7 +1062,6 @@ Provide detailed procedural analysis focusing on workflow consistency and proced
       metadata: {
         detection_method: 'zai_procedural_analysis',
         algorithm_version: '3.0.0',
-        model: 'zai-glm-4.6',
         processing_time_ms: 0,
         comparison_details: {
           contradiction_subtype: analysis.contradiction_type,
@@ -1071,7 +1071,7 @@ Provide detailed procedural analysis focusing on workflow consistency and proced
         evidence: analysis.evidence.map((ev) => ({
           ...ev,
           evidence_type: ev.type,
-          item_id: ev.source_item === 1 ? item1.id : item2.id,
+          item_id: (ev.source_item === 1 ? item1.id : item2.id) || '',
         })),
       },
       resolution_suggestions: this.generateResolutionSuggestions(
@@ -1114,7 +1114,7 @@ Provide detailed procedural analysis focusing on workflow consistency and proced
         evidence: analysis.evidence.map((ev) => ({
           ...ev,
           evidence_type: ev.type,
-          item_id: ev.source_item === 1 ? item1.id : item2.id,
+          item_id: (ev.source_item === 1 ? item1.id : item2.id) || '',
         })),
       },
       resolution_suggestions: this.generateResolutionSuggestions(
@@ -1158,7 +1158,12 @@ Provide detailed procedural analysis focusing on workflow consistency and proced
     effort: 'low' | 'medium' | 'high';
     description: string;
   }> {
-    const suggestions = [];
+    const suggestions: Array<{
+      suggestion: string;
+      priority: 'low' | 'medium' | 'high';
+      effort: 'low' | 'medium' | 'high';
+      description: string;
+    }> = [];
 
     const basePriority =
       severity === 'critical'
@@ -1210,7 +1215,7 @@ Provide detailed procedural analysis focusing on workflow consistency and proced
       case 'policy_conflict':
         suggestions.push({
           suggestion: 'Reconcile policy conflicts and establish clear precedence',
-          priority: 'critical',
+          priority: 'high',
           effort: 'high',
           description:
             'Resolve contradictory policies and establish clear hierarchy or scope separation',
@@ -1220,7 +1225,7 @@ Provide detailed procedural analysis focusing on workflow consistency and proced
       case 'authorization_conflict':
         suggestions.push({
           suggestion: 'Standardize authorization and approval procedures',
-          priority: 'critical',
+          priority: 'high',
           effort: 'high',
           description: 'Ensure consistent authorization requirements and approval chains',
         });
@@ -1302,7 +1307,3 @@ Provide detailed procedural analysis focusing on workflow consistency and proced
  */
 export const proceduralContradictionStrategy = new ProceduralContradictionStrategy();
 
-/**
- * Export class for testing
- */
-export { ProceduralContradictionStrategy };

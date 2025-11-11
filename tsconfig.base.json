@@ -3,7 +3,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
     "outDir": "./dist",
     "rootDir": "./src",
 
@@ -56,7 +56,7 @@
     },
 
     // Type definitions
-    "types": ["node"],
+    "types": ["node", "node-fetch"],
 
     // Import helpers (shared across environments)
     "importHelpers": false,

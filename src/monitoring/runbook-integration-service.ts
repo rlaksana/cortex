@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Runbook Integration Service for MCP Cortex Alerting
  *
@@ -16,8 +16,10 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { Alert } from './alert-management-service.js';
+
+import { type Alert } from './alert-management-service.js';
 import { AlertSeverity } from '../types/unified-health-interfaces.js';
 import { Bash } from '../utils/bash-wrapper.js';
 
@@ -953,6 +955,8 @@ export class RunbookIntegrationService extends EventEmitter {
         lastReviewed: new Date(),
         approvalRequired: false,
       },
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     this.runbooks.set(databaseRecoveryRunbook.id, {
@@ -1195,6 +1199,8 @@ export class RunbookIntegrationService extends EventEmitter {
         lastReviewed: new Date(),
         approvalRequired: false,
       },
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     this.runbooks.set(memoryPressureRunbook.id, {
@@ -1377,12 +1383,12 @@ export class RunbookIntegrationService extends EventEmitter {
       this.emit('runbook_execution_started', execution);
 
       const startTime = Date.now();
-      let stepExecutions: StepExecution[] = [];
+      const stepExecutions: StepExecution[] = [];
 
       try {
         // Execute steps in order
         for (const step of runbook.steps) {
-          if (execution.status === 'cancelled') break;
+          if (execution.status === 'cancelled' as ExecutionStatus) break;
 
           // Check if step should be executed
           if (step.condition && !this.evaluateStepCondition(step.condition, execution)) {
@@ -1420,7 +1426,7 @@ export class RunbookIntegrationService extends EventEmitter {
         execution.completedAt = new Date(endTime);
         execution.steps = stepExecutions;
 
-        if (execution.status !== 'failed' && execution.status !== 'cancelled') {
+        if (execution.status !== 'failed' as ExecutionStatus && execution.status !== 'cancelled' as ExecutionStatus) {
           execution.status = 'completed';
           execution.result.success = true;
           execution.result.exitCode = 0;

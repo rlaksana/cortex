@@ -10,10 +10,8 @@
  */
 
 import { Injectable } from '../di-container.js';
-import type { ILoggerService } from '../service-interfaces.js';
+import type { IConfigService , ILoggerService, IMetricsService  } from '../service-interfaces.js';
 import { ServiceTokens } from '../service-interfaces.js';
-import type { IConfigService } from '../service-interfaces.js';
-import type { IMetricsService } from '../service-interfaces.js';
 
 /**
  * Log levels in order of severity

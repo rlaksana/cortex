@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Production Health Endpoint
  *
@@ -9,9 +9,11 @@
  * @version 2.0.1
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { ProductionHealthChecker, HealthCheckResult } from './production-health-checker.js';
+import { type NextFunction,type Request, type Response } from 'express';
+
 import { ProductionLogger } from '@/utils/logger.js';
+
+import { type HealthCheckResult,ProductionHealthChecker } from './production-health-checker.js';
 
 export interface HealthEndpointConfig {
   enableDetailedEndpoints: boolean;

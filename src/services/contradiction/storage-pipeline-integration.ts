@@ -1,20 +1,20 @@
-// @ts-nocheck
+
 /**
  * Storage Pipeline Integration
  * Integrates contradiction detection into the storage pipeline
  */
 
+import { type ContradictionDetector } from './contradiction-detector.service';
+import { type MetadataFlaggingService } from './metadata-flagging.service';
+import { type PointerResolutionService } from './pointer-resolution.service';
 import {
-  StoragePipelineHook,
-  ContradictionDetectionRequest,
-  ContradictionDetectionResponse,
-  ContradictionResult,
+  type ContradictionDetectionRequest,
+  type ContradictionDetectionResponse,
   ContradictionFlag,
-  KnowledgeItem,
+  ContradictionResult,
+  type KnowledgeItem,
+  type StoragePipelineHook,
 } from '../../types/contradiction-detector.interface';
-import { ContradictionDetector } from './contradiction-detector.service';
-import { MetadataFlaggingService } from './metadata-flagging.service';
-import { PointerResolutionService } from './pointer-resolution.service';
 
 export interface StorageIntegrationConfig {
   enabled: boolean;
@@ -37,7 +37,7 @@ export class StoragePipelineIntegration implements StoragePipelineHook {
   private pendingChecks: Map<string, Promise<ContradictionDetectionResponse>> = new Map();
   private checkQueue: Array<{
     items: KnowledgeItem[];
-    priority: 'high' | 'medium' | 'low';
+    priority: 'critical' | 'high' | 'medium' | 'low';
     timestamp: Date;
     resolve: (response: ContradictionDetectionResponse) => void;
     reject: (error: Error) => void;
@@ -240,7 +240,7 @@ export class StoragePipelineIntegration implements StoragePipelineHook {
    */
   private async queueDetectionRequest(
     items: KnowledgeItem[],
-    priority: 'high' | 'medium' | 'low'
+    priority: 'critical' | 'high' | 'medium' | 'low'
   ): Promise<ContradictionDetectionRequest | null> {
     return new Promise((resolve, reject) => {
       this.checkQueue.push({
@@ -279,7 +279,7 @@ export class StoragePipelineIntegration implements StoragePipelineHook {
     try {
       // Sort by priority and timestamp
       this.checkQueue.sort((a, b) => {
-        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        const priorityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
         const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
         if (priorityDiff !== 0) return priorityDiff;
         return a.timestamp.getTime() - b.timestamp.getTime();
@@ -317,7 +317,7 @@ export class StoragePipelineIntegration implements StoragePipelineHook {
    */
   async batchCheckExistingItems(
     items: KnowledgeItem[],
-    options?: { priority?: 'high' | 'medium' | 'low'; chunk_size?: number }
+    options?: { priority?: 'critical' | 'high' | 'medium' | 'low'; chunk_size?: number }
   ): Promise<ContradictionDetectionResponse[]> {
     const chunkSize = options?.chunk_size || 50;
     const priority = options?.priority || 'medium';

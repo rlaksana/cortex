@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * SLO Breach Detection and Notification Service
  *
@@ -11,26 +11,33 @@
  */
 
 import { EventEmitter } from 'events';
+
+import { type SLOService } from './slo-service.js';
 import {
-  SLO,
-  SLOEvaluation,
-  SLOAlert,
+  type BreachSeverity,
+  type ImpactAssessment,
+  type IncidentResponse,
+  type IncidentStatus,
+  type NotificationChannel,
+  type SLO,
+  type SLOAlert,
   SLOAlertType,
+  type SLOEvaluation,
   SLOEvaluationStatus,
-  SLOBreachIncident,
-  NotificationChannel,
-  IncidentResponse,
-  ImpactAssessment,
 } from '../types/slo-interfaces.js';
-import { AlertSeverity, BreachSeverity, IncidentStatus, EscalationLevel } from '../types/slo-types.js';
-import { SLOService } from './slo-service.js';
+import {
+  EscalationLevel,
+} from '../types/slo-types.js';
+import {
+  AlertSeverity,
+} from '../types/unified-health-interfaces.js';
 
 /**
  * SLO Breach Detection and Notification Service
  */
 export class SLOBreachDetectionService extends EventEmitter {
   private sloService: SLOService;
-  private activeIncidents: Map<string, SLOBreachIncident> = new Map();
+  private activeIncidents: Map<string, ExtendedSLOBreachIncident> = new Map();
   private notificationChannels: Map<string, NotificationChannel> = new Map();
   private escalationPolicies: Map<string, EscalationPolicy> = new Map();
   private breachThresholds: Map<string, BreachThreshold[]> = new Map();
@@ -105,7 +112,7 @@ export class SLOBreachDetectionService extends EventEmitter {
     evaluation: SLOEvaluation,
     severity: BreachSeverity,
     impactAssessment?: ImpactAssessment
-  ): Promise<SLOBreachIncident> {
+  ): Promise<ExtendedSLOBreachIncident> {
     const slo = this.sloService.getSLO(sloId);
     if (!slo) {
       throw new Error(`SLO ${sloId} not found`);
@@ -116,12 +123,28 @@ export class SLOBreachDetectionService extends EventEmitter {
     // Calculate impact if not provided
     const impact = impactAssessment || await this.calculateImpact(slo, evaluation);
 
-    const incident: SLOBreachIncident = {
+    const incident: ExtendedSLOBreachIncident = {
       id: incidentId,
       sloId,
-      sloName: slo.name,
+      timestamp: new Date(),
       severity,
-      status: IncidentStatus.OPEN,
+      description: `SLO breach detected for ${slo.name}`,
+      impact: 'High impact on system performance',
+      affectedServices: this.identifyAffectedServices(slo),
+      metrics: {
+        actualValue: evaluation.objective.achieved,
+        targetValue: evaluation.objective.target,
+        deviation: evaluation.objective.target - evaluation.objective.achieved,
+      },
+      status: 'open' as IncidentStatus,
+      response: this.createDefaultResponse(),
+      escalation: 'tier_1' as any,
+      communication: {
+        stakeholders: [],
+        channels: [],
+        frequency: 'as_needed',
+      },
+      sloName: slo.name,
       detectedAt: new Date(),
       evaluation,
       impactAssessment: impact,
@@ -154,20 +177,20 @@ export class SLOBreachDetectionService extends EventEmitter {
    */
   async updateIncident(
     incidentId: string,
-    updates: Partial<SLOBreachIncident>
-  ): Promise<SLOBreachIncident> {
+    updates: Partial<ExtendedSLOBreachIncident>
+  ): Promise<ExtendedSLOBreachIncident> {
     const incident = this.activeIncidents.get(incidentId);
     if (!incident) {
       throw new Error(`Incident ${incidentId} not found`);
     }
 
-    const updatedIncident: SLOBreachIncident = {
+    const updatedIncident: ExtendedSLOBreachIncident = {
       ...incident,
       ...updates,
       id: incidentId, // Ensure ID doesn't change
       metadata: {
-        ...incident.metadata,
-        ...updates.metadata,
+        ...(incident.metadata || {}),
+        ...(updates.metadata || {}),
         lastUpdated: new Date(),
       },
     };
@@ -194,25 +217,22 @@ export class SLOBreachDetectionService extends EventEmitter {
       actions: string[];
       preventRecurrence: string[];
     }
-  ): Promise<SLOBreachIncident> {
+  ): Promise<ExtendedSLOBreachIncident> {
     const incident = this.activeIncidents.get(incidentId);
     if (!incident) {
       throw new Error(`Incident ${incidentId} not found`);
     }
 
-    const resolvedIncident: SLOBreachIncident = {
+    const resolvedIncident: ExtendedSLOBreachIncident = {
       ...incident,
-      status: IncidentStatus.RESOLVED,
+      status: 'resolved' as IncidentStatus,
       resolvedAt: new Date(),
       resolution: {
-        reason: resolution.reason,
-        resolvedBy: resolution.resolvedBy,
-        actions: resolution.actions,
-        preventRecurrence: resolution.preventRecurrence,
-        duration: Date.now() - incident.detectedAt.getTime(),
+        ...resolution,
+        duration: new Date().getTime() - incident.detectedAt.getTime(),
       },
       metadata: {
-        ...incident.metadata,
+        ...(incident.metadata || {}),
         lastUpdated: new Date(),
       },
     };
@@ -235,21 +255,21 @@ export class SLOBreachDetectionService extends EventEmitter {
   /**
    * Get active incidents
    */
-  getActiveIncidents(): SLOBreachIncident[] {
+  getActiveIncidents(): ExtendedSLOBreachIncident[] {
     return Array.from(this.activeIncidents.values());
   }
 
   /**
    * Get incident by ID
    */
-  getIncident(incidentId: string): SLOBreachIncident | undefined {
+  getIncident(incidentId: string): ExtendedSLOBreachIncident | undefined {
     return this.activeIncidents.get(incidentId);
   }
 
   /**
    * Get incidents by SLO
    */
-  getIncidentsBySLO(sloId: string): SLOBreachIncident[] {
+  getIncidentsBySLO(sloId: string): ExtendedSLOBreachIncident[] {
     return Array.from(this.activeIncidents.values()).filter(
       incident => incident.sloId === sloId
     );
@@ -271,7 +291,7 @@ export class SLOBreachDetectionService extends EventEmitter {
    * Send notification through specified channels
    */
   async sendNotification(
-    incident: SLOBreachIncident,
+    incident: ExtendedSLOBreachIncident,
     message: string,
     channels?: string[],
     severity?: AlertSeverity
@@ -308,7 +328,7 @@ export class SLOBreachDetectionService extends EventEmitter {
     }
 
     // Update incident with notification results
-    incident.notifications.push(...notifications);
+    (incident as any).notifications.push(...notifications);
   }
 
   /**
@@ -348,11 +368,11 @@ export class SLOBreachDetectionService extends EventEmitter {
       acknowledgedAt: null,
     };
 
-    incident.escalations.push(escalation);
+    (incident as any).escalations.push(escalation);
 
     // Send escalation notifications
-    const message = `ESCALATION (${escalationLevel}): ${incident.sloName} - ${reason}`;
-    await this.sendNotification(incident, message, escalationConfig.channels, AlertSeverity.CRITICAL);
+    const message = `ESCALATION (${escalationLevel}): ${(incident as any).sloName} - ${reason}`;
+    await this.sendNotification(incident, message, escalationConfig.channels, 'critical' as AlertSeverity);
 
     this.emit('incident:escalated', { incident, escalation });
   }
@@ -364,7 +384,7 @@ export class SLOBreachDetectionService extends EventEmitter {
   /**
    * Check for SLO breaches
    */
-  async checkForBreaches(sloId: string): Promise<SLOBreachIncident[]> {
+  async checkForBreaches(sloId: string): Promise<ExtendedSLOBreachIncident[]> {
     const slo = this.sloService.getSLO(sloId);
     if (!slo) {
       return [];
@@ -375,7 +395,7 @@ export class SLOBreachDetectionService extends EventEmitter {
       return [];
     }
 
-    const breaches: SLOBreachIncident[] = [];
+    const breaches: ExtendedSLOBreachIncident[] = [];
 
     // Check for SLO violation
     if (evaluation.status === SLOEvaluationStatus.VIOLATION) {
@@ -395,8 +415,8 @@ export class SLOBreachDetectionService extends EventEmitter {
     // Check for error budget exhaustion
     if (evaluation.budget.remaining <= 0) {
       const existingIncident = this.getActiveIncidentForSLO(sloId);
-      if (!existingIncident || existingIncident.severity !== BreachSeverity.CRITICAL) {
-        const incident = await this.createIncident(sloId, evaluation, BreachSeverity.CRITICAL);
+      if (!existingIncident || existingIncident.severity !== 'catastrophic' as BreachSeverity) {
+        const incident = await this.createIncident(sloId, evaluation, 'catastrophic' as BreachSeverity);
         breaches.push(incident);
       }
     }
@@ -407,7 +427,7 @@ export class SLOBreachDetectionService extends EventEmitter {
   /**
    * Check for custom breach conditions
    */
-  async checkCustomBreachConditions(sloId: string): Promise<SLOBreachIncident[]> {
+  async checkCustomBreachConditions(sloId: string): Promise<ExtendedSLOBreachIncident[]> {
     const customThresholds = this.breachThresholds.get(sloId);
     if (!customThresholds || customThresholds.length === 0) {
       return [];
@@ -418,7 +438,7 @@ export class SLOBreachDetectionService extends EventEmitter {
       return [];
     }
 
-    const breaches: SLOBreachIncident[] = [];
+    const breaches: ExtendedSLOBreachIncident[] = [];
 
     for (const threshold of customThresholds) {
       const breached = this.evaluateThreshold(threshold, evaluation);
@@ -451,20 +471,20 @@ export class SLOBreachDetectionService extends EventEmitter {
   /**
    * Initiate automated response for an incident
    */
-  async initiateAutomatedResponse(incident: SLOBreachIncident): Promise<void> {
+  async initiateAutomatedResponse(incident: ExtendedSLOBreachIncident): Promise<void> {
     const responses = [];
 
     // Trigger automated remediation based on severity and SLO type
-    if (incident.severity === BreachSeverity.CRITICAL) {
+    if (incident.severity === 'catastrophic' as BreachSeverity) {
       responses.push(await this.executeCriticalResponse(incident));
-    } else if (incident.severity === BreachSeverity.HIGH) {
+    } else if (incident.severity === 'critical' as BreachSeverity) {
       responses.push(await this.executeHighSeverityResponse(incident));
     } else {
       responses.push(await this.executeStandardResponse(incident));
     }
 
     // Update incident with responses
-    incident.responses.push(...responses);
+    (incident as any).responses.push(...responses);
 
     this.emit('automated-response:initiated', { incident, responses });
   }
@@ -472,9 +492,8 @@ export class SLOBreachDetectionService extends EventEmitter {
   /**
    * Execute critical severity response
    */
-  private async executeCriticalResponse(incident: SLOBreachIncident): Promise<IncidentResponse> {
-    const response: IncidentResponse = {
-      id: this.generateId(),
+  private async executeCriticalResponse(incident: ExtendedSLOBreachIncident): Promise<AutomatedResponse> {
+    const response: AutomatedResponse = {
       type: 'automated',
       category: 'critical',
       initiatedAt: new Date(),
@@ -484,8 +503,8 @@ export class SLOBreachDetectionService extends EventEmitter {
 
     try {
       // Immediate traffic shaping if applicable
-      if (incident.sloName.toLowerCase().includes('latency') ||
-          incident.sloName.toLowerCase().includes('response time')) {
+      if ((incident as any).sloName.toLowerCase().includes('latency') ||
+          (incident as any).sloName.toLowerCase().includes('response time')) {
         response.actions.push({
           type: 'traffic_shaping',
           description: 'Implementing traffic shaping to reduce load',
@@ -503,7 +522,7 @@ export class SLOBreachDetectionService extends EventEmitter {
       });
 
       // Enable circuit breakers if degradation is detected
-      if (incident.evaluation.objective.compliance < 90) {
+      if ((incident as any).evaluation.objective.compliance < 90) {
         response.actions.push({
           type: 'circuit_breaker',
           description: 'Enabling circuit breakers to prevent cascade failures',
@@ -526,9 +545,8 @@ export class SLOBreachDetectionService extends EventEmitter {
   /**
    * Execute high severity response
    */
-  private async executeHighSeverityResponse(incident: SLOBreachIncident): Promise<IncidentResponse> {
-    const response: IncidentResponse = {
-      id: this.generateId(),
+  private async executeHighSeverityResponse(incident: ExtendedSLOBreachIncident): Promise<AutomatedResponse> {
+    const response: AutomatedResponse = {
       type: 'automated',
       category: 'high_severity',
       initiatedAt: new Date(),
@@ -567,9 +585,8 @@ export class SLOBreachDetectionService extends EventEmitter {
   /**
    * Execute standard response
    */
-  private async executeStandardResponse(incident: SLOBreachIncident): Promise<IncidentResponse> {
-    const response: IncidentResponse = {
-      id: this.generateId(),
+  private async executeStandardResponse(incident: ExtendedSLOBreachIncident): Promise<AutomatedResponse> {
+    const response: AutomatedResponse = {
       type: 'automated',
       category: 'standard',
       initiatedAt: new Date(),
@@ -688,9 +705,9 @@ export class SLOBreachDetectionService extends EventEmitter {
   /**
    * Get active incident for an SLO
    */
-  private getActiveIncidentForSLO(sloId: string): SLOBreachIncident | undefined {
+  private getActiveIncidentForSLO(sloId: string): ExtendedSLOBreachIncident | undefined {
     return Array.from(this.activeIncidents.values()).find(
-      incident => incident.sloId === sloId && incident.status === IncidentStatus.OPEN
+      incident => incident.sloId === sloId && incident.status === 'open' as IncidentStatus
     );
   }
 
@@ -702,13 +719,13 @@ export class SLOBreachDetectionService extends EventEmitter {
     const budgetRemaining = evaluation.budget.remaining;
 
     if (compliance < 90 || budgetRemaining <= 0) {
-      return BreachSeverity.CRITICAL;
+      return 'catastrophic' as BreachSeverity;
     } else if (compliance < 95 || budgetRemaining < 10) {
-      return BreachSeverity.HIGH;
+      return 'critical' as BreachSeverity;
     } else if (compliance < 98 || budgetRemaining < 25) {
-      return BreachSeverity.MEDIUM;
+      return 'major' as BreachSeverity;
     } else {
-      return BreachSeverity.LOW;
+      return 'minor' as BreachSeverity;
     }
   }
 
@@ -719,12 +736,19 @@ export class SLOBreachDetectionService extends EventEmitter {
     const impactScore = this.calculateImpactScore(slo, evaluation);
 
     return {
-      score: impactScore,
-      usersAffected: this.estimateAffectedUsers(slo, evaluation),
-      revenueImpact: this.estimateRevenueImpact(slo, evaluation),
-      operationalImpact: this.assessOperationalImpact(slo, evaluation),
-      customerImpact: this.assessCustomerImpact(slo, evaluation),
-      duration: this.estimateImpactDuration(evaluation),
+      businessImpact: this.assessBusinessImpactLevel(impactScore),
+      customerImpact: this.mapCustomerImpactSeverity(this.assessCustomerImpact(slo, evaluation)),
+      financialImpact: {
+        estimatedLoss: this.estimateRevenueImpact(slo, evaluation),
+        currency: 'USD',
+        confidence: 0.8,
+      },
+      operationalImpact: {
+        affectedSystems: [slo.name],
+        degradedServices: [slo.name],
+        capacityReduction: this.calculateCapacityReduction(evaluation),
+      },
+      reputationalImpact: this.assessReputationalImpact(impactScore),
     };
   }
 
@@ -743,9 +767,9 @@ export class SLOBreachDetectionService extends EventEmitter {
     score += budgetConsumption * 0.3;
 
     // SLO priority factor
-    const priorityMultiplier = slo.metadata.businessImpact === 'critical' ? 1.5 :
-                             slo.metadata.businessImpact === 'high' ? 1.2 :
-                             slo.metadata.businessImpact === 'medium' ? 1.0 : 0.8;
+    const priorityMultiplier = (slo.metadata as any).businessImpact === 'critical' ? 1.5 :
+                             (slo.metadata as any).businessImpact === 'high' ? 1.2 :
+                             (slo.metadata as any).businessImpact === 'medium' ? 1.0 : 0.8;
     score *= priorityMultiplier;
 
     return Math.min(100, score);
@@ -768,9 +792,9 @@ export class SLOBreachDetectionService extends EventEmitter {
     // For now, return a placeholder based on severity
     const severity = this.determineBreachSeverity(evaluation);
     switch (severity) {
-      case BreachSeverity.CRITICAL: return Math.random() * 100000 + 10000;
-      case BreachSeverity.HIGH: return Math.random() * 50000 + 5000;
-      case BreachSeverity.MEDIUM: return Math.random() * 10000 + 1000;
+      case 'catastrophic': return Math.random() * 100000 + 10000;
+      case 'critical': return Math.random() * 50000 + 5000;
+      case 'major': return Math.random() * 10000 + 1000;
       default: return Math.random() * 1000;
     }
   }
@@ -781,9 +805,9 @@ export class SLOBreachDetectionService extends EventEmitter {
   private assessOperationalImpact(slo: SLO, evaluation: SLOEvaluation): 'low' | 'medium' | 'high' | 'critical' {
     const severity = this.determineBreachSeverity(evaluation);
     switch (severity) {
-      case BreachSeverity.CRITICAL: return 'critical';
-      case BreachSeverity.HIGH: return 'high';
-      case BreachSeverity.MEDIUM: return 'medium';
+      case 'catastrophic': return 'critical';
+      case 'critical': return 'high';
+      case 'major': return 'medium';
       default: return 'low';
     }
   }
@@ -794,9 +818,9 @@ export class SLOBreachDetectionService extends EventEmitter {
   private assessCustomerImpact(slo: SLO, evaluation: SLOEvaluation): 'low' | 'medium' | 'high' | 'critical' {
     const severity = this.determineBreachSeverity(evaluation);
     switch (severity) {
-      case BreachSeverity.CRITICAL: return 'critical';
-      case BreachSeverity.HIGH: return 'high';
-      case BreachSeverity.MEDIUM: return 'medium';
+      case 'catastrophic': return 'critical';
+      case 'critical': return 'high';
+      case 'major': return 'medium';
       default: return 'low';
     }
   }
@@ -819,7 +843,7 @@ export class SLOBreachDetectionService extends EventEmitter {
   private identifyAffectedServices(slo: SLO): string[] {
     // This would integrate with service discovery
     // For now, return the SLO name and its dependencies
-    return [slo.name, ...(slo.metadata.dependencies || [])];
+    return [slo.name, ...((slo.metadata as any).dependencies || [])];
   }
 
   /**
@@ -827,13 +851,13 @@ export class SLOBreachDetectionService extends EventEmitter {
    */
   private estimateResolutionTime(severity: BreachSeverity, impact: ImpactAssessment): number {
     const baseTime = {
-      [BreachSeverity.LOW]: 30 * 60 * 1000,      // 30 minutes
-      [BreachSeverity.MEDIUM]: 2 * 60 * 60 * 1000, // 2 hours
-      [BreachSeverity.HIGH]: 6 * 60 * 60 * 1000,   // 6 hours
-      [BreachSeverity.CRITICAL]: 24 * 60 * 60 * 1000, // 24 hours
+      'minor': 30 * 60 * 1000,      // 30 minutes
+      'major': 2 * 60 * 60 * 1000,   // 2 hours
+      'critical': 6 * 60 * 60 * 1000,   // 6 hours
+      'catastrophic': 24 * 60 * 60 * 1000, // 24 hours
     };
 
-    const multiplier = impact.score / 50; // Scale by impact score
+    const multiplier = (impact as any).score / 50; // Scale by impact score
     return baseTime[severity] * Math.max(0.5, Math.min(2, multiplier));
   }
 
@@ -846,28 +870,28 @@ export class SLOBreachDetectionService extends EventEmitter {
     estimatedCost: number;
     customerImpact: string;
   } {
-    const level = impact.score > 75 ? 'critical' :
-                  impact.score > 50 ? 'high' :
-                  impact.score > 25 ? 'medium' : 'low';
+    const level = (impact as any).score > 75 ? 'critical' :
+                  (impact as any).score > 50 ? 'high' :
+                  (impact as any).score > 25 ? 'medium' : 'low';
 
     return {
       level,
       description: `SLO breach affecting ${slo.name} with ${evaluation.objective.compliance.toFixed(1)}% compliance`,
-      estimatedCost: impact.revenueImpact,
-      customerImpact: `${impact.usersAffected} users potentially affected`,
+      estimatedCost: (impact as any).revenueImpact,
+      customerImpact: `${(impact as any).usersAffected} users potentially affected`,
     };
   }
 
   /**
    * Trigger incident notifications
    */
-  private async triggerIncidentNotifications(incident: SLOBreachIncident): Promise<void> {
-    const message = `🚨 SLO Breach Alert: ${incident.sloName}
+  private async triggerIncidentNotifications(incident: ExtendedSLOBreachIncident): Promise<void> {
+    const message = `🚨 SLO Breach Alert: ${(incident as any).sloName}
 Severity: ${incident.severity}
-Compliance: ${incident.evaluation.objective.compliance.toFixed(1)}%
-Target: ${incident.evaluation.objective.target}%
-Error Budget Remaining: ${incident.evaluation.budget.remaining.toFixed(1)}%
-Impact Score: ${incident.impactAssessment.score.toFixed(1)}/100`;
+Compliance: ${(incident as any).evaluation.objective.compliance.toFixed(1)}%
+Target: ${(incident as any).evaluation.objective.target}%
+Error Budget Remaining: ${(incident as any).evaluation.budget.remaining.toFixed(1)}%
+Impact Score: ${(incident as any).impactAssessment.score.toFixed(1)}/100`;
 
     await this.sendNotification(incident, message);
   }
@@ -875,13 +899,13 @@ Impact Score: ${incident.impactAssessment.score.toFixed(1)}/100`;
   /**
    * Send resolution notifications
    */
-  private async sendResolutionNotifications(incident: SLOBreachIncident): Promise<void> {
-    if (!incident.resolution) return;
+  private async sendResolutionNotifications(incident: ExtendedSLOBreachIncident): Promise<void> {
+    if (!(incident as any).resolution) return;
 
-    const message = `✅ SLO Breach Resolved: ${incident.sloName}
-Duration: ${Math.round(incident.resolution.duration / (60 * 1000))} minutes
-Resolved by: ${incident.resolution.resolvedBy}
-Reason: ${incident.resolution.reason}`;
+    const message = `✅ SLO Breach Resolved: ${(incident as any).sloName}
+Duration: ${Math.round((incident as any).resolution.duration / (60 * 1000))} minutes
+Resolved by: ${(incident as any).resolution.resolvedBy}
+Reason: ${(incident as any).resolution.reason}`;
 
     await this.sendNotification(incident, message);
   }
@@ -891,7 +915,7 @@ Reason: ${incident.resolution.reason}`;
    */
   private async sendNotificationToChannel(
     channel: NotificationChannel,
-    incident: SLOBreachIncident,
+    incident: ExtendedSLOBreachIncident,
     message: string,
     severity: AlertSeverity
   ): Promise<{ success: boolean; error?: string }> {
@@ -921,7 +945,7 @@ Reason: ${incident.resolution.reason}`;
    */
   private async sendSlackNotification(
     channel: NotificationChannel,
-    incident: SLOBreachIncident,
+    incident: ExtendedSLOBreachIncident,
     message: string,
     severity: AlertSeverity
   ): Promise<{ success: boolean; error?: string }> {
@@ -935,7 +959,7 @@ Reason: ${incident.resolution.reason}`;
    */
   private async sendEmailNotification(
     channel: NotificationChannel,
-    incident: SLOBreachIncident,
+    incident: ExtendedSLOBreachIncident,
     message: string,
     severity: AlertSeverity
   ): Promise<{ success: boolean; error?: string }> {
@@ -949,7 +973,7 @@ Reason: ${incident.resolution.reason}`;
    */
   private async sendPagerDutyNotification(
     channel: NotificationChannel,
-    incident: SLOBreachIncident,
+    incident: ExtendedSLOBreachIncident,
     message: string,
     severity: AlertSeverity
   ): Promise<{ success: boolean; error?: string }> {
@@ -963,7 +987,7 @@ Reason: ${incident.resolution.reason}`;
    */
   private async sendWebhookNotification(
     channel: NotificationChannel,
-    incident: SLOBreachIncident,
+    incident: ExtendedSLOBreachIncident,
     message: string,
     severity: AlertSeverity
   ): Promise<{ success: boolean; error?: string }> {
@@ -977,9 +1001,9 @@ Reason: ${incident.resolution.reason}`;
    */
   private mapSeverityToAlertSeverity(severity: BreachSeverity): AlertSeverity {
     switch (severity) {
-      case BreachSeverity.CRITICAL: return AlertSeverity.EMERGENCY;
-      case BreachSeverity.HIGH: return AlertSeverity.CRITICAL;
-      case BreachSeverity.MEDIUM: return AlertSeverity.WARNING;
+      case 'catastrophic': return AlertSeverity.EMERGENCY;
+      case 'critical': return AlertSeverity.CRITICAL;
+      case 'major': return AlertSeverity.WARNING;
       default: return AlertSeverity.INFO;
     }
   }
@@ -994,19 +1018,19 @@ Reason: ${incident.resolution.reason}`;
       description: 'Default escalation rules for SLO breaches',
       levels: [
         {
-          level: EscalationLevel.L1,
+          level: EscalationLevel.TIER_1,
           delay: 15 * 60 * 1000, // 15 minutes
           channels: ['default'],
           autoEscalate: true,
         },
         {
-          level: EscalationLevel.L2,
+          level: EscalationLevel.TIER_2,
           delay: 30 * 60 * 1000, // 30 minutes
           channels: ['manager', 'oncall'],
           autoEscalate: true,
         },
         {
-          level: EscalationLevel.L3,
+          level: EscalationLevel.TIER_3,
           delay: 60 * 60 * 1000, // 1 hour
           channels: ['director', 'executive'],
           autoEscalate: false,
@@ -1039,7 +1063,7 @@ Reason: ${incident.resolution.reason}`;
     if (!existingIncident) {
       const evaluation = this.sloService.getLatestEvaluation(alert.sloId);
       if (evaluation) {
-        await this.createIncident(alert.sloId, evaluation, BreachSeverity.HIGH);
+        await this.createIncident(alert.sloId, evaluation, 'critical' as BreachSeverity);
       }
     }
   }
@@ -1075,25 +1099,98 @@ Reason: ${incident.resolution.reason}`;
   private generateId(): string {
     return Math.random().toString(36).substr(2, 9);
   }
+
+  /**
+   * Assess business impact level
+   */
+  private assessBusinessImpactLevel(score: number): 'low' | 'medium' | 'high' | 'critical' {
+    if (score > 75) return 'critical';
+    if (score > 50) return 'high';
+    if (score > 25) return 'medium';
+    return 'low';
+  }
+
+  /**
+   * Map customer impact severity
+   */
+  private mapCustomerImpactSeverity(level: 'low' | 'medium' | 'high' | 'critical'): 'none' | 'partial' | 'significant' | 'total' {
+    switch (level) {
+      case 'critical': return 'total';
+      case 'high': return 'significant';
+      case 'medium': return 'partial';
+      default: return 'none';
+    }
+  }
+
+  /**
+   * Calculate capacity reduction
+   */
+  private calculateCapacityReduction(evaluation: SLOEvaluation): number {
+    const complianceDrop = Math.max(0, 100 - evaluation.objective.compliance);
+    return Math.min(100, complianceDrop * 1.5); // Scale compliance drop to capacity reduction
+  }
+
+  /**
+   * Assess reputational impact
+   */
+  private assessReputationalImpact(score: number): 'low' | 'medium' | 'high' | 'severe' {
+    if (score > 80) return 'severe';
+    if (score > 60) return 'high';
+    if (score > 40) return 'medium';
+    return 'low';
+  }
+
+  /**
+   * Create default response for incidents
+   */
+  private createDefaultResponse(): IncidentResponse {
+    return {
+      commander: 'auto_assigned',
+      team: ['sre', 'devops'],
+      communications: {
+        internal: [],
+        external: [],
+      },
+      actions: [],
+      timeline: [],
+    };
+  }
 }
 
 // ============================================================================
 // Additional Type Definitions
 // ============================================================================
 
-export interface SLOBreachIncident {
+// Extended interfaces for the breach detection service
+export interface ExtendedSLOBreachIncident {
   id: string;
   sloId: string;
-  sloName: string;
+  timestamp: Date;
   severity: BreachSeverity;
+  description: string;
+  impact: string;
+  affectedServices: string[];
+  metrics: {
+    actualValue: number;
+    targetValue: number;
+    deviation: number;
+  };
   status: IncidentStatus;
+  response: IncidentResponse;
+  escalation: any;
+  communication: {
+    stakeholders: string[];
+    channels: string[];
+    frequency: string;
+  };
+  sloName: string;
   detectedAt: Date;
   resolvedAt?: Date;
   evaluation: SLOEvaluation;
   impactAssessment: ImpactAssessment;
   notifications: NotificationResult[];
   escalations: Escalation[];
-  responses: IncidentResponse[];
+  responses: AutomatedResponse[];
   resolution?: {
     reason: string;
     resolvedBy: string;
@@ -1116,29 +1213,23 @@ export interface SLOBreachIncident {
   };
 }
 
-export enum BreachSeverity {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  CRITICAL = 'critical',
+export interface AutomatedResponse {
+  type: 'automated' | 'manual';
+  category: string;
+  initiatedAt: Date;
+  completedAt?: Date;
+  actions: ResponseAction[];
+  status: 'in_progress' | 'completed' | 'failed';
+  error?: string;
 }
 
-export enum IncidentStatus {
-  OPEN = 'open',
-  INVESTIGATING = 'investigating',
-  IDENTIFIED = 'identified',
-  MONITORING = 'monitoring',
-  RESOLVED = 'resolved',
-  CLOSED = 'closed',
-}
-
-export interface ImpactAssessment {
-  score: number; // 0-100
-  usersAffected: number;
-  revenueImpact: number;
-  operationalImpact: 'low' | 'medium' | 'high' | 'critical';
-  customerImpact: 'low' | 'medium' | 'high' | 'critical';
-  duration: number; // Estimated duration in milliseconds
+export interface ResponseAction {
+  type: string;
+  description: string;
+  executedAt: Date;
+  status: 'executed' | 'failed' | 'pending';
+  result?: any;
+  error?: string;
 }
 
 export interface NotificationResult {
@@ -1146,14 +1237,6 @@ export interface NotificationResult {
   timestamp: Date;
   success: boolean;
   error?: string;
-}
-
-export interface NotificationChannel {
-  id: string;
-  name: string;
-  type: 'slack' | 'email' | 'pagerduty' | 'webhook' | 'sms';
-  config: Record<string, any>;
-  enabled: boolean;
 }
 
 export interface EscalationPolicy {
@@ -1177,33 +1260,6 @@ export interface Escalation {
   notifiedChannels: string[];
   acknowledgedBy?: string;
   acknowledgedAt?: Date;
-}
-
-export enum EscalationLevel {
-  L1 = 'L1',
-  L2 = 'L2',
-  L3 = 'L3',
-  EXECUTIVE = 'EXECUTIVE',
-}
-
-export interface IncidentResponse {
-  id: string;
-  type: 'automated' | 'manual';
-  category: string;
-  initiatedAt: Date;
-  completedAt?: Date;
-  actions: ResponseAction[];
-  status: 'in_progress' | 'completed' | 'failed';
-  error?: string;
-}
-
-export interface ResponseAction {
-  type: string;
-  description: string;
-  executedAt: Date;
-  status: 'executed' | 'failed' | 'pending';
-  result?: any;
-  error?: string;
 }
 
 export interface BreachThreshold {

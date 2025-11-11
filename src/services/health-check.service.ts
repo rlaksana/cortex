@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Comprehensive Health Check Service
  *
@@ -23,26 +23,28 @@
 
 import { EventEmitter } from 'node:events';
 import { performance } from 'node:perf_hooks';
+
 import { logger } from '@/utils/logger.js';
+
 import {
-  DependencyType,
-  DependencyConfig,
-  HealthCheckResult as DependencyHealthResult,
+  type DependencyConfig,
   DependencyStatus,
+  DependencyType,
   type HealthCheckFunction,
+  type HealthCheckResult as DependencyHealthResult,
 } from './deps-registry.js';
 import {
+  dependencyStatusToHealthStatus,
+  type EnhancedHealthResult,
+  type HealthCheckConfig as UnifiedHealthCheckConfig,
+  type HealthCheckContext,
+  type HealthCheckDiagnostics,
   HealthCheckStrategy,
-  HealthCheckContext,
   HealthDiagnostics,
-  EnhancedHealthResult,
-  HealthCheckDiagnostics,
-  PerformanceBenchmark,
+  healthStatusToDependencyStatus,
   isDependencyHealthResult,
   isHealthCheckDiagnostics,
-  dependencyStatusToHealthStatus,
-  healthStatusToDependencyStatus,
-  type HealthCheckConfig as UnifiedHealthCheckConfig,
+  PerformanceBenchmark,
 } from '../types/unified-health-interfaces.js';
 
 // Note: HealthCheckStrategy, HealthCheckContext, HealthDiagnostics, and EnhancedHealthResult
@@ -51,7 +53,7 @@ import {
 /**
  * Health check configuration (extends unified config)
  */
-export interface HealthCheckConfig extends UnifiedHealthCheckConfig {
+export interface HealthCheckConfig extends UnifiedHealthCheckConfig, Record<string, unknown> {
   strategy: HealthCheckStrategy;
   cacheEnabled: boolean;
   cacheTTL: number;
@@ -143,7 +145,7 @@ export class HealthCheckService extends EventEmitter {
       startTime: performance.now(),
       timeout: finalConfig.timeoutMs,
       retryCount: 0,
-      metadata: finalConfig,
+      metadata: finalConfig as unknown as Record<string, unknown>,
     };
 
     // Create health check promise
@@ -1087,9 +1089,9 @@ export class HealthCheckService extends EventEmitter {
 export const healthCheckService = new HealthCheckService();
 
 // Re-export required enums for isolatedModules compliance
-export { HealthCheckStrategy } from '../types/unified-health-interfaces.js';
 export type {
+  EnhancedHealthResult,
   HealthCheckContext,
   HealthDiagnostics,
-  EnhancedHealthResult,
 } from '../types/unified-health-interfaces.js';
+export { HealthCheckStrategy } from '../types/unified-health-interfaces.js';

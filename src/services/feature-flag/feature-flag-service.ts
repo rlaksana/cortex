@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Feature Flag Service with Cohort Limiting
  *
@@ -15,9 +15,11 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { metricsService } from '../monitoring/metrics-service.js';
-import { HealthStatus } from '../types/unified-health-interfaces.js';
+
+import { metricsService } from '../../monitoring/metrics-service.js';
+import { HealthStatus } from '../../types/unified-health-interfaces.js';
 
 // ============================================================================
 // Types and Interfaces
@@ -201,6 +203,9 @@ export class FeatureFlagService extends EventEmitter {
   private evaluationCounters: Map<string, number[]> = new Map();
   private lastCleanupTime = Date.now();
 
+  // Custom counters for metrics
+  private counters: Map<string, number> = new Map();
+
   // Static instance for singleton pattern
   private static instance: FeatureFlagService | null = null;
 
@@ -266,7 +271,7 @@ export class FeatureFlagService extends EventEmitter {
     this.emit('flagCreated', newFlag);
 
     if (this.config.enableMetrics) {
-      metricsService.recordCounter('feature_flags_created', 1, { flag_name: flag.name });
+      this.recordCounter('feature_flags_created', 1, { flag_name: flag.name });
     }
 
     return newFlag;
@@ -322,7 +327,7 @@ export class FeatureFlagService extends EventEmitter {
     this.emit('flagDeleted', { id, name: flag.name });
 
     if (this.config.enableMetrics) {
-      metricsService.recordCounter('feature_flags_deleted', 1, { flag_name: flag.name });
+      this.recordCounter('feature_flags_deleted', 1, { flag_name: flag.name });
     }
 
     return true;
@@ -366,7 +371,7 @@ export class FeatureFlagService extends EventEmitter {
     this.emit('emergencyKillAll', { reason, timestamp: this.config.emergencyKillAt });
 
     if (this.config.enableMetrics) {
-      metricsService.recordCounter('feature_flags_emergency_kill_all', 1, { reason: reason || 'unknown' });
+      this.recordCounter('feature_flags_emergency_kill_all', 1, { reason: reason || 'unknown' });
     }
   }
 
@@ -404,7 +409,7 @@ export class FeatureFlagService extends EventEmitter {
     this.emit('flagEmergencyDisabled', flag);
 
     if (this.config.enableMetrics) {
-      metricsService.recordCounter('feature_flags_emergency_disabled', 1, {
+      this.recordCounter('feature_flags_emergency_disabled', 1, {
         flag_name: flag.name,
         reason: reason || 'unknown'
       });
@@ -432,7 +437,7 @@ export class FeatureFlagService extends EventEmitter {
 
     // Check rate limiting
     if (this.config.rateLimitEnabled && !this.checkRateLimit(userContext.userId)) {
-      const result = this.createEvaluationResult(flagId, false, undefined, 'Rate limited', [], Date.now() - startTime);
+      const result = this.createEvaluationResult(flagId, false, undefined, undefined, 'Rate limited', [], Date.now() - startTime);
       return result;
     }
 
@@ -447,31 +452,31 @@ export class FeatureFlagService extends EventEmitter {
 
     const flag = this.flags.get(flagId);
     if (!flag) {
-      const result = this.createEvaluationResult(flagId, false, undefined, 'Flag not found', [], Date.now() - startTime);
+      const result = this.createEvaluationResult(flagId, false, undefined, undefined, 'Flag not found', [], Date.now() - startTime);
       return result;
     }
 
     // Check emergency kill all
     if (this.config.emergencyKillAll) {
-      const result = this.createEvaluationResult(flagId, false, undefined, 'Emergency kill all active', [], Date.now() - startTime);
+      const result = this.createEvaluationResult(flagId, false, undefined, undefined, 'Emergency kill all active', [], Date.now() - startTime);
       return result;
     }
 
     // Check flag emergency disable
     if (flag.emergencyDisabled) {
-      const result = this.createEvaluationResult(flagId, false, undefined, `Emergency disabled: ${flag.emergencyDisableReason}`, [], Date.now() - startTime);
+      const result = this.createEvaluationResult(flagId, false, undefined, undefined, `Emergency disabled: ${flag.emergencyDisableReason}`, [], Date.now() - startTime);
       return result;
     }
 
     // Check if flag is enabled
     if (flag.status !== FlagStatus.ENABLED) {
-      const result = this.createEvaluationResult(flagId, false, undefined, `Flag status: ${flag.status}`, [], Date.now() - startTime);
+      const result = this.createEvaluationResult(flagId, false, undefined, undefined, `Flag status: ${flag.status}`, [], Date.now() - startTime);
       return result;
     }
 
     // Check expiration
     if (flag.expiresAt && flag.expiresAt < new Date()) {
-      const result = this.createEvaluationResult(flagId, false, undefined, 'Flag expired', [], Date.now() - startTime);
+      const result = this.createEvaluationResult(flagId, false, undefined, undefined, 'Flag expired', [], Date.now() - startTime);
       return result;
     }
 
@@ -485,7 +490,7 @@ export class FeatureFlagService extends EventEmitter {
 
     // Record metrics
     if (this.config.enableMetrics) {
-      metricsService.recordCounter('feature_flags_evaluated', 1, {
+      this.recordCounter('feature_flags_evaluated', 1, {
         flag_name: flag.name,
         enabled: evaluationResult.enabled.toString(),
         strategy: flag.strategy,
@@ -592,6 +597,20 @@ export class FeatureFlagService extends EventEmitter {
     return this.evaluateCohortCriteria(cohort, userContext);
   }
 
+  /**
+   * Record a counter metric
+   */
+  private recordCounter(name: string, value: number = 1, tags?: Record<string, string>): void {
+    const key = tags ? `${name}:${JSON.stringify(tags)}` : name;
+    const current = this.counters.get(key) || 0;
+    this.counters.set(key, current + value);
+
+    // Optionally log the metric
+    if (this.config.enableAuditLog) {
+      logger.debug('Counter recorded', { name, value, tags });
+    }
+  }
+
   // ============================================================================
   // Private Methods
   // ============================================================================
@@ -604,55 +623,55 @@ export class FeatureFlagService extends EventEmitter {
 
     switch (flag.strategy) {
       case TargetingStrategy.ALL_USERS:
-        return this.createEvaluationResult(flag.id, true, undefined, 'All users enabled', matchedConditions, Date.now() - startTime);
+        return this.createEvaluationResult(flag.id, true, undefined, undefined, 'All users enabled', matchedConditions, Date.now() - startTime);
 
       case TargetingStrategy.PERCENTAGE:
         if (flag.rolloutPercentage === undefined) {
-          return this.createEvaluationResult(flag.id, false, undefined, 'Percentage not configured', matchedConditions, Date.now() - startTime);
+          return this.createEvaluationResult(flag.id, false, undefined, undefined, 'Percentage not configured', matchedConditions, Date.now() - startTime);
         }
         const hash = this.hashUserForPercentage(userContext.userId, flag.id);
         const enabled = hash < flag.rolloutPercentage;
         matchedConditions.push(`percentage: ${flag.rolloutPercentage}%`);
-        return this.createEvaluationResult(flag.id, enabled, undefined, `Percentage rollout: ${flag.rolloutPercentage}%`, matchedConditions, Date.now() - startTime);
+        return this.createEvaluationResult(flag.id, enabled, undefined, undefined, `Percentage rollout: ${flag.rolloutPercentage}%`, matchedConditions, Date.now() - startTime);
 
       case TargetingStrategy.COHORT:
         if (!flag.targetCohorts || flag.targetCohorts.length === 0) {
-          return this.createEvaluationResult(flag.id, false, undefined, 'No target cohorts configured', matchedConditions, Date.now() - startTime);
+          return this.createEvaluationResult(flag.id, false, undefined, undefined, 'No target cohorts configured', matchedConditions, Date.now() - startTime);
         }
 
         for (const cohortId of flag.targetCohorts) {
           if (this.isUserInCohort(userContext.userId, cohortId, userContext.attributes)) {
             matchedConditions.push(`cohort: ${cohortId}`);
-            return this.createEvaluationResult(flag.id, true, undefined, `User in cohort: ${cohortId}`, matchedConditions, Date.now() - startTime);
+            return this.createEvaluationResult(flag.id, true, undefined, undefined, `User in cohort: ${cohortId}`, matchedConditions, Date.now() - startTime);
           }
         }
-        return this.createEvaluationResult(flag.id, false, undefined, 'User not in target cohorts', matchedConditions, Date.now() - startTime);
+        return this.createEvaluationResult(flag.id, false, undefined, undefined, 'User not in target cohorts', matchedConditions, Date.now() - startTime);
 
       case TargetingStrategy.USER_LIST:
         if (!flag.targetUsers || flag.targetUsers.length === 0) {
-          return this.createEvaluationResult(flag.id, false, undefined, 'No target users configured', matchedConditions, Date.now() - startTime);
+          return this.createEvaluationResult(flag.id, false, undefined, undefined, 'No target users configured', matchedConditions, Date.now() - startTime);
         }
 
         const inUserList = flag.targetUsers.includes(userContext.userId);
         if (inUserList) {
           matchedConditions.push('user_list_match');
         }
-        return this.createEvaluationResult(flag.id, inUserList, undefined, inUserList ? 'User in target list' : 'User not in target list', matchedConditions, Date.now() - startTime);
+        return this.createEvaluationResult(flag.id, inUserList, undefined, undefined, inUserList ? 'User in target list' : 'User not in target list', matchedConditions, Date.now() - startTime);
 
       case TargetingStrategy.ATTRIBUTE_BASED:
         if (!flag.conditions || flag.conditions.length === 0) {
-          return this.createEvaluationResult(flag.id, false, undefined, 'No attribute conditions configured', matchedConditions, Date.now() - startTime);
+          return this.createEvaluationResult(flag.id, false, undefined, undefined, 'No attribute conditions configured', matchedConditions, Date.now() - startTime);
         }
 
         const allConditionsMet = this.evaluateAttributeConditions(flag.conditions, userContext);
         if (allConditionsMet) {
           matchedConditions.push('attribute_conditions_met');
         }
-        return this.createEvaluationResult(flag.id, allConditionsMet, undefined, allConditionsMet ? 'All attribute conditions met' : 'Attribute conditions not met', matchedConditions, Date.now() - startTime);
+        return this.createEvaluationResult(flag.id, allConditionsMet, undefined, undefined, allConditionsMet ? 'All attribute conditions met' : 'Attribute conditions not met', matchedConditions, Date.now() - startTime);
 
       case TargetingStrategy.A_B_TEST:
         if (!flag.abTestConfig) {
-          return this.createEvaluationResult(flag.id, false, undefined, 'A/B test configuration missing', matchedConditions, Date.now() - startTime);
+          return this.createEvaluationResult(flag.id, false, undefined, undefined, 'A/B test configuration missing', matchedConditions, Date.now() - startTime);
         }
 
         const abHash = this.hashUserForPercentage(userContext.userId, flag.id);
@@ -663,7 +682,7 @@ export class FeatureFlagService extends EventEmitter {
         return this.createEvaluationResult(flag.id, true, variant, variantConfig.config, `A/B test variant ${variant}`, matchedConditions, Date.now() - startTime);
 
       default:
-        return this.createEvaluationResult(flag.id, false, undefined, `Unknown strategy: ${flag.strategy}`, matchedConditions, Date.now() - startTime);
+        return this.createEvaluationResult(flag.id, false, undefined, undefined, `Unknown strategy: ${flag.strategy}`, matchedConditions, Date.now() - startTime);
     }
   }
 
@@ -830,6 +849,7 @@ export class FeatureFlagService extends EventEmitter {
     flagId: string,
     enabled: boolean,
     variant: string | undefined,
+    config: Record<string, any> | undefined,
     reason: string,
     matchedConditions: string[],
     evaluationTime: number
@@ -838,6 +858,7 @@ export class FeatureFlagService extends EventEmitter {
       flagId,
       enabled,
       variant,
+      config,
       reason,
       matchedConditions,
       evaluationTime,
@@ -984,6 +1005,7 @@ export class FeatureFlagService extends EventEmitter {
   cleanup(): void {
     this.evaluationCache.clear();
     this.evaluationCounters.clear();
+    this.counters.clear();
     this.flags.clear();
     this.cohorts.clear();
     this.removeAllListeners();

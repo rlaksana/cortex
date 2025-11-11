@@ -1,5 +1,5 @@
-// @ts-nocheck
-import { KnowledgeItem } from '../../types/core-interfaces.js';
+
+import { type KnowledgeItem } from '../../types/core-interfaces.js';
 
 export interface TruncationMetrics {
   total_stores: number;

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * P2-P3: R/A/G Status Dashboard Infrastructure
  *
@@ -17,9 +17,10 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { sliSloMonitorService, type RAGStatus, type SLOAlert } from './sli-slo-monitor.js';
-import { systemMetricsService, type SystemMetrics } from './system-metrics.js';
+
 import { performanceTrendingService, type TrendAnalysis } from './performance-trending.js';
+import { type RAGStatus, sliSloMonitorService, type SLOAlert } from './sli-slo-monitor.js';
+import { type SystemMetrics,systemMetricsService } from './system-metrics.js';
 
 // === Type Definitions ===
 

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * MCP Cortex Monitoring Module - Complete Alerting System
  *
@@ -19,189 +19,185 @@
  */
 
 // Core health monitoring
-export { HealthCheckService, monitoringHealthCheckService } from './health-check-service';
-export { ProductionHealthChecker as productionHealthChecker } from './production-health-checker';
-export { HealthEndpointManager as healthEndpoint } from './health-endpoint';
+export { HealthCheckService, monitoringHealthCheckService } from './health-check-service.js';
+export { HealthEndpointManager as healthEndpoint } from './health-endpoint.js';
+export { ProductionHealthChecker as productionHealthChecker } from './production-health-checker.js';
 
 // Alert management system
 export {
+  type Alert,
+  type AlertAction,
   AlertManagementService,
   alertManagementService,
-  type Alert,
+  type AlertMetrics,
   type AlertRule,
-  type AlertAction,
+  type AlertTestResult,
+  type AlertTestScenario,
   type EscalationPolicy,
   type EscalationRule,
-  type AlertTestScenario,
-  type AlertTestResult,
   type NotificationAttempt,
   type Runbook,
   type RunbookStep,
-  type AlertMetrics,
-} from './alert-management-service';
+} from './alert-management-service.js';
 
 // Notification channels
 export {
-  EmailNotificationChannel,
-  SlackNotificationChannel,
-  PagerDutyNotificationChannel,
-  TeamsNotificationChannel,
-  WebhookNotificationChannel,
-  SNSNotificationChannel,
-  notificationChannelRegistry,
-  type NotificationChannel,
-  type NotificationResult,
   type EmailConfig,
-  type SlackConfig,
+  EmailNotificationChannel,
+  type NotificationChannel,
+  notificationChannelRegistry,
+  type NotificationResult,
   type PagerDutyConfig,
-  type TeamsConfig,
-  type WebhookConfig,
+  PagerDutyNotificationChannel,
+  type SlackConfig,
+  SlackNotificationChannel,
   type SNSConfig,
-} from './notification-channels';
+  SNSNotificationChannel,
+  type TeamsConfig,
+  TeamsNotificationChannel,
+  type WebhookConfig,
+  WebhookNotificationChannel,
+} from './notification-channels.js';
 
 // On-call management
 export {
-  OnCallManagementService,
-  onCallManagementService,
-  type OnCallUser,
-  type OnCallSchedule,
-  type OnCallRotation,
+  type AlertAssignmentOptions,
+  type EscalationLevel,
+  type EscalationPath,
+  type EscalationResult,
   // type OnCallAssignment, // exported from oncall-management-service
   type OnCallHandoff,
-  type EscalationPath,
-  type EscalationLevel,
+  OnCallManagementService,
+  onCallManagementService,
   type OnCallMetrics,
+  type OnCallRotation,
+  type OnCallSchedule,
+  type OnCallUser,
   type UserWorkload,
-  type AlertAssignmentOptions,
-  type EscalationResult,
-} from './oncall-management-service';
+} from './oncall-management-service.js';
 
 // Runbook integration
 export {
+  type ExecutionResult,
+  type Runbook as RunbookDefinition,
+  type RunbookExecution,
   RunbookIntegrationService,
   runbookIntegrationService,
-  type Runbook as RunbookDefinition,
-  type RunbookStep as RunbookStepDefinition,
-  type RunbookExecution,
-  type StepExecution,
-  type ExecutionResult,
   type RunbookRecommendation,
+  type RunbookStep as RunbookStepDefinition,
   type RunbookTemplate,
-} from './runbook-integration-service';
+  type StepExecution,
+} from './runbook-integration-service.js';
 
 // Alert testing and validation
 export {
+  type AlertTestExecution,
   AlertTestingService,
   alertTestingService,
   type AlertTestSuite,
-  type AlertTestExecution,
   type FaultInjection,
   type LoadTestConfig,
   type LoadTestResult,
   type TestEnvironment,
   type TestStep,
-} from './alert-testing-service';
+} from './alert-testing-service.js';
 
 // Metrics and dashboard integration
 export {
+  type AlertMetrics as AlertMetricsDefinition,
   AlertMetricsService,
   alertMetricsService,
-  type DashboardMetrics,
-  type AlertMetrics as AlertMetricsDefinition,
   type DashboardConfig,
+  type DashboardMetrics,
   type DashboardPanel,
-  type PanelData,
   type MetricSeries,
+  type PanelData,
+  type PredictionMetrics,
   type TimeRange,
   type TrendMetrics,
-  type PredictionMetrics,
-} from './alert-metrics-service';
+} from './alert-metrics-service.js';
 
 // System integration
 export {
+  type AlertSystemConfig,
+  type AlertSystemIntegrations,
   AlertSystemIntegrationService,
   alertSystemIntegrationService,
-  type AlertSystemConfig,
   type AlertSystemStatus,
-  type SystemHealthStatus,
   type ComponentStatus,
-  type AlertSystemIntegrations,
-  type SystemTestResults,
   type FaultScenario,
   type FaultScenarioTestResult,
-} from './alert-system-integration';
+  type SystemHealthStatus,
+  type SystemTestResults,
+} from './alert-system-integration.js';
 
 // Existing monitoring components
 // (Removed duplicate exports and non-existent healthStructuredLogger)
 
 // Core monitoring components
 export {
-  mcpServerHealthMonitor,
-  type MCPServerHealthMetrics,
-  type MCPServerHealthConfig,
-  type HealthHistoryEntry,
-} from './mcp-server-health-monitor';
-
-export {
-  QdrantHealthMonitor,
-  QdrantConnectionStatus,
-  type QdrantHealthCheckResult,
-  type QdrantPerformanceMetrics,
-  type QdrantHealthMonitorConfig,
-} from './qdrant-health-monitor';
-
-export {
-  circuitBreakerMonitor,
-  type CircuitBreakerHealthStatus,
   type CircuitBreakerEvent,
   type CircuitBreakerEventType,
+  type CircuitBreakerHealthStatus,
+  circuitBreakerMonitor,
   type CircuitBreakerMonitorConfig,
-} from './circuit-breaker-monitor';
-
+} from './circuit-breaker-monitor.js';
+export {
+  type ContainerHealthState,
+  type ContainerProbeConfig,
+  containerProbesHandler,
+  type ProbeResult,
+} from './container-probes.js';
 export {
   enhancedPerformanceCollector,
-  MetricType,
-  type SystemPerformanceMetrics,
+  type EnhancedPerformanceCollectorConfig,
+  type HistogramData,
   type MCPOperationMetrics,
   type MetricData,
-  type HistogramData,
-  type EnhancedPerformanceCollectorConfig,
-} from './enhanced-performance-collector';
-
+  MetricType,
+  type SystemPerformanceMetrics,
+} from './enhanced-performance-collector.js';
 export {
-  containerProbesHandler,
-  type ContainerProbeConfig,
-  type ProbeResult,
-  type ContainerHealthState,
-} from './container-probes';
+  type HealthHistoryEntry,
+  type MCPServerHealthConfig,
+  type MCPServerHealthMetrics,
+  mcpServerHealthMonitor,
+} from './mcp-server-health-monitor.js';
+export {
+  QdrantConnectionStatus,
+  type QdrantHealthCheckResult,
+  QdrantHealthMonitor,
+  type QdrantHealthMonitorConfig,
+  type QdrantPerformanceMetrics,
+} from './qdrant-health-monitor.js';
 
 // dropped non-existent logger named exports
 
 export {
-  healthDashboardAPIHandler,
-  type HealthDashboardAPIConfig,
   type APIResponse,
   type DashboardSummary,
-  type RealTimeHealthData,
-  type HistoricalHealthData,
   type HealthAlert,
-} from './health-dashboard-api';
+  type HealthDashboardAPIConfig,
+  healthDashboardAPIHandler,
+  type HistoricalHealthData,
+  type RealTimeHealthData,
+} from './health-dashboard-api.js';
 
 // Re-export existing monitoring components
-// export { monitoringHealthCheckService } from './health-check-service';
-// export { monitoringServer } from './monitoring-server';
-// export { performanceCollector } from './performance-collector';
-// export { metricsService } from './metrics-service';
+// export { monitoringHealthCheckService } from './health-check-service.js';
+// export { monitoringServer } from './monitoring-server.js';
+// export { performanceCollector } from './performance-collector.js';
+// export { metricsService } from './metrics-service.js';
 
 // Utility functions
 export {
-  HealthStatus,
-  DependencyType,
-  DependencyStatus,
-  type SystemHealthResult,
   type ComponentHealth,
+  DependencyStatus,
+  DependencyType,
+  HealthStatus,
   type ProductionHealthResult,
-} from '../types/unified-health-interfaces';
+  type SystemHealthResult,
+} from '../types/unified-health-interfaces.js';
 
 // Health monitoring manager class
 

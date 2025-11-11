@@ -1,36 +1,36 @@
-// @ts-nocheck
+
 /**
  * Contradiction Detection Service
  * MVP implementation for detecting potential contradictions in stored knowledge
  */
 
 import {
-  ContradictionDetectorService,
-  ContradictionDetectionRequest,
-  ContradictionDetectionResponse,
-  ContradictionResult,
-  ContradictionFlag,
-  ContradictionPointer,
-  ContradictionAnalysis,
-  ContradictionType,
-  ContradictionDetail,
-  FactualContradiction,
-  TemporalContradiction,
-  LogicalContradiction,
-  AttributeContradiction,
-  ContradictionDetectorConfig,
-  ContradictionSafetyConfig,
-  ContradictionEvent,
-  StoragePipelineHook,
-} from '../../types/contradiction-detector.interface';
-import { KnowledgeItem } from '../../types/core-interfaces';
-import {
+  DEFAULT_CONTRADICTION_SAFETY_CONFIG,
+  DEFAULT_CONTRADICTION_TYPES,
   getContradictionDetectorConfig,
   getSensitivityThresholds,
-  DEFAULT_CONTRADICTION_TYPES,
-  DEFAULT_CONTRADICTION_SAFETY_CONFIG,
-} from '../../config/contradiction-detector-config';
-import { generateId } from '../../utils/id-generator';
+} from '../../config/contradiction-detector-config.js';
+import {
+  AttributeContradiction,
+  type ContradictionAnalysis,
+  ContradictionDetail,
+  type ContradictionDetectionRequest,
+  type ContradictionDetectionResponse,
+  type ContradictionDetectorConfig,
+  type ContradictionDetectorService,
+  type ContradictionEvent,
+  type ContradictionFlag,
+  type ContradictionPointer,
+  type ContradictionResult,
+  type ContradictionSafetyConfig,
+  type ContradictionType,
+  FactualContradiction,
+  LogicalContradiction,
+  StoragePipelineHook,
+  TemporalContradiction,
+} from '../../types/contradiction-detector.interface';
+import { type KnowledgeItem } from '../../types/core-interfaces.js';
+import { generateId } from '../../utils/id-generator.js';
 
 export class ContradictionDetector implements ContradictionDetectorService {
   private config: ContradictionDetectorConfig;

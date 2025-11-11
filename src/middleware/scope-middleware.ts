@@ -7,12 +7,13 @@
  */
 
 import { logger } from '@/utils/logger.js';
+
 import { authService } from '../services/auth/auth-service.js';
 import {
-  AuthScope,
-  RESOURCE_SCOPE_MAPPING,
   type AuthContext,
   type AuthenticatedRequest,
+  AuthScope,
+  RESOURCE_SCOPE_MAPPING,
 } from '../types/auth-types.js';
 
 /**

@@ -3,10 +3,10 @@
  * MVP for detecting potential contradictions in stored knowledge
  */
 
-import { KnowledgeItem } from './core-interfaces';
+import { type KnowledgeItem } from './core-interfaces.js';
 
 // Re-export for other modules
-export type { KnowledgeItem } from './core-interfaces';
+export type { KnowledgeItem } from './core-interfaces.js';
 
 export interface ContradictionDetectorConfig {
   enabled: boolean;
@@ -53,7 +53,7 @@ export interface ContradictionResult {
   };
   resolution_suggestions: Array<{
     suggestion: string;
-    priority: 'low' | 'medium' | 'high';
+    priority: 'critical' | 'high' | 'medium' | 'low';
     effort: 'low' | 'medium' | 'high';
     description: string;
   }>;

@@ -1,22 +1,20 @@
-// @ts-nocheck
-// @ts-ignore next import
+
 import { logger } from '@/utils/logger.js';
+
 import { qdrant } from '../../db/qdrant-client.js';
-import { traverseGraph, enrichGraphNodes, type TraversalOptions } from '../graph-traversal.js';
-import type { SearchQuery, SearchResult, MemoryFindResponse } from '../../types/core-interfaces.js';
-import { queryParser, type ParsedQuery } from '../search/query-parser.js';
-import { searchStrategySelector, type StrategySelection } from '../search/search-strategy.js';
-import { searchService } from '../search/search-service.js';
-import { entityMatchingService } from '../search/entity-matching-service.js';
-import { resultRanker, type ResultRanker } from '../ranking/result-ranker.js';
-import { auditService } from '../audit/audit-service.js';
-import { structuredLogger } from '@/utils/logger.js';
-import { SearchStrategy } from '@/types/core-interfaces.js'; // wherever the enum lives
-import { OperationType } from '../../monitoring/operation-types.js';
-import { generateCorrelationId } from '../../utils/correlation-id.js';
 import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
+import { OperationType } from '../../monitoring/operation-types.js';
 import type { AuthContext } from '../../types/auth-types.js';
+import type { MemoryFindResponse,SearchQuery, SearchResult } from '../../types/core-interfaces.js';
+import { generateCorrelationId } from '../../utils/correlation-id.js';
 import { createFindObservability } from '../../utils/observability-helper.js';
+import { auditService } from '../audit/audit-service.js';
+import { enrichGraphNodes, type TraversalOptions,traverseGraph } from '../graph-traversal.js';
+import { type ResultRanker,resultRanker } from '../ranking/result-ranker.js';
+import { entityMatchingService } from '../search/entity-matching-service.js';
+import { type ParsedQuery,queryParser } from '../search/query-parser.js';
+import { searchService } from '../search/search-service.js';
+import { type MemoryFindStrategy,searchStrategySelector, type StrategySelection } from '../search/search-strategy.js';
 
 // Types are now imported from the actual service files
 
@@ -45,6 +43,25 @@ interface SearchExecutionResult {
  * Orchestrator for memory find operations
  * Coordinates query parsing, strategy selection, search execution, and result ranking
  */
+
+/**
+ * Type guard for validating strategy objects
+ */
+function isValidStrategy(strategy: unknown): strategy is MemoryFindStrategy {
+  if (!strategy || typeof strategy !== 'object' || strategy === null) {
+    return false;
+  }
+
+  const strategyObj = strategy as Record<string, unknown>;
+  return (
+    'name' in strategyObj &&
+    typeof strategyObj.name === 'string' &&
+    ['fulltext', 'semantic', 'hybrid', 'graph', 'fallback'].includes(strategyObj.name) &&
+    'strategy' in strategyObj &&
+    'confidence' in strategyObj &&
+    'reasoning' in strategyObj
+  );
+}
 
 export class MemoryFindOrchestrator {
   private rateLimiter = rateLimitMiddleware.memoryFind();
@@ -307,15 +324,18 @@ export class MemoryFindOrchestrator {
         const latency = Date.now() - startTime;
 
         // Log rate limit violation
-        structuredLogger.logRateLimit(
-          correlationId,
-          latency,
-          false,
-          authContext?.apiKeyId || 'anonymous',
-          'api_key',
-          OperationType.MEMORY_FIND,
-          1,
-          rateLimitResult.error?.error || 'rate_limit_exceeded'
+        logger.warn(
+          {
+            correlationId,
+            latency,
+            success: false,
+            apiKeyId: authContext?.apiKeyId || 'anonymous',
+            source: 'api_key',
+            operation: OperationType.MEMORY_FIND,
+            tokens: 1,
+            error: rateLimitResult.error?.error || 'rate_limit_exceeded',
+          },
+          'Rate limit exceeded for memory find operation'
         );
 
         return {
@@ -378,31 +398,33 @@ export class MemoryFindOrchestrator {
 
       // Log successful operation with structured logger
       const latencyMs = Date.now() - startTime;
-      const strategyName = searchResult.strategy.primary.name as SearchStrategy;
+      const strategyName = searchResult.strategy.primary?.name || 'unknown';
 
-      structuredLogger.logMemoryFind(
-        correlationId,
-        latencyMs,
-        true,
-        strategyName,
-        response.results.length,
-        response.total_count,
-        undefined,
+      logger.info(
         {
-          query: query.query,
-          mode: query.mode,
-          limit: query.limit,
-          types: query.types,
-          scope: query.scope,
-          expand: query.expand,
-        }
+          correlationId,
+          latency: latencyMs,
+          success: true,
+          strategy: strategyName,
+          resultsCount: response.results.length,
+          totalCount: response.total_count,
+          query: {
+            query: query.query,
+            mode: query.mode,
+            limit: query.limit,
+            types: query.types,
+            scope: query.scope,
+            expand: query.expand,
+          },
+        },
+        'Memory find operation successful'
       );
 
       logger.info(
         {
           resultCount: response.results.length,
           executionTime: latencyMs,
-          strategy: searchResult.strategy.primary.name,
+          strategy: searchResult.strategy.primary?.name || 'unknown',
         },
         'Memory find operation completed'
       );
@@ -412,29 +434,31 @@ export class MemoryFindOrchestrator {
       const latencyMs = Date.now() - startTime;
 
       // Log operation failure
-      structuredLogger.logMemoryFind(
-        correlationId,
-        latencyMs,
-        false,
-        SearchStrategy.ERROR,
-        0,
-        0,
-        undefined,
+      logger.error(
         {
-          query: query.query,
-          mode: query.mode,
-          limit: query.limit,
-          types: query.types,
-          scope: query.scope,
-          expand: query.expand,
+          correlationId,
+          latency: latencyMs,
+          success: false,
+          strategy: 'error',
+          resultsCount: 0,
+          totalCount: 0,
+          query: {
+            query: query.query,
+            mode: query.mode,
+            limit: query.limit,
+            types: query.types,
+            scope: query.scope,
+            expand: query.expand,
+          },
+          error: error instanceof Error ? error : new Error('Unknown search error'),
         },
-        error instanceof Error ? error : new Error('Unknown search error')
+        'Memory find operation failed'
       );
 
       logger.error({ error, query }, 'Memory find operation failed');
 
       // Log error
-      await auditService.logError(error instanceof Error ? error : new Error('Unknown error'), {
+      await (auditService as any).logError(error instanceof Error ? error : new Error('Unknown error'), {
         operation: 'memory_find',
         query: query.query,
       });
@@ -450,6 +474,11 @@ export class MemoryFindOrchestrator {
     const { parsed, originalQuery, strategy } = context;
 
     try {
+      // Validate primary strategy
+      if (!isValidStrategy(strategy.primary)) {
+        throw new Error('Invalid primary strategy: missing or malformed strategy object');
+      }
+
       // Execute primary strategy
       const primaryResults = await this.executeStrategy(strategy.primary, parsed, originalQuery);
 
@@ -472,7 +501,7 @@ export class MemoryFindOrchestrator {
         'Primary strategy returned no results, trying fallback'
       );
 
-      if (strategy.fallback) {
+      if (strategy.fallback && isValidStrategy(strategy.fallback)) {
         const fallbackResults = await this.executeStrategy(
           strategy.fallback,
           parsed,
@@ -496,10 +525,12 @@ export class MemoryFindOrchestrator {
         fallbackUsed: false,
       };
     } catch (error) {
-      logger.error({ error, strategy: strategy.primary.name }, 'Primary strategy failed');
+      // Safely access primary strategy name for logging
+      const primaryStrategyName = isValidStrategy(strategy.primary) ? strategy.primary.name : 'unknown';
+      logger.error({ error, strategy: primaryStrategyName }, 'Primary strategy failed');
 
       // Try fallback if primary failed
-      if (strategy.fallback) {
+      if (strategy.fallback && isValidStrategy(strategy.fallback)) {
         try {
           const fallbackResults = await this.executeStrategy(
             strategy.fallback,
@@ -515,8 +546,9 @@ export class MemoryFindOrchestrator {
             fallbackUsed: true,
           };
         } catch (fallbackError) {
+          const fallbackStrategyName = isValidStrategy(strategy.fallback) ? strategy.fallback.name : 'unknown';
           logger.error(
-            { fallbackError, strategy: strategy.fallback.name },
+            { fallbackError, strategy: fallbackStrategyName },
             'Fallback strategy also failed'
           );
           throw fallbackError;
@@ -531,7 +563,7 @@ export class MemoryFindOrchestrator {
    * Execute a specific search strategy
    */
   private async executeStrategy(
-    strategy: any,
+    strategy: MemoryFindStrategy,
     parsed: ParsedQuery,
     query: SearchQuery
   ): Promise<{ results: SearchResult[]; totalCount: number }> {
@@ -569,16 +601,18 @@ export class MemoryFindOrchestrator {
     };
 
     // Add search conditions for each term
-    for (const term of parsed.terms) {
-      if (term.length > 2) {
-        // Skip very short terms
-        whereClause.OR.push(
-          { data: { path: ['title'], string_contains: term } },
-          { data: { path: ['name'], string_contains: term } },
-          { data: { path: ['description'], string_contains: term } },
-          { data: { path: ['content'], string_contains: term } },
-          { data: { path: ['summary'], string_contains: term } }
-        );
+    if (parsed.terms) {
+      for (const term of parsed.terms) {
+        if (term.length > 2) {
+          // Skip very short terms
+          whereClause.OR.push(
+            { data: { path: ['title'], string_contains: term } },
+            { data: { path: ['name'], string_contains: term } },
+            { data: { path: ['description'], string_contains: term } },
+            { data: { path: ['content'], string_contains: term } },
+            { data: { path: ['summary'], string_contains: term } }
+          );
+        }
       }
     }
 
@@ -769,10 +803,10 @@ export class MemoryFindOrchestrator {
 
     try {
       // Use the enhanced search service for hybrid degrade search
-      const searchResult = await searchService.performFallbackSearch(parsed, query);
+      const searchResult = await (searchService as any).performFallbackSearch(parsed, query);
 
       // Log quality metrics for monitoring
-      const p95Metrics = searchService.getP95QualityMetrics();
+      const p95Metrics = (searchService as any).getP95QualityMetrics();
       logger.info(
         {
           query: query.query,
@@ -807,7 +841,7 @@ export class MemoryFindOrchestrator {
 
     try {
       // Use the entity matching service for entity resolution
-      return await entityMatchingService.findEntityMatches(parsed, query);
+      return await (entityMatchingService as any).findEntityMatches(parsed, query);
     } catch (error) {
       logger.error({ error, query: query.query }, 'Entity matching service failed');
       return [];
@@ -1010,7 +1044,7 @@ export class MemoryFindOrchestrator {
         ? results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length
         : 0;
 
-    const strategyUsed = searchResult.strategy.primary?.name || searchResult.strategy;
+    const strategyUsed = searchResult.strategy.primary?.name || 'unknown';
     const fallbackUsed = searchResult.fallbackUsed;
     const degraded = fallbackUsed || searchResult.executionTime > 3000; // Consider slow responses as degraded
 
@@ -1075,12 +1109,11 @@ export class MemoryFindOrchestrator {
     response: MemoryFindResponse,
     duration: number
   ): Promise<void> {
-    await auditService.logSearchOperation(
+    await (auditService as any).logSearchOperation(
       query.query,
       response.results.length,
       response.autonomous_context.search_mode_used,
       query.scope,
-      undefined,
       duration
     );
   }

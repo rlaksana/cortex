@@ -10,12 +10,15 @@
  * - Security headers and CORS handling
  */
 
-import { Request, Response, NextFunction } from 'express';
-import '../types/express.d.js'; // Reference the type extensions
+import { type NextFunction,type Request, type Response } from 'express';
 import { z } from 'zod';
-import { rateLimitService } from './rate-limiter.js';
-import { AuthContext } from '../types/auth-types.js';
+
 import { logger } from '@/utils/logger.js';
+
+import { rateLimitService } from './rate-limiter.js';
+import { type AuthContext } from '../types/auth-types.js';
+
+import '../types/express.d.js'; // Reference the type extensions
 
 // ============================================================================
 // Security Configuration Types

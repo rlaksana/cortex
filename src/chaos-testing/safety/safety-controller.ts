@@ -6,16 +6,17 @@
  */
 
 import { EventEmitter } from 'events';
+
 import {
-  ChaosExperimentConfig,
-  ChaosScenario,
-  ExperimentExecutionContext,
+  type BlastRadiusControl,
+  type ChaosExperimentConfig,
+  type ChaosScenario,
+  type ExperimentExecutionContext,
+  type FailSafe,
   SafetyCheck,
-  BlastRadiusControl,
-  FailSafe,
-  SafetyContext,
-  SystemMetrics
-} from '../types/chaos-testing-types';
+  type SafetyContext,
+  type SystemMetrics
+} from '../types/chaos-testing-types.js';
 
 export interface SafetyViolation {
   id: string;

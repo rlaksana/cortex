@@ -15,16 +15,17 @@
  */
 
 import { z } from 'zod';
+
 import {
-  RunbookSchema,
   ChangeSchema,
-  IssueSchema,
-  DecisionSchema,
-  TodoSchema,
-  ReleaseNoteSchema,
   DDLSchema,
+  DecisionSchema,
+  IssueSchema,
   PRContextSchema,
-} from '../schemas/knowledge-types';
+  ReleaseNoteSchema,
+  RunbookSchema,
+  TodoSchema,
+} from '../schemas/knowledge-types.js';
 /**
  * Knowledge type categories for logical grouping
  */

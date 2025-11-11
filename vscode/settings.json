@@ -1,0 +1,141 @@
+{
+  // TypeScript and JavaScript settings
+  "typescript.preferences.includePackageJsonAutoImports": "on",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.preferences.importModuleSpecifier": "relative",
+
+  // Parameter naming policy enforcement
+  "typescript.inlayHints.parameterNames.enabled": "all",
+  "typescript.inlayHints.parameterTypes.enabled": true,
+  "typescript.inlayHints.variableTypes.enabled": true,
+  "typescript.inlayHints.functionLikeReturnTypes.enabled": true,
+
+  // ESLint integration
+  "eslint.enable": true,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "eslint.run": "onType",
+  "eslint.codeAction.showDocumentation": {
+    "enable": true
+  },
+
+  // Editor settings for parameter naming
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+
+  // Parameter naming highlighting
+  "editor.semanticHighlighting.enabled": true,
+  "editor.tokenColorCustomizations": {
+    "semanticHighlighting": true,
+    "semanticTokenColors": {
+      "parameter": {
+        "fontStyle": "italic"
+      },
+      "typeParameter": {
+        "fontStyle": "italic"
+      }
+    }
+  },
+
+  // Error display settings
+  "typescript.problemMatchers": [
+    {
+      "name": "tsc",
+      "fileLocation": ["relative", "${workspaceFolder}"],
+      "pattern": {
+        "regexp": "^([^\\s].*)\\((\\d+|\\d+,\\d+|\\d+,\\d+,\\d+,\\d+)\\):\\s+(error|warning|info)\\s+(TS\\d+)\\s*:\\s*(.*)$",
+        "file": 1,
+        "location": 2,
+        "severity": 3,
+        "code": 4,
+        "message": 5
+      }
+    }
+  ],
+
+  // Parameter naming policy specific settings
+  "typescript.preferences.renameShorthandProperties": true,
+  "typescript.preferences.useAliasesForRenames": false,
+
+  // IntelliSense settings for better parameter detection
+  "editor.suggest.snippetsPreventQuickSuggestions": false,
+  "editor.parameterHints.enabled": "enabled",
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+
+  // Show parameter hints immediately
+  "editor.editorHint.fontFamily": "Consolas, 'Courier New', monospace",
+  "editor.editorHint.foreground": "#6a9fb5",
+
+  // Code lens for parameter naming issues
+  "editor.codeLens": true,
+  "typescript.referencesCodeLens.enabled": true,
+  "typescript.implementationsCodeLens.enabled": true,
+
+  // File watchers for automatic validation
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.git/**": true,
+    "**/coverage/**": true
+  },
+
+  // Diagnostic settings
+  "typescript.diagnostic.commentUnnecessary.enabled": true,
+  "typescript.diagnostic.ignoredCodes": [],
+  "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+
+  // Auto-fix settings for parameter naming
+  "typescript.suggest.includeCompletionsForModuleExports": true,
+  "typescript.workspaceSymbols.scope": "allOpenProjects",
+
+  // Formatting settings that support parameter naming
+  "typescript.format.insertSpaceAfterFunctionKeywordForAnonymousFunctions": true,
+  "typescript.format.insertSpaceBeforeFunctionParenthesis": false,
+  "typescript.format.placeOpenBraceOnNewLineForFunctions": false,
+
+  // Parameter naming policy compliance indicators
+  "workbench.colorCustomizations": {
+    "statusBar.background": "#21262d",
+    "statusBar.foreground": "#f0f6fc",
+    "statusBarItem.warningBackground": "#f79009",
+    "statusBarItem.errorBackground": "#cf222e"
+  },
+
+  // Task configuration for parameter naming validation
+  "tasks.version": "2.0.0",
+  "tasks.options": {
+    "cwd": "${workspaceFolder}"
+  },
+
+  // Git integration for parameter naming
+  "git.enableSmartCommit": true,
+  "git.autofetch": true,
+  "git.postCommitCommand": "none",
+
+  // Debugging settings for parameter issues
+  "debug.internalConsoleOptions": "openOnSessionStart",
+  "debug.console.fontSize": 14,
+
+  // Extension recommendations for parameter naming
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-next",
+    "bradlc.vscode-tailwindcss",
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "ms-vscode.test-adapter-converter",
+    "vitest.explorer"
+  ]
+}

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * ZAI Enhanced Insight Service Integration Tests
  *
@@ -10,9 +10,10 @@
  * @since 2025
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { ZAIEnhancedInsightService } from '../zai-enhanced-insight-service';
-import type { InsightGenerationRequest } from '../../../types/insight-interfaces';
+import { afterEach,beforeEach, describe, expect, it } from '@jest/globals';
+
+import type { InsightGenerationRequest } from '../../../types/insight-interfaces.js';
+import { ZAIEnhancedInsightService } from '../zai-enhanced-insight-service.js';
 
 describe('ZAI Enhanced Insight Service - Integration Tests', () => {
   let service: ZAIEnhancedInsightService;

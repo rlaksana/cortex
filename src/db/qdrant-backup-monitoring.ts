@@ -15,9 +15,10 @@
  */
 
 import { EventEmitter } from 'node:events';
-import { logger } from '@/utils/logger.js';
-import { writeFile, readFile } from 'fs/promises';
+import { readFile,writeFile } from 'fs/promises';
 import { join } from 'path';
+
+import { logger } from '@/utils/logger.js';
 
 /**
  * Monitoring configuration

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Enhanced Circuit Breaker Dashboard with SLO Overlays
  *
@@ -11,21 +11,20 @@
  */
 
 import { EventEmitter } from 'events';
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
+
 import { logger } from '@/utils/logger.js';
+
 import {
-  circuitBreakerMonitor,
-  type CircuitBreakerHealthStatus
-} from './circuit-breaker-monitor.js';
+  type CircuitBreakerHealthStatus,
+  circuitBreakerMonitor} from './circuit-breaker-monitor.js';
 import {
-  retryBudgetMonitor,
+  type RetryBudgetConfig,
   type RetryBudgetMetrics,
-  type RetryBudgetConfig
-} from './retry-budget-monitor.js';
+  retryBudgetMonitor} from './retry-budget-monitor.js';
 import {
-  retryMetricsExporter,
-  type GrafanaDashboardData
-} from './retry-metrics-exporter.js';
+  type GrafanaDashboardData,
+  retryMetricsExporter} from './retry-metrics-exporter.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 type Risk = 'low' | 'medium' | 'high' | 'critical';

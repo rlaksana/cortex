@@ -9,8 +9,8 @@
  * @since 2025
  */
 
-import type { IHealthCheckService } from '../service-interfaces.js';
 import { monitoringHealthCheckService } from '../../monitoring/health-check-service.js';
+import type { IHealthCheckService } from '../service-interfaces.js';
 
 /**
  * Adapter for Health Check service

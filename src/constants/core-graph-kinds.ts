@@ -10,7 +10,8 @@
  */
 
 import { z } from 'zod';
-import { EntitySchema, RelationSchema, ObservationSchema } from '../schemas/knowledge-types';
+
+import { EntitySchema, ObservationSchema,RelationSchema } from '../schemas/knowledge-types.js';
 /**
  * Knowledge type categories for logical grouping
  */

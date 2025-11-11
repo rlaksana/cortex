@@ -6,15 +6,15 @@
  */
 
 import { EventEmitter } from 'events';
+
 import {
-  AlertingVerification,
-  ExpectedAlert,
-  TriggeredAlert,
   AlertingResponse,
-  AlertingVerificationResult,
-  ChaosScenario,
-  ExperimentExecutionContext
-} from '../types/chaos-testing-types';
+  type AlertingVerification,
+  type AlertingVerificationResult,
+  type ChaosScenario,
+  type ExpectedAlert,
+  type ExperimentExecutionContext,
+  TriggeredAlert} from '../types/chaos-testing-types.js';
 
 export interface AlertEvent {
   id: string;

@@ -11,21 +11,22 @@
  * @version 2.0.0 - T20 Implementation
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach,describe, expect, it } from 'vitest';
+
 import {
+  BaseScopeSchema,
+  DeleteRequestSchema,
+  KnowledgeItemSchema,
+  MemoryFindRequestSchema,
+  MemoryStoreRequestSchema,
   UnifiedKnowledgeTypeValidator,
-  ValidationMode,
+  validateDeleteRequest,
+  validateKnowledgeItem,
+  validateMemoryFindRequest,
+  validateMemoryStoreRequest,
   ValidationErrorCategory,
   ValidationErrorSeverity,
-  validateKnowledgeItem,
-  validateMemoryStoreRequest,
-  validateMemoryFindRequest,
-  validateDeleteRequest,
-  BaseScopeSchema,
-  KnowledgeItemSchema,
-  MemoryStoreRequestSchema,
-  MemoryFindRequestSchema,
-  DeleteRequestSchema,
+  ValidationMode,
 } from '../unified-knowledge-validator.js';
 
 describe('UnifiedKnowledgeTypeValidator', () => {
@@ -912,7 +913,7 @@ describe('UnifiedKnowledgeTypeValidator', () => {
     });
 
     it('should warn about deeply nested objects', async () => {
-      let deepObject: any = {};
+      const deepObject: any = {};
       let current = deepObject;
 
       // Create a 12-level deep object

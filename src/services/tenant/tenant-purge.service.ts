@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * P3 Data Management: Tenant Purge Service
  *
@@ -21,8 +21,10 @@
  * @since 2025
  */
 
-import { logger } from '@/utils/logger.js';
 import { createHash } from 'crypto';
+
+import { logger } from '@/utils/logger.js';
+
 import type { IVectorAdapter } from '../../db/interfaces/vector-adapter.interface.js';
 import type { KnowledgeItem } from '../../types/core-interfaces.js';
 import { systemMetricsService } from '../metrics/system-metrics.js';

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Comprehensive Retry Budget Monitor
  *
@@ -11,12 +11,13 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
+
 import {
-  circuitBreakerMonitor,
+  type CircuitBreakerEvent,
   type CircuitBreakerHealthStatus,
-  type CircuitBreakerEvent
-} from './circuit-breaker-monitor.js';
+  circuitBreakerMonitor} from './circuit-breaker-monitor.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**
@@ -160,8 +161,7 @@ export interface RetryBudgetMonitorConfig {
     exportIntervalMinutes: number;
   };
 
-  exportIntervalIntervalMinutes?: unknown
-}
+  }
 
 /**
  * Retry consumption event
@@ -272,7 +272,7 @@ export class RetryBudgetMonitor extends EventEmitter {
     // Start export interval
     this.exportInterval = setInterval(
       () => this.exportMetrics(),
-      this.config.exportIntervalIntervalMinutes * 60 * 1000
+      this.config.export.exportIntervalMinutes * 60 * 1000
     );
 
     // Perform initial collection
@@ -676,9 +676,38 @@ export class RetryBudgetMonitor extends EventEmitter {
     // Calculate predictions
     const predictions = this.calculatePredictions(serviceName, budget, retriesLastHour, retryRatePercent);
 
+    // Calculate performance metrics
+    const recentEvents = retryHistory.filter(e => e.timestamp >= oneHourAgo);
+    const responseTimes = recentEvents.map(e => e.responseTime).filter(time => time > 0);
+    const successCount = recentEvents.filter(e => e.success).length;
+    const totalOperations = recentEvents.length;
+
+    // Helper function to calculate percentile
+    const calculatePercentile = (values: number[], percentile: number): number => {
+      if (values.length === 0) return 0;
+      const sorted = [...values].sort((a, b) => a - b);
+      const index = Math.ceil((percentile / 100) * sorted.length) - 1;
+      return sorted[Math.max(0, index)];
+    };
+
+    const averageResponseTime = responseTimes.length > 0
+      ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
+      : 0;
+    const p95ResponseTime = calculatePercentile(responseTimes, 95);
+    const p99ResponseTime = calculatePercentile(responseTimes, 99);
+    const throughput = totalOperations / 3600; // operations per second over the last hour
+    const errorRate = totalOperations > 0 ? ((totalOperations - successCount) / totalOperations) * 100 : 0;
+
     return {
       serviceName,
       timestamp: now,
+      performance: {
+        averageResponseTime,
+        p95ResponseTime,
+        p99ResponseTime,
+        throughput,
+        errorRate,
+      },
       current: {
         usedRetriesMinute: retriesLastMinute,
         usedRetriesHour: retriesLastHour,
@@ -688,8 +717,8 @@ export class RetryBudgetMonitor extends EventEmitter {
         budgetUtilizationPercent,
       },
       history: {
-        retriesPerMinute: this.getTimeSeriesData(retryHistory, 60, e => e.retryCount),
-        retriesPerHour: this.getTimeSeriesData(retryHistory, 3600, e => e.retryCount),
+        retriesPerMinute: this.getRetryTimeSeriesData(retryHistory, 60, e => e.retryCount),
+        retriesPerHour: this.getRetryTimeSeriesData(retryHistory, 3600, e => e.retryCount),
         retryRateHistory: this.calculateRetryRateHistory(retryHistory),
         successRateHistory: sloMetrics.successRates.slice(-20),
         responseTimeHistory: sloMetrics.responseTimes.slice(-20),
@@ -1029,6 +1058,17 @@ export class RetryBudgetMonitor extends EventEmitter {
   }
 
   /**
+   * Get time series data from retry consumption events
+   * Adapter function to transform RetryConsumptionEvent[] to the format expected by getTimeSeriesData
+   */
+  private getRetryTimeSeriesData<T>(history: RetryConsumptionEvent[], windowSeconds: number, extractor: (item: RetryConsumptionEvent) => T): T[] {
+    const cutoff = new Date(Date.now() - windowSeconds * 1000);
+    return history
+      .filter(event => event.timestamp >= cutoff)
+      .map(extractor);
+  }
+
+  /**
    * Calculate retry rate history
    */
   private calculateRetryRateHistory(history: RetryConsumptionEvent[]): number[] {
@@ -1075,8 +1115,8 @@ export class RetryBudgetMonitor extends EventEmitter {
     const recent = metrics.slice(-3).map(extractor);
     if (typeof recent[0] !== 'number') return 'stable';
 
-    const trend = recent[2] - recent[0];
-    const threshold = Math.abs(recent[0] * 0.05); // 5% threshold
+    const trend = (recent[2] as number) - (recent[0] as number);
+    const threshold = Math.abs((recent[0] as number) * 0.05); // 5% threshold
 
     if (trend > threshold) return 'increasing';
     if (trend < -threshold) return 'decreasing';

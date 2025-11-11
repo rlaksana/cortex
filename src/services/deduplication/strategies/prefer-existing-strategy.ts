@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Prefer Existing Deduplication Strategy
  *
@@ -6,14 +6,15 @@
  * When a duplicate is found, the new item is discarded in favor of the existing one.
  */
 
+import { logger } from '@/utils/logger.js';
+
 import {
-  DeduplicationStrategy,
   type DeduplicationResult,
+  DeduplicationStrategy,
   type DeduplicationStrategyConfig,
   type DuplicateAnalysis,
 } from './base-strategy.js';
 import type { KnowledgeItem } from '../../../types/core-interfaces.js';
-import { logger } from '@/utils/logger.js';
 
 export interface PreferExistingStrategyConfig extends DeduplicationStrategyConfig {
   similarityThreshold?: number;

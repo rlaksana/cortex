@@ -1,8 +1,10 @@
 // Using UnifiedDatabaseLayer for Qdrant operations
-import { QdrantOnlyDatabaseLayer as UnifiedDatabaseLayer } from './unified-database-layer-v2.js';
-import { logger } from '@/utils/logger.js';
-import { getKeyVaultService } from '../services/security/key-vault-service.js';
 import * as crypto from 'crypto';
+
+import { logger } from '@/utils/logger.js';
+
+import { QdrantOnlyDatabaseLayer as UnifiedDatabaseLayer } from './unified-database-layer-v2.js';
+import { getKeyVaultService } from '../services/security/key-vault-service.js';
 
 /**
  * Audit Logging System

@@ -3,10 +3,10 @@
  * Centralized exports for all utility functions and services
  */
 
-export { logger, createChildLogger } from './logger';
-export { generateCorrelationId, setCorrelationId, withCorrelationId, getOrCreateCorrelationId, extractCorrelationIdFromRequest } from './correlation-id';
+export { extractCorrelationIdFromRequest,generateCorrelationId, getOrCreateCorrelationId, setCorrelationId, withCorrelationId } from './correlation-id.js';
+export { createChildLogger,logger } from './logger.js';
 
 // Re-export other utilities as needed
-export * from './security';
-export * from './error-handler';
-export * from './performance-monitor';
+export * from './error-handler.js';
+export * from './performance-monitor.js';
+export * from './security.js';

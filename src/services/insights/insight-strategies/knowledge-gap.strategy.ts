@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Knowledge Gap Analysis Strategy
  *
@@ -12,14 +12,16 @@
  */
 
 import { randomUUID } from 'crypto';
-import { logger } from '../../../utils/logger';
-import type { ZAIClientService } from '../../ai/zai-client.service';
-import type { ZAIChatRequest, ZAIChatResponse } from '../../../types/zai-interfaces';
+
+import type { KnowledgeItem } from '../../../types/core-interfaces.js';
 import type {
   InsightGenerationRequest,
-  RecommendationInsight,
   InsightTypeUnion,
-} from '../../../types/insight-interfaces';
+  RecommendationInsight,
+} from '../../../types/insight-interfaces.js';
+import type { ZAIChatRequest, ZAIChatResponse } from '../../../types/zai-interfaces.js';
+import { logger } from '../../../utils/logger.js';
+import type { ZAIClientService } from '../../ai/zai-client.service';
 
 export interface KnowledgeGapOptions {
   confidence_threshold: number;
@@ -126,7 +128,7 @@ export class KnowledgeGapStrategy {
    * Analyze missing documentation gaps
    */
   private async analyzeMissingDocumentation(
-    items: any[],
+    items: KnowledgeItem[],
     options: KnowledgeGapOptions
   ): Promise<KnowledgeGapAnalysis[]> {
     try {
@@ -162,7 +164,7 @@ export class KnowledgeGapStrategy {
    * Analyze incomplete information gaps
    */
   private async analyzeIncompleteInformation(
-    items: any[],
+    items: KnowledgeItem[],
     options: KnowledgeGapOptions
   ): Promise<KnowledgeGapAnalysis[]> {
     try {
@@ -181,7 +183,7 @@ export class KnowledgeGapStrategy {
             severity: this.calculateSeverity(groupItems, items),
             confidence: Math.min(groupItems.length / items.length, 1.0),
             affected_items: groupItems.map((item) => ({
-              item_id: item.id,
+              item_id: item.id || '',
               item_type: item.kind,
               gap_context: `Missing ${type} information`,
               confidence: 0.7,
@@ -216,7 +218,7 @@ export class KnowledgeGapStrategy {
    * Analyze outdated content gaps
    */
   private async analyzeOutdatedContent(
-    items: any[],
+    items: KnowledgeItem[],
     options: KnowledgeGapOptions
   ): Promise<KnowledgeGapAnalysis[]> {
     try {
@@ -232,7 +234,7 @@ export class KnowledgeGapStrategy {
           severity: this.calculateSeverity(outdatedItems, items),
           confidence: 0.6,
           affected_items: outdatedItems.map((item) => ({
-            item_id: item.id,
+            item_id: item.id || '',
             item_type: item.kind,
             gap_context: 'Content may be outdated',
             confidence: 0.6,
@@ -272,7 +274,7 @@ export class KnowledgeGapStrategy {
    * Analyze decision trail gaps
    */
   private async analyzeDecisionTrailGaps(
-    items: any[],
+    items: KnowledgeItem[],
     options: KnowledgeGapOptions
   ): Promise<KnowledgeGapAnalysis[]> {
     try {
@@ -308,7 +310,7 @@ export class KnowledgeGapStrategy {
    * Analyze process gaps
    */
   private async analyzeProcessGaps(
-    items: any[],
+    items: KnowledgeItem[],
     options: KnowledgeGapOptions
   ): Promise<KnowledgeGapAnalysis[]> {
     try {
@@ -316,7 +318,7 @@ export class KnowledgeGapStrategy {
         (item) =>
           item.kind === 'runbook' ||
           item.kind === 'todo' ||
-          (item.data && item['data.tags'] && item['data.tags'].includes('process'))
+          (item.data && (item.data as any).tags && (item.data as any).tags.includes('process'))
       );
 
       const prompt = this.buildProcessGapPrompt(processItems);
@@ -351,15 +353,15 @@ export class KnowledgeGapStrategy {
    * Analyze unanswered questions
    */
   private async analyzeUnansweredQuestions(
-    items: any[],
+    items: KnowledgeItem[],
     options: KnowledgeGapOptions
   ): Promise<KnowledgeGapAnalysis[]> {
     try {
       const questionItems = items.filter(
         (item) =>
-          item.data?.content?.includes('?') ||
-          item.data?.title?.includes('?') ||
-          (item.data && item['data.tags'] && item['data.tags'].includes('question'))
+          (item.data as any)?.content?.includes('?') ||
+          (item.data as any)?.title?.includes('?') ||
+          (item.data && (item.data as any).tags && (item.data as any).tags.includes('question'))
       );
 
       const prompt = this.buildUnansweredQuestionsPrompt(questionItems);
@@ -393,7 +395,7 @@ export class KnowledgeGapStrategy {
   /**
    * Build missing documentation prompt
    */
-  private buildMissingDocumentationPrompt(items: any[]): string {
+  private buildMissingDocumentationPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Content: ${JSON.stringify(item.data).substring(0, 200)}...`;
@@ -442,7 +444,7 @@ Return only the JSON response, no additional text.
   /**
    * Build decision trail prompt
    */
-  private buildDecisionTrailPrompt(items: any[]): string {
+  private buildDecisionTrailPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Content: ${JSON.stringify(item.data).substring(0, 200)}...`;
@@ -490,7 +492,7 @@ Return only the JSON response, no additional text.
   /**
    * Build process gap prompt
    */
-  private buildProcessGapPrompt(items: any[]): string {
+  private buildProcessGapPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Content: ${JSON.stringify(item.data).substring(0, 200)}...`;
@@ -538,7 +540,7 @@ Return only the JSON response, no additional text.
   /**
    * Build unanswered questions prompt
    */
-  private buildUnansweredQuestionsPrompt(items: any[]): string {
+  private buildUnansweredQuestionsPrompt(items: KnowledgeItem[]): string {
     const itemSummaries = items
       .map((item, index) => {
         return `${index + 1}. Type: ${item.kind}, Content: ${JSON.stringify(item.data).substring(0, 200)}...`;
@@ -588,7 +590,7 @@ Return only the JSON response, no additional text.
    */
   private parseGapResponse(
     response: any,
-    items: any[],
+    items: KnowledgeItem[],
     gapType: KnowledgeGapAnalysis['gap_type']
   ): KnowledgeGapAnalysis[] {
     try {
@@ -609,7 +611,7 @@ Return only the JSON response, no additional text.
         affected_items: (gap.item_indices || []).map((index: number) => {
           const item = items[index - 1];
           return {
-            item_id: item.id,
+            item_id: item.id || '',
             item_type: item.kind,
             gap_context: gap.name,
             confidence: gap.confidence || 0.5,
@@ -632,7 +634,7 @@ Return only the JSON response, no additional text.
   /**
    * Check if item is incomplete
    */
-  private isIncomplete(item: any): boolean {
+  private isIncomplete(item: KnowledgeItem): boolean {
     const data = item.data || {};
 
     // Check for missing common fields
@@ -648,8 +650,8 @@ Return only the JSON response, no additional text.
   /**
    * Group items by incompleteness type
    */
-  private groupByIncompletenessType(items: any[]): Map<string, any[]> {
-    const groups = new Map<string, any[]>();
+  private groupByIncompletenessType(items: KnowledgeItem[]): Map<string, KnowledgeItem[]> {
+    const groups = new Map<string, KnowledgeItem[]>();
 
     for (const item of items) {
       const data = item.data || {};
@@ -682,7 +684,7 @@ Return only the JSON response, no additional text.
   /**
    * Check if item might be outdated
    */
-  private mightBeOutdated(item: any): boolean {
+  private mightBeOutdated(item: KnowledgeItem): boolean {
     if (!item.created_at) {
       return true;
     }
@@ -699,8 +701,8 @@ Return only the JSON response, no additional text.
    * Calculate severity of gap
    */
   private calculateSeverity(
-    affectedItems: any[],
-    totalItems: any[]
+    affectedItems: KnowledgeItem[],
+    totalItems: KnowledgeItem[]
   ): 'low' | 'medium' | 'high' | 'critical' {
     const ratio = affectedItems.length / totalItems.length;
 

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Graceful Shutdown Manager
  *
@@ -11,6 +11,7 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { ProductionLogger } from '@/utils/logger.js';
 
 export interface ShutdownConfig {
@@ -66,6 +67,14 @@ export class GracefulShutdownManager extends EventEmitter {
     };
 
     this.setupSignalHandlers();
+  }
+
+  /**
+   * Public shutdown method for external callers
+   */
+  public async shutdown(reason?: string): Promise<void> {
+    const shutdownReason = reason || 'External shutdown request';
+    return this.initiateShutdown(shutdownReason);
   }
 
   /**

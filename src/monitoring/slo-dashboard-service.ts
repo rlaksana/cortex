@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * SLO Dashboard Service
  *
@@ -10,41 +10,45 @@
  * @since 2025
  */
 
-import { EventEmitter } from 'events';
-import { Server, Socket } from 'socket.io';
-import { createServer } from 'http';
-import express from 'express';
 import path from 'path';
+
+import { EventEmitter } from 'events';
+import express from 'express';
+import { createServer } from 'http';
+import { Server, type Socket } from 'socket.io';
+
+import { type SLOService } from '../services/slo-service.js';
 import {
-  SLODashboard,
-  DashboardWidget,
-  WidgetType,
-  SLOEvaluation,
-  SLOAlert,
-  SLO,
-  SLI,
-  SLODashboard as DashboardConfig,
-  TimeRange,
-  DashboardFilter,
-  FilterType,
-  ChartType,
-  Annotation,
-  SLOEvaluationStatus,
   AlertSeverity,
+  Annotation,
+  ChartType,
+  DashboardFilter,
+  type DashboardWidget,
+  FilterType,
+  SLI,
+  SLO,
+  type SLOAlert,
   SLOAlertType,
+  type SLODashboard,
+  type SLOEvaluation,
+  SLOEvaluationStatus,
+  TimeRange,
+  WidgetType,
 } from '../types/slo-interfaces.js';
-import { SLOService } from '../services/slo-service.js';
+
+// Define DashboardConfig as alias to SLODashboard for backward compatibility
+type DashboardConfig = SLODashboard;
 
 /**
  * Real-time SLO Dashboard Service
  */
 export class SLODashboardService extends EventEmitter {
   private app: express.Application;
-  private server: any;
+  private server: ReturnType<typeof createServer>;
   private io!: Server;
   private sloService: SLOService;
   private dashboards: Map<string, SLODashboard> = new Map();
-  private connectedClients: Map<string, any> = new Map();
+  private connectedClients: Map<string, Socket> = new Map();
   private isStarted = false;
 
   constructor(sloService: SLOService, config: { port?: number; host?: string } = {}) {
@@ -74,7 +78,7 @@ export class SLODashboardService extends EventEmitter {
     }
 
     try {
-      const port = process.env.SLO_DASHBOARD_PORT || 3001;
+      const port = parseInt(process.env.SLO_DASHBOARD_PORT || '3001', 10);
       const host = process.env.SLO_DASHBOARD_HOST || '0.0.0.0';
 
       this.server.listen(port, host, () => {
@@ -304,7 +308,7 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Get data for a widget
    */
-  async getWidgetData(dashboardId: string, widgetId: string, filters?: Record<string, any>): Promise<any> {
+  async getWidgetData(dashboardId: string, widgetId: string, filters?: Record<string, unknown>): Promise<unknown> {
     const dashboard = this.dashboards.get(dashboardId);
     if (!dashboard) {
       throw new Error(`Dashboard ${dashboardId} not found`);
@@ -429,14 +433,14 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Broadcast updates to all dashboard clients
    */
-  broadcastToDashboard(dashboardId: string, event: string, data: any): void {
+  broadcastToDashboard(dashboardId: string, event: string, data: unknown): void {
     this.io.to(`dashboard:${dashboardId}`).emit(event, data);
   }
 
   /**
    * Broadcast to all connected clients
    */
-  broadcast(event: string, data: any): void {
+  broadcast(event: string, data: unknown): void {
     this.io.emit(event, data);
   }
 
@@ -518,7 +522,7 @@ export class SLODashboardService extends EventEmitter {
       if (!dashboard) {
         return res.status(404).json({ error: 'Dashboard not found' });
       }
-      res.json(dashboard);
+      return res.json(dashboard);
     });
 
     this.app.post('/api/dashboards', async (req, res) => {
@@ -673,7 +677,7 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate data for a widget based on its configuration
    */
-  private async generateWidgetData(widget: DashboardWidget, filters?: Record<string, any>): Promise<any> {
+  private async generateWidgetData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
     switch (widget.type) {
       case WidgetType.SLO_STATUS:
         return this.generateSLOStatusData(widget, filters);
@@ -695,7 +699,7 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate SLO status data
    */
-  private async generateSLOStatusData(widget: DashboardWidget, filters?: Record<string, any>): Promise<any> {
+  private async generateSLOStatusData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
     const sloIds = widget.config.sloIds || [];
     const statusData = [];
 
@@ -729,7 +733,7 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate compliance chart data
    */
-  private async generateComplianceChartData(widget: DashboardWidget, filters?: Record<string, any>): Promise<any> {
+  private async generateComplianceChartData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
     const sloIds = widget.config.sloIds || [];
     const timeRange = widget.config.timeRange || { type: 'relative', duration: 24 * 60 * 60 * 1000 };
     const chartData = [];
@@ -763,7 +767,7 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate burn rate data
    */
-  private async generateBurnRateData(widget: DashboardWidget, filters?: Record<string, any>): Promise<any> {
+  private async generateBurnRateData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
     const sloIds = widget.config.sloIds || [];
     const burnRateData = [];
 
@@ -794,7 +798,7 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate error budget data
    */
-  private async generateErrorBudgetData(widget: DashboardWidget, filters?: Record<string, any>): Promise<any> {
+  private async generateErrorBudgetData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
     const sloIds = widget.config.sloIds || [];
     const budgetData = [];
 
@@ -825,7 +829,7 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate trend analysis data
    */
-  private async generateTrendAnalysisData(widget: DashboardWidget, filters?: Record<string, any>): Promise<any> {
+  private async generateTrendAnalysisData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
     const sloIds = widget.config.sloIds || [];
     const evaluations = this.sloService.getEvaluations(sloIds[0], 50);
 
@@ -850,7 +854,7 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate alert summary data
    */
-  private async generateAlertSummaryData(widget: DashboardWidget, filters?: Record<string, any>): Promise<any> {
+  private async generateAlertSummaryData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
     const sloIds = widget.config.sloIds || [];
     const alertSummary = {
       total: 0,
@@ -858,7 +862,14 @@ export class SLODashboardService extends EventEmitter {
       warning: 0,
       info: 0,
       byType: {} as Record<string, number>,
-      recent: [] as any[],
+      recent: [] as Array<{
+        id: string;
+        sloId: string;
+        title: string;
+        message: string;
+        severity: AlertSeverity;
+        timestamp: Date;
+      }>,
     };
 
     for (const sloId of sloIds) {
@@ -1230,12 +1241,15 @@ export class SLODashboardService extends EventEmitter {
     return Math.random().toString(36).substr(2, 9);
   }
 
-  broadcastToAll?: unknown|undefined}
+  broadcastToAll(event: string, data: unknown): void {
+    this.io.emit(event, data);
+  }
+}
 
 // Export singleton instance
 export const sloDashboardService = new SLODashboardService(
   // Will be injected later
-  null as any,
+  {} as SLOService,
   {
     port: parseInt(process.env.SLO_DASHBOARD_PORT || '3001'),
     host: process.env.SLO_DASHBOARD_HOST || '0.0.0.0',

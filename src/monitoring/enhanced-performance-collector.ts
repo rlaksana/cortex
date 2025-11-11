@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Enhanced Performance Metrics Collector
  *
@@ -12,6 +12,7 @@
 
 import { EventEmitter } from 'events';
 import { performance } from 'perf_hooks';
+
 import { logger } from '@/utils/logger.js';
 
 /**

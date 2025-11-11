@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Canary Deployment Orchestrator
  *
@@ -16,11 +16,13 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { metricsService } from '../monitoring/metrics-service.js';
-import { HealthStatus, AlertSeverity } from '../types/unified-health-interfaces.js';
-import { featureFlagService, FeatureFlag, FlagStatus } from '../feature-flag/feature-flag-service.js';
+
 import { killSwitchService, KillSwitchTrigger } from './kill-switch-service.js';
+import { metricsService } from '../../monitoring/metrics-service.js';
+import { AlertSeverity,HealthStatus } from '../../types/unified-health-interfaces.js';
+import { FeatureFlag, featureFlagService, FlagStatus, TargetingStrategy } from '../feature-flag/feature-flag-service.js';
 
 // ============================================================================
 // Types and Interfaces
@@ -633,7 +635,7 @@ export class CanaryOrchestrator extends EventEmitter {
       metricsService.recordCounter('canary_deployments_completed', 1, {
         service_name: deployment.config.serviceName,
         canary_version: deployment.config.canaryVersion,
-        duration: deployment.endTime.getTime() - deployment.startTime!.getTime(),
+        duration: String(deployment.endTime.getTime() - deployment.startTime!.getTime()),
       });
 
       return true;
@@ -686,9 +688,10 @@ export class CanaryOrchestrator extends EventEmitter {
       name: flagName,
       description: `Canary deployment flag for ${deployment.config.serviceName} version ${deployment.config.canaryVersion}`,
       status: FlagStatus.ENABLED,
-      strategy: 'percentage' as any,
+      strategy: TargetingStrategy.PERCENTAGE,
       rolloutPercentage: deployment.config.initialTrafficPercentage,
       killSwitchEnabled: true,
+      emergencyDisabled: false,
     });
 
     deployment.flags.featureFlagIds.push(flag.id);

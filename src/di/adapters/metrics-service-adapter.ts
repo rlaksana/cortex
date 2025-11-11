@@ -9,8 +9,8 @@
  * @since 2025
  */
 
-import type { IMetricsService } from '../service-interfaces.js';
 import { metricsService } from '../../monitoring/metrics-service.js';
+import type { IMetricsService } from '../service-interfaces.js';
 
 /**
  * Adapter for Metrics service

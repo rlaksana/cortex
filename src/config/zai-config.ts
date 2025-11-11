@@ -10,14 +10,15 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { getKeyVaultService } from '../services/security/key-vault-service';
+
+import { getKeyVaultService } from '../services/security/key-vault-service.js';
 import type {
-  ZAIConfig,
   AIOrchestratorConfig,
   BackgroundProcessorConfig,
   CircuitBreakerConfig,
   RequestQueueConfig,
-} from '../types/zai-interfaces';
+  ZAIConfig,
+} from '../types/zai-interfaces.js';
 
 /**
  * Default ZAI configuration

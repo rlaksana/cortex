@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Performance Targets Configuration
  *

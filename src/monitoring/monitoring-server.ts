@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * HTTP Monitoring Server for Cortex MCP
  *
@@ -9,11 +9,13 @@
  * - /system - System information and resource usage
  */
 
-import express, { Request, Response, Application } from 'express';
+import express, { type Application,type Request, type Response } from 'express';
+
+import { logger } from '@/utils/logger.js';
+
+import { monitoringHealthCheckService } from './health-check-service.js';
 import { metricsService } from './metrics-service.js';
 import { performanceDashboard } from './performance-dashboard.js';
-import { monitoringHealthCheckService } from './health-check-service.js';
-import { logger } from '@/utils/logger.js';
 
 export interface MonitoringServerConfig {
   port?: number;

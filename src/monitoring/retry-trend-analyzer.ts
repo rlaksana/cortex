@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Retry Budget Trend Analyzer
  *
@@ -11,17 +11,18 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
+
 import {
-  retryBudgetMonitor,
+  type CircuitBreakerEvent,
+  type CircuitBreakerHealthStatus,
+  circuitBreakerMonitor} from './circuit-breaker-monitor.js';
+import {
   type RetryBudgetMetrics,
+  retryBudgetMonitor,
   type RetryConsumptionEvent
 } from './retry-budget-monitor.js';
-import {
-  circuitBreakerMonitor,
-  type CircuitBreakerHealthStatus,
-  type CircuitBreakerEvent
-} from './circuit-breaker-monitor.js';
 
 /**
  * Time window for trend analysis

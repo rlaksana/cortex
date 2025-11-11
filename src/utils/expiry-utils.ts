@@ -3,7 +3,7 @@
  * Handles different time formats and expiration policies
  */
 
-import { getExpiryTimestamp, type ExpiryTimeLabel } from '../constants/expiry-times.js';
+import { type ExpiryTimeLabel,getExpiryTimestamp } from '../constants/expiry-times.js';
 import type { KnowledgeItem } from '../types/core-interfaces.js';
 
 /**

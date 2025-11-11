@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * ZAI Integration Tests
  *
@@ -10,10 +10,11 @@
  * @since 2025
  */
 
-import { describe, test, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import { zaiServicesManager } from '../index';
+import { afterAll, beforeAll, beforeEach,describe, expect, test } from '@jest/globals';
+
 import { zaiConfigManager } from '../../config/zai-config';
 import type { ZAIChatRequest, ZAIChatResponse, ZAIJobType } from '../../types/zai-interfaces';
+import { zaiServicesManager } from '../index.js';
 
 describe('ZAI Integration Tests', () => {
   beforeAll(async () => {

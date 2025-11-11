@@ -16,12 +16,14 @@
  */
 
 import { QdrantClient } from '@qdrant/js-client-rest';
+
 import { logger } from '@/utils/logger.js';
-import { performanceMonitor } from '../utils/performance-monitor';
+
 import {
   circuitBreakerManager,
   type CircuitBreakerStats,
 } from '../services/circuit-breaker.service';
+import { performanceMonitor } from '../utils/performance-monitor.js';
 
 /**
  * Connection pool configuration

@@ -14,13 +14,16 @@
  * @since 2025
  */
 
-import { QdrantClient } from '@qdrant/js-client-rest';
-import { logger } from '@/utils/logger.js';
-import { writeFile, readFile } from 'fs/promises';
+import { readFile,writeFile } from 'fs/promises';
 import { join } from 'path';
+
+import { type QdrantClient } from '@qdrant/js-client-rest';
+
+import { logger } from '@/utils/logger.js';
+
 import type {
-  BackupMetadata,
   BackupConfiguration,
+  BackupMetadata,
   DisasterRecoveryStatus
 } from './qdrant-backup-config.js';
 
@@ -297,7 +300,7 @@ export interface PostRecoveryValidation {
     dueDate?: string;
   }>;
   recommendations: Array<{
-    priority: 'high' | 'medium' | 'low';
+    priority: 'critical' | 'high' | 'medium' | 'low';
     category: 'prevention' | 'detection' | 'response' | 'recovery';
     recommendation: string;
     justification: string;

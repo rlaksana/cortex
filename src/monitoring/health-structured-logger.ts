@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Structured Health Event Logger
  *
@@ -11,15 +11,15 @@
  */
 
 import { EventEmitter } from 'events';
-import {
-  HealthStatus,
-  DependencyType
-} from '../types/unified-health-interfaces.js';
-import type { MCPServerHealthMetrics } from './mcp-server-health-monitor.js';
+
 import type { CircuitBreakerEvent } from './circuit-breaker-monitor.js';
 import { CircuitBreakerEventType } from './circuit-breaker-monitor.js';
-import type { QdrantHealthCheckResult } from './qdrant-health-monitor.js';
 import type { ProbeResult } from './container-probes.js';
+import type { MCPServerHealthMetrics } from './mcp-server-health-monitor.js';
+import type { QdrantHealthCheckResult } from './qdrant-health-monitor.js';
+import {
+  DependencyType,
+  HealthStatus} from '../types/unified-health-interfaces.js';
 
 /**
  * Log severity levels

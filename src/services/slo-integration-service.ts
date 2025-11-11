@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * SLO Integration Service
  *
@@ -12,22 +12,23 @@
  */
 
 import { EventEmitter } from 'events';
-import {
-  SLO,
-  SLOEvaluation,
-  SLOFrameworkConfig,
-  SLOAlert,
-  ErrorBudget,
-  BurnRateAnalysis,
-  SLOTrendAnalysis,
-  SLOBreachIncident,
-  TimeRange,
-} from '../types/slo-interfaces.js';
+
+import { ErrorBudgetService } from './error-budget-service.js';
+import { type ExtendedSLOBreachIncident,SLOBreachDetectionService } from './slo-breach-detection-service.js';
+import { SLOReportingService } from './slo-reporting-service.js';
 import { SLOService } from './slo-service.js';
 import { SLODashboardService } from '../monitoring/slo-dashboard-service.js';
-import { SLOReportingService } from './slo-reporting-service.js';
-import { SLOBreachDetectionService } from './slo-breach-detection-service.js';
-import { ErrorBudgetService } from './error-budget-service.js';
+import {
+  type BurnRateAnalysis,
+  type ErrorBudget,
+  type SLO,
+  type SLOAlert,
+  type SLOBreachIncident,
+  type SLOEvaluation,
+  type SLOFrameworkConfig,
+  type SLOTrendAnalysis,
+  TimeRange,
+} from '../types/slo-interfaces.js';
 
 /**
  * SLO Integration Service - Main orchestrator for all SLO functionality
@@ -147,7 +148,7 @@ export class SLOIntegrationService extends EventEmitter {
       lastCheck: Date;
       issues: string[];
     }>;
-    metrics: typeof this.metrics;
+    metrics: any;
     lastUpdate: Date;
   } {
     const serviceHealth = {} as any;
@@ -261,8 +262,50 @@ export class SLOIntegrationService extends EventEmitter {
       ]);
 
       // Get incidents and alerts
-      const activeIncidents = this.services.breachDetectionService.getActiveIncidents()
+      const extendedIncidents = this.services.breachDetectionService.getActiveIncidents()
         .filter(incident => incident.sloId === sloId);
+
+      // Convert ExtendedSLOBreachIncident to SLOBreachIncident
+      // ExtendedSLOBreachIncident has additional properties: sloName, detectedAt, evaluation, etc.
+      // We need to extract the base properties and convert/extend to match SLOBreachIncident interface
+      const activeIncidents: SLOBreachIncident[] = extendedIncidents.map(incident => {
+        const {
+          sloName,
+          detectedAt,
+          evaluation,
+          impactAssessment,
+          notifications,
+          escalations,
+          responses,
+          resolution: extendedResolution,
+          ...baseIncident
+        } = incident;
+
+        // Convert resolution structure to match base interface
+        // ExtendedSLOBreachIncident.resolution has different structure than SLOBreachIncident.resolution
+        const resolution = extendedResolution ? {
+          timestamp: extendedResolution.resolvedBy ? new Date() : new Date(),
+          actions: extendedResolution.actions || [],
+          rootCause: extendedResolution.reason || '',
+          preventiveMeasures: extendedResolution.preventRecurrence || []
+        } : undefined;
+
+        // Map the extended properties to base interface structure
+        return {
+          ...baseIncident,
+          escalation: incident.escalation as any, // Convert from any to EscalationLevel
+          resolution,
+          detectedAt: detectedAt,
+          metadata: {
+            sloName,
+            evaluation,
+            impactAssessment,
+            notifications,
+            escalations,
+            responses
+          }
+        } as SLOBreachIncident;
+      });
 
       const alerts = this.services.sloService.getLatestEvaluation(sloId)?.alerts || [];
 
@@ -336,7 +379,7 @@ export class SLOIntegrationService extends EventEmitter {
       const deleted = await this.services.sloService.deleteSLO(sloId);
 
       // Clean up related data
-      const cleaned = [];
+      const cleaned: string[] = [];
       // Note: Cleanup would happen automatically in individual services
 
       // Update metrics
@@ -502,7 +545,6 @@ export class SLOIntegrationService extends EventEmitter {
         name: 'SLO Overview Dashboard',
         description: 'Comprehensive SLO monitoring dashboard',
         owner: 'slo-team',
-        autoRefresh: true,
         refreshInterval: 30000,
       });
 
@@ -541,7 +583,6 @@ export class SLOIntegrationService extends EventEmitter {
       title,
       position: { x: 0, y: 0, width: 4, height: 3 },
       config: {
-        autoRefresh: true,
       },
     });
   }
@@ -753,7 +794,7 @@ export class SLOIntegrationService extends EventEmitter {
     const slos = this.services.sloService.getAllSLOs();
     for (const slo of slos) {
       if (slo.status === 'active') {
-        const defaultPolicy: ErrorBudgetPolicy = {
+        const defaultPolicy = {
           id: `default-${slo.id}`,
           name: `Default Policy for ${slo.name}`,
           description: 'Default error budget policy',
@@ -768,7 +809,7 @@ export class SLOIntegrationService extends EventEmitter {
           ],
         };
 
-        this.services.errorBudgetService.configureBudgetPolicy(slo.id, defaultPolicy);
+        this.services.errorBudgetService.configureBudgetPolicy(slo.id, defaultPolicy as any);
       }
     }
   }
@@ -839,13 +880,13 @@ export class SLOIntegrationService extends EventEmitter {
     }
 
     // Burn rate recommendations
-    if (burnRateAnalysis.currentRates.daily > 2) {
+    if (burnRateAnalysis.currentRate > 2) {
       recommendations.push('High burn rate detected - investigate root cause');
       recommendations.push('Review recent deployments and configuration changes');
     }
 
     // Trend-based recommendations
-    if (burnRateAnalysis.trend.direction === 'increasing' && burnRateAnalysis.trend.confidence > 0.7) {
+    if (burnRateAnalysis.trend === 'increasing' && (burnRateAnalysis as any).confidence > 0.7) {
       recommendations.push('Burn rate trending upward - prepare escalation procedures');
     }
 

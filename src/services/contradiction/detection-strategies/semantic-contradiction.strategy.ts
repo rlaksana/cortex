@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Semantic Contradiction Detection Strategy
  *
@@ -12,13 +12,14 @@
  */
 
 import { randomUUID } from 'crypto';
-import { logger } from '../../../utils/logger';
-import { zaiClientService } from '../../ai/zai-client.service';
+
 import type {
-  KnowledgeItem,
-  ContradictionResult,
   ContradictionDetail,
+  ContradictionResult,
+  KnowledgeItem,
 } from '../../../types/contradiction-detector.interface';
+import { logger } from '../../../utils/logger.js';
+import { zaiClientService } from '../../ai/zai-client.service';
 
 /**
  * Semantic contradiction types
@@ -287,7 +288,6 @@ Provide a detailed semantic analysis focusing on the deeper meaning and intent r
       metadata: {
         detection_method: 'zai_semantic_analysis',
         algorithm_version: '3.0.0',
-        model: 'zai-glm-4.6',
         processing_time_ms: 0,
         comparison_details: {
           contradiction_subtype: analysis.contradiction_type,
@@ -298,7 +298,7 @@ Provide a detailed semantic analysis focusing on the deeper meaning and intent r
         evidence: analysis.evidence.map((ev) => ({
           ...ev,
           evidence_type: ev.type,
-          item_id: ev.source_item === 1 ? item1.id : item2.id,
+          item_id: (ev.source_item === 1 ? item1.id : item2.id) || '',
         })),
       },
       resolution_suggestions: this.generateResolutionSuggestions(
@@ -342,7 +342,12 @@ Provide a detailed semantic analysis focusing on the deeper meaning and intent r
     effort: 'low' | 'medium' | 'high';
     description: string;
   }> {
-    const suggestions = [];
+    const suggestions: Array<{
+      suggestion: string;
+      priority: 'low' | 'medium' | 'high';
+      effort: 'low' | 'medium' | 'high';
+      description: string;
+    }> = [];
 
     const basePriority =
       severity === 'critical'
@@ -400,7 +405,7 @@ Provide a detailed semantic analysis focusing on the deeper meaning and intent r
       case 'assertion_contradiction':
         suggestions.push({
           suggestion: 'Review and reconcile conflicting assertions',
-          priority: 'critical',
+          priority: 'high',
           effort: 'high',
           description:
             'Verify which assertion is correct and update or qualify conflicting statements',
@@ -490,7 +495,3 @@ Provide a detailed semantic analysis focusing on the deeper meaning and intent r
  */
 export const semanticContradictionStrategy = new SemanticContradictionStrategy();
 
-/**
- * Export class for testing
- */
-export { SemanticContradictionStrategy };

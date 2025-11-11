@@ -6,26 +6,25 @@
  */
 
 import { EventEmitter } from 'events';
-import {
-  ChaosExperimentConfig,
-  ChaosScenario,
-  ChaosExperimentResult,
-  ExperimentStatus,
-  ExperimentExecutionContext,
-  VerificationResults,
-  SystemMetrics,
-  ChaosMetrics,
-  RecoveryMetrics,
-  MTTRMetrics,
-  IncidentReport,
-  SafetyCheck,
-  ExperimentReport
-} from '../types/chaos-testing-types';
 
-import { ChaosInjectionEngine } from '../engine/chaos-injection-engine';
-import { GracefulDegradationVerifier } from '../verification/graceful-degradation-verifier';
-import { AlertVerifier } from '../verification/alert-verifier';
-import { MTTRMeasurer } from '../measurement/mttr-measurer';
+import { ChaosInjectionEngine } from '../engine/chaos-injection-engine.js';
+import { MTTRMeasurer } from '../measurement/mttr-measurer.js';
+import {
+  type ChaosExperimentConfig,
+  type ChaosExperimentResult,
+  type ChaosMetrics,
+  type ChaosScenario,
+  type ExperimentExecutionContext,
+  ExperimentReport,
+  type ExperimentStatus,
+  type IncidentReport,
+  type MTTRMetrics,
+  type RecoveryMetrics,
+  type SafetyCheck,
+  type SystemMetrics,
+  type VerificationResults} from '../types/chaos-testing-types.js';
+import { AlertVerifier } from '../verification/alert-verifier.js';
+import { GracefulDegradationVerifier } from '../verification/graceful-degradation-verifier.js';
 
 export interface ExperimentPhase {
   name: string;

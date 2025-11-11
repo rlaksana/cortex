@@ -22,21 +22,21 @@ export interface KnowledgeItem {
 
 // Import unified contracts to maintain consistency (excluding KnowledgeItem to avoid circular imports)
 import type {
-  StoreResult,
-  StoreError,
-  CortexResponseMeta,
   CortexOperation,
+  CortexResponseMeta,
   PerformanceMetrics,
-} from './contracts';
+  StoreError,
+  StoreResult,
+} from './contracts.js';
 
 // Re-export for backward compatibility
 export type {
-  StoreResult,
-  StoreError,
-  CortexResponseMeta,
   CortexOperation,
+  CortexResponseMeta,
   PerformanceMetrics,
-} from './contracts';
+  StoreError,
+  StoreResult,
+} from './contracts.js';
 
 export interface KnowledgeItemForStorage {
   id?: string;

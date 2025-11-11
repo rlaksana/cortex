@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Service Level Objective (SLO) Service
  *
@@ -11,23 +11,23 @@
  */
 
 import { EventEmitter } from 'events';
+
 import {
-  SLI,
-  SLO,
-  SLOEvaluation,
-  SLOEvaluationStatus,
-  SLOAlert,
-  SLOAlertType,
-  SLIMeasurement,
-  DataQuality,
-  BurnRateTrend,
-  SLOFrameworkConfig,
-  ValidationResult,
-  validateSLO,
-  SLOPeriod,
-  SLIAggregation,
-  TimeWindow,
   AlertSeverity,
+  BurnRateTrend,
+  type SLI,
+  SLIAggregation,
+  type SLIMeasurement,
+  type SLO,
+  type SLOAlert,
+  SLOAlertType,
+  type SLOEvaluation,
+  SLOEvaluationStatus,
+  type SLOFrameworkConfig,
+  SLOPeriod,
+  type TimeWindow,
+  validateSLO,
+  type ValidationResult,
 } from '../types/slo-interfaces.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 
@@ -481,7 +481,7 @@ export class SLOService extends EventEmitter {
     slo: SLO;
     evaluation?: SLOEvaluation;
     alerts: SLOAlert[];
-    priority: 'high' | 'medium' | 'low';
+    priority: 'critical' | 'high' | 'medium' | 'low';
   }> {
     const needsAttention = [];
 
@@ -1000,11 +1000,16 @@ export class SLOService extends EventEmitter {
     slo: SLO,
     evaluation: SLOEvaluation | undefined,
     alerts: SLOAlert[]
-  ): 'high' | 'medium' | 'low' {
+  ): 'critical' | 'high' | 'medium' | 'low' {
     if (!evaluation) return 'medium';
 
+    // Emergency alerts get critical priority
+    if (alerts.some(a => a.severity === AlertSeverity.EMERGENCY)) {
+      return 'critical';
+    }
+
     // Critical alerts get high priority
-    if (alerts.some(a => a.severity === AlertSeverity.CRITICAL || a.severity === AlertSeverity.EMERGENCY)) {
+    if (alerts.some(a => a.severity === AlertSeverity.CRITICAL)) {
       return 'high';
     }
 
@@ -1029,8 +1034,8 @@ export class SLOService extends EventEmitter {
   /**
    * Compare priority levels
    */
-  private comparePriority(a: 'high' | 'medium' | 'low', b: 'high' | 'medium' | 'low'): number {
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
+  private comparePriority(a: 'critical' | 'high' | 'medium' | 'low', b: 'critical' | 'high' | 'medium' | 'low'): number {
+    const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
     return priorityOrder[a] - priorityOrder[b];
   }
 

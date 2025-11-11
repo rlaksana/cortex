@@ -12,32 +12,31 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
-  ListToolsRequestSchema,
   CallToolRequestSchema,
-  InitializeRequestSchema,
-  McpError,
   ErrorCode,
+  InitializeRequestSchema,
+  ListToolsRequestSchema,
+  McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 
+import type {
+  IConfigService,
+  IDatabaseService,
+  IEventService,
+  IHealthCheckService,
+  ILoggerService,
+  IMemoryFindOrchestrator,
+  IMemoryStoreOrchestrator,
+  IPerformanceMonitor,
+} from './di/service-interfaces.js';
+import { ServiceTokens } from './di/service-interfaces.js';
+import { serviceLocator } from './di/service-locator.js';
 // Import DI components
 import { createServiceRegistry } from './di/service-registry.js';
-import { serviceLocator } from './di/service-locator.js';
-import { ServiceTokens } from './di/service-interfaces.js';
-import type {
-  ILoggerService,
-  IMemoryStoreOrchestrator,
-  IMemoryFindOrchestrator,
-  IConfigService,
-  IEventService,
-  IPerformanceMonitor,
-  IDatabaseService,
-  IHealthCheckService,
-} from './di/service-interfaces.js';
-
 // Import schemas and types
 import { ALL_JSON_SCHEMAS } from './schemas/json-schemas.js';
-import type { SearchResult } from './types/core-interfaces.js';
-import type { MemoryStoreResponse, MemoryFindResponse } from './types/core-interfaces.js';
+import type { MemoryFindResponse,MemoryStoreResponse,SearchResult  } from './types/core-interfaces.js';
+
 
 /**
  * Main application class with dependency injection

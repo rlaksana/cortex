@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * ZAI Enhanced Insight Service
  *
@@ -11,26 +11,28 @@
  */
 
 import { randomUUID } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
-import { zaiClientService } from '../ai/zai-client.service';
-import type { ZAIChatRequest, ZAIChatResponse } from '../../types/zai-interfaces';
+
+import { InsightCacheService } from './insight-cache.service';
+import { AnomalyDetectionStrategy } from './insight-strategies/anomaly-detection.strategy';
+import { KnowledgeGapStrategy } from './insight-strategies/knowledge-gap.strategy';
+import { PatternRecognitionStrategy } from './insight-strategies/pattern-recognition.strategy';
+import { PredictiveInsightStrategy } from './insight-strategies/predictive-insight.strategy';
+import { RelationshipAnalysisStrategy } from './insight-strategies/relationship-analysis.strategy';
 import type {
+  AnomalyInsight,
+  ConnectionInsight,
   Insight,
   InsightGenerationRequest,
   InsightGenerationResponse,
-  PatternInsight,
-  ConnectionInsight,
-  RecommendationInsight,
-  AnomalyInsight,
-  TrendInsight,
   InsightTypeUnion,
-} from '../../types/insight-interfaces';
-import { InsightCacheService } from './insight-cache.service';
-import { PatternRecognitionStrategy } from './insight-strategies/pattern-recognition.strategy';
-import { KnowledgeGapStrategy } from './insight-strategies/knowledge-gap.strategy';
-import { RelationshipAnalysisStrategy } from './insight-strategies/relationship-analysis.strategy';
-import { AnomalyDetectionStrategy } from './insight-strategies/anomaly-detection.strategy';
-import { PredictiveInsightStrategy } from './insight-strategies/predictive-insight.strategy';
+  PatternInsight,
+  RecommendationInsight,
+  TrendInsight,
+} from '../../types/insight-interfaces.js';
+import type { ZAIChatRequest, ZAIChatResponse } from '../../types/zai-interfaces.js';
+import { zaiClientService } from '../ai/zai-client.service';
 
 export interface ZAIEnhancedInsightConfig {
   enabled: boolean;
@@ -71,6 +73,26 @@ export interface InsightGenerationOptions {
   include_rationale?: boolean;
 }
 
+export interface InsightStrategyOptions {
+  confidence_threshold: number;
+  max_insights: number;
+  include_rationale: boolean;
+  zai_config: {
+    temperature: number;
+    max_tokens: number;
+    top_p: number;
+    frequency_penalty: number;
+    presence_penalty: number;
+  };
+}
+
+export interface InsightStrategy {
+  generateInsights(
+    request: InsightGenerationRequest,
+    options: InsightStrategyOptions
+  ): Promise<InsightTypeUnion[]>;
+}
+
 export interface InsightBatch {
   id: string;
   items: any[];
@@ -89,7 +111,7 @@ export class ZAIEnhancedInsightService {
   private static instance: ZAIEnhancedInsightService;
   private config: ZAIEnhancedInsightConfig;
   private cacheService: InsightCacheService;
-  private strategies: Map<string, any>;
+  private strategies: Map<string, InsightStrategy>;
   private processingQueue: Map<string, InsightBatch> = new Map();
   private backgroundProcessingTimer?: NodeJS.Timeout;
 
@@ -242,13 +264,15 @@ export class ZAIEnhancedInsightService {
    * Initialize insight strategies
    */
   private initializeStrategies(): void {
-    this.strategies = new Map([
+    const strategies = [
       ['pattern_recognition', new PatternRecognitionStrategy(zaiClientService)],
       ['knowledge_gap', new KnowledgeGapStrategy(zaiClientService)],
       ['relationship_analysis', new RelationshipAnalysisStrategy(zaiClientService)],
       ['anomaly_detection', new AnomalyDetectionStrategy(zaiClientService)],
       ['predictive_insights', new PredictiveInsightStrategy(zaiClientService)],
-    ]);
+    ] as [string, InsightStrategy][];
+
+    this.strategies = new Map(strategies);
 
     logger.info(
       { strategies: Array.from(this.strategies.keys()) },

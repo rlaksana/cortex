@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Rollback Service
  *
@@ -17,13 +17,15 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { metricsService } from '../monitoring/metrics-service.js';
-import { HealthStatus, AlertSeverity } from '../types/unified-health-interfaces.js';
-import { canaryOrchestrator, CanaryDeployment } from './canary-orchestrator.js';
-import { trafficSplitterService } from './traffic-splitter.js';
-import { featureFlagService } from '../feature-flag/feature-flag-service.js';
+
+import { type CanaryDeployment, canaryOrchestrator } from './canary-orchestrator.js';
 import { killSwitchService } from './kill-switch-service.js';
+import { trafficSplitterService } from './traffic-splitter.js';
+import { metricsService } from '../../monitoring/metrics-service.js';
+import { AlertSeverity, HealthStatus } from '../../types/unified-health-interfaces.js';
+import { featureFlagService } from '../feature-flag/feature-flag-service.js';
 
 // ============================================================================
 // Types and Interfaces
@@ -919,7 +921,7 @@ export class RollbackService extends EventEmitter {
         break;
 
       case Action.UPDATE_CONFIG:
-        await this.updateConfig(execution.context.deploymentId, action.config);
+        await this.updateDeploymentConfig(execution.context.deploymentId, action.config);
         break;
 
       case Action.RUN_VALIDATION:
@@ -1035,9 +1037,9 @@ export class RollbackService extends EventEmitter {
   }
 
   /**
-   * Update configuration
+   * Update deployment configuration
    */
-  private async updateConfig(deploymentId: string, config: Record<string, any>): Promise<void> {
+  private async updateDeploymentConfig(deploymentId: string, config: Record<string, any>): Promise<void> {
     logger.info('Updating configuration', { deploymentId, config });
     // In a real implementation, this would update service configuration
     await new Promise(resolve => setTimeout(resolve, 3000));

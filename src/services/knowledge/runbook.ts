@@ -1,6 +1,7 @@
-// @ts-nocheck
-import type { RunbookData, ScopeFilter } from '../../types/knowledge-data.js';
+
 import { logger } from '@/utils/logger.js';
+
+import type { RunbookData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeRunbook(data: RunbookData, scope: ScopeFilter): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');

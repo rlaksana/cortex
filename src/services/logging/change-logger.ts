@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Change Logger Service
  *
@@ -15,6 +15,7 @@
  */
 
 import { logger } from '@/utils/logger.js';
+
 import { memoryStore } from '../memory-store.js';
 
 export interface ChangeLogEntry {

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * In-Memory Cache Implementation
  *
@@ -10,7 +10,7 @@
  * @since 2025
  */
 
-import type { ZAICache, ZAIChatResponse } from '../../../types/zai-interfaces';
+import type { ZAICache, ZAIChatResponse } from '../../../types/zai-interfaces.js';
 
 /**
  * Simple in-memory cache implementation with TTL support
@@ -74,11 +74,14 @@ export class InMemoryCache implements ZAICache {
   /**
    * Get cache statistics
    */
+  /**
+   * Get cache statistics
+   */
   async stats(): Promise<{ hits: number; misses: number; hitRate: number }> {
-    const total = this.stats.hits + this.stats.misses;
+    const total = this.statsData.hits + this.statsData.misses;
     return {
       ...this.statsData,
-      hitRate: total > 0 ? this.stats.hits / total : 0,
+      hitRate: total > 0 ? this.statsData.hits / total : 0,
     };
   }
 

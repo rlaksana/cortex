@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Standardized Authentication Service
  *
@@ -14,28 +14,31 @@
  * - Circuit breaker pattern for database failures
  */
 
-import * as jwt from 'jsonwebtoken';
-import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
+
+import * as bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
+
 import { logger } from '@/utils/logger.js';
+
 import type { DatabaseManager } from '../../db/database-manager.js';
 import {
-  ConfigurationError,
-  AuthenticationError,
-  ValidationError,
-  ErrorCategory,
-} from '../../utils/error-handler.js';
-import {
-  User,
   ApiKey,
-  AuthToken,
-  TokenPayload,
-  AuthSession,
-  UserRole,
-  AuthScope,
   AuthContext,
+  type AuthScope,
+  type AuthSession,
+  AuthToken,
   DEFAULT_ROLE_PERMISSIONS,
+  type TokenPayload,
+  type User,
+  type UserRole,
 } from '../../types/auth-types.js';
+import {
+  AuthenticationError,
+  ConfigurationError,
+  ErrorCategory,
+  ValidationError,
+} from '../../utils/error-handler.js';
 
 export interface AuthServiceConfig {
   jwt_secret: string;

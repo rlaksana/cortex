@@ -102,9 +102,9 @@ export interface IterationResult {
 
 export interface MemoryUsageInfo {
   /** Memory at start */
-  start: NodeJS['M']emoryUsage;
+  start: NodeJS.MemoryUsage;
   /** Memory at end */
-  end: NodeJS['M']emoryUsage;
+  end: NodeJS.MemoryUsage;
   /** Memory delta */
   delta: {
     rss: number;
@@ -190,7 +190,7 @@ export interface EnvironmentInfo {
   /** System architecture */
   arch: string;
   /** Memory information */
-  memory: NodeJS['M']emoryUsage;
+  memory: NodeJS.MemoryUsage;
   /** CPU information */
   cpu?: {
     model: string;

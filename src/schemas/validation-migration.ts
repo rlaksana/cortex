@@ -10,22 +10,22 @@
 
 import {
   UnifiedKnowledgeTypeValidator,
-  ValidationMode,
-  ValidationErrorCategory,
-  ValidationErrorSeverity,
-  ValidationResult,
-  ValidationErrorDetail,
-  ValidationOptions,
-  validateKnowledgeItem,
-  validateMemoryStoreRequest,
-  validateMemoryFindRequest,
   validateDeleteRequest,
+  validateKnowledgeItem,
+  validateMemoryFindRequest,
+  validateMemoryStoreRequest,
+  ValidationErrorCategory,
+  type ValidationErrorDetail,
+  ValidationErrorSeverity,
+  ValidationMode,
+  type ValidationOptions,
+  type ValidationResult,
 } from './unified-knowledge-validator.js';
 import type {
-  StoreError,
   KnowledgeItem as IKnowledgeItem,
-  MemoryStoreRequest as IMemoryStoreRequest,
   MemoryFindRequest as IMemoryFindRequest,
+  MemoryStoreRequest as IMemoryStoreRequest,
+  StoreError,
   ValidationService as IValidationService,
 } from '../types/core-interfaces.js';
 

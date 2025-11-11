@@ -12,13 +12,14 @@
  * @since 2025
  */
 
-import { MemoryStoreOrchestrator } from '../../services/orchestrators/memory-store-orchestrator.js';
+import { logger } from '@/utils/logger.js';
+
+import { type MemoryStoreOrchestrator } from '../../services/orchestrators/memory-store-orchestrator.js';
 import type {
   IMemoryStoreOrchestrator,
   KnowledgeItem,
   MemoryStoreResponse,
 } from '../service-interfaces.js';
-import { logger } from '@/utils/logger.js';
 
 /**
  * Adapter that wraps MemoryStoreOrchestrator to implement IMemoryStoreOrchestrator interface

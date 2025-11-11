@@ -1,10 +1,11 @@
-// @ts-nocheck
+
 import { logger } from '@/utils/logger.js';
+
 import type {
   BusinessValidator,
-  ValidatorRegistry as IValidatorRegistry,
-  ValidationResult,
   KnowledgeItem,
+  ValidationResult,
+  ValidatorRegistry as IValidatorRegistry,
 } from '../../types/core-interfaces.js';
 
 /**

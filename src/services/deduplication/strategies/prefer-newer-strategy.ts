@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Prefer Newer Deduplication Strategy
  *
@@ -6,14 +6,15 @@
  * When duplicates are found, the newer item (based on creation/update time) is preferred.
  */
 
+import { logger } from '@/utils/logger.js';
+
 import {
-  DeduplicationStrategy,
   type DeduplicationResult,
+  DeduplicationStrategy,
   type DeduplicationStrategyConfig,
   type DuplicateAnalysis,
 } from './base-strategy.js';
 import type { KnowledgeItem } from '../../../types/core-interfaces.js';
-import { logger } from '@/utils/logger.js';
 
 export interface PreferNewerStrategyConfig extends DeduplicationStrategyConfig {
   similarityThreshold?: number;

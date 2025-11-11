@@ -6,17 +6,18 @@
  */
 
 import { EventEmitter } from 'events';
+
 import {
-  MTTRMetrics,
-  RecoveryMetrics,
-  RecoveryPattern,
-  DataConsistencyResult,
-  ComponentRecoverySequence,
-  RecoveryStep,
-  ChaosScenario,
-  ExperimentExecutionContext,
-  SystemMetrics
-} from '../types/chaos-testing-types';
+  type ChaosScenario,
+  type ComponentRecoverySequence,
+  type DataConsistencyResult,
+  type ExperimentExecutionContext,
+  type MTTRMetrics,
+  type RecoveryMetrics,
+  type RecoveryPattern,
+  type RecoveryStep,
+  type SystemMetrics
+} from '../types/chaos-testing-types.js';
 
 export interface IncidentTimeline {
   incidentStart: Date;

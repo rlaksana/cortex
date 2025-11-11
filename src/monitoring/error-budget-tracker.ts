@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Qdrant Error Budget Tracker
  *
@@ -11,8 +11,10 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { DegradationLevel, DegradationEvent } from './degradation-detector.js';
+
+import { type DegradationEvent,DegradationLevel } from './degradation-detector.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**

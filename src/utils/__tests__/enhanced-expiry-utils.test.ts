@@ -17,7 +17,8 @@
  * @since 2025
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+
 import { enhancedExpiryUtils } from '../enhanced-expiry-utils.js';
 
 describe('Enhanced Expiry Utils', () => {

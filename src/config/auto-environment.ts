@@ -18,10 +18,11 @@
  * @since 2025
  */
 
-import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+
+import { execSync } from 'child_process';
 
 interface EnvironmentDetection {
   openaiApiKey?: string;

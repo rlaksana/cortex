@@ -1,8 +1,9 @@
-// @ts-nocheck
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { memoryStore } from '../memory-store.js';
+
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+
 import { environment } from '../../config/environment.js';
 import { insightGenerationService } from '../insights/insight-generation-service.js';
+import { memoryStore } from '../memory-store.js';
 
 // Mock dependencies
 jest.mock('../../utils/logger.js');

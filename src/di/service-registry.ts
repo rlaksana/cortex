@@ -9,56 +9,55 @@
  * @since 2025
  */
 
+import { EventEmitter } from 'node:events';
+
+import { AuditServiceAdapter } from './adapters/audit-service-adapter.js';
+import { AuthServiceAdapter } from './adapters/auth-service-adapter.js';
+import { CircuitBreakerServiceAdapter } from './adapters/circuit-breaker-service-adapter.js';
+// Import adapter classes for interface compliance
+import { DatabaseServiceAdapter } from './adapters/database-service-adapter.js';
+import { DeduplicationServiceAdapter } from './adapters/deduplication-service-adapter.js';
+import { EmbeddingServiceAdapter } from './adapters/embedding-service-adapter.js';
+import { HealthCheckServiceAdapter } from './adapters/health-check-service-adapter.js';
+import { MemoryFindOrchestratorAdapter } from './adapters/memory-find-orchestrator-adapter.js';
+import { MemoryStoreOrchestratorAdapter } from './adapters/memory-store-orchestrator-adapter.js';
+import { MetricsServiceAdapter } from './adapters/metrics-service-adapter.js';
 import { DIContainer, ServiceLifetime } from './di-container.js';
+import type {
+  IAuditService,
+  IAuthService,
+  ICacheService,
+  ICircuitBreakerService,
+  IConfigService,
+  IDatabaseService,
+  IDeduplicationService,
+  IEmbeddingService,
+  IEventService,
+  IHealthCheckService,
+  ILoggerService,
+  IMemoryFindOrchestrator,
+  IMemoryStoreOrchestrator,
+  IMetricsService,
+  IPerformanceMonitor,
+  IValidationService,
+} from './service-interfaces.js';
 import { ServiceTokens } from './service-interfaces.js';
 import { ConfigService } from './services/config-service.js';
 import { LoggerService } from './services/logger-service.js';
-import { EventEmitter } from 'node:events';
-import type {
-  IConfigService,
-  ILoggerService,
-  IMemoryStoreOrchestrator,
-  IMemoryFindOrchestrator,
-  IDatabaseService,
-  IAuthService,
-  IAuditService,
-  IDeduplicationService,
-  IEmbeddingService,
-  ICircuitBreakerService,
-  IMetricsService,
-  IHealthCheckService,
-  ICacheService,
-  IEventService,
-  IValidationService,
-  IPerformanceMonitor,
-} from './service-interfaces.js';
-
+import { DatabaseManager } from '../db/database-manager.js';
+import { monitoringHealthCheckService } from '../monitoring/health-check-service.js';
+import { metricsService } from '../monitoring/metrics-service.js';
+import { structuredLogger } from '../monitoring/structured-logger.js';
+import { auditService } from '../services/audit/audit-service.js';
+import { AuthService } from '../services/auth/auth-service.js';
+import { circuitBreakerManager } from '../services/circuit-breaker.service.js';
+import { DeduplicationService } from '../services/deduplication/deduplication-service.js';
+import { DependencyRegistry } from '../services/deps-registry.js';
+import { EmbeddingService } from '../services/embeddings/embedding-service.js';
+import { MemoryFindOrchestrator } from '../services/orchestrators/memory-find-orchestrator.js';
 // Import existing implementations to be wrapped
 import { MemoryStoreOrchestrator } from '../services/orchestrators/memory-store-orchestrator.js';
-import { MemoryFindOrchestrator } from '../services/orchestrators/memory-find-orchestrator.js';
-import { DatabaseManager } from '../db/database-manager.js';
-import { AuthService } from '../services/auth/auth-service.js';
-import { auditService } from '../services/audit/audit-service.js';
-import { DeduplicationService } from '../services/deduplication/deduplication-service.js';
-import { EmbeddingService } from '../services/embeddings/embedding-service.js';
-import { circuitBreakerManager } from '../services/circuit-breaker.service.js';
-
-// Import adapter classes for interface compliance
-import { DatabaseServiceAdapter } from './adapters/database-service-adapter.js';
-import { CircuitBreakerServiceAdapter } from './adapters/circuit-breaker-service-adapter.js';
-import { MemoryStoreOrchestratorAdapter } from './adapters/memory-store-orchestrator-adapter.js';
-import { MemoryFindOrchestratorAdapter } from './adapters/memory-find-orchestrator-adapter.js';
-import { AuthServiceAdapter } from './adapters/auth-service-adapter.js';
-import { EmbeddingServiceAdapter } from './adapters/embedding-service-adapter.js';
-import { AuditServiceAdapter } from './adapters/audit-service-adapter.js';
-import { DeduplicationServiceAdapter } from './adapters/deduplication-service-adapter.js';
-import { MetricsServiceAdapter } from './adapters/metrics-service-adapter.js';
-import { HealthCheckServiceAdapter } from './adapters/health-check-service-adapter.js';
-import { metricsService } from '../monitoring/metrics-service.js';
-import { monitoringHealthCheckService } from '../monitoring/health-check-service.js';
-import { structuredLogger } from '../monitoring/structured-logger.js';
 import { performanceMonitor } from '../utils/performance-monitor.js';
-import { DependencyRegistry } from '../services/deps-registry.js';
 
 /**
  * Service registry for configuring dependency injection

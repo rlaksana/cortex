@@ -13,14 +13,17 @@
  * @since 2025
  */
 
-import { QdrantClient } from '@qdrant/js-client-rest';
-import { logger } from '@/utils/logger.js';
+import { mkdir, readFile, rm,writeFile } from 'fs/promises';
+import { dirname,join } from 'path';
 import { createHash } from 'crypto';
-import { writeFile, readFile, mkdir, rm } from 'fs/promises';
-import { join, dirname } from 'path';
+
+import { type QdrantClient } from '@qdrant/js-client-rest';
+
+import { logger } from '@/utils/logger.js';
+
 import type {
-  BackupMetadata,
   BackupConfiguration,
+  BackupMetadata,
   RestoreTestResult
 } from './qdrant-backup-config.js';
 

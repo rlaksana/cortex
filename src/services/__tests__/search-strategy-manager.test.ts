@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Search Strategy Manager Test Suite - Phase 3 Enhanced
  *
@@ -11,14 +11,15 @@
  * - System health reporting
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { SearchStrategyManager } from '../search/search-strategy-manager.js';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+
+import type { SearchQuery } from '../../types/core-interfaces.js';
 import {
-  searchErrorHandler,
   ErrorCategory,
   ErrorSeverity,
+  searchErrorHandler,
 } from '../search/search-error-handler.js';
-import type { SearchQuery } from '../../types/core-interfaces.js';
+import { SearchStrategyManager } from '../search/search-strategy-manager.js';
 
 // Mock the logger to avoid noise in tests
 jest.mock('../../utils/logger.js', () => ({

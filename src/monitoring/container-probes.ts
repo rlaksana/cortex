@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Container-Ready Probes for Kubernetes/Docker Orchestration
  *
@@ -10,17 +10,17 @@
  * @version 2.0.1
  */
 
-import { Request, Response } from 'express';
-import {
-  mcpServerHealthMonitor,
-  type MCPServerHealthMetrics
-} from './mcp-server-health-monitor.js';
-import {
-  HealthStatus,
-  DependencyType
-} from '../types/unified-health-interfaces.js';
-import { circuitBreakerManager } from '../services/circuit-breaker.service.js';
+import { type Request, type Response } from 'express';
+
 import { logger } from '@/utils/logger.js';
+
+import {
+  type MCPServerHealthMetrics,
+  mcpServerHealthMonitor} from './mcp-server-health-monitor.js';
+import { circuitBreakerManager } from '../services/circuit-breaker.service.js';
+import {
+  DependencyType,
+  HealthStatus} from '../types/unified-health-interfaces.js';
 
 /**
  * Probe configuration

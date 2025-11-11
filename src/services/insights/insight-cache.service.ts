@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Insight Cache Service
  *
@@ -11,8 +11,10 @@
  */
 
 import { createHash } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
-import type { InsightTypeUnion } from '../../types/insight-interfaces';
+
+import type { InsightTypeUnion } from '../../types/insight-interfaces.js';
 
 export interface InsightCacheConfig {
   ttlSeconds: number;
@@ -187,7 +189,7 @@ export class InsightCacheService {
       // Generate semantic hash
       const semanticHash = this.config.enableSemanticHashing
         ? this.generateSemanticHash(insights, metadata)
-        : this.generateSimpleHash(insights);
+        : this.generateSimpleHash(insights.map(i => JSON.stringify(i)));
 
       const entry: CacheEntry = {
         id: this.generateEntryId(),
@@ -420,7 +422,7 @@ export class InsightCacheService {
         confidence: metadata.confidence,
       };
 
-      return this.generateSimpleHash([JSON.stringify(hashData)]);
+      return this.generateSimpleHash([JSON.stringify(hashData), metadata.itemIds.join(','), metadata.strategies.join(',')]);
     } catch (error) {
       logger.error({ error }, 'Semantic hash generation failed');
       return this.generateSimpleHash([Date.now().toString()]);
@@ -474,12 +476,14 @@ export class InsightCacheService {
   private async compressInsights(insights: InsightTypeUnion[]): Promise<InsightTypeUnion[]> {
     try {
       // Simple compression: remove redundant fields and optimize structure
-      return insights.map((insight) => ({
+      return insights.map((insight): InsightTypeUnion => ({
         ...insight,
         // Keep essential fields, remove verbose metadata for caching
         metadata: {
-          generated_at: insight.metadata['generated_at'],
-          generated_by: insight.metadata['generated_by'],
+          generated_at: (insight as any).metadata?.['generated_at'] || new Date().toISOString(),
+          generated_by: (insight as any).metadata?.['generated_by'] || 'system',
+          processing_time_ms: (insight as any).metadata?.['processing_time_ms'] || 0,
+          data_sources: (insight as any).metadata?.['data_sources'] || [],
         },
       }));
     } catch (error) {

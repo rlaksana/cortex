@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * P8-T8.4: Multi-Tenancy Governance Service
  *
@@ -22,7 +22,9 @@
 
 import { EventEmitter } from 'node:events';
 import { createHash, randomBytes } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
+
 import type { TenantConfig } from './tenant-isolation-service.js';
 
 // === Type Definitions ===
@@ -93,7 +95,7 @@ export interface TenantOnboardingRequest {
     timestamp: string;
     action: string;
     actor: string;
-    details: any;
+    details: Record<string, unknown>;
   }>;
 }
 
@@ -175,7 +177,7 @@ export interface TenantOffboardingRequest {
     timestamp: string;
     action: string;
     actor: string;
-    details: any;
+    details: Record<string, unknown>;
   }>;
 }
 
@@ -258,7 +260,7 @@ export interface TenantComplianceReport {
 
   /** Recommendations */
   recommendations: Array<{
-    priority: 'high' | 'medium' | 'low';
+    priority: 'critical' | 'high' | 'medium' | 'low';
     category: string;
     description: string;
     effort: 'low' | 'medium' | 'high';
@@ -378,7 +380,7 @@ export interface TenantConfigurationTemplate {
   validation_rules: Array<{
     field_path: string;
     validation_type: 'required' | 'min' | 'max' | 'pattern' | 'custom';
-    validation_value: any;
+    validation_value: unknown;
     error_message: string;
   }>;
 
@@ -1067,7 +1069,7 @@ export class TenantGovernanceService extends EventEmitter {
   /**
    * Execute specific offboarding phase
    */
-  private async executeOffboardingPhase(request: TenantOffboardingRequest, phase: any): Promise<void> {
+  private async executeOffboardingPhase(request: TenantOffboardingRequest, phase: { phase_name: string; estimated_duration_hours: number; }): Promise<void> {
     // Simulate phase execution with appropriate delays
     await new Promise(resolve => setTimeout(resolve, phase.estimated_duration_hours * 100)); // Simulated
 

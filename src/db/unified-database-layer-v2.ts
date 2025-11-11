@@ -20,22 +20,23 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { createFindObservability } from '../utils/observability-helper.js';
+
 import { QdrantAdapter } from './adapters/qdrant-adapter.js';
 import type {
+  DeleteOptions,
   IVectorAdapter,
   SearchOptions,
   StoreOptions,
-  DeleteOptions,
 } from './interfaces/vector-adapter.interface.js';
 import type {
   KnowledgeItem,
-  StoreResult,
-  StoreError,
   // MemoryStoreResponse,
   MemoryFindResponse,
   SearchQuery,
+  StoreError,
+  StoreResult,
 } from '../types/core-interfaces.js';
+import { createFindObservability } from '../utils/observability-helper.js';
 
 /**
  * Configuration for the Qdrant-only database layer

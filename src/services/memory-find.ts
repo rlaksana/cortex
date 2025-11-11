@@ -1,11 +1,12 @@
-// @ts-nocheck
+
 import { logger } from '@/utils/logger.js';
-import { coreMemoryFind, type CoreFindParams } from './core-memory-find.js';
+
+import { type CoreFindParams,coreMemoryFind } from './core-memory-find.js';
 import {
   searchStrategyManager,
   type SearchStrategyType,
 } from './search/search-strategy-manager.js';
-import type { SearchQuery, MemoryFindResponse } from '../types/core-interfaces.js';
+import type { MemoryFindResponse,SearchQuery } from '../types/core-interfaces.js';
 
 /**
  * Main entry point for memory find operations - Phase 3 Enhanced
@@ -269,27 +270,27 @@ export async function memoryFindWithStrategies(query: SearchQuery): Promise<Memo
       total_count: strategyResult.results.length,
       total: strategyResult.results.length, // Compatibility
       autonomous_context: {
-        search_mode_used: strategyResult.strategy,
+        search_mode_used: typeof strategyResult.strategy === 'string' ? strategyResult.strategy : strategyResult.strategy.primary.name,
         results_found: strategyResult.results.length,
-        confidence_average: strategyResult.confidence,
+        confidence_average: strategyResult.confidence ?? 0,
         user_message_suggestion: generateStrategyUserMessage(strategyResult),
       },
       observability: {
         source: 'cortex_memory',
-        strategy: strategyResult.strategy,
-        vector_used: strategyResult.vectorUsed,
-        degraded: strategyResult.degraded,
-        execution_time_ms: strategyResult.executionTime,
-        confidence_average: strategyResult.confidence,
+        strategy: typeof strategyResult.strategy === 'string' ? strategyResult.strategy : strategyResult.strategy.primary.name,
+        vector_used: strategyResult.vectorUsed ?? false,
+        degraded: strategyResult.degraded ?? false,
+        execution_time_ms: strategyResult.executionTime ?? 0,
+        confidence_average: strategyResult.confidence ?? 0,
         search_id: `strategy_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       },
       meta: {
-        strategy: strategyResult.strategy,
-        vector_used: strategyResult.vectorUsed,
-        degraded: strategyResult.degraded,
+        strategy: typeof strategyResult.strategy === 'string' ? strategyResult.strategy : strategyResult.strategy.primary.name,
+        vector_used: strategyResult.vectorUsed ?? false,
+        degraded: strategyResult.degraded ?? false,
         source: 'cortex_memory',
-        execution_time_ms: strategyResult.executionTime,
-        confidence_score: strategyResult.confidence,
+        execution_time_ms: strategyResult.executionTime ?? 0,
+        confidence_score: strategyResult.confidence ?? 0,
         truncated: false,
         warnings: strategyResult.degraded
           ? [strategyResult.fallbackReason || 'Search was degraded']
@@ -395,8 +396,7 @@ function generateStrategyUserMessage(strategyResult: any): string {
 async function checkVectorBackendAvailability(): Promise<boolean> {
   try {
     // Use the SearchStrategyManager's health check
-    const vectorHealth = searchStrategyManager.getVectorHealth();
-    return vectorHealth.available;
+    return searchStrategyManager.getVectorHealth();
   } catch (error) {
     logger.warn(
       {
@@ -445,27 +445,35 @@ export async function getSearchStrategies(): Promise<{
 }> {
   // Get strategies from SearchStrategyManager
   const supportedStrategies = searchStrategyManager.getSupportedStrategies();
-  const vectorHealth = searchStrategyManager.getVectorHealth();
+  const vectorHealthStatus = searchStrategyManager.getVectorHealth();
+  const now = new Date();
+  const vectorHealth = {
+    available: vectorHealthStatus,
+    lastChecked: now,
+    degradationReason: vectorHealthStatus ? undefined : 'Vector service unavailable',
+    consecutiveFailures: vectorHealthStatus ? 0 : 1,
+    responseTime: 0
+  };
   const performanceMetrics = searchStrategyManager.getPerformanceMetrics();
 
   // Calculate system metrics
-  const totalSearches = Array.from(performanceMetrics.values()).reduce(
-    (sum, metrics) => sum + metrics.totalExecutions,
+  const totalSearches = Object.values(performanceMetrics).reduce(
+    (sum, metrics: any) => sum + metrics.totalExecutions,
     0
   );
 
-  const successfulSearches = Array.from(performanceMetrics.values()).reduce(
-    (sum, metrics) => sum + metrics.successfulExecutions,
+  const successfulSearches = Object.values(performanceMetrics).reduce(
+    (sum, metrics: any) => sum + metrics.successfulExecutions,
     0
   );
 
   const mostUsedStrategy =
-    Array.from(performanceMetrics.entries()).sort(
-      (a, b) => b[1].totalExecutions - a[1].totalExecutions
+    Object.entries(performanceMetrics).sort(
+      (a: [string, any], b: [string, any]) => b[1].totalExecutions - a[1].totalExecutions
     )[0]?.[0] || 'auto';
 
   return {
-    strategies: supportedStrategies.map((strategy) => ({
+    strategies: supportedStrategies.map((strategy: any) => ({
       name: strategy.name,
       description: strategy.description,
       vector_required: strategy.name === 'deep',

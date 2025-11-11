@@ -1,11 +1,13 @@
-// @ts-nocheck
-import { randomUUID, createHash } from 'crypto';
-import { KnowledgeItem } from '../../types/core-interfaces.js';
-import { inheritTTLFromParent } from '../../utils/tl-utils.js';
-import { SemanticAnalyzer, type SemanticAnalysisResult } from './semantic-analyzer.js';
-import { EmbeddingService } from '../embeddings/embedding-service.js';
+
+import { createHash,randomUUID } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
+
+import { type SemanticAnalysisResult,SemanticAnalyzer } from './semantic-analyzer.js';
 import { environment } from '../../config/environment.js';
+import { type KnowledgeItem } from '../../types/core-interfaces.js';
+import { inheritTTLFromParent } from '../../utils/tl-utils.js';
+import { type EmbeddingService } from '../embeddings/embedding-service.js';
 
 export interface ChunkingStats {
   original_length: number;

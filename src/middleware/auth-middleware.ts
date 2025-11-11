@@ -3,18 +3,21 @@
  * Provides JWT token validation, API key authentication, and scope-based authorization
  */
 
-import { Request, Response, NextFunction } from 'express';
 import * as crypto from 'crypto';
+
+import { type NextFunction,type Request, type Response } from 'express';
+
 import { logger } from '@/utils/logger.js';
-import { AuthService } from '../services/auth/auth-service.js';
+
+import { type AuthService } from '../services/auth/auth-service.js';
 import {
-  AuthContext,
-  AuthError,
-  AuthMiddlewareConfig,
+  type AuthContext,
+  type AuthError,
+  type AuthMiddlewareConfig,
   AuthScope,
-  SecurityAuditLog,
-  UserRole,
-  IPValidationConfig,
+  type IPValidationConfig,
+  type SecurityAuditLog,
+  type UserRole,
 } from '../types/auth-types.js';
 
 export interface AuthenticatedRequest extends Request {

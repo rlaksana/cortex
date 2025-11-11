@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * TTL Integration Test Suite
  *
@@ -18,16 +18,17 @@
  * @since 2025
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { ttlPolicyService } from '../ttl-policy-service.js';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+
 import { enhancedExpiryUtils } from '../../../utils/enhanced-expiry-utils.js';
-import { TTLManagementService, createTTLManagementService } from '../ttl-management-service.js';
-import { ttlSafetyService } from '../ttl-safety-service.js';
+import { createTTLManagementService,type TTLManagementService } from '../ttl-management-service.js';
 import type {
   KnowledgeItem,
-  TTLPolicyOptions,
   TTLBulkOperationOptions,
+  TTLPolicyOptions,
 } from '../ttl-policy-service.js';
+import { ttlPolicyService } from '../ttl-policy-service.js';
+import { ttlSafetyService } from '../ttl-safety-service.js';
 
 // Mock database layer for testing
 const mockDatabaseLayer = {

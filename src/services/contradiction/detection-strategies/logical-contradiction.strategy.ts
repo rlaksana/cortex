@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Logical Contradiction Detection Strategy
  *
@@ -12,12 +12,13 @@
  */
 
 import { randomUUID } from 'crypto';
-import { logger } from '../../../utils/logger';
-import { zaiClientService } from '../../ai/zai-client.service';
+
 import type {
-  KnowledgeItem,
   ContradictionResult,
+  KnowledgeItem,
 } from '../../../types/contradiction-detector.interface';
+import { logger } from '../../../utils/logger.js';
+import { zaiClientService } from '../../ai/zai-client.service';
 
 /**
  * Logical contradiction types
@@ -890,7 +891,6 @@ Provide detailed logical analysis focusing on formal reasoning and implicit cont
       metadata: {
         detection_method: 'zai_logical_analysis',
         algorithm_version: '3.0.0',
-        model: 'zai-glm-4.6',
         processing_time_ms: 0,
         comparison_details: {
           contradiction_subtype: analysis.contradiction_type,
@@ -900,7 +900,7 @@ Provide detailed logical analysis focusing on formal reasoning and implicit cont
         evidence: analysis.evidence.map((ev) => ({
           ...ev,
           evidence_type: ev.type,
-          item_id: ev.source_item === 1 ? item1.id : item2.id,
+          item_id: (ev.source_item === 1 ? item1.id : item2.id) || '',
         })),
       },
       resolution_suggestions: this.generateResolutionSuggestions(
@@ -942,7 +942,7 @@ Provide detailed logical analysis focusing on formal reasoning and implicit cont
         evidence: analysis.evidence.map((ev) => ({
           ...ev,
           evidence_type: ev.type,
-          item_id: ev.source_item === 1 ? item1.id : item2.id,
+          item_id: (ev.source_item === 1 ? item1.id : item2.id) || '',
         })),
       },
       resolution_suggestions: this.generateResolutionSuggestions(
@@ -986,7 +986,12 @@ Provide detailed logical analysis focusing on formal reasoning and implicit cont
     effort: 'low' | 'medium' | 'high';
     description: string;
   }> {
-    const suggestions = [];
+    const suggestions: Array<{
+      suggestion: string;
+      priority: 'low' | 'medium' | 'high';
+      effort: 'low' | 'medium' | 'high';
+      description: string;
+    }> = [];
 
     const basePriority =
       severity === 'critical'
@@ -1001,7 +1006,7 @@ Provide detailed logical analysis focusing on formal reasoning and implicit cont
       case 'mutual_exclusion':
         suggestions.push({
           suggestion: 'Resolve mutual exclusivity by clarifying which statement is correct',
-          priority: 'critical',
+          priority: 'high',
           effort: 'medium',
           description: 'Review both statements and determine which should be true or false',
         });
@@ -1034,7 +1039,7 @@ Provide detailed logical analysis focusing on formal reasoning and implicit cont
       case 'contradictory_rules':
         suggestions.push({
           suggestion: 'Reconcile contradictory rules or establish precedence',
-          priority: 'critical',
+          priority: 'high',
           effort: 'high',
           description: 'Resolve rule conflicts or establish clear hierarchy and exceptions',
         });
@@ -1114,7 +1119,3 @@ Provide detailed logical analysis focusing on formal reasoning and implicit cont
  */
 export const logicalContradictionStrategy = new LogicalContradictionStrategy();
 
-/**
- * Export class for testing
- */
-export { LogicalContradictionStrategy };

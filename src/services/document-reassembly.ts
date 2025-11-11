@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Document Reassembly Service
  *
@@ -8,12 +8,13 @@
  */
 
 import { logger } from '@/utils/logger.js';
+
 import { memoryFind } from './memory-find.js';
 import type { KnowledgeItem } from '../types/core-interfaces.js';
 import {
-  verifyContentSimilarity,
   type SimilarityAnalysis,
   type VerificationOptions,
+  verifyContentSimilarity,
 } from '../utils/content-similarity-verifier.js';
 
 export interface DocumentWithChunks {

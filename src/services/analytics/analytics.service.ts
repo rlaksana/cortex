@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Analytics Service - Comprehensive analytics for knowledge management system
  * Provides advanced analytics capabilities including knowledge metrics, performance analysis,
@@ -6,16 +5,16 @@
  */
 
 import type {
-  KnowledgeAnalytics,
-  RelationshipAnalytics,
-  PerformanceAnalytics,
-  UserBehaviorAnalytics,
-  PredictiveAnalytics,
-  AnalyticsReport,
-  AnalyticsQuery,
   AnalyticsFilter,
+  AnalyticsQuery,
+  AnalyticsReport,
+  KnowledgeAnalytics,
+  PerformanceAnalytics,
+  PredictiveAnalytics,
+  RelationshipAnalytics,
   StorageAnalytics,
-} from '../../types/core-interfaces';
+  UserBehaviorAnalytics,
+} from '../../types/core-interfaces.js';
 
 /**
  * Analytics Service class
@@ -47,11 +46,12 @@ export class AnalyticsService {
         dailyGrowthRate: 0,
         weeklyGrowthRate: 0,
         monthlyGrowthRate: 0,
-        projectedGrowth: {
-          nextMonth: { entities: 0, relations: 0, observations: 0 },
-          nextQuarter: { entities: 0, relations: 0, observations: 0 },
-          nextYear: { entities: 0, relations: 0, observations: 0 },
-        },
+        totalGrowthThisPeriod: 0,
+      },
+      contentMetrics: {
+        averageContentLength: 0,
+        totalContentLength: 0,
+        contentComplexity: 'low',
       },
       scopeDistribution: {},
       temporalDistribution: {},
@@ -81,12 +81,10 @@ export class AnalyticsService {
         betweenness: {},
         closeness: {},
         eigenvector: {},
-        pagerank: {},
       },
-      connectivityMetrics: {
-        connectedComponents: 0,
-        largestComponentSize: 0,
-        averagePathLength: 0,
+      clusteringCoefficients: {},
+      pathLengths: {
+        averageShortestPath: 0,
         diameter: 0,
         distribution: {},
       },
@@ -114,20 +112,17 @@ export class AnalyticsService {
         p99ResponseTime: 0,
         throughput: 0,
         errorRate: 0,
-        slowQueries: [],
       },
-      resourceUtilization: {
+      storageUtilization: {
+        totalStorageUsed: 0,
+        storageByType: {},
+        growthRate: 0,
+      },
+      systemMetrics: {
         cpuUsage: 0,
         memoryUsage: 0,
-        diskUsage: 0,
+        diskIO: 0,
         networkIO: 0,
-      },
-      storageAnalytics: {
-        totalSize: 0,
-        indexSize: 0,
-        compressionRatio: 0,
-        cacheHitRate: 0,
-        readWriteRatio: 0,
       },
       bottlenecks: [],
       optimizationSuggestions: [],
@@ -151,21 +146,27 @@ export class AnalyticsService {
     const analytics: UserBehaviorAnalytics = {
       searchPatterns: {
         commonQueries: [],
-        averageQueryLength: 0,
-        queryComplexityDistribution: {},
-        searchSuccessRate: 0,
+        queryComplexity: {
+          simple: 0,
+          medium: 0,
+          complex: 0,
+        },
+        filtersUsage: {},
       },
-      interactionPatterns: {
+      contentInteraction: {
+        mostViewedTypes: {},
         averageSessionDuration: 0,
+        bounceRate: 0,
+      },
+      usageTrends: {
+        dailyActiveUsers: 0,
+        retentionRate: 0,
+        featureAdoption: {},
+      },
+      engagementMetrics: {
+        totalInteractions: 0,
         averageInteractionsPerSession: 0,
         peakActivityHours: [],
-        mostActiveUsers: [],
-      },
-      contentEngagement: {
-        mostViewedEntities: [],
-        averageTimeOnEntity: 0,
-        bounceRate: 0,
-        returnVisitorRate: 0,
       },
     };
 
@@ -190,47 +191,32 @@ export class AnalyticsService {
           entities: 0,
           relations: 0,
           observations: 0,
-          confidence: 0,
         },
         nextQuarter: {
           entities: 0,
           relations: 0,
           observations: 0,
-          confidence: 0,
         },
         nextYear: {
           entities: 0,
           relations: 0,
           observations: 0,
-          confidence: 0,
         },
       },
-      trendAnalysis: {
-        emergingKnowledgeTypes: [],
-        decliningKnowledgeTypes: [],
-        seasonalPatterns: {},
-        anomalyDetection: [],
+      trendPredictions: {
+        knowledgeTypes: {},
+        scopes: {},
+        contentComplexity: 'stable',
       },
-      riskPredictions: {
-        storageCapacityRisk: {
-          riskLevel: 'low',
-          timeframe: '6 months',
-          probability: 0,
-          recommendations: [],
-        },
-        performanceDegradationRisk: {
-          riskLevel: 'low',
-          timeframe: '3 months',
-          probability: 0,
-          recommendations: [],
-        },
-        knowledgeLossRisk: {
-          riskLevel: 'low',
-          timeframe: '12 months',
-          probability: 0,
-          recommendations: [],
-          riskFactors: [],
-        },
+      anomalyDetection: {
+        detectedAnomalies: [],
+        confidenceScores: {},
+        recommendedActions: [],
+      },
+      insights: {
+        keyInsights: [],
+        recommendations: [],
+        riskFactors: [],
       },
     };
 
@@ -252,25 +238,47 @@ export class AnalyticsService {
     const analytics: StorageAnalytics = {
       usagePatterns: [],
       performanceMetrics: {
-        averageReadTime: 0,
-        averageWriteTime: 0,
-        readThroughput: 0,
-        writeThroughput: 0,
-        cacheHitRate: 0,
-        indexEfficiency: 0,
+        uploadMetrics: {
+          count: 0,
+          averageLatency: 0,
+          p95Latency: 0,
+          p99Latency: 0,
+          throughput: 0,
+          errorRate: 0,
+        },
+        downloadMetrics: {
+          count: 0,
+          averageLatency: 0,
+          p95Latency: 0,
+          p99Latency: 0,
+          throughput: 0,
+          errorRate: 0,
+        },
+        storageMetrics: {
+          readIOPS: 0,
+          writeIOPS: 0,
+          throughput: 0,
+          latency: 0,
+        },
+        cacheMetrics: {
+          hitRate: 0,
+          missRate: 0,
+          evictionRate: 0,
+          size: 0,
+        },
       },
       costAnalysis: {
-        totalCost: 0,
-        costPerGB: 0,
-        monthlyCost: 0,
-        projectedCost: {
-          nextMonth: 0,
-          nextQuarter: 0,
-          nextYear: 0,
-        },
+        totalMonthlyCost: 0,
+        costByStorageClass: {},
+        costByOperations: {},
+        costByDataTransfer: {},
+        forecastedCost: 0,
+        recommendations: [],
       },
       accessPatterns: [],
       recommendations: [],
+      anomalies: [],
+      forecasts: [],
     };
 
     this.setCache(cacheKey, analytics, 300000);
@@ -311,9 +319,12 @@ export class AnalyticsService {
       title: query.title || `${query.type} Analytics Report`,
       generatedAt: new Date(),
       timeRange: query.timeRange,
+      filters: query.filters,
       data,
+      visualizations: [],
+      summary: `Analytics report for ${query.type} generated successfully`,
       metadata: {
-        recordCount: Array.isArray(data) ? data.length : 1,
+        totalDataPoints: Array.isArray(data) ? data.length : 1,
         processingTimeMs,
         cacheHit: false,
       },
@@ -348,7 +359,11 @@ export class AnalyticsService {
       id: `comprehensive_${Date.now()}`,
       title: 'Comprehensive Analytics Report',
       generatedAt: new Date(),
-      timeRange: filter?.dateRange,
+      timeRange: filter?.dateRange && {
+        startDate: filter.dateRange.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Default to 30 days ago
+        endDate: filter.dateRange.endDate || new Date(),
+      },
+      filters: filter,
       data: {
         knowledge: knowledgeAnalytics,
         relationships: relationshipAnalytics,
@@ -357,8 +372,10 @@ export class AnalyticsService {
         predictive: predictiveAnalytics,
         storage: storageAnalytics,
       },
+      visualizations: [],
+      summary: 'Comprehensive analytics report including all available analytics types',
       metadata: {
-        recordCount: 6, // Number of analytics types
+        totalDataPoints: 6, // Number of analytics types
         processingTimeMs,
         cacheHit: false,
       },

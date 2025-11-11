@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Comprehensive Metrics Service for Cortex MCP
  *
@@ -11,8 +11,8 @@
  * - Real-time dashboards and alerting
  */
 
-import { performanceCollector } from './performance-collector.js';
 import { OperationType } from './operation-types.js';
+import { performanceCollector } from './performance-collector.js';
 // Local narrow aliases to avoid missing named exports from logger
 type SearchStrategy = 'fts' | 'semantic' | 'graph' | string;
 type DeduplicationStrategy = 'exact' | 'fuzzy' | string;
@@ -382,6 +382,72 @@ export class MetricsService extends EventEmitter {
     this.qualityMetrics.clear();
     this.metricsHistory = [];
     this.emit('metrics_reset');
+  }
+
+  /**
+   * Record a gauge metric (single value that can go up or down)
+   */
+  recordGauge(
+    name: string,
+    value: number,
+    labels?: Record<string, string>
+  ): void {
+    // Create a normalized key with labels
+    const key = labels ? `${name}:${JSON.stringify(labels)}` : name;
+
+    // Store gauge value
+    if (!this.qualityMetrics.has(key)) {
+      this.qualityMetrics.set(key, []);
+    }
+    const tracker = this.qualityMetrics.get(key)!;
+    tracker.push(value);
+
+    // Keep only recent values (last 100)
+    if (tracker.length > 100) {
+      tracker.splice(0, tracker.length - 100);
+    }
+
+    // Emit gauge event
+    this.emit('gauge_recorded', {
+      name,
+      value,
+      labels,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Record a counter metric (cumulative value that only increases)
+   */
+  recordCounter(
+    name: string,
+    increment: number = 1,
+    labels?: Record<string, string>
+  ): void {
+    // Create a normalized key with labels
+    const key = labels ? `${name}:${JSON.stringify(labels)}` : name;
+
+    // Store counter value
+    if (!this.qualityMetrics.has(key)) {
+      this.qualityMetrics.set(key, [0]);
+    }
+    const tracker = this.qualityMetrics.get(key)!;
+    const currentValue = tracker[tracker.length - 1] || 0;
+    tracker.push(currentValue + increment);
+
+    // Keep only recent values (last 100)
+    if (tracker.length > 100) {
+      tracker.splice(0, tracker.length - 100);
+    }
+
+    // Emit counter event
+    this.emit('counter_recorded', {
+      name,
+      increment,
+      value: currentValue + increment,
+      labels,
+      timestamp: Date.now()
+    });
   }
 
   /**

@@ -6,6 +6,7 @@
  */
 
 import { logger } from '@/utils/logger.js';
+
 import { validateToolScope } from './scope-middleware.js';
 import type { AuthContext } from '../types/auth-types.js';
 

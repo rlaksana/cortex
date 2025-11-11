@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * AI Provider Manager
  *
@@ -10,21 +10,23 @@
  * @since 2025
  */
 
-import { logger } from '@/utils/logger.js';
-import { zaiClientService, ZAIClientService } from './zai-client.service';
-import { embeddingService } from '../embeddings/embedding-service';
 import { randomUUID } from 'crypto';
+
+import { logger } from '@/utils/logger.js';
+
+import { type ZAIClientService,zaiClientService } from './zai-client.service';
 import type {
   AIProvider,
   ZAIChatRequest,
   ZAIChatResponse,
-  ZAIStreamChunk,
-  ZAIServiceStatus,
-  ZAIMetrics,
+  ZAIError,
   ZAIEvent,
   ZAIEventListener,
-  ZAIError,
-} from '../../types/zai-interfaces';
+  ZAIMetrics,
+  ZAIServiceStatus,
+  ZAIStreamChunk,
+} from '../../types/zai-interfaces.js';
+import { embeddingService } from '../embeddings/embedding-service.js';
 
 /**
  * OpenAI provider implementation

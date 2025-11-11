@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Retry Budget Monitoring Integration
  *
@@ -11,21 +11,22 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { retryBudgetMonitor, type RetryBudgetConfig } from './retry-budget-monitor.js';
-import { retryMetricsExporter } from './retry-metrics-exporter.js';
-import { enhancedCircuitDashboard } from './enhanced-circuit-dashboard.js';
-import { retryAlertSystem } from './retry-alert-system.js';
-import { retryTrendAnalyzer } from './retry-trend-analyzer.js';
-import { comprehensiveRetryDashboard } from './comprehensive-retry-dashboard.js';
+
 import {
-  circuitBreakerMonitor,
-  type CircuitBreakerHealthStatus
-} from './circuit-breaker-monitor.js';
+  type CircuitBreakerHealthStatus,
+  circuitBreakerMonitor} from './circuit-breaker-monitor.js';
+import { comprehensiveRetryDashboard } from './comprehensive-retry-dashboard.js';
+import { enhancedCircuitDashboard } from './enhanced-circuit-dashboard.js';
 import {
   enhancedPerformanceCollector,
   type SystemPerformanceMetrics
 } from './enhanced-performance-collector.js';
+import { retryAlertSystem } from './retry-alert-system.js';
+import { type RetryBudgetConfig,retryBudgetMonitor } from './retry-budget-monitor.js';
+import { retryMetricsExporter } from './retry-metrics-exporter.js';
+import { retryTrendAnalyzer } from './retry-trend-analyzer.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**
@@ -485,7 +486,7 @@ export class RetryMonitoringIntegration extends EventEmitter {
     // System metrics
     let performanceMetrics = null;
     try {
-      performanceMetrics = enhancedPerformanceCollector.getCurrentMetrics();
+      performanceMetrics = (enhancedPerformanceCollector as any).getCurrentMetrics();
     } catch (error) {
       logger.warn({ error }, 'Failed to get performance metrics');
     }

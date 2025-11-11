@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Production Optimizer - Complete Performance Enhancement Integration
  *
@@ -17,17 +17,19 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '@/utils/logger.js';
-import { QdrantPooledClient, DEFAULT_POOL_CONFIG } from '../db/qdrant-pooled-client';
-import { ZAIOptimizedClient, DEFAULT_ZAI_CONFIG } from '../services/ai/zai-optimized-client';
+
+import { DEFAULT_POOL_CONFIG,QdrantPooledClient } from '../db/qdrant-pooled-client.js';
 import {
-  LoadTestFramework,
-  DEFAULT_LOAD_TEST_CONFIGS,
-} from '../testing/load-testing/load-test-framework';
-import {
-  PerformanceBenchmarks,
   DEFAULT_BENCHMARK_CONFIGS,
-} from '../monitoring/performance-benchmarks';
+  PerformanceBenchmarks,
+} from '../monitoring/performance-benchmarks.js';
+import { DEFAULT_ZAI_CONFIG,ZAIOptimizedClient } from '../services/ai/zai-optimized-client.js';
+import {
+  DEFAULT_LOAD_TEST_CONFIGS,
+  type LoadTestConfig,
+  LoadTestFramework,
+} from '../testing/load-testing/load-test-framework.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Production optimizer configuration
@@ -277,7 +279,7 @@ export class ProductionOptimizer extends EventEmitter {
 
     logger.info('Running production load test', { type, config: testConfig.testName });
 
-    const results = await this.loadTestFramework!.execute(testConfig);
+    const results = await this.loadTestFramework!.execute();
 
     // Update status based on results
     this.updateStatusFromLoadTest(results);
@@ -541,7 +543,7 @@ export class ProductionOptimizer extends EventEmitter {
    */
   private async initializeLoadTesting(): Promise<void> {
     try {
-      this.loadTestFramework = new LoadTestFramework(DEFAULT_LOAD_TEST_CONFIGS.smoke);
+      this.loadTestFramework = new LoadTestFramework(DEFAULT_LOAD_TEST_CONFIGS.smoke as unknown as LoadTestConfig);
 
       this.status.components.loadTesting = 'completed';
       logger.info('Load testing framework initialized', {
@@ -790,7 +792,7 @@ export const DEFAULT_PRODUCTION_CONFIG: ProductionOptimizerConfig = {
 export function createProductionOptimizer(
   config?: Partial<ProductionOptimizerConfig>
 ): ProductionOptimizer {
-  return new ProductionOptimizerConfig({
+  return new ProductionOptimizer({
     ...DEFAULT_PRODUCTION_CONFIG,
     ...config,
   });

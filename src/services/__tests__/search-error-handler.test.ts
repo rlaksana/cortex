@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Search Error Handler Test Suite - Phase 3 Enhanced
  *
@@ -10,12 +10,13 @@
  * - User-friendly error messages
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+
 import {
-  SearchErrorHandler,
   ErrorCategory,
   ErrorSeverity,
   RecoveryStrategy,
+  SearchErrorHandler,
 } from '../search/search-error-handler.js';
 
 // Mock the logger to avoid noise in tests

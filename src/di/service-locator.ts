@@ -10,28 +10,29 @@
  * @since 2025
  */
 
-import { DIContainer } from './di-container.js';
+import { logger } from '@/utils/logger.js';
+
+import { type DIContainer } from './di-container.js';
 import type {
-  IConfigService,
-  ILoggerService,
-  IPerformanceMonitor,
-  IMemoryStoreOrchestrator,
-  IMemoryFindOrchestrator,
-  IDatabaseService,
-  IAuthService,
   IAuditService,
+  IAuthService,
+  ICacheService,
+  ICircuitBreakerService,
+  IConfigService,
+  IDatabaseService,
   IDeduplicationService,
   IEmbeddingService,
-  ICircuitBreakerService,
-  IMetricsService,
-  IHealthCheckService,
-  ICacheService,
   IEventService,
+  IHealthCheckService,
+  ILoggerService,
+  IMemoryFindOrchestrator,
+  IMemoryStoreOrchestrator,
+  IMetricsService,
+  IPerformanceMonitor,
   IValidationService,
   ServiceType,
 } from './service-interfaces.js';
 import { ServiceTokens } from './service-interfaces.js';
-import { logger } from '@/utils/logger.js';
 
 /**
  * Service Locator implementation with container management

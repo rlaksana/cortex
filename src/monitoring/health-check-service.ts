@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Health Check Service for Cortex MCP
  *
@@ -10,20 +10,22 @@
  * - API response times and error rates
  */
 
-import { logger } from '@/utils/logger.js';
-import { EmbeddingService } from '../services/embeddings/embedding-service.js';
-import { performanceCollector } from './performance-collector.js';
-import { metricsService } from './metrics-service.js';
 import { EventEmitter } from 'events';
-import {
-  HealthStatus,
-  SystemHealthResult,
-  ComponentHealth,
-  ComponentHealthResult,
-  healthStatusToDependencyStatus,
-  dependencyStatusToHealthStatus,
-} from '../types/unified-health-interfaces.js';
+
+import { logger } from '@/utils/logger.js';
+
+import { metricsService } from './metrics-service.js';
+import { performanceCollector } from './performance-collector.js';
 import { DependencyType } from '../services/deps-registry.js';
+import { EmbeddingService } from '../services/embeddings/embedding-service.js';
+import {
+  type ComponentHealth,
+  ComponentHealthResult,
+  dependencyStatusToHealthStatus,
+  HealthStatus,
+  healthStatusToDependencyStatus,
+  type SystemHealthResult,
+} from '../types/unified-health-interfaces.js';
 
 // Note: HealthStatus is now imported from unified-health-interfaces.ts to maintain consistency
 

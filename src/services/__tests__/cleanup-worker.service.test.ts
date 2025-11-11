@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Comprehensive Cleanup Worker Service Tests
  *
@@ -10,9 +10,11 @@
  * - Error handling and recovery
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { CleanupWorkerService } from '../cleanup-worker.service.js';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+
 import { logger } from '@/utils/logger.js';
+
+import { CleanupWorkerService } from '../cleanup-worker.service.js';
 
 // Mock dependencies
 jest.mock('../../utils/logger.js');

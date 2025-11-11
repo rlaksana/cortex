@@ -9,8 +9,8 @@
  * @since 2025
  */
 
-import { createResponseMeta, UnifiedToolResponse } from '../types/unified-response.interface';
-import { logger } from './logger';
+import { logger } from './logger.js';
+import { createResponseMeta, type UnifiedToolResponse } from '../types/unified-response.interface';
 
 /**
  * Response builder context

@@ -8,7 +8,8 @@
  */
 
 import { z } from 'zod';
-import { SectionSchema } from '../schemas/knowledge-types';
+
+import { SectionSchema } from '../schemas/knowledge-types.js';
 /**
  * Knowledge type categories for logical grouping
  */

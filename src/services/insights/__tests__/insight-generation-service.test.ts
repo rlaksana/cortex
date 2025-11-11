@@ -1,8 +1,9 @@
-// @ts-nocheck
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { InsightGenerationService } from '../insight-generation-service.js';
-import type { InsightGenerationRequest } from '../../../types/insight-interfaces.js';
+
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+
 import { environment } from '../../../config/environment.js';
+import type { InsightGenerationRequest } from '../../../types/insight-interfaces.js';
+import { InsightGenerationService } from '../insight-generation-service.js';
 
 // Mock dependencies
 jest.mock('../../../utils/logger.js');

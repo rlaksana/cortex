@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Performance Monitor Implementation
  *
@@ -10,11 +10,12 @@
  * @since 2025
  */
 
-import type { ZAIPerformanceMonitor, ZAIError } from '../../../types/zai-interfaces';
-
+import type { ZAIError as IZAIError, ZAIPerformanceMonitor } from '../../../types/zai-interfaces.js';
 /**
  * Simple performance monitor implementation
  */
+import { ZAIError } from '../../../types/zai-interfaces.js';
+
 export class SimplePerformanceMonitor implements ZAIPerformanceMonitor {
   private activeRequests = new Map<string, number>();
   private responseTimes: number[] = [];
@@ -22,6 +23,7 @@ export class SimplePerformanceMonitor implements ZAIPerformanceMonitor {
   private totalRequests = 0;
   private successfulRequests = 0;
   private failedRequests = 0;
+private startTime = Date.now();
 
   /**
    * Record the start of a request
@@ -33,13 +35,15 @@ export class SimplePerformanceMonitor implements ZAIPerformanceMonitor {
   /**
    * Record the completion of a request
    */
-  recordRequestEnd(requestId: string, success: boolean = true): number {
+  /**
+   * Record the completion of a request
+   */
+  recordRequestEnd(requestId: string, success: boolean, responseTime: number): void {
     const startTime = this.activeRequests.get(requestId);
     if (!startTime) {
-      return 0;
+      return;
     }
 
-    const responseTime = Date.now() - startTime;
     this.activeRequests.delete(requestId);
 
     // Update statistics
@@ -55,8 +59,6 @@ export class SimplePerformanceMonitor implements ZAIPerformanceMonitor {
     if (this.responseTimes.length > 1000) {
       this.responseTimes.shift();
     }
-
-    return responseTime;
   }
 
   /**
@@ -204,6 +206,9 @@ export class SimplePerformanceMonitor implements ZAIPerformanceMonitor {
   /**
    * Clean up stale active requests (for cleanup routines)
    */
+  /**
+   * Clean up stale active requests (for cleanup routines)
+   */
   cleanupStaleRequests(maxAgeMs: number = 300000): number {
     const now = Date.now();
     let cleanedCount = 0;
@@ -212,13 +217,10 @@ export class SimplePerformanceMonitor implements ZAIPerformanceMonitor {
       if (now - startTime > maxAgeMs) {
         this.activeRequests.delete(requestId);
         cleanedCount++;
-        this.recordError({
-          type: 'timeout_error',
-          message: `Request ${requestId} timed out after ${maxAgeMs}ms`,
-          timestamp: now,
-          requestId,
-          retryable: false,
-        });
+        this.recordError(new ZAIError(
+          `Request ${requestId} timed out after ${maxAgeMs}ms`,
+          'TIMEOUT_ERROR' as any
+        ));
       }
     }
 

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Server-Side Key Vault Service
  *
@@ -14,8 +14,9 @@
  * - Memory-only decryption (no persistent raw keys)
  */
 
-import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'crypto';
 import { promisify } from 'node:util';
+import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
 
 const scryptAsync = promisify(scrypt);

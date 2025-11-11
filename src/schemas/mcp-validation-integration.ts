@@ -9,9 +9,10 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { mcpToolValidator } from '../services/validation/enhanced-validation-service.js';
+
+import type { ValidationErrorDetail,ValidationResult } from './unified-knowledge-validator.js';
 import { MCPValidationIntegration, ValidationErrorConverter } from './validation-migration.js';
-import type { ValidationResult, ValidationErrorDetail } from './unified-knowledge-validator.js';
+import { mcpToolValidator } from '../services/validation/enhanced-validation-service.js';
 
 // ============================================================================
 // MCP Input Validation Wrappers
@@ -386,7 +387,7 @@ export function validateAndFormatMCPResponse(
 
     // Validate response structure based on tool type
     let isValid = true;
-    let validationWarnings: string[] = [];
+    const validationWarnings: string[] = [];
 
     switch (tool) {
       case 'memory_store':
@@ -597,7 +598,7 @@ class MCPValidationMonitor {
 // ============================================================================
 
 export {
+  type ValidationErrorDetail,
   MCPValidationMonitor as validationMonitor,
   type ValidationResult,
-  type ValidationErrorDetail,
 };

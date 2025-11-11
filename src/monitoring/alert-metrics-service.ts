@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Alert Metrics and Dashboard Integration Service for MCP Cortex
  *
@@ -17,8 +17,10 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { Alert, AlertSeverity, AlertRule, AlertAction } from './alert-management-service.js';
+
+import { Alert, type AlertAction,AlertRule, AlertSeverity } from './alert-management-service.js';
 import { OnCallMetrics } from './oncall-management-service.js';
 import { RunbookExecution } from './runbook-integration-service.js';
 

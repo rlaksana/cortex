@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Retry Worker Service
  *
@@ -16,9 +16,11 @@
  */
 
 import { EventEmitter } from 'node:events';
+
 import { logger } from '@/utils/logger.js';
-import { EmbeddingService } from '../embeddings/embedding-service.js';
-import { MemoryStoreOrchestratorQdrant } from '../orchestrators/memory-store-orchestrator-qdrant.js';
+
+import { type EmbeddingService } from '../embeddings/embedding-service.js';
+import { type MemoryStoreOrchestratorQdrant } from '../orchestrators/memory-store-orchestrator-qdrant.js';
 // import type { KnowledgeItem } from '../../types/core-interfaces.js';
 
 export interface RetryOperation {

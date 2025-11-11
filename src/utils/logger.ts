@@ -1,14 +1,20 @@
 // Temporarily use simple logger to break circular dependencies
-import { simpleLogger } from './logger-wrapper.js';
 import {
   generateCorrelationId,
-  withCorrelationId,
   getOrCreateCorrelationId,
+  withCorrelationId,
 } from './correlation-id.js';
+import { type SimpleLogger,simpleLogger } from './logger-wrapper.js';
 
 // Re-export simple logger as logger to maintain compatibility
 export const logger = simpleLogger;
 export const ProductionLogger = simpleLogger;
+
+// Re-export slowQueryLogger from monitoring module
+export { slowQueryLogger } from '../monitoring/slow-query-logger.js';
+
+// Export SimpleLogger type for use in production services
+export type { SimpleLogger };
 
 /**
  * Structured JSON logger using Pino
@@ -26,11 +32,11 @@ export const ProductionLogger = simpleLogger;
  * - scope: {org, project, branch} for audit
  */
 export {
+  extractCorrelationIdFromRequest,
   generateCorrelationId,
+  getOrCreateCorrelationId,
   setCorrelationId,
   withCorrelationId,
-  getOrCreateCorrelationId,
-  extractCorrelationIdFromRequest,
 } from './correlation-id.js';
 
 

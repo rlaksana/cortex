@@ -13,25 +13,26 @@
  * @version 1.0.0 - Authoritative knowledge type registry
  */
 
-import { z } from 'zod';
+import { type z } from 'zod';
+
 import {
-  SectionSchema,
-  RunbookSchema,
+  AssumptionSchema,
   ChangeSchema,
-  IssueSchema,
-  DecisionSchema,
-  TodoSchema,
-  ReleaseNoteSchema,
   DDLSchema,
-  PRContextSchema,
+  DecisionSchema,
   EntitySchema,
-  RelationSchema,
-  ObservationSchema,
   IncidentSchema,
+  IssueSchema,
+  ObservationSchema,
+  PRContextSchema,
+  RelationSchema,
+  ReleaseNoteSchema,
   ReleaseSchema,
   RiskSchema,
-  AssumptionSchema,
-} from '../schemas/knowledge-types';
+  RunbookSchema,
+  SectionSchema,
+  TodoSchema,
+} from '../schemas/knowledge-types.js';
 
 // ============================================================================
 // Type Definitions
@@ -921,37 +922,34 @@ export const KNOWLEDGE_TYPE_METADATA: Record<
 // from the kind-validation-features module for better organization
 
 export {
+  areKnowledgeTypesRelated,
+  CORE_DOCUMENT_TYPES,
+  // Derived constants
+  CORE_GRAPH_EXTENSION_TYPES,
+  DEDUPLICATED_TYPES,
+  DEVELOPMENT_LIFECYCLE_TYPES,
+  EIGHT_LOG_SYSTEM_TYPES,
+  getCategoryMetadataSummary,
   // Core utility functions
   getKnowledgeTypeMetadata,
   getKnowledgeTypesByCategory,
+  // Advanced query functions
+  getKnowledgeTypesByCriteria,
   getKnowledgeTypesByTag,
   getKnowledgeTypesByValidationFeature,
   getRelatedKnowledgeTypes,
+  getValidationStatistics,
+  IMMUTABLE_TYPES,
   isKnowledgeCategory,
   isSupportedKind,
-  validateKnowledgeTypeCategory,
-  validateKnowledgeTypeMetadata,
-  supportsValidationFeature,
-
-  // Derived constants
-  CORE_GRAPH_EXTENSION_TYPES,
-  CORE_DOCUMENT_TYPES,
-  DEVELOPMENT_LIFECYCLE_TYPES,
-  EIGHT_LOG_SYSTEM_TYPES,
-  IMMUTABLE_TYPES,
-  DEDUPLICATED_TYPES,
+  KNOWLEDGE_CATEGORIES,
   SCOPE_ISOLATED_TYPES,
-  TTL_SUPPORTED_TYPES,
-
   // Additional types and utilities
   type SupportedKnowledgeKind,
-  type ValidationFeatureKey,
-  KNOWLEDGE_CATEGORIES,
+  supportsValidationFeature,
+  TTL_SUPPORTED_TYPES,
+  validateKnowledgeTypeCategory,
+  validateKnowledgeTypeMetadata,
   VALIDATION_FEATURES,
-
-  // Advanced query functions
-  getKnowledgeTypesByCriteria,
-  getCategoryMetadataSummary,
-  areKnowledgeTypesRelated,
-  getValidationStatistics,
+  type ValidationFeatureKey,
 } from './kind-validation-features.js';

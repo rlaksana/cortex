@@ -1,6 +1,6 @@
-// @ts-nocheck
+
+import { type KnowledgeItem } from '../../types/core-interfaces.js';
 import { LanguageDetector } from '../telemetry/language-detector.js';
-import { KnowledgeItem } from '../../types/core-interfaces.js';
 
 export interface LanguageEnhancementResult {
   detected_lang: 'en' | 'id' | 'mixed' | 'unknown';

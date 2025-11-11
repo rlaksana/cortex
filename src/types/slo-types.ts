@@ -47,13 +47,6 @@ export enum IncidentStatus {
   CLOSED = 'closed'
 }
 
-export enum AlertSeverity {
-  INFO = 'info',
-  WARNING = 'warning',
-  ERROR = 'error',
-  CRITICAL = 'critical'
-}
-
 // ============================================================================
 // Core SLO Interfaces (Simplified from slo-interfaces.ts)
 // ============================================================================
@@ -207,10 +200,9 @@ export function adaptWidget(legacy: LegacyDashboardWidget): ModernDashboardWidge
 
 // Re-export commonly used types from slo-interfaces.ts for compatibility
 export type {
+  SLA,
   SLI,
-  SLO,
-  SLA
-} from './slo-interfaces';
+  SLO} from './slo-interfaces.js';
 
 // Provide access to legacy types during migration
-export * from './unified-health-interfaces';
+export type { AlertSeverity,HealthStatus } from './unified-health-interfaces.js';

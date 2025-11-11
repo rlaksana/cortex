@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Background Processor Service
  *
@@ -10,22 +10,24 @@
  * @since 2025
  */
 
-import { randomUUID } from 'crypto';
 import { EventEmitter } from 'node:events';
+import { randomUUID } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
-import { zaiConfigManager } from '../../config/zai-config';
+
 import { aiOrchestratorService } from './ai-orchestrator.service';
+import { zaiConfigManager } from '../../config/zai-config.js';
 import type {
-  ZAIJob,
-  ZAIJobType,
   BackgroundProcessorConfig,
   BackgroundProcessorStatus,
   ZAIChatRequest,
   ZAIChatResponse,
   ZAIEvent,
   ZAIEventListener,
-} from '../../types/zai-interfaces';
-import { ZAIError } from '../../types/zai-interfaces';
+  ZAIJob,
+  ZAIJobType,
+} from '../../types/zai-interfaces.js';
+import { ZAIError } from '../../types/zai-interfaces.js';
 
 /**
  * Priority queue implementation for background jobs
@@ -80,7 +82,7 @@ class PriorityQueue<T> {
   }
 
   isEmpty(): boolean {
-    return this.size === 0;
+    return this.size() === 0;
   }
 }
 
@@ -235,7 +237,7 @@ export class BackgroundProcessorService extends EventEmitter {
     };
 
     // Check queue size limit
-    if (this.jobQueue.size >= this.config.queueSize) {
+    if (this.jobQueue.size() >= this.config.queueSize) {
       throw new Error('Job queue is full');
     }
 
@@ -290,7 +292,7 @@ export class BackgroundProcessorService extends EventEmitter {
     return {
       status: this.isRunning ? 'running' : 'stopped',
       activeJobs: this.processingJobs.size,
-      queuedJobs: this.jobQueue.size,
+      queuedJobs: this.jobQueue.size(),
       completedJobs: this.completedJobs.length,
       failedJobs: this.failedJobs.length,
       averageProcessingTime: this.metrics.averageProcessingTime,
@@ -354,7 +356,7 @@ export class BackgroundProcessorService extends EventEmitter {
         logger.info({ jobId }, 'Job cancelled');
       });
 
-      processingJob.abortController.abort();
+      (processingJob.abortController as AbortController).abort();
       return true;
     }
 

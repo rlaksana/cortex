@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 const asNum = (v: unknown, d = 0): number => Number(v ?? d);
 const asNumMap = (m: unknown): Record<string, number> =>
   m && typeof m === 'object'
@@ -23,16 +23,18 @@ const asNumMap = (m: unknown): Record<string, number> =>
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
+
+import { type Alert, alertManagementService, AlertSeverity } from './alert-management-service.js';
+import { alertMetricsService } from './alert-metrics-service.js';
+import { alertTestingService } from './alert-testing-service.js';
 import { HealthCheckService } from './health-check-service.js';
-import { alertManagementService, Alert, AlertSeverity } from './alert-management-service.js';
 import { notificationChannelRegistry } from './notification-channels.js';
 import { onCallManagementService } from './oncall-management-service.js';
 import { runbookIntegrationService } from './runbook-integration-service.js';
-import { alertTestingService } from './alert-testing-service.js';
-import { alertMetricsService } from './alert-metrics-service.js';
-import { SystemHealthResult, HealthStatus } from '../types/unified-health-interfaces.js';
 import { DependencyType } from '../services/deps-registry.js';
+import { HealthStatus,type SystemHealthResult } from '../types/unified-health-interfaces.js';
 
 // ============================================================================
 // Alert System Configuration

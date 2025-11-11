@@ -20,7 +20,8 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+import { ErrorCode,McpError } from '@modelcontextprotocol/sdk/types.js';
+
 import { autoEnvironment } from './config/auto-environment.js';
 
 // Enhanced logger with configurable output

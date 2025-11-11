@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Observability Dashboards Configuration
  *
@@ -21,10 +21,11 @@
  * @since 2025
  */
 
-// @ts-nocheck
+
 
 import { EventEmitter } from 'events';
-import { DashboardWidget as CentralizedDashboardWidget, adaptWidget } from '../types/slo-types.js';
+
+import { adaptWidget,type DashboardWidget as CentralizedDashboardWidget } from '../types/slo-types.js';
 // Socket.IO is optional at runtime. We type minimally and avoid adding a hard dep.
 type Socket = {
   id: string;
@@ -39,24 +40,28 @@ type Socket = {
 type SocketServer = {
   on: (event: 'connection' | string, handler: (socket: Socket) => void) => void;
   emit?: (event: string, data?: unknown) => void;
+  close?: () => void;
 };
 declare const Server: any;
-import { createServer } from 'http';
-import express from 'express';
 import path from 'path';
+
+import express from 'express';
+import { createServer } from 'http';
+
 import { logger } from '@/utils/logger.js';
+
 import type {
-  SLODashboard,
-  WidgetType,
-  ChartType,
-  SLO,
-  SLOEvaluation,
-  ErrorBudget,
-  CircuitBreakerStats,
-  MonitoringDashboardConfig,
-  DashboardTemplate,
-  MetricDefinition,
   AlertRule,
+  ChartType,
+  CircuitBreakerStats,
+  DashboardTemplate,
+  ErrorBudget,
+  MetricDefinition,
+  MonitoringDashboardConfig,
+  SLO,
+  SLODashboard,
+  SLOEvaluation,
+  WidgetType,
 } from '../types/slo-interfaces.js';
 
 // Use our centralized DashboardWidget type
@@ -336,11 +341,11 @@ export class ObservabilityDashboards extends EventEmitter {
       widgets: (config.widgets || []).map(w => ({
         type: w.type,
         title: w.title,
-        query: w.query,
+        query: w.query || '',
         defaultPosition: w.position || { x: 0, y: 0, width: 4, height: 3 }
       })),
             refreshInterval: config.refreshInterval || 30000,
-      variables: Array.isArray(config.variables) ? config.variables : [],
+      variables: (config.variables as Record<string, any>) || {},
       tags: config.tags || [],
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -417,7 +422,7 @@ export class ObservabilityDashboards extends EventEmitter {
       }
 
       // Serve dashboard HTML template
-      res.send(this.generateDashboardHTML(template));
+      return res.send(this.generateDashboardHTML(template));
     });
 
     // API routes
@@ -433,7 +438,7 @@ export class ObservabilityDashboards extends EventEmitter {
       if (!dashboard) {
         return res.status(404).json({ error: 'Dashboard not found' });
       }
-      res.json(dashboard);
+      return res.json(dashboard);
     });
 
     this.app.get('/api/metrics', async (req, res) => {
@@ -476,6 +481,11 @@ export class ObservabilityDashboards extends EventEmitter {
    * Setup Socket.IO for real-time updates
    */
   private setupSocketIO(): void {
+    if (!this.io) {
+      logger.warn('Socket.IO server not initialized - real-time updates disabled');
+      return;
+    }
+
     this.io.on('connection', (socket: Socket) => {
       const clientId = socket.id;
       this.connectedClients.set(clientId, {
@@ -510,7 +520,12 @@ export class ObservabilityDashboards extends EventEmitter {
           }
           return {};
         })();
-        const { category } = data;
+
+        // Type guard for category extraction
+        const category = (data && typeof data === 'object' && 'category' in data && typeof data.category === 'string')
+          ? data.category
+          : undefined;
+
         const client = this.connectedClients.get(clientId);
 
         if (client) {
@@ -536,7 +551,12 @@ export class ObservabilityDashboards extends EventEmitter {
           }
           return {};
         })();
-        const { category } = data;
+
+        // Type guard for category extraction
+        const category = (data && typeof data === 'object' && 'category' in data && typeof data.category === 'string')
+          ? data.category
+          : undefined;
+
         const client = this.connectedClients.get(clientId);
 
         if (client) {
@@ -565,7 +585,9 @@ export class ObservabilityDashboards extends EventEmitter {
           const metrics = await this.getSystemMetrics();
 
           // Broadcast to all connected clients
-          this.io.emit('metrics:update', metrics);
+          if (this.io && this.io.emit) {
+            this.io.emit('metrics:update', metrics);
+          }
 
           // Broadcast to specific category subscribers
           for (const [clientId, client] of this.connectedClients) {
@@ -1291,4 +1313,4 @@ export class ObservabilityDashboards extends EventEmitter {
     };
   }
 }
-// @ts-nocheck
+

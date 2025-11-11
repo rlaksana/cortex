@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Qdrant Graceful Degradation Manager
  *
@@ -12,22 +12,24 @@
  */
 
 import { EventEmitter } from 'events';
-import { QdrantHealthMonitor, QdrantConnectionStatus } from './qdrant-health-monitor.js';
+
+import { logger } from '@/utils/logger.js';
+
 import { CircuitBreakerMonitor } from './circuit-breaker-monitor.js';
-import { QdrantDegradationDetector, DegradationLevel, DegradationEvent } from './degradation-detector.js';
+import { type DegradationEvent,DegradationLevel, QdrantDegradationDetector } from './degradation-detector.js';
 import { QdrantDegradationNotifier } from './degradation-notifier.js';
 import { QdrantErrorBudgetTracker } from './error-budget-tracker.js';
+import { QdrantConnectionStatus,QdrantHealthMonitor } from './qdrant-health-monitor.js';
 import { InMemoryFallbackStorage } from '../db/adapters/in-memory-fallback-storage.js';
-import { logger } from '@/utils/logger.js';
-import { HealthStatus } from '../types/unified-health-interfaces.js';
 import type {
-  KnowledgeItem,
-  StoreResult,
-  SearchResult,
-  SearchQuery,
-  ItemResult,
   BatchSummary,
+  ItemResult,
+  KnowledgeItem,
+  SearchQuery,
+  SearchResult,
+  StoreResult,
 } from '../types/core-interfaces.js';
+import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**
  * Degradation state
@@ -282,14 +284,16 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
 
     try {
       // Initialize all components
-      await Promise.all([
-        this.qdrantMonitor.start(),
-        this.circuitMonitor.start(),
-        this.degradationDetector.start(),
-        this.notifier.start(),
-        this.errorBudgetTracker.start(),
+      await Promise.all<void>([
+        Promise.resolve(this.qdrantMonitor.start() as unknown as Promise<void>),
+        Promise.resolve(this.circuitMonitor.start() as unknown as Promise<void>),
+        Promise.resolve(this.degradationDetector.start() as unknown as Promise<void>),
+        Promise.resolve(this.errorBudgetTracker.start() as unknown as Promise<void>),
         this.fallbackStorage.initialize(),
       ]);
+
+      // Initialize notifier (no start method available)
+      // Notifier is event-driven and doesn't need explicit initialization
 
       // Enable operation interceptors
       this.enableInterceptors();
@@ -321,14 +325,16 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
 
     try {
       // Stop all components
-      await Promise.all([
-        this.qdrantMonitor.stop(),
-        this.circuitMonitor.stop(),
-        this.degradationDetector.stop(),
-        this.notifier.stop(),
-        this.errorBudgetTracker.stop(),
-        this.fallbackStorage.shutdown(),
+      await Promise.all<void>([
+        Promise.resolve(this.qdrantMonitor.stop() as unknown as Promise<void>),
+        Promise.resolve(this.circuitMonitor.stop() as unknown as Promise<void>),
+        Promise.resolve(this.degradationDetector.stop() as unknown as Promise<void>),
+        Promise.resolve(this.errorBudgetTracker.stop() as unknown as Promise<void>),
+        this.fallbackStorage.shutdown() as Promise<void>,
       ]);
+
+      // Notifier cleanup (no stop method available)
+      // Event listeners will be cleaned up by the base EventEmitter cleanup
 
       // Disable operation interceptors
       this.disableInterceptors();
@@ -569,7 +575,12 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
   /**
    * Handle degradation level change
    */
-  private handleDegradationLevelChange(event: any): void {
+  private handleDegradationLevelChange(event: unknown): void {
+    if (!this.isValidDegradationEvent(event)) {
+      logger.warn({ event }, 'Invalid degradation event received');
+      return;
+    }
+
     const { previousLevel, newLevel, levelChangeEvent } = event;
 
     this.state.currentLevel = newLevel;
@@ -602,7 +613,7 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
   /**
    * Handle recovery event
    */
-  private handleRecovery(event: any): void {
+  private handleRecovery(event: unknown): void {
     logger.info({ event }, 'Recovery detected');
     this.performFailback('auto_recovery');
   }
@@ -815,6 +826,7 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
 
     this.recoveryInterval = setInterval(async () => {
       try {
+        // Use the public healthCheck method that returns a boolean
         const isHealthy = await this.qdrantMonitor.healthCheck();
 
         if (isHealthy) {
@@ -1065,6 +1077,26 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
     }
 
     return recommendations;
+  }
+
+  /**
+   * Type guard for degradation events
+   */
+  private isValidDegradationEvent(event: unknown): event is {
+    previousLevel: DegradationLevel;
+    newLevel: DegradationLevel;
+    levelChangeEvent: DegradationEvent;
+  } {
+    return (
+      event !== null &&
+      typeof event === 'object' &&
+      'previousLevel' in event &&
+      'newLevel' in event &&
+      'levelChangeEvent' in event &&
+      Object.values(DegradationLevel).includes((event as any).previousLevel) &&
+      Object.values(DegradationLevel).includes((event as any).newLevel) &&
+      typeof (event as any).levelChangeEvent === 'object'
+    );
   }
 }
 

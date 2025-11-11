@@ -1,16 +1,16 @@
-// @ts-nocheck
+
 /**
  * Pointer and Resolution Service
  * Manages contradiction pointers and provides resolution workflows
  */
 
 import {
-  ContradictionPointer,
-  ContradictionResult,
   ContradictionFlag,
-  KnowledgeItem,
+  type ContradictionPointer,
+  type ContradictionResult,
+  type KnowledgeItem,
 } from '../../types/contradiction-detector.interface';
-import { generateId } from '../../utils/id-generator';
+import { generateId } from '../../utils/id-generator.js';
 
 export interface ResolutionAction {
   id: string;

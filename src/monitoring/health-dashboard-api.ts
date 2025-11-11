@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Comprehensive Health Dashboard API
  *
@@ -10,31 +10,28 @@
  * @version 2.0.1
  */
 
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
+
+import { ProductionLogger } from '@/utils/logger.js';
+
 import {
-  mcpServerHealthMonitor,
-  type MCPServerHealthMetrics,
-  type HealthHistoryEntry
-} from './mcp-server-health-monitor.js';
+  type CircuitBreakerHealthStatus,
+  circuitBreakerMonitor} from './circuit-breaker-monitor.js';
 import {
-  circuitBreakerMonitor,
-  type CircuitBreakerHealthStatus
-} from './circuit-breaker-monitor.js';
-import { QdrantHealthMonitor, type QdrantHealthCheckResult } from './qdrant-health-monitor.js';
+  type ContainerHealthState,
+  containerProbesHandler} from './container-probes.js';
 import {
   enhancedPerformanceCollector,
-  type SystemPerformanceMetrics,
-  type MCPOperationMetrics
-} from './enhanced-performance-collector.js';
+  type MCPOperationMetrics,
+  type SystemPerformanceMetrics} from './enhanced-performance-collector.js';
 import {
-  containerProbesHandler,
-  type ContainerHealthState
-} from './container-probes.js';
-import { ProductionLogger } from '@/utils/logger.js';
+  type HealthHistoryEntry,
+  type MCPServerHealthMetrics,
+  mcpServerHealthMonitor} from './mcp-server-health-monitor.js';
+import { type QdrantHealthCheckResult,QdrantHealthMonitor } from './qdrant-health-monitor.js';
 import {
-  HealthStatus,
-  DependencyType
-} from '../types/unified-health-interfaces.js';
+  DependencyType,
+  HealthStatus} from '../types/unified-health-interfaces.js';
 const logger = ProductionLogger;
 
 /**

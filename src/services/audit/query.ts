@@ -1,6 +1,6 @@
-// @ts-nocheck
+
 import { getQdrantClient } from '../../db/qdrant.js';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/logger.js';
 
 export interface AuditLogEntry {
   id: string;

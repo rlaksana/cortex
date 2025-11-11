@@ -4,8 +4,11 @@
  */
 
 import crypto from 'crypto';
+
 import bcrypt from 'bcryptjs';
+
 import { logger } from '@/utils/logger.js';
+
 import { AuthScope, UserRole } from '../types/auth-types.js';
 
 export interface SecurityConfig {

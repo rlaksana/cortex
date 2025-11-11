@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Performance Artifacts Storage System
  *
@@ -6,10 +6,11 @@
  * including raw logs, charts, reports, and metrics
  */
 
-import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-import type { PerformanceTestResult, PerformanceArtifact } from './performance-harness.js';
+
+import type { BenchmarkResult,IterationResult,PerformanceArtifact,PerformanceMetrics,PerformanceTestResult } from './performance-harness.js';
 
 export interface ArtifactStorageConfig {
   /** Base directory for artifact storage */
@@ -304,9 +305,9 @@ export class PerformanceArtifactStorage {
     const filePath = join(this.config.chartsDir, fileName);
 
     const latencies = result.results.iterations
-      .filter(i => i.success)
-      .map(i => i.duration)
-      .sort((a, b) => a - b);
+      .filter((i: IterationResult) => i.success)
+      .map((i: IterationResult) => i.duration)
+      .sort((a: number, b: number) => a - b);
 
     const percentiles = [10, 25, 50, 75, 90, 95, 99];
     const percentileData = percentiles.map(p => ({
@@ -357,8 +358,8 @@ export class PerformanceArtifactStorage {
 
     // Calculate throughput over time (group iterations into time windows)
     const windowSize = 5000; // 5 second windows
-    const startTime = Math.min(...result.results.iterations.map(i => i.duration));
-    const endTime = Math.max(...result.results.iterations.map(i => i.duration));
+    const startTime = Math.min(...result.results.iterations.map((i: IterationResult) => i.duration));
+    const endTime = Math.max(...result.results.iterations.map((i: IterationResult) => i.duration));
     const windows = Math.ceil((endTime - startTime) / windowSize);
 
     const throughputData = [];
@@ -366,7 +367,7 @@ export class PerformanceArtifactStorage {
       const windowStart = startTime + (i * windowSize);
       const windowEnd = windowStart + windowSize;
       const operationsInWindow = result.results.iterations.filter(
-        iter => iter.duration >= windowStart && iter.duration < windowStart + windowSize
+        (iter: IterationResult) => iter.duration >= windowStart && iter.duration < windowStart + windowSize
       ).length;
       const throughput = (operationsInWindow * 1000) / windowSize;
       throughputData.push({ x: i, y: throughput });
@@ -414,7 +415,7 @@ export class PerformanceArtifactStorage {
     const filePath = join(this.config.chartsDir, fileName);
 
     const totalIterations = result.results.iterations.length;
-    const failedIterations = result.results.iterations.filter(i => !i.success).length;
+    const failedIterations = result.results.iterations.filter((i: IterationResult) => !i.success).length;
     const successIterations = totalIterations - failedIterations;
 
     const chartConfig: ChartConfig = {
@@ -460,7 +461,7 @@ export class PerformanceArtifactStorage {
     const fileName = `${result.config.name}-${timestamp}-memory-chart.html`;
     const filePath = join(this.config.chartsDir, fileName);
 
-    const memoryData = result.results.iterations.map((iteration, index) => ({
+    const memoryData = result.results.iterations.map((iteration: IterationResult, index: number) => ({
       x: index,
       y: iteration.memoryUsage.end.rss / 1024 / 1024 // Convert to MB
     }));
@@ -699,7 +700,7 @@ export class PerformanceArtifactStorage {
   /**
    * Get target value from results
    */
-  private getTargetValue(results: any, targetName: string): number | null {
+  private getTargetValue(results: BenchmarkResult, targetName: string): number | null {
     const targetMappings: Record<string, string> = {
       'store_latency_p95': 'metrics.latencies.p95',
       'store_latency_p99': 'metrics.latencies.p99',
@@ -720,7 +721,7 @@ export class PerformanceArtifactStorage {
     if (!path) return null;
 
     const keys = path.split('.');
-    let value = results;
+    let value: any = results;
     for (const key of keys) {
       value = value?.[key];
       if (value === undefined) return null;
@@ -988,8 +989,8 @@ export class PerformanceArtifactStorage {
           // Delete file
           try {
             if (existsSync(artifact.path)) {
-              const stats = require('fs').statSync(artifact.path);
-              require('fs').unlinkSync(artifact.path);
+              const stats = statSync(artifact.path);
+              unlinkSync(artifact.path);
               totalSizeFreed += stats.size;
             }
             totalRemoved++;

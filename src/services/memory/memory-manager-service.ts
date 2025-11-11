@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Memory Manager Service
  *
@@ -11,8 +11,9 @@
  * - Automatic cache management and eviction
  */
 
-import { logger } from '@/utils/logger.js';
 import { EventEmitter } from 'node:events';
+
+import { logger } from '@/utils/logger.js';
 
 /**
  * Memory usage statistics

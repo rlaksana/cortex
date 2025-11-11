@@ -1,11 +1,4 @@
-// @ts-nocheck
-/* autofix */ declare const integration: any;
-// @ts-nocheck
-/* autofix */ declare const integration: any;
-// @ts-nocheck
-/* autofix */ declare const integration: any;
-// @ts-nocheck
-/* autofix */ declare const integration: any;
+
 /**
  * Retry Budget Monitoring System - Main Export
  *
@@ -17,13 +10,13 @@
  */
 
 // Core monitoring components
-export { retryBudgetMonitor, type RetryBudgetConfig, type RetryBudgetMetrics, type RetryConsumptionEvent } from './retry-budget-monitor.js';
-export { retryMetricsExporter, type ExportFormat, type MetricsExporterConfig } from './retry-metrics-exporter.js';
-export { enhancedCircuitDashboard } from './enhanced-circuit-dashboard.js';
-export { retryAlertSystem, type AlertRule, type Alert, type AlertSeverity, type AlertType, type EscalationPolicy } from './retry-alert-system.js';
-export { retryTrendAnalyzer, type TrendAnalysis, type AnomalyDetection, type PredictiveAnalysis, type PatternDetection } from './retry-trend-analyzer.js';
 export { comprehensiveRetryDashboard, type ServiceDependency, type ServiceHealthMetrics } from './comprehensive-retry-dashboard.js';
-export { retryMonitoringIntegration, type ServiceRegistration, type UnifiedMonitoringStatus, type RetryMonitoringIntegrationConfig } from './retry-monitoring-integration.js';
+export { enhancedCircuitDashboard } from './enhanced-circuit-dashboard.js';
+export { type Alert, type AlertRule, type AlertSeverity, type AlertType, type EscalationPolicy,retryAlertSystem } from './retry-alert-system.js';
+export { type RetryBudgetConfig, type RetryBudgetMetrics, retryBudgetMonitor, type RetryConsumptionEvent } from './retry-budget-monitor.js';
+export { type ExportFormat, type MetricsExporterConfig,retryMetricsExporter } from './retry-metrics-exporter.js';
+export { retryMonitoringIntegration, type RetryMonitoringIntegrationConfig,type ServiceRegistration, type UnifiedMonitoringStatus } from './retry-monitoring-integration.js';
+export { type AnomalyDetection, type PatternDetection,type PredictiveAnalysis, retryTrendAnalyzer, type TrendAnalysis } from './retry-trend-analyzer.js';
 
 import { retryMonitoringIntegration } from './retry-monitoring-integration.js';
 
@@ -70,14 +63,14 @@ export async function registerServiceForMonitoring(serviceName: string, circuitB
     environment: options?.environment,
   };
 
-  integration.registerService(registration);
+  retryMonitoringIntegration.registerService(registration);
 
   return registration;
 }
 
 // Health check utility
 export async function getRetryBudgetHealthReport() {
-  return await integration.getHealthReport();
+  return await retryMonitoringIntegration.getHealthReport();
 }
 
 // Metrics export utility

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * AI Orchestrator Service
  *
@@ -11,22 +11,24 @@
  */
 
 import { randomUUID } from 'crypto';
+
 import { logger } from '@/utils/logger.js';
-import { zaiConfigManager } from '../../config/zai-config';
-import { zaiClientService, ZAIClientService } from './zai-client.service';
-import { embeddingService } from '../embeddings/embedding-service';
+
+import { type ZAIClientService,zaiClientService } from './zai-client.service';
+import { zaiConfigManager } from '../../config/zai-config.js';
 import type {
-  AIProvider,
   AIOrchestratorConfig,
+  AIProvider,
   ZAIChatRequest,
   ZAIChatResponse,
-  ZAIStreamChunk,
-  ZAIServiceStatus,
-  ZAIMetrics,
+  ZAIError,
   ZAIEvent,
   ZAIEventListener,
-  ZAIError,
-} from '../../types/zai-interfaces';
+  ZAIMetrics,
+  ZAIServiceStatus,
+  ZAIStreamChunk,
+} from '../../types/zai-interfaces.js';
+import { embeddingService } from '../embeddings/embedding-service.js';
 
 /**
  * OpenAI provider implementation

@@ -7,15 +7,16 @@
  * @version 2.0.0 - Enhanced with P5-2 schema updates
  */
 
-import { ZodSchema, ZodError } from 'zod';
+import { type ZodError,type ZodSchema } from 'zod';
+
 import { ALL_JSON_SCHEMAS } from './json-schemas.js';
 import {
-  EnhancedMemoryStoreInputSchema,
   EnhancedMemoryFindInputSchema,
-  SystemStatusInputSchema,
-  PerformanceMonitoringInputSchema,
-  MemoryStoreInputSchema,
+  EnhancedMemoryStoreInputSchema,
   MemoryFindInputSchema,
+  MemoryStoreInputSchema,
+  PerformanceMonitoringInputSchema,
+  SystemStatusInputSchema,
   ValidationError,
 } from './mcp-inputs.js';
 

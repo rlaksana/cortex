@@ -18,8 +18,9 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { Environment } from '../config/environment.js';
+
 import { databaseConfig } from '../config/database-config.js';
+import { Environment } from '../config/environment.js';
 import { configValidator } from '../config/validation.js';
 
 export interface TestResult {

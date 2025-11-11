@@ -1,22 +1,24 @@
-// @ts-nocheck
+
+import * as crypto from 'crypto';
+
 import { logger } from '@/utils/logger.js';
+
+import { insightGenerationGuardrails } from './insight-guardrails.js';
 import { environment } from '../../config/environment.js';
 import { DEFAULT_INSIGHT_CONFIG, type InsightConfig } from '../../config/insight-config.js';
 import type {
+  AnomalyInsight,
+  ConnectionInsight,
   Insight,
   InsightGenerationRequest,
   InsightGenerationResponse,
-  PatternInsight,
-  ConnectionInsight,
-  RecommendationInsight,
-  AnomalyInsight,
-  TrendInsight,
-  InsightTypeUnion,
   InsightMetrics,
+  InsightTypeUnion,
+  PatternInsight,
+  RecommendationInsight,
+  TrendInsight,
 } from '../../types/insight-interfaces.js';
 import { systemMetricsService } from '../metrics/system-metrics.js';
-import { insightGenerationGuardrails } from './insight-guardrails.js';
-import * as crypto from 'crypto';
 
 /**
  * Insight Generation Service

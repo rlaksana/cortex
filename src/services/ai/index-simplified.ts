@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Simplified AI Services Index
  *
@@ -11,16 +11,17 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { zaiConfigManager } from '../../config/zai-config';
-import { simplifiedAIOrchestratorService } from './ai-orchestrator-simplified';
-import { simplifiedBackgroundProcessorService } from './background-processor-simplified';
+
+import { simplifiedAIOrchestratorService } from './ai-orchestrator-simplified.js';
+import { simplifiedBackgroundProcessorService } from './background-processor-simplified.js';
+import { zaiConfigManager } from '../../config/zai-config.js';
 import type {
-  ZAIConfig,
   ZAIChatRequest,
   ZAIChatResponse,
+  ZAIConfig,
   ZAIHealthCheckResponse,
   ZAIMetrics,
-} from '../../types/zai-interfaces';
+} from '../../types/zai-interfaces.js';
 
 /**
  * Simplified ZAI services manager
@@ -111,6 +112,9 @@ export class SimplifiedZAIServicesManager {
         return {
           status: 'unhealthy',
           timestamp,
+          uptime: 0,
+          errorRate: 1.0,
+          responseTime: 0,
           provider: {
             name: 'simplified_zai',
             status: {

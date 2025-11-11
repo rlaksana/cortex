@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * API Service - Comprehensive API management for Cortex Memory system
  * Provides RESTful API, GraphQL, authentication, rate limiting, and monitoring capabilities
@@ -6,19 +6,15 @@
 
 import type {
   ApiEndpoint,
-  ApiVersion,
+  ApiMetrics,
   ApiRequest,
   ApiResponse,
+  ApiVersion,
+  AuthenticationMethod,
   GraphQLSchema,
-  ApiMetrics,
   RateLimitConfig,
   ServiceEndpoint,
-} from '../types/api-interfaces';
-
-export interface AuthenticationMethod {
-  type: 'api_key' | 'jwt' | 'oauth' | 'basic';
-  config: Record<string, any>;
-}
+} from '../types/api-interfaces.js';
 
 export interface UploadedFile {
   fieldname: string;
@@ -43,11 +39,21 @@ export interface ApiUser {
 export class ApiService {
   private endpoints: Map<string, ApiEndpoint> = new Map();
   private versions: Map<string, ApiVersion> = new Map();
-  private metrics: ApiMetrics;
+  private metrics: ApiMetrics[] = [];
+  private aggregatedMetrics: {
+    totalRequests: number;
+    successfulRequests: number;
+    failedRequests: number;
+    averageResponseTime: number;
+    requestsPerSecond: number;
+    endpointMetrics: Record<string, any>;
+    errorRates: Record<string, number>;
+    statusCodes: Record<string, number>;
+  };
   private rateLimitStore: Map<string, { count: number; resetTime: number }> = new Map();
 
   constructor() {
-    this.metrics = {
+    this.aggregatedMetrics = {
       totalRequests: 0,
       successfulRequests: 0,
       failedRequests: 0,
@@ -189,15 +195,32 @@ export class ApiService {
   /**
    * Get API metrics
    */
-  getMetrics(): ApiMetrics {
-    return { ...this.metrics };
+  getMetrics(): ApiMetrics[] {
+    return [...this.metrics];
+  }
+
+  /**
+   * Get aggregated metrics
+   */
+  getAggregatedMetrics(): {
+    totalRequests: number;
+    successfulRequests: number;
+    failedRequests: number;
+    averageResponseTime: number;
+    requestsPerSecond: number;
+    endpointMetrics: Record<string, any>;
+    errorRates: Record<string, number>;
+    statusCodes: Record<string, number>;
+  } {
+    return { ...this.aggregatedMetrics };
   }
 
   /**
    * Reset metrics
    */
   resetMetrics(): void {
-    this.metrics = {
+    this.metrics = [];
+    this.aggregatedMetrics = {
       totalRequests: 0,
       successfulRequests: 0,
       failedRequests: 0,
@@ -281,36 +304,14 @@ export class ApiService {
     methods: AuthenticationMethod[]
   ): Promise<{ valid: boolean; user?: ApiUser; error?: string }> {
     for (const method of methods) {
-      switch (method.type) {
-        case 'api_key':
-          const apiKey = request.headers['x-api-key'];
-          if (apiKey && apiKey.startsWith('ck_')) {
-            return {
-              valid: true,
-              user: {
-                id: 'test-user',
-                username: 'test',
-                roles: ['user'],
-                permissions: ['read', 'write'],
-              },
-            };
-          }
-          break;
-        case 'jwt':
-          const authHeader = request.headers['authorization'];
-          if (authHeader && authHeader.startsWith('Bearer ')) {
-            return {
-              valid: true,
-              user: {
-                id: 'jwt-user',
-                username: 'jwt-user',
-                roles: ['user'],
-                permissions: ['read', 'write'],
-              },
-            };
-          }
-          break;
-        // Add other authentication methods as needed
+      try {
+        const user = await method.validate(request);
+        if (user) {
+          return { valid: true, user };
+        }
+      } catch (error) {
+        // Continue to next method if validation fails
+        continue;
       }
     }
 
@@ -323,30 +324,47 @@ export class ApiService {
     statusCode: number,
     duration: number
   ): void {
-    this.metrics.totalRequests++;
+    // Create individual metric entry
+    const metric: ApiMetrics = {
+      endpoint: path,
+      method,
+      status: statusCode,
+      duration,
+      timestamp: new Date(),
+      userAgent: '', // Will be populated from request if available
+    };
+
+    // Add to metrics array (keep last 1000 entries to prevent memory issues)
+    this.metrics.push(metric);
+    if (this.metrics.length > 1000) {
+      this.metrics = this.metrics.slice(-1000);
+    }
+
+    // Update aggregated metrics
+    this.aggregatedMetrics.totalRequests++;
 
     if (statusCode >= 200 && statusCode < 300) {
-      this.metrics.successfulRequests++;
+      this.aggregatedMetrics.successfulRequests++;
     } else {
-      this.metrics.failedRequests++;
+      this.aggregatedMetrics.failedRequests++;
     }
 
     // Update average response time
-    this.metrics.averageResponseTime =
-      (this.metrics.averageResponseTime * (this.metrics.totalRequests - 1) + duration) /
-      this.metrics.totalRequests;
+    this.aggregatedMetrics.averageResponseTime =
+      (this.aggregatedMetrics.averageResponseTime * (this.aggregatedMetrics.totalRequests - 1) + duration) /
+      this.aggregatedMetrics.totalRequests;
 
     // Update endpoint metrics
     const endpointKey = `${method}:${path}`;
-    if (!this.metrics.endpointMetrics[endpointKey]) {
-      this.metrics.endpointMetrics[endpointKey] = {
+    if (!this.aggregatedMetrics.endpointMetrics[endpointKey]) {
+      this.aggregatedMetrics.endpointMetrics[endpointKey] = {
         requests: 0,
         averageResponseTime: 0,
         errorRate: 0,
       };
     }
 
-    const endpointMetric = this.metrics.endpointMetrics[endpointKey];
+    const endpointMetric = this.aggregatedMetrics.endpointMetrics[endpointKey];
     endpointMetric.requests++;
     endpointMetric.averageResponseTime =
       (endpointMetric.averageResponseTime * (endpointMetric.requests - 1) + duration) /
@@ -357,6 +375,11 @@ export class ApiService {
         ((endpointMetric.errorRate * (endpointMetric.requests - 1)) + 1) /
         endpointMetric.requests;
     }
+
+    // Update status codes
+    const statusCodeKey = statusCode.toString();
+    this.aggregatedMetrics.statusCodes[statusCodeKey] =
+      (this.aggregatedMetrics.statusCodes[statusCodeKey] || 0) + 1;
   }
 }
 

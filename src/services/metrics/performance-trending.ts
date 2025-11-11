@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * P4-1: Performance Trending and Time-Series Data Collection
  *
@@ -18,7 +18,8 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { systemMetricsService, type SystemMetrics } from './system-metrics.js';
+
+import { type SystemMetrics,systemMetricsService } from './system-metrics.js';
 
 // === Type Definitions ===
 

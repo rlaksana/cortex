@@ -1,9 +1,10 @@
-// @ts-nocheck
+
 import { logger } from '@/utils/logger.js';
+
 import type {
   BusinessValidator,
-  ValidationResult,
   KnowledgeItem,
+  ValidationResult,
 } from '../../types/core-interfaces.js';
 
 /**

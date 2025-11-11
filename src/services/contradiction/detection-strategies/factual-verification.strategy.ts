@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Factual Verification Contradiction Detection Strategy
  *
@@ -12,12 +12,13 @@
  */
 
 import { randomUUID } from 'crypto';
-import { logger } from '../../../utils/logger';
-import { zaiClientService } from '../../ai/zai-client.service';
+
 import type {
-  KnowledgeItem,
   ContradictionResult,
+  KnowledgeItem,
 } from '../../../types/contradiction-detector.interface';
+import { logger } from '../../../utils/logger.js';
+import { zaiClientService } from '../../ai/zai-client.service';
 
 /**
  * Factual contradiction types
@@ -907,7 +908,6 @@ Provide detailed factual analysis focusing on objectively verifiable contradicti
       metadata: {
         detection_method: 'zai_factual_verification',
         algorithm_version: '3.0.0',
-        model: 'zai-glm-4.6',
         processing_time_ms: 0,
         comparison_details: {
           contradiction_subtype: analysis.contradiction_type,
@@ -918,7 +918,7 @@ Provide detailed factual analysis focusing on objectively verifiable contradicti
         evidence: analysis.evidence.map((ev) => ({
           ...ev,
           evidence_type: ev.type,
-          item_id: ev.source_item === 1 ? item1.id : item2.id,
+          item_id: (ev.source_item === 1 ? item1.id : item2.id) || '',
         })),
       },
       resolution_suggestions: this.generateResolutionSuggestions(
@@ -961,7 +961,7 @@ Provide detailed factual analysis focusing on objectively verifiable contradicti
         evidence: analysis.evidence.map((ev) => ({
           ...ev,
           evidence_type: ev.type,
-          item_id: ev.source_item === 1 ? item1.id : item2.id,
+          item_id: (ev.source_item === 1 ? item1.id : item2.id) || '',
         })),
       },
       resolution_suggestions: this.generateResolutionSuggestions(
@@ -1005,7 +1005,12 @@ Provide detailed factual analysis focusing on objectively verifiable contradicti
     effort: 'low' | 'medium' | 'high';
     description: string;
   }> {
-    const suggestions = [];
+    const suggestions: Array<{
+      suggestion: string;
+      priority: 'low' | 'medium' | 'high';
+      effort: 'low' | 'medium' | 'high';
+      description: string;
+    }> = [];
 
     const basePriority =
       severity === 'critical'
@@ -1020,7 +1025,7 @@ Provide detailed factual analysis focusing on objectively verifiable contradicti
       case 'verifiable_fact':
         suggestions.push({
           suggestion: 'Verify factual accuracy with external sources',
-          priority: 'critical',
+          priority: 'high',
           effort: 'medium',
           description: 'Check both claims against reliable external sources to determine accuracy',
         });
@@ -1086,7 +1091,7 @@ Provide detailed factual analysis focusing on objectively verifiable contradicti
       case 'statistical_contradiction':
         suggestions.push({
           suggestion: 'Review statistical methodology and calculations',
-          priority: 'critical',
+          priority: 'high',
           effort: 'high',
           description: 'Verify statistical methods, calculations, and data sources',
         });
@@ -1157,7 +1162,3 @@ Provide detailed factual analysis focusing on objectively verifiable contradicti
  */
 export const factualVerificationStrategy = new FactualVerificationStrategy();
 
-/**
- * Export class for testing
- */
-export { FactualVerificationStrategy };

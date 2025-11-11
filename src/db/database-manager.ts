@@ -19,9 +19,10 @@
  * @since 2025
  */
 
-import { DatabaseFactory, createDatabase } from './database-factory.js';
-import type { IDatabase } from './database-interface.js';
 import { logger } from '@/utils/logger.js';
+
+import { createDatabase,DatabaseFactory } from './database-factory.js';
+import type { IDatabase } from './database-interface.js';
 import {
   circuitBreakerManager,
   type CircuitBreakerStats,

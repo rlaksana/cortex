@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Dependency Registry & Health Monitoring System
  *
@@ -22,7 +22,9 @@
  */
 
 import { EventEmitter } from 'node:events';
+
 import { logger } from '@/utils/logger.js';
+
 import { circuitBreakerManager } from './circuit-breaker.service.js';
 import type {
   ConnectionResult,
@@ -31,7 +33,7 @@ import type {
   RegistrationResult,
   UnregistrationResult,
 } from './deps-registry.types.js';
-import { DependencyResultFactory, DependencyErrorCode } from './deps-registry.types.js';
+import { DependencyErrorCode,DependencyResultFactory } from './deps-registry.types.js';
 
 /**
  * Dependency status levels with severity

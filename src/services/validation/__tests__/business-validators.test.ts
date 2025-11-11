@@ -1,19 +1,20 @@
-// @ts-nocheck
+
 /**
  * Comprehensive test suite for business validators
  * Tests all P5-T5.1 business rules and validation scenarios
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { beforeEach,describe, expect, it } from '@jest/globals';
+
+import type { KnowledgeItem } from '../../../types/core-interfaces.js';
 import {
+  createBusinessValidators,
+  DDLValidator,
   DecisionValidator,
   IncidentValidator,
   RiskValidator,
   TodoValidator,
-  DDLValidator,
-  createBusinessValidators,
 } from '../business-validators.js';
-import type { KnowledgeItem } from '../../../types/core-interfaces.js';
 
 describe('Business Validators', () => {
   describe('DecisionValidator', () => {

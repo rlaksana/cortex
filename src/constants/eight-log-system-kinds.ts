@@ -11,12 +11,13 @@
  */
 
 import { z } from 'zod';
+
 import {
+  AssumptionSchema,
   IncidentSchema,
   ReleaseSchema,
   RiskSchema,
-  AssumptionSchema,
-} from '../schemas/knowledge-types';
+} from '../schemas/knowledge-types.js';
 /**
  * Knowledge type categories for logical grouping
  */

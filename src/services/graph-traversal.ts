@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Graph traversal service
  *

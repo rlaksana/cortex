@@ -6,14 +6,14 @@
  */
 
 import { EventEmitter } from 'events';
+
 import type {
   ChaosScenario,
-  ChaosScenarioType,
   ChaosScenarioConfig,
+  ChaosScenarioType,
+  ExperimentExecutionContext,
   InjectionPoint,
-  SystemMetrics,
-  ExperimentExecutionContext
-} from '../types/chaos-testing-types';
+  SystemMetrics} from '../types/chaos-testing-types.js';
 
 export interface ChaosInjector {
   inject(scenario: ChaosScenario, context: ExperimentExecutionContext): Promise<void>;

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Performance Dashboard
  *
@@ -6,10 +6,10 @@
  * trends, and regression analysis with interactive charts and reports
  */
 
-import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync,writeFileSync } from 'fs';
 import { join } from 'path';
-import type { PerformanceTestResult, PerformanceRegression } from './performance-harness.js';
-import type { PerformanceArtifact } from './artifact-storage.js';
+
+import type { PerformanceArtifact, PerformanceMetrics,PerformanceRegression, PerformanceTestResult } from './performance-harness.js';
 
 export interface DashboardConfig {
   /** Dashboard title */
@@ -173,7 +173,7 @@ export class PerformanceDashboard {
     // Calculate trends for each test and metric
     const metrics = ['p50_latency', 'p95_latency', 'p99_latency', 'throughput', 'error_rate'];
 
-    for (const [testName, testResults] of testGroups) {
+    for (const [testName, testResults] of Array.from(testGroups.entries())) {
       for (const metric of metrics) {
         const trend = this.calculateMetricTrend(testName, metric, testResults);
         if (trend) {

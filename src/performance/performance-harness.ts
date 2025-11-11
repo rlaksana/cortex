@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Performance Test Harness
  *
@@ -6,20 +6,102 @@
  * regression detection, and artifact generation
  */
 
-import { performance } from 'perf_hooks';
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-import type {
-  BenchmarkConfig,
-  BenchmarkResult,
-  PerformanceMetrics
-} from '../bench/framework/types';
+
+import { performance } from 'perf_hooks';
+
 import {
-  PerformanceTarget,
-  PerformanceTestConfig,
-  PerformanceTargetValidator
-} from './performance-targets';
+  type PerformanceTarget,
+  PerformanceTargetValidator,
+  type PerformanceTestConfig} from './performance-targets.js';
+// Define PerformanceMetrics interface needed for the performance module
+export interface PerformanceMetrics {
+  /** Latency percentiles */
+  latencies: {
+    p50: number;
+    p95: number;
+    p99: number;
+    min: number;
+    max: number;
+  };
+  /** Throughput metrics */
+  throughput: number;
+  /** Error rate percentage */
+  errorRate: number;
+  /** Memory usage metrics */
+  memoryUsage: {
+    peak: number;
+    average: number;
+  };
+}
+
+// Define the types we need from the benchmark framework locally since they're not in src/types
+export interface BenchmarkConfig {
+  name: string;
+  version: string;
+  outputDir: string;
+  warmupIterations: number;
+  benchmarkIterations: number;
+  scenarioDelay?: number;
+  enableMemoryProfiling?: boolean;
+  enableCPUProfiling?: boolean;
+  maxDuration?: number;
+}
+
+export interface LoadTestConfig {
+  concurrency: number;
+  operations: number;
+  operationDelay?: number;
+  rampUpTime?: number;
+  dataConfig?: {
+    itemCount: number;
+    averageItemSize: number;
+    sizeVariance?: number;
+    typeDistribution?: Record<string, number>;
+    useExisting?: boolean;
+    datasetPath?: string;
+  };
+  parameters?: Record<string, any>;
+}
+
+export interface IterationResult {
+  iteration: number;
+  duration: number;
+  success: boolean;
+  error: string | null;
+  memoryUsage: {
+    start: NodeJS.MemoryUsage;
+    end: NodeJS.MemoryUsage;
+    delta: {
+      rss: number;
+      heapUsed: number;
+      heapTotal: number;
+      external: number;
+    };
+  };
+  result: any;
+}
+
+export interface SummaryStats {
+  totalOperations: number;
+  totalDuration: number;
+  errors: number;
+  averageDuration: number;
+  successRate: number;
+  throughput: number;
+}
+
+export interface BenchmarkResult {
+  scenario: string;
+  description: string;
+  iterations: IterationResult[];
+  summary: SummaryStats;
+  metrics: PerformanceMetrics;
+  config: LoadTestConfig;
+  timestamp: string;
+}
 
 export interface PerformanceTestResult {
   /** Test configuration */
@@ -776,7 +858,7 @@ export class PerformanceHarness {
     // Simple GC monitoring - in production would use more sophisticated approach
     const originalGC = global.gc;
     if (originalGC) {
-      global.gc = () => {
+      (global as any).gc = (): void => {
         const start = performance.now();
         originalGC();
         const end = performance.now();

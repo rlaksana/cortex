@@ -8,15 +8,15 @@
  * @since 2025
  */
 
-import type {
-  IDatabaseService,
-  ICircuitBreakerService,
-  IMemoryStoreOrchestrator,
-  KnowledgeItem,
-} from '../service-interfaces.js';
 import type { DatabaseManager } from '../../db/database-manager.js';
 import type { CircuitBreakerManager } from '../../services/circuit-breaker.service.js';
 import type { MemoryStoreOrchestrator } from '../../services/orchestrators/memory-store-orchestrator.js';
+import type {
+  ICircuitBreakerService,
+  IDatabaseService,
+  IMemoryStoreOrchestrator,
+  KnowledgeItem,
+} from '../service-interfaces.js';
 
 /**
  * Adapter factory function types

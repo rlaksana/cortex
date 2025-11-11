@@ -14,14 +14,15 @@
  * @since 2025
  */
 
-import { logger } from '@/utils/logger.js';
-import { writeFile, readFile } from 'fs/promises';
+import { readFile,writeFile } from 'fs/promises';
 import { join } from 'path';
+
+import { logger } from '@/utils/logger.js';
+
 import type {
   BackupConfiguration,
-  RestoreTestResult,
-  DisasterRecoveryStatus
-} from './qdrant-backup-config.js';
+  DisasterRecoveryStatus,
+  RestoreTestResult} from './qdrant-backup-config.js';
 
 /**
  * RPO (Recovery Point Objective) definition
@@ -302,7 +303,7 @@ export interface RPORTOComplianceReport {
   recommendations: string[];
   actionItems: Array<{
     description: string;
-    priority: 'high' | 'medium' | 'low';
+    priority: 'critical' | 'high' | 'medium' | 'low';
     owner: string;
     dueDate: string;
     status: 'open' | 'in-progress' | 'completed';

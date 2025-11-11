@@ -10,8 +10,9 @@
  * @since 2025
  */
 
-import { readFileSync, readdirSync, statSync } from 'fs';
-import { join, relative, extname } from 'path';
+import { readdirSync, readFileSync, statSync } from 'fs';
+import { extname,join, relative } from 'path';
+
 import { logger } from '../utils/logger.js';
 
 /**

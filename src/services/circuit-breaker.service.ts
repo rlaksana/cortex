@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Circuit Breaker Service
  *
@@ -18,9 +18,10 @@
  * @since 2025
  */
 
-// @ts-nocheck
+
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
 
 /**
@@ -497,6 +498,20 @@ export class CircuitBreaker extends EventEmitter {
       // Additional properties for monitoring
       isHalfOpen: this.state.state === 'half-open',
       successes: this.state.successCalls,
+      // SLO-related metrics (default values for backward compatibility)
+      sloCompliance: successRate,
+      sloViolationRate: failureRate,
+      performanceScore: successRate * 100,
+      degradationScore: failureRate * 100,
+      // Circuit breaker health score
+      healthScore: successRate * 100,
+      // Recent annotations
+      recentAnnotations: [],
+      // Predictive metrics
+      riskOfFailure: failureRate,
+      predictedTimeToRecovery: this.state.state === 'open' ? this.config.recoveryTimeoutMs - (now - this.state.openedAt) : null,
+      // Recommended actions
+      recommendations: this.state.state === 'open' ? ['Wait for timeout', 'Check dependency health'] : []
     };
   }
 
@@ -726,7 +741,7 @@ export class CircuitBreakerManager {
    */
   getCircuitBreaker(serviceName: string, config?: Partial<CircuitBreakerConfig>): CircuitBreaker {
     if (!this.circuitBreakers.has(serviceName)) {
-      this.circuitBreakers.set(serviceName, new CircuitBreaker(config));
+      this.circuitBreakers.set(serviceName, new CircuitBreaker(serviceName, config));
     }
     return this.circuitBreakers.get(serviceName)!;
   }

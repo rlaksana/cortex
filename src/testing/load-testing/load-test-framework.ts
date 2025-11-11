@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Comprehensive Load Testing Framework for MCP-Cortex
  *
@@ -18,13 +18,15 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { logger } from '@/utils/logger.js';
-import { performanceMonitor } from '../../utils/performance-monitor';
-import { zaiServicesManager } from '../../services/ai/index';
-import { MemoryStoreOrchestrator } from '../../services/orchestrators/memory-store-orchestrator';
-import { MemoryFindOrchestrator } from '../../services/orchestrators/memory-find-orchestrator';
-import type { KnowledgeItem } from '../../types/core-interfaces';
-import type { ZAIChatRequest } from '../../types/zai-interfaces';
+
+import { zaiServicesManager } from '../../services/ai/index.js';
+import { MemoryFindOrchestrator } from '../../services/orchestrators/memory-find-orchestrator.js';
+import { MemoryStoreOrchestrator } from '../../services/orchestrators/memory-store-orchestrator.js';
+import type { KnowledgeItem } from '../../types/core-interfaces.js';
+import type { ZAIChatRequest } from '../../types/zai-interfaces.js';
+import { performanceMonitor } from '../../utils/performance-monitor.js';
 
 /**
  * Load test configuration
@@ -755,17 +757,17 @@ export class LoadTestFramework extends EventEmitter {
     const cpuUsage = process.cpuUsage();
 
     // Update resource metrics
-    this.resourceMetrics.memory.current = memUsage.heapUsed / 1024 / 1024; // MB
-    this.resourceMetrics.cpu.current = (cpuUsage.user + cpuUsage.system) / 1000000; // seconds
+    const memoryCurrent = memUsage.heapUsed / 1024 / 1024; // MB
+    const cpuCurrent = (cpuUsage.user + cpuUsage.system) / 1000000; // seconds
 
     // Update peak values
     this.resourceMetrics.memory.peak = Math.max(
       this.resourceMetrics.memory.peak,
-      this.resourceMetrics.memory.current
+      memoryCurrent
     );
     this.resourceMetrics.cpu.peak = Math.max(
       this.resourceMetrics.cpu.peak,
-      this.resourceMetrics.cpu.current
+      cpuCurrent
     );
   }
 

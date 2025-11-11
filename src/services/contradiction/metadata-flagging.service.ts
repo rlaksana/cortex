@@ -1,16 +1,16 @@
-// @ts-nocheck
+
 /**
  * Metadata Flagging Service
  * Handles flagging items with contradiction metadata and managing pointers
  */
 
 import {
-  ContradictionFlag,
-  ContradictionPointer,
-  ContradictionResult,
-  KnowledgeItem,
+  type ContradictionFlag,
+  type ContradictionPointer,
+  type ContradictionResult,
+  type KnowledgeItem,
 } from '../../types/contradiction-detector.interface';
-import { generateId } from '../../utils/id-generator';
+import { generateId } from '../../utils/id-generator.js';
 
 export class MetadataFlaggingService {
   private flags: Map<string, ContradictionFlag[]> = new Map();
@@ -280,13 +280,13 @@ export class MetadataFlaggingService {
     itemId: string;
     flags: ContradictionFlag[];
     pointers: ContradictionPointer[];
-    priority: 'high' | 'medium' | 'low';
+    priority: 'critical' | 'high' | 'medium' | 'low';
   }> {
     const highPriorityItems: Array<{
       itemId: string;
       flags: ContradictionFlag[];
       pointers: ContradictionPointer[];
-      priority: 'high' | 'medium' | 'low';
+      priority: 'critical' | 'high' | 'medium' | 'low';
     }> = [];
 
     for (const [itemId] of this.flags.entries()) {
@@ -297,9 +297,11 @@ export class MetadataFlaggingService {
       const maxStrength = Math.max(...pointers.map((p) => p.strength), 0);
       const pendingCount = flags.filter((f) => f.review_status === 'pending').length;
 
-      let priority: 'high' | 'medium' | 'low' = 'low';
+      let priority: 'critical' | 'high' | 'medium' | 'low' = 'low';
 
-      if (maxStrength >= 0.8 || pendingCount >= 3) {
+      if (maxStrength >= 0.9 || pendingCount >= 5) {
+        priority = 'critical';
+      } else if (maxStrength >= 0.8 || pendingCount >= 3) {
         priority = 'high';
       } else if (maxStrength >= 0.6 || pendingCount >= 2) {
         priority = 'medium';

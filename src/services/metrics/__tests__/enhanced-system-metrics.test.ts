@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * P4-1: Enhanced System Metrics Tests
  *
@@ -6,8 +6,9 @@
  * and dedupe_hits metrics.
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
-import { SystemMetricsService, systemMetricsService } from '../system-metrics.js';
+import { beforeEach,describe, expect, it } from '@jest/globals';
+
+import { type SystemMetricsService, systemMetricsService } from '../system-metrics.js';
 
 // Mock the logger
 jest.mock('../../utils/logger.js', () => ({

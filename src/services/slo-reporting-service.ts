@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * SLO Reporting and Analysis Service
  *
@@ -11,29 +11,30 @@
  */
 
 import { EventEmitter } from 'events';
+
+import { type SLOService } from './slo-service.js';
 import {
-  SLO,
-  SLOEvaluation,
-  SLOTrendAnalysis,
-  SLORecommendation,
-  RecommendationType,
-  SLIMeasurement,
-  Prediction,
-  RiskAssessment,
-  TrendData,
-  SeasonalPattern,
-  CyclicalPattern,
-  Anomaly,
-  AnomalyType,
+  type Anomaly,
   AnomalySeverity,
-  SLAComplianceMetrics,
-  SLAViolation,
-  SLOPeriod,
-  TimeRange,
+  AnomalyType,
   BurnRateTrend,
+  type CyclicalPattern,
+  type Prediction,
+  RecommendationType,
+  type RiskAssessment,
+  type SeasonalPattern,
+  SLAComplianceMetrics,
+  type SLAViolation,
+  SLIMeasurement,
+  type SLO,
+  type SLOEvaluation,
   SLOEvaluationStatus,
+  SLOPeriod,
+  type SLORecommendation,
+  type SLOTrendAnalysis,
+  TimeRange,
+  type TrendData,
 } from '../types/slo-interfaces.js';
-import { SLOService } from './slo-service.js';
 
 /**
  * SLO Reporting and Analysis Service
@@ -107,7 +108,7 @@ export class SLOReportingService extends EventEmitter {
     }
 
     // Check cache first
-    const cacheKey = `${sloId}_${period?.type}_${period?.duration || 'default'}`;
+    const cacheKey = `${sloId}_${period?.start.toISOString()}_${period?.end.toISOString()}`;
     if (this.analysisCache.has(cacheKey)) {
       const cached = this.analysisCache.get(cacheKey)!;
       if (Date.now() - cached.timestamp.getTime() < 5 * 60 * 1000) { // 5 minutes cache

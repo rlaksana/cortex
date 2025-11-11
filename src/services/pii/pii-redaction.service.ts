@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * P3 Data Management: PII Redaction Service
  *
@@ -20,8 +20,10 @@
  * @since 2025
  */
 
-import { logger } from '@/utils/logger.js';
 import { createHash } from 'crypto';
+
+import { logger } from '@/utils/logger.js';
+
 import type { KnowledgeItem } from '../../types/core-interfaces.js';
 import { systemMetricsService } from '../metrics/system-metrics.js';
 
@@ -250,7 +252,7 @@ export interface PIIComplianceReport {
   };
   /** Recommendations */
   recommendations: Array<{
-    priority: 'high' | 'medium' | 'low';
+    priority: 'critical' | 'high' | 'medium' | 'low';
     category: 'detection' | 'redaction' | 'process' | 'compliance';
     description: string;
     action_items: string[];

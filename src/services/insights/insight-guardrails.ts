@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Insight Generation Guardrails
  *
@@ -9,8 +9,10 @@
  * - Reproducible outputs
  */
 
-import { logger } from '@/utils/logger.js';
 import * as crypto from 'crypto';
+
+import { logger } from '@/utils/logger.js';
+
 import type { InsightTypeUnion } from '../../types/insight-interfaces.js';
 
 export interface InsightGuardrailConfig {

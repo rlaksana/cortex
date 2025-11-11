@@ -10,10 +10,12 @@
  * - Local fallback for high availability
  */
 
-import { logger } from '@/utils/logger.js';
-import { structuredLogger } from '../monitoring/structured-logger.js';
-import { OperationType } from '../monitoring/operation-types.js';
 import { EventEmitter } from 'events';
+
+import { logger } from '@/utils/logger.js';
+
+import { OperationType } from '../monitoring/operation-types.js';
+import { structuredLogger } from '../monitoring/structured-logger.js';
 
 /**
  * Rate limit configuration per entity

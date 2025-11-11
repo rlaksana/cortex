@@ -9,12 +9,13 @@
  * @version 2.0.1
  */
 
+import { ProductionLogger } from '@/utils/logger.js';
+
 import { ProductionEnvironmentValidator } from './production-validator.js';
 import { ProductionSecurityMiddleware } from '../middleware/production-security-middleware.js';
-import { HealthEndpointManager } from '../monitoring/health-endpoint.js';
 import { GracefulShutdownManager } from '../monitoring/graceful-shutdown.js';
-import { SimpleLogger } from '../utils/logger-wrapper.js';
-import { ProductionLogger } from '@/utils/logger.js';
+import { HealthEndpointManager } from '../monitoring/health-endpoint.js';
+import { type SimpleLogger } from '../utils/logger-wrapper.js';
 
 export interface ProductionConfig {
   // Security configuration

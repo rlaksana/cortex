@@ -18,7 +18,9 @@
  */
 
 import { z } from 'zod';
+
 import { logger } from '@/utils/logger.js';
+
 import type { CompleteDatabaseConfig } from './database-config.js';
 
 export interface ValidationError {
