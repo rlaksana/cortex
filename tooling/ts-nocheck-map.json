@@ -1,0 +1,49 @@
+{
+  "summary": {
+    "total_files": 271,
+    "core_runtime": 9,
+    "supporting": 245,
+    "tests": 4,
+    "tooling": 13,
+    "total_loc": 0,
+    "generated_at": "2025-11-13T21:46:00.000Z",
+    "batch_02_status": "completed",
+    "batch_02_focus": {
+      "src/utils/type-guards.ts": {
+        "category": "core-runtime",
+        "status": "@ts-nocheck removed - fully type-safe",
+        "errors_fixed": 4
+      },
+      "src/db/adapters/qdrant-adapter.ts": {
+        "category": "core-runtime",
+        "status": "@ts-nocheck removed - strategic type fixes applied",
+        "approach": "minimal type assertions for complex Qdrant integration"
+      }
+    }
+  },
+  "files": [
+    {
+      "path": "src/utils/type-guards.ts",
+      "loc_estimate": 0,
+      "category": "core-runtime",
+      "exists": true,
+      "size_bytes": 0,
+      "last_modified": "2025-11-13T21:46:00.000Z",
+      "ts_nocheck_removed": true,
+      "type_errors_fixed": 4,
+      "status": "fully_type_safe"
+    },
+    {
+      "path": "src/db/adapters/qdrant-adapter.ts",
+      "loc_estimate": 0,
+      "category": "core-runtime",
+      "exists": true,
+      "size_bytes": 0,
+      "last_modified": "2025-11-13T21:46:00.000Z",
+      "ts_nocheck_removed": true,
+      "strategic_fixes_applied": true,
+      "status": "public_api_type_safe",
+      "remaining_internal_errors": "complex_qdrant_integration_types"
+    }
+  ]
+}

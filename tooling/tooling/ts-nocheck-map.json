@@ -1,0 +1,2185 @@
+{
+  "summary": {
+    "total_files": 271,
+    "core_runtime": 9,
+    "supporting": 245,
+    "tests": 4,
+    "tooling": 13,
+    "total_loc": 0,
+    "generated_at": "2025-11-13T14:46:57.524Z",
+    "batch_02_focus": {
+      "src/utils/type-guards.ts": "core-runtime",
+      "src/db/adapters/qdrant-adapter.ts": "core-runtime"
+    }
+  },
+  "files": [
+    {
+      "path": "src/services/knowledge/incident.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/response-builder.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/retry-policy.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/di/typed-di-container.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/schemas/schema-validator.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/schemas/unified-knowledge-validator.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/config-merge-utilities.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/config-validation-decorators.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/config-validation-schema.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/database-types-enhanced.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/index.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/json-value-conversion.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/metrics-types.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/migration.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/monitoring-types.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/safe-config-builders.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/safe-property-access.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/type-debug-helpers.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/type-guards-enhanced.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/type-validation-error-handling.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/config-tester.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/correlation-id.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/enhanced-expiry-utils.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/expiry-utils.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/idempotency-manager.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/index.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/logger.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/mcp-logger.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/mcp-response-guards.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/factories/factory-registry.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/factories/factory-types.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/http-client/http-validation.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/http-client/typed-http-client.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/main-di.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/memory-store-manager.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/middleware/enhanced-security-middleware.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/middleware/error-middleware.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/middleware/mcp-auth-wrapper.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/middleware/production-security-middleware.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/middleware/rate-limit-middleware.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/middleware/rate-limiter.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/middleware/scope-middleware.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/middleware/security-middleware.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/pool/database-pool.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/pool/generic-resource-pool.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/schemas/mcp-validation-integration.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/schemas/validation-migration.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/security/secrets-scanner.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/di/adapters/metrics-service-adapter.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/di/enhanced-di-container.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/di/event-bus.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/di/service-registry.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/di/services/config-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/di/services/logger-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/factories/enhanced-mcp-factory.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/handlers/memory-handlers.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/qdrant-backup-config.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/qdrant-backup-integration.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/qdrant-bootstrap.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/qdrant-consistency-validator.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/qdrant-pooled-client.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/qdrant-restore-testing.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/schema.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/unified-database-layer-v2.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/di/adapters/audit-service-adapter.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/di/adapters/auth-service-adapter.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/di/adapters/memory-find-orchestrator-adapter.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/di/di-container.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/validation/audit-metrics-validator.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/type-safety-layer.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/type-guards.ts",
+      "loc_estimate": 0,
+      "category": "core-runtime",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/tl-utils.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/monitoring-type-guards.ts",
+      "loc_estimate": 0,
+      "category": "core-runtime",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/mcp-transform.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/mcp-compliance.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/lru-cache.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/logging-patterns.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/logger-wrapper.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/db-error-handler.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/database-type-guards.ts",
+      "loc_estimate": 0,
+      "category": "core-runtime",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/utils/configuration-validators.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/unified-response.interface.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/slo-interfaces.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/runtime-type-guard-framework.ts",
+      "loc_estimate": 0,
+      "category": "core-runtime",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/monitoring-types-enhanced.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/mcp-response-data.types.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/http-client-types.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/discriminated-unions.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/branded-types.ts",
+      "loc_estimate": 0,
+      "category": "core-runtime",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/base-types.ts",
+      "loc_estimate": 0,
+      "category": "core-runtime",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/audit-types.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/audit-metrics-types.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/types/api-types-enhanced.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/testing/load-testing/load-test-framework.ts",
+      "loc_estimate": 0,
+      "category": "tests",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/__tests__/chaos-testing.service.ts",
+      "loc_estimate": 0,
+      "category": "tests",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/workflow/workflow.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/workers/retry-worker-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/validation/enhanced-validation-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/validation/business-validators.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ttl/ttl-validation-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ttl/ttl-safety-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ttl/ttl-policy-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ttl/ttl-management-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ttl/index.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/tenant/tenant-purge.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/telemetry/baseline-telemetry.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/similarity/similarity-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/security/key-vault-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/scaling/partitioning-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/pii/pii-redaction.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/orchestrators/optimized-memory-store-orchestrator.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/orchestrators/memory-store-orchestrator.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/orchestrators/memory-store-orchestrator-qdrant.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/orchestrators/memory-find-orchestrator.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/orchestrators/memory-find-orchestrator-qdrant.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/orchestrators/idempotent-store-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/metrics/trend-charts.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/metrics/system-metrics.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/metrics/sli-slo-monitor.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/metrics/rag-dashboard.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/metrics/performance-benchmark.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/memory/memory-manager-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/logging/logging-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/lifecycle/data-lifecycle.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/todo.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/session-logs.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/section.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/runbook.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/risk.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/release_note.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/release.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/relation.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/pr_context.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/observation.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/issue.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/entity.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/decision.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/knowledge/assumption.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/insights/insight-strategies/relationship-analysis.strategy.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/insights/insight-strategies/predictive-insight.strategy.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/insights/insight-strategies/pattern-recognition.strategy.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/insights/insight-strategies/knowledge-gap.strategy.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/insights/insight-strategies/anomaly-detection.strategy.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/insights/zai-enhanced-insight-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/insights/insight-guardrails.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/insights/insight-generation-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/insights/insight-cache.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/feature-flag/feature-flag-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/embeddings/embedding-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/deduplication/strategies/intelligent-strategy.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/deduplication/strategies/deduplication-strategy-factory.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/deduplication/strategies/combine-strategy.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/deduplication/enhanced-deduplication-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/deduplication/deduplication-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/chunking/chunking-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/canary/kill-switch-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/canary/config-validator.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/bulk/bulk-store-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/backup/restore.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/backup/backup.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/auth/authorization-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/auth/auth-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/auth/auth-service-standardized.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/auth/api-key-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/analytics/analytics.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ai/utils/performance-monitor.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ai/zai-optimized-client.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ai/index.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ai/index-simplified.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ai/background-processor.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ai/background-processor-simplified.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/smart-find.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/slo-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/slo-reporting-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/slo-integration-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/slo-breach-detection-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/similarity.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/memory-store.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/memory-find.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/health-check.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/graph-traversal.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/expiry-worker.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/error-budget-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/document-reassembly.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/deps-registry.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/delete-operations.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/core-memory-find.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/cleanup-worker.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/auto-purge.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/api.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/security/runtime-checks.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/schemas/type-guards.ts",
+      "loc_estimate": 0,
+      "category": "core-runtime",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/schemas/knowledge-types.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/production/production-optimizer.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/performance/performance-targets.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/performance/performance-harness.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/performance/performance-dashboard.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/performance/ci-regression-guard.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/performance/artifact-storage.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/structured-logger.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/slow-query-logger.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/slo-monitoring-integration.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/runbook-integration-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/retry-trend-analyzer.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/retry-monitoring-integration.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/retry-metrics-exporter.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/retry-budget-monitor.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/retry-budget-index.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/retry-alert-system.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/qdrant-health-monitor.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/production-logger.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/production-error-handler.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/performance-monitor.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/performance-middleware.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/performance-dashboard.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/performance-collector.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/performance-benchmarks.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/oncall-management-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/observability-dashboards.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/notification-channels.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/monitoring-server.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/metrics-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/health-endpoint.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/health-check-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/graceful-degradation-manager.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/enhanced-performance-collector.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/enhanced-circuit-dashboard.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/degradation-notifier.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/degradation-detector.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/container-probes.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/comprehensive-retry-dashboard.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/circuit-breaker-monitor.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/alert-testing-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/alert-system-integration.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/alert-metrics-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/alert-management-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/ai-health-monitor.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/http-client/http-error-handler.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/factories/factory-type-guards.ts",
+      "loc_estimate": 0,
+      "category": "core-runtime",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/di/runtime-validation.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/factory/database-factory.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/database-factory.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/audit.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/production-startup.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/minimal-mcp-server.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/index.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/entry-point-factory.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/memory-store-service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/monitoring/health-dashboard-api.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/qdrant-client.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/database-manager.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/db/adapters/qdrant-adapter.ts",
+      "loc_estimate": 0,
+      "category": "core-runtime",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/chaos-testing/index.ts",
+      "loc_estimate": 0,
+      "category": "tests",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/chaos-testing/engine/chaos-injection-engine.ts",
+      "loc_estimate": 0,
+      "category": "tests",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ai/provider-manager.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ai/zai-client.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ai/background-processor.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "src/services/ai/ai-orchestrator.service.ts",
+      "loc_estimate": 0,
+      "category": "supporting",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "fix-all-v15.js",
+      "loc_estimate": 0,
+      "category": "tooling",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "fix-all-v14.js",
+      "loc_estimate": 0,
+      "category": "tooling",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "fix-all-v13.js",
+      "loc_estimate": 0,
+      "category": "tooling",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "fix-all-v12.js",
+      "loc_estimate": 0,
+      "category": "tooling",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "fix-all-v11.js",
+      "loc_estimate": 0,
+      "category": "tooling",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "fix-all-v10.js",
+      "loc_estimate": 0,
+      "category": "tooling",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "fix-all-v9.js",
+      "loc_estimate": 0,
+      "category": "tooling",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "fix-all-v8.js",
+      "loc_estimate": 0,
+      "category": "tooling",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "fix-all-v7.js",
+      "loc_estimate": 0,
+      "category": "tooling",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "fix-all-v6.js",
+      "loc_estimate": 0,
+      "category": "tooling",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "fix-all-v3.js",
+      "loc_estimate": 0,
+      "category": "tooling",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "fix-all-v2.js",
+      "loc_estimate": 0,
+      "category": "tooling",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    },
+    {
+      "path": "fix-all.js",
+      "loc_estimate": 0,
+      "category": "tooling",
+      "exists": false,
+      "size_bytes": 0,
+      "last_modified": null
+    }
+  ]
+}
