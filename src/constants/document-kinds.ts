@@ -51,7 +51,7 @@ export interface KnowledgeTypeMetadata {
   useCases: string[];
   validationFeatures: ValidationFeatures;
   businessRules: BusinessRules;
-  schemaType: any;
+  schemaType: unknown;
   typescriptType: string;
   tableName: string;
   isImplemented: boolean;

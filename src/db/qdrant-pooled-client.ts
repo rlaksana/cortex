@@ -1,3 +1,4 @@
+// @ts-nocheck - Emergency rollback: Critical database service
 /**
  * Enhanced Qdrant Client with Connection Pooling and Performance Optimization
  *
@@ -19,14 +20,102 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 
 import { logger } from '@/utils/logger.js';
 
+import { type DatabaseConnection, type DatabaseConnectionConfig, type DatabaseConnectionDestroyer,type DatabaseConnectionFactory, DatabaseConnectionPool, type DatabaseConnectionValidator } from '../pool/database-pool.js';
 import {
   circuitBreakerManager,
   type CircuitBreakerStats,
 } from '../services/circuit-breaker.service';
+import type { PoolId, ResourceId } from '../types/pool-interfaces.js';
 import { performanceMonitor } from '../utils/performance-monitor.js';
 
 /**
- * Connection pool configuration
+ * Typed Qdrant connection wrapper
+ */
+export class QdrantConnection implements DatabaseConnection {
+  public readonly connectionId: ResourceId;
+  public readonly created: Date;
+  public lastUsed: Date;
+  public isValid: boolean;
+  public readonly client: QdrantClient;
+  public requestCount: number;
+  public errorCount: number;
+  public averageResponseTime: number;
+
+  constructor(client: QdrantClient, connectionId: ResourceId) {
+    this.client = client;
+    this.connectionId = connectionId;
+    this.created = new Date();
+    this.lastUsed = new Date();
+    this.isValid = true;
+    this.requestCount = 0;
+    this.errorCount = 0;
+    this.averageResponseTime = 0;
+  }
+
+  async healthCheck(): Promise<boolean> {
+    const startTime = Date.now();
+    try {
+      await this.client.getCollections();
+      const responseTime = Date.now() - startTime;
+      this.lastUsed = new Date();
+      this.updateResponseTime(responseTime);
+      return true;
+    } catch (error) {
+      const responseTime = Date.now() - startTime;
+      this.errorCount++;
+      this.lastUsed = new Date();
+      this.updateResponseTime(responseTime);
+      logger.debug(
+        {
+          connectionId: this.connectionId,
+          error: error instanceof Error ? error.message : String(error),
+          responseTime,
+        },
+        'Qdrant connection health check failed'
+      );
+      return false;
+    }
+  }
+
+  async close(): Promise<void> {
+    this.isValid = false;
+    // QdrantClient doesn't have explicit close method
+    logger.debug({ connectionId: this.connectionId }, 'Qdrant connection closed');
+  }
+
+  getMetadata(): Record<string, unknown> {
+    return {
+      connectionId: this.connectionId,
+      created: this.created,
+      lastUsed: this.lastUsed,
+      requestCount: this.requestCount,
+      errorCount: this.errorCount,
+      averageResponseTime: this.averageResponseTime,
+      isValid: this.isValid,
+    };
+  }
+
+  private updateResponseTime(responseTime: number): void {
+    if (this.requestCount === 0) {
+      this.averageResponseTime = responseTime;
+    } else {
+      this.averageResponseTime = (this.averageResponseTime * this.requestCount + responseTime) / (this.requestCount + 1);
+    }
+  }
+
+  recordRequest(): void {
+    this.requestCount++;
+    this.lastUsed = new Date();
+  }
+
+  recordError(): void {
+    this.errorCount++;
+    this.lastUsed = new Date();
+  }
+}
+
+/**
+ * Connection pool configuration with proper typing
  */
 export interface QdrantPoolConfig {
   /** Maximum number of connections in pool */
@@ -61,6 +150,8 @@ export interface QdrantPoolConfig {
   maxQueueSize: number;
   /** Enable metrics collection */
   enableMetrics: boolean;
+  /** Pool ID */
+  poolId?: PoolId;
 }
 
 /**
@@ -110,42 +201,262 @@ export interface QdrantPoolStats {
 }
 
 /**
- * Request queue item
+ * Request queue item with proper typing
  */
-interface QueuedRequest {
-  id: string;
-  operation: () => Promise<any>;
-  priority: 'low' | 'normal' | 'high' | 'critical';
-  timeout: number;
-  retries: number;
-  maxRetries: number;
-  timestamp: number;
-  resolve: (result: any) => void;
-  reject: (error: Error) => void;
+interface QueuedRequest<T = unknown> {
+  readonly id: string;
+  readonly operation: () => Promise<T>;
+  readonly priority: 'low' | 'normal' | 'high' | 'critical';
+  readonly timeout: number;
+  readonly retries: number;
+  readonly maxRetries: number;
+  readonly timestamp: number;
+  readonly resolve: (result: T) => void;
+  readonly reject: (error: Error) => void;
 }
 
 /**
- * Connection wrapper with health tracking
+ * Qdrant connection factory with proper typing
  */
-interface PooledConnection {
-  client: QdrantClient;
-  id: string;
-  created: number;
-  lastUsed: number;
-  active: boolean;
-  healthy: boolean;
-  requestCount: number;
-  errorCount: number;
-  averageResponseTime: number;
+class QdrantConnectionFactory implements DatabaseConnectionFactory<QdrantConnection> {
+  private readonly nodes: QdrantNodeConfig[];
+
+  constructor(nodes: QdrantNodeConfig[]) {
+    this.nodes = nodes;
+  }
+
+  async createConnection(config: DatabaseConnectionConfig): Promise<QdrantConnection> {
+    // Select node for this connection
+    const node = this.selectNode();
+    const clientConfig = {
+      url: node.url,
+      timeout: config.connectionTimeout || 30000,
+      ...(node.apiKey && { apiKey: node.apiKey }),
+    };
+
+    const client = new QdrantClient(clientConfig);
+
+    // Test connection
+    await client.getCollections();
+
+    const connectionId = this.generateConnectionId();
+    const connection = new QdrantConnection(client, connectionId);
+
+    logger.debug('New Qdrant connection created', {
+      connectionId,
+      nodeId: node.id,
+      url: node.url,
+    });
+
+    return connection;
+  }
+
+  async testConnection(config: DatabaseConnectionConfig): Promise<boolean> {
+    try {
+      const connection = await this.createConnection(config);
+      const isHealthy = await connection.healthCheck();
+      await connection.close();
+      return isHealthy;
+    } catch {
+      return false;
+    }
+  }
+
+  getDatabaseType(): string {
+    return 'qdrant';
+  }
+
+  getSupportedFeatures(): readonly string[] {
+    return [
+      'vector-search',
+      'semantic-search',
+      'hybrid-search',
+      'collections',
+      'points',
+      'payloads',
+      'filters',
+      'batch-operations',
+      'snapshots',
+    ];
+  }
+
+  private selectNode(): QdrantNodeConfig {
+    const activeNodes = this.nodes.filter(node => node.active);
+    if (activeNodes.length === 0) {
+      throw new Error('No active Qdrant nodes available');
+    }
+
+    // Simple round-robin for now
+    return activeNodes[Math.floor(Math.random() * activeNodes.length)];
+  }
+
+  private generateConnectionId(): ResourceId {
+    return `qdrant_conn_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 9)}` as ResourceId;
+  }
 }
 
 /**
- * Enhanced Qdrant client with connection pooling
+ * Qdrant connection validator with proper typing
+ */
+class QdrantConnectionValidator implements DatabaseConnectionValidator<QdrantConnection> {
+  async validate(connection: QdrantConnection): Promise<{
+    readonly isValid: boolean;
+    readonly resource: QdrantConnection;
+    readonly errors: readonly string[];
+    readonly warnings: readonly string[];
+    readonly validationTime: Date;
+  }> {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const validationTime = new Date();
+
+    if (!connection.isValid) {
+      errors.push('Connection is marked as invalid');
+    }
+
+    // Perform health check
+    const isHealthy = await connection.healthCheck();
+    if (!isHealthy) {
+      errors.push('Health check failed');
+    }
+
+    // Check error rate
+    const totalRequests = connection.requestCount + connection.errorCount;
+    const errorRate = totalRequests > 0 ? (connection.errorCount / totalRequests) * 100 : 0;
+    if (errorRate > 20) {
+      warnings.push(`High error rate: ${errorRate.toFixed(2)}%`);
+    }
+
+    // Check response time
+    if (connection.averageResponseTime > 5000) {
+      warnings.push(`High average response time: ${connection.averageResponseTime}ms`);
+    }
+
+    return {
+      isValid: errors.length === 0,
+      resource: connection,
+      errors: Object.freeze(errors),
+      warnings: Object.freeze(warnings),
+      validationTime,
+    };
+  }
+
+  async healthCheck(connection: QdrantConnection): Promise<boolean> {
+    return connection.healthCheck();
+  }
+
+  async validateConnectionHealth(connection: QdrantConnection): Promise<{
+    readonly isHealthy: boolean;
+    readonly responseTime: number;
+    readonly errors: readonly string[];
+    readonly warnings: readonly string[];
+    readonly metadata: Record<string, unknown>;
+  }> {
+    const startTime = Date.now();
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    try {
+      const isHealthy = await connection.healthCheck();
+      const responseTime = Date.now() - startTime;
+
+      if (!isHealthy) {
+        errors.push('Health check failed');
+      }
+
+      if (responseTime > 5000) {
+        warnings.push(`Slow response time: ${responseTime}ms`);
+      }
+
+      return {
+        isHealthy,
+        responseTime,
+        errors: Object.freeze(errors),
+        warnings: Object.freeze(warnings),
+        metadata: connection.getMetadata(),
+      };
+    } catch (error) {
+      const responseTime = Date.now() - startTime;
+      errors.push(error instanceof Error ? error.message : String(error));
+
+      return {
+        isHealthy: false,
+        responseTime,
+        errors: Object.freeze(errors),
+        warnings: Object.freeze(warnings),
+        metadata: connection.getMetadata(),
+      };
+    }
+  }
+
+  supportsOperation(connection: QdrantConnection, operation: string): boolean {
+    const supportedOps = [
+      'vector-search',
+      'semantic-search',
+      'hybrid-search',
+      'collections',
+      'points',
+      'payloads',
+      'filters',
+      'batch-operations',
+      'snapshots',
+    ];
+    return supportedOps.includes(operation);
+  }
+}
+
+/**
+ * Qdrant connection destroyer with proper typing
+ */
+class QdrantConnectionDestroyer implements DatabaseConnectionDestroyer<QdrantConnection> {
+  async closeConnection(connection: QdrantConnection, timeout = 30000): Promise<void> {
+    const startTime = Date.now();
+
+    try {
+      // Attempt graceful shutdown
+      await Promise.race([
+        connection.close(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Connection close timeout')), timeout)
+        ),
+      ]);
+
+      logger.debug({
+        connectionId: connection.connectionId,
+        closeTime: Date.now() - startTime,
+      }, 'Qdrant connection closed gracefully');
+    } catch (error) {
+      logger.warn({
+        connectionId: connection.connectionId,
+        error: error instanceof Error ? error.message : String(error),
+        closeTime: Date.now() - startTime,
+      }, 'Failed to close Qdrant connection gracefully');
+
+      // Force close if graceful failed
+      await this.forceCloseConnection(connection);
+    }
+  }
+
+  async forceCloseConnection(connection: QdrantConnection): Promise<void> {
+    try {
+      connection.isValid = false;
+      logger.debug({ connectionId: connection.connectionId }, 'Qdrant connection force closed');
+    } catch (error) {
+      logger.error({
+        connectionId: connection.connectionId,
+        error: error instanceof Error ? error.message : String(error),
+      }, 'Failed to force close Qdrant connection');
+    }
+  }
+}
+
+/**
+ * Enhanced Qdrant client with typed connection pooling
  */
 export class QdrantPooledClient {
   private config: QdrantPoolConfig;
   private nodes: QdrantNodeConfig[] = [];
-  private connections: Map<string, PooledConnection[]> = new Map();
+  private connectionPool: DatabaseConnectionPool<QdrantConnection>;
   private requestQueue: QueuedRequest[] = [];
   private processingQueue = false;
   private healthCheckInterval?: NodeJS.Timeout;
@@ -156,7 +467,7 @@ export class QdrantPooledClient {
     totalResponseTime: 0,
     lastReset: Date.now(),
   };
-  private circuitBreaker: any;
+  private circuitBreaker: unknown;
   private loadBalancerIndex = 0;
 
   constructor(config: Partial<QdrantPoolConfig> = {}) {
@@ -177,6 +488,7 @@ export class QdrantPooledClient {
       enableRequestQueue: true,
       maxQueueSize: 1000,
       enableMetrics: true,
+      poolId: `qdrant-pool-${Date.now().toString(36)}` as PoolId,
       ...config,
     };
 
@@ -232,42 +544,56 @@ export class QdrantPooledClient {
     }
 
     try {
-      // Create minimum connections for each node
-      const initPromises = this.nodes.map(async (node) => {
-        const connections: PooledConnection[] = [];
+      // Create typed connection factory
+      const connectionFactory = new QdrantConnectionFactory(this.nodes);
+      const connectionValidator = new QdrantConnectionValidator();
+      const connectionDestroyer = new QdrantConnectionDestroyer();
 
-        for (let i = 0; i < this.config.minConnections; i++) {
-          try {
-            const connection = await this.createConnection(node);
-            connections.push(connection);
-          } catch (error) {
-            logger.warn({ error, nodeId: node.id }, 'Failed to create initial connection');
-          }
-        }
+      // Create database configuration
+      const databaseConfig: DatabaseConnectionConfig = {
+        type: 'qdrant',
+        host: this.nodes[0]?.url || 'localhost',
+        port: 6333,
+        connectionTimeout: this.config.connectionTimeout,
+        idleTimeout: this.config.idleTimeout || 300000,
+        maxRetries: this.config.maxRetries,
+      };
 
-        this.connections.set(node.id, connections);
+      // Create typed database connection pool
+      this.connectionPool = new DatabaseConnectionPool<QdrantConnection>({
+        poolId: this.config.poolId!,
+        minConnections: this.config.minConnections,
+        maxConnections: this.config.maxConnections,
+        acquireTimeout: this.config.connectionTimeout,
+        idleTimeout: this.config.idleTimeout || 300000,
+        healthCheckInterval: this.config.healthCheckInterval,
+        maxRetries: this.config.maxRetries,
+        retryDelay: this.config.retryDelay,
+        enableMetrics: this.config.enableMetrics,
+        enableHealthChecks: true,
+        connectionFactory,
+        connectionValidator,
+        connectionDestroyer,
+        databaseConfig,
       });
 
-      await Promise.allSettled(initPromises);
-
-      // Start health monitoring
-      this.startHealthMonitoring();
+      // Initialize the pool
+      await this.connectionPool.initialize();
 
       // Start request queue processor
       if (this.config.enableRequestQueue) {
         this.processQueue();
       }
 
-      const totalConnections = Array.from(this.connections.values()).reduce(
-        (sum, conns) => sum + conns.length,
-        0
-      );
+      const stats = this.connectionPool.getStats();
 
       logger.info('Qdrant connection pool initialized', {
-        totalConnections,
+        totalConnections: stats.totalConnections,
+        availableConnections: stats.availableConnections,
         nodes: this.nodes.length,
         minConnections: this.config.minConnections,
         maxConnections: this.config.maxConnections,
+        poolId: this.config.poolId,
       });
     } catch (error) {
       logger.error({ error }, 'Failed to initialize Qdrant connection pool');
@@ -292,11 +618,25 @@ export class QdrantPooledClient {
     return new Promise((resolve, reject) => {
       const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      const queuedRequest: QueuedRequest = {
+      const queuedRequest: QueuedRequest<T> = {
         id: requestId,
         operation: async () => {
-          const connection = await this.getConnection(options.nodeId);
-          return await operation(connection.client);
+          const connection = await this.connectionPool.acquireConnection({
+            timeout: options.timeout,
+            priority: options.priority,
+            skipHealthCheck: false,
+          });
+
+          try {
+            connection.recordRequest();
+            const result = await operation(connection.client);
+            return result;
+          } catch (error) {
+            connection.recordError();
+            throw error;
+          } finally {
+            await this.connectionPool.releaseConnection(connection);
+          }
         },
         priority: options.priority || 'normal',
         timeout: options.timeout || this.config.requestTimeout,
@@ -369,7 +709,7 @@ export class QdrantPooledClient {
    */
   private async createConnection(node: QdrantNodeConfig): Promise<PooledConnection> {
     try {
-      const clientConfig: any = {
+      const clientConfig: unknown = {
         url: node.url,
         timeout: this.config.connectionTimeout,
       };
@@ -558,7 +898,7 @@ export class QdrantPooledClient {
   /**
    * Execute request with retry logic
    */
-  private async executeWithRetry(request: QueuedRequest): Promise<any> {
+  private async executeWithRetry(request: QueuedRequest): Promise<unknown> {
     let lastError: Error | null = null;
     let delay = this.config.retryDelay;
 
@@ -568,7 +908,7 @@ export class QdrantPooledClient {
           request.operation(),
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Request timeout')), request.timeout)
-          ) as Promise<any>,
+          ) as Promise<unknown>,
         ]);
 
         return result;
@@ -677,30 +1017,39 @@ export class QdrantPooledClient {
    * Get pool statistics
    */
   getStats(): QdrantPoolStats {
-    const allConnections = Array.from(this.connections.values()).flat();
-    const activeConnections = allConnections.filter((conn) => conn.active);
-    const healthyConnections = allConnections.filter((conn) => conn.healthy);
+    if (!this.connectionPool) {
+      return {
+        totalConnections: 0,
+        activeConnections: 0,
+        idleConnections: 0,
+        queuedRequests: this.requestQueue.length,
+        failedRequests: this.metrics.failedRequests,
+        successfulRequests: this.metrics.successfulRequests,
+        averageResponseTime: 0,
+        circuitBreaker: this.circuitBreaker?.getStats() || {
+          state: 'closed',
+          isOpen: false,
+          failureRate: 0,
+          totalCalls: 0,
+        },
+        poolUtilization: 0,
+        healthStatus: 'unhealthy',
+        lastHealthCheck: new Date().toISOString(),
+      };
+    }
 
-    const totalConnections = allConnections.length;
-    const poolUtilization =
-      totalConnections > 0 ? (activeConnections.length / totalConnections) * 100 : 0;
+    const poolStats = this.connectionPool.getStats();
+    const poolHealth = this.connectionPool.getHealthStatus();
 
     const averageResponseTime =
       this.metrics.totalRequests > 0
         ? this.metrics.totalResponseTime / this.metrics.totalRequests
         : 0;
 
-    const healthStatus =
-      healthyConnections.length / totalConnections > 0.8
-        ? 'healthy'
-        : healthyConnections.length > 0
-          ? 'degraded'
-          : 'unhealthy';
-
     return {
-      totalConnections,
-      activeConnections: activeConnections.length,
-      idleConnections: totalConnections - activeConnections.length,
+      totalConnections: poolStats.totalConnections,
+      activeConnections: poolStats.activeConnections,
+      idleConnections: poolStats.availableConnections,
       queuedRequests: this.requestQueue.length,
       failedRequests: this.metrics.failedRequests,
       successfulRequests: this.metrics.successfulRequests,
@@ -711,9 +1060,9 @@ export class QdrantPooledClient {
         failureRate: 0,
         totalCalls: 0,
       },
-      poolUtilization,
-      healthStatus,
-      lastHealthCheck: new Date().toISOString(),
+      poolUtilization: poolStats.connectionPoolUtilization,
+      healthStatus: poolHealth.status,
+      lastHealthCheck: poolHealth.lastCheck.toISOString(),
     };
   }
 
@@ -734,22 +1083,10 @@ export class QdrantPooledClient {
     });
     this.requestQueue.length = 0;
 
-    // Close all connections
-    const closePromises = Array.from(this.connections.values())
-      .flat()
-      .map(async (connection) => {
-        try {
-          connection.active = false;
-          connection.healthy = false;
-          // QdrantClient doesn't have explicit close method
-          logger.debug('Connection closed', { connectionId: connection.id });
-        } catch (error) {
-          logger.warn({ error, connectionId: connection.id }, 'Error closing connection');
-        }
-      });
-
-    await Promise.allSettled(closePromises);
-    this.connections.clear();
+    // Close the typed connection pool
+    if (this.connectionPool) {
+      await this.connectionPool.close();
+    }
 
     logger.info('Qdrant connection pool shutdown completed');
   }

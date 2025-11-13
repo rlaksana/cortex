@@ -99,19 +99,66 @@ interface ResolutionSuggestion {
 }
 
 /**
+ * Analysis result interface
+ */
+interface AnalysisResult {
+  recommended_approach: string;
+  title: string;
+  description: string;
+  reasoning: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  estimated_effort: string;
+  risk_level: 'low' | 'medium' | 'high';
+  steps: string[];
+  impact_assessment: {
+    severity_reduction: number;
+    confidence_improvement: number;
+    effort: 'hours' | 'days' | 'weeks';
+    risk: 'low' | 'medium' | 'high';
+    complexity: 'low' | 'medium' | 'high';
+    dependencies: string[];
+    side_effects: string[];
+    rollback_difficulty: 'easy' | 'moderate' | 'difficult';
+  };
+  implementation_steps: ResolutionStep[];
+  alternatives: Array<{
+    approach: ResolutionApproach;
+    title: string;
+    description: string;
+    pros: string[];
+    cons: string[];
+  }>;
+  verification: {
+    success_criteria: string[];
+    testing_approach: string;
+    monitoring_requirements: string[];
+  };
+  prevention: {
+    root_cause: string;
+    preventive_measures: string[];
+    process_improvements: string[];
+  };
+}
+
+/**
+ * Batch summary interface
+ */
+interface BatchSummary {
+  total_contradictions: number;
+  critical_priority: number;
+  high_priority: number;
+  medium_priority: number;
+  low_priority: number;
+  total_effort_hours: number;
+  highest_risk_items: string[];
+}
+
+/**
  * Batch resolution analysis result
  */
 interface BatchResolutionAnalysis {
   suggestions: ResolutionSuggestion[];
-  summary: {
-    total_contradictions: number;
-    critical_priority: number;
-    high_priority: number;
-    medium_priority: number;
-    low_priority: number;
-    total_effort_hours: number;
-    highest_risk_items: string[];
-  };
+  summary: BatchSummary;
   dependencies: Array<{
     contradiction_id: string;
     depends_on: string[];
@@ -409,7 +456,7 @@ EVIDENCE:
 ${JSON.stringify(contradiction.metadata?.evidence || [], null, 2)}
 
 CONTEXT ANALYSIS:
-- Item Types: [${contradiction.metadata?.comparison_details?.item_types?.join(', ') || 'Unknown'}]
+- Item Types: [${(contradiction.metadata?.comparison_details?.item_types as string[])?.join(', ') || 'Unknown'}]
 - Detection Method: ${contradiction.metadata?.detection_method || 'Unknown'}
 
 Please analyze this contradiction and recommend the most appropriate resolution approach with detailed implementation guidance.
@@ -429,12 +476,12 @@ Consider:
    */
   private createResolutionSuggestion(
     contradiction: ContradictionResult,
-    analysis: any
+    analysis: AnalysisResult
   ): ResolutionSuggestion {
     return {
       id: randomUUID(),
       contradiction_id: contradiction.id,
-      approach: analysis.recommended_approach,
+      approach: analysis.recommended_approach as ResolutionApproach,
       title: analysis.title,
       description: analysis.description,
       reasoning: analysis.reasoning,
@@ -641,7 +688,7 @@ Consider:
   /**
    * Generate batch summary
    */
-  private generateBatchSummary(suggestions: ResolutionSuggestion[]): any {
+  private generateBatchSummary(suggestions: ResolutionSuggestion[]): BatchSummary {
     const summary = {
       total_contradictions: suggestions.length,
       critical_priority: suggestions.filter((s) => s.priority === 'critical').length,

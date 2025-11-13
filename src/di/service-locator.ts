@@ -244,7 +244,7 @@ export const serviceLocator = ServiceLocator.getInstance();
  * Decorator for injecting services into classes (when constructor injection isn't possible)
  */
 export function InjectService(token: ServiceType) {
-  return function (target: any, propertyKey: string) {
+  return function (target: unknown, propertyKey: string) {
     const privateProperty = `_${propertyKey}`;
 
     Object.defineProperty(target, propertyKey, {

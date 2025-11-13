@@ -25,7 +25,7 @@ import { killSwitchService } from './kill-switch-service.js';
 import { trafficSplitterService } from './traffic-splitter.js';
 import { metricsService } from '../../monitoring/metrics-service.js';
 import { AlertSeverity, HealthStatus } from '../../types/unified-health-interfaces.js';
-import { featureFlagService } from '../feature-flag/feature-flag-service.js';
+import { featureFlagService, FlagStatus } from '../feature-flag/feature-flag-service.js';
 
 // ============================================================================
 // Types and Interfaces
@@ -175,7 +175,7 @@ export interface RollbackAction {
   type: Action;
   order: number;
   timeoutMs: number;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   dependencies?: string[];
   rollbackAction?: string; // Action to execute if this action fails
 }
@@ -257,7 +257,7 @@ export interface ExecutedAction {
   startTime?: Date;
   endTime?: Date;
   duration?: number;
-  output?: any;
+  output?: unknown;
   error?: string;
   retryCount: number;
 }
@@ -965,14 +965,14 @@ export class RollbackService extends EventEmitter {
   /**
    * Update feature flags
    */
-  private async updateFeatureFlags(deploymentId: string, config: Record<string, any>): Promise<void> {
+  private async updateFeatureFlags(deploymentId: string, config: Record<string, unknown>): Promise<void> {
     logger.info('Updating feature flags', { deploymentId });
 
     // Get deployment and disable its feature flags
     const deployment = canaryOrchestrator.getDeployment(deploymentId);
     if (deployment) {
       for (const flagId of deployment.flags.featureFlagIds) {
-        await featureFlagService.updateFlag(flagId, { status: 'disabled' as any });
+        await featureFlagService.updateFlag(flagId, { status: FlagStatus.DISABLED });
       }
     }
   }
@@ -995,15 +995,15 @@ export class RollbackService extends EventEmitter {
   /**
    * Route traffic
    */
-  private async routeTraffic(deploymentId: string, config: Record<string, any>): Promise<void> {
-    const trafficPercentage = config.percentage || 0;
+  private async routeTraffic(deploymentId: string, config: Record<string, unknown>): Promise<void> {
+    const trafficPercentage = typeof config.percentage === 'number' ? config.percentage : 0;
     await this.updateTrafficRouting(deploymentId, trafficPercentage);
   }
 
   /**
    * Scale down canary instances
    */
-  private async scaleDown(deploymentId: string, config: Record<string, any>): Promise<void> {
+  private async scaleDown(deploymentId: string, config: Record<string, unknown>): Promise<void> {
     logger.info('Scaling down canary instances', { deploymentId });
     // In a real implementation, this would scale down canary instances
     await new Promise(resolve => setTimeout(resolve, 10000));
@@ -1012,7 +1012,7 @@ export class RollbackService extends EventEmitter {
   /**
    * Scale up stable instances
    */
-  private async scaleUp(deploymentId: string, config: Record<string, any>): Promise<void> {
+  private async scaleUp(deploymentId: string, config: Record<string, unknown>): Promise<void> {
     logger.info('Scaling up stable instances', { deploymentId });
     // In a real implementation, this would scale up stable instances
     await new Promise(resolve => setTimeout(resolve, 10000));
@@ -1021,7 +1021,7 @@ export class RollbackService extends EventEmitter {
   /**
    * Restart services
    */
-  private async restartServices(deploymentId: string, config: Record<string, any>): Promise<void> {
+  private async restartServices(deploymentId: string, config: Record<string, unknown>): Promise<void> {
     logger.info('Restarting services', { deploymentId });
     // In a real implementation, this would restart affected services
     await new Promise(resolve => setTimeout(resolve, 15000));
@@ -1030,7 +1030,7 @@ export class RollbackService extends EventEmitter {
   /**
    * Clear caches
    */
-  private async clearCaches(deploymentId: string, config: Record<string, any>): Promise<void> {
+  private async clearCaches(deploymentId: string, config: Record<string, unknown>): Promise<void> {
     logger.info('Clearing caches', { deploymentId });
     // In a real implementation, this would clear relevant caches
     await new Promise(resolve => setTimeout(resolve, 5000));
@@ -1039,7 +1039,7 @@ export class RollbackService extends EventEmitter {
   /**
    * Update deployment configuration
    */
-  private async updateDeploymentConfig(deploymentId: string, config: Record<string, any>): Promise<void> {
+  private async updateDeploymentConfig(deploymentId: string, config: Record<string, unknown>): Promise<void> {
     logger.info('Updating configuration', { deploymentId, config });
     // In a real implementation, this would update service configuration
     await new Promise(resolve => setTimeout(resolve, 3000));
@@ -1048,7 +1048,7 @@ export class RollbackService extends EventEmitter {
   /**
    * Run validation
    */
-  private async runValidation(deploymentId: string, config: Record<string, any>): Promise<void> {
+  private async runValidation(deploymentId: string, config: Record<string, unknown>): Promise<void> {
     logger.info('Running validation', { deploymentId });
     // In a real implementation, this would run validation tests
     await new Promise(resolve => setTimeout(resolve, 10000));
@@ -1057,7 +1057,7 @@ export class RollbackService extends EventEmitter {
   /**
    * Notify users
    */
-  private async notifyUsers(deploymentId: string, config: Record<string, any>): Promise<void> {
+  private async notifyUsers(deploymentId: string, config: Record<string, unknown>): Promise<void> {
     logger.info('Notifying users', { deploymentId });
     // In a real implementation, this would send user notifications
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -1066,7 +1066,7 @@ export class RollbackService extends EventEmitter {
   /**
    * Execute custom action
    */
-  private async executeCustomAction(deploymentId: string, config: Record<string, any>): Promise<void> {
+  private async executeCustomAction(deploymentId: string, config: Record<string, unknown>): Promise<void> {
     logger.info('Executing custom action', { deploymentId, config });
     // In a real implementation, this would execute custom rollback logic
     await new Promise(resolve => setTimeout(resolve, 5000));

@@ -34,6 +34,25 @@ import {
   TodoSchema,
 } from '../schemas/knowledge-types.js';
 
+// Define SupportedKnowledgeKind type to avoid circular imports
+export type SupportedKnowledgeKind =
+  | 'entity'
+  | 'relation'
+  | 'observation'
+  | 'section'
+  | 'runbook'
+  | 'change'
+  | 'issue'
+  | 'decision'
+  | 'todo'
+  | 'release_note'
+  | 'ddl'
+  | 'pr_context'
+  | 'incident'
+  | 'release'
+  | 'risk'
+  | 'assumption';
+
 // ============================================================================
 // Type Definitions
 // ============================================================================
@@ -945,7 +964,6 @@ export {
   KNOWLEDGE_CATEGORIES,
   SCOPE_ISOLATED_TYPES,
   // Additional types and utilities
-  type SupportedKnowledgeKind,
   supportsValidationFeature,
   TTL_SUPPORTED_TYPES,
   validateKnowledgeTypeCategory,

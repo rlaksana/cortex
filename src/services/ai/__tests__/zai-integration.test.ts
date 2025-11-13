@@ -12,9 +12,9 @@
 
 import { afterAll, beforeAll, beforeEach,describe, expect, test } from '@jest/globals';
 
-import { zaiConfigManager } from '../../config/zai-config';
+import { zaiConfigManager } from '../../config/zai-config.js';
 import type { ZAIChatRequest, ZAIChatResponse, ZAIJobType } from '../../types/zai-interfaces';
-import { zaiServicesManager } from '../index.js';
+import { zaiServicesManager } from '../index';
 
 describe('ZAI Integration Tests', () => {
   beforeAll(async () => {
@@ -354,9 +354,9 @@ describe('ZAI Integration Tests', () => {
 });
 
 // Import services for testing
-let zaiClientService: any;
-let aiOrchestratorService: any;
-let backgroundProcessorService: any;
+let zaiClientService: unknown;
+let aiOrchestratorService: unknown;
+let backgroundProcessorService: unknown;
 
 // Lazy import to avoid circular dependencies
 beforeAll(async () => {

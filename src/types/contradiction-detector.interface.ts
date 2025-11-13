@@ -43,7 +43,7 @@ export interface ContradictionResult {
     detection_method: string;
     algorithm_version: string;
     processing_time_ms: number;
-    comparison_details: Record<string, any>;
+    comparison_details: Record<string, unknown>;
     evidence: Array<{
       item_id: string;
       evidence_type: string;
@@ -107,7 +107,7 @@ export interface ContradictionPointer {
   strength: number;
   created_at: Date;
   verified: boolean;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export interface ContradictionAnalysis {
@@ -172,7 +172,7 @@ export interface AttributeContradiction {
   attributes: Array<{
     item_id: string;
     attribute_name: string;
-    attribute_value: any;
+    attribute_value: unknown;
     confidence: number;
     source_reliability: number;
   }>;
@@ -242,7 +242,7 @@ export interface ContradictionEvent {
   item_id?: string;
   contradiction_id?: string;
   user_id?: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 // Integration hooks for storage pipeline
@@ -250,7 +250,7 @@ export interface StoragePipelineHook {
   before_store?: (items: KnowledgeItem[]) => Promise<ContradictionDetectionRequest | null>;
   after_store?: (
     items: KnowledgeItem[],
-    results: any[]
+    results: unknown[]
   ) => Promise<ContradictionDetectionResponse | null>;
   on_update?: (
     item_id: string,
@@ -320,7 +320,7 @@ export interface ContradictionStrategy {
   enabled: boolean;
   weight: number;
   sensitivity_modifier: number;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
 export interface ContradictionScore {

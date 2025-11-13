@@ -154,7 +154,7 @@ export class CanarySystemManager {
    * Get system health and metrics
    */
   public getSystemHealth(): {
-    featureFlags: any;
+    featureFlags: unknown;
     otherServices: string;
   } {
     return {
@@ -176,7 +176,7 @@ export class CanarySystemManager {
    */
   public getStatusReport(): {
     timestamp: Date;
-    systemHealth: any;
+    systemHealth: unknown;
     activeDeployments: number;
     activeRollbacks: number;
     emergencyKillActive: boolean;

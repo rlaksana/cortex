@@ -14,11 +14,11 @@
 // REST API Interface Contracts
 // ============================================================================
 
-export interface RestApiContract<TRequest = any, TResponse = any> {
+export interface RestApiContract<TRequest = unknown, TResponse = unknown> {
   endpoint: string;
   method: HttpMethod;
   pathParams?: Record<string, string>;
-  queryParams?: Record<string, any>;
+  queryParams?: Record<string, unknown>;
   requestBody?: TRequest;
   responseType: TResponse;
   headers?: Record<string, string>;
@@ -51,21 +51,21 @@ export interface RateLimitConfig {
 
 export interface ValidationSchema<T> {
   body?: T;
-  params?: Record<string, any>;
-  query?: Record<string, any>;
-  headers?: Record<string, any>;
+  params?: Record<string, unknown>;
+  query?: Record<string, unknown>;
+  headers?: Record<string, unknown>;
 }
 
 // ============================================================================
 // HTTP Request/Response Types
 // ============================================================================
 
-export interface HttpRequest<T = any> {
+export interface HttpRequest<T = unknown> {
   method: HttpMethod;
   url: string;
   headers: Record<string, string>;
   params?: Record<string, string>;
-  query?: Record<string, any>;
+  query?: Record<string, unknown>;
   body?: T;
   timestamp: number;
   id: string;
@@ -73,7 +73,7 @@ export interface HttpRequest<T = any> {
   ip?: string;
 }
 
-export interface HttpResponse<T = any> {
+export interface HttpResponse<T = unknown> {
   status: HttpStatus;
   headers: Record<string, string>;
   body?: T;
@@ -106,7 +106,7 @@ export type HttpStatus =
 export interface ApiError {
   code: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   timestamp: string;
   requestId: string;
   stack?: string;
@@ -116,7 +116,7 @@ export interface ApiError {
 export interface ValidationError {
   field: string;
   message: string;
-  value?: any;
+  value?: unknown;
   constraint?: string;
 }
 
@@ -151,7 +151,7 @@ export interface GraphQLField {
 export interface GraphQLArgument {
   name: string;
   type: string;
-  defaultValue?: any;
+  defaultValue?: unknown;
   description?: string;
 }
 
@@ -164,22 +164,22 @@ export interface GraphQLDirective {
 
 export interface GraphQLRequest {
   query: string;
-  variables?: Record<string, any>;
+  variables?: Record<string, unknown>;
   operationName?: string;
-  extensions?: Record<string, any>;
+  extensions?: Record<string, unknown>;
 }
 
-export interface GraphQLResponse<T = any> {
+export interface GraphQLResponse<T = unknown> {
   data?: T;
   errors?: GraphQLError[];
-  extensions?: Record<string, any>;
+  extensions?: Record<string, unknown>;
 }
 
 export interface GraphQLError {
   message: string;
   locations?: GraphQLErrorLocation[];
   path?: Array<string | number>;
-  extensions?: Record<string, any>;
+  extensions?: Record<string, unknown>;
 }
 
 export interface GraphQLErrorLocation {
@@ -271,7 +271,7 @@ export interface OpenAPIParameter {
   required?: boolean;
   deprecated?: boolean;
   schema: OpenAPISchema;
-  example?: any;
+  example?: unknown;
 }
 
 export interface OpenAPIRequestBody {
@@ -299,14 +299,14 @@ export interface OpenAPIHeader {
 
 export interface OpenAPIMediaType {
   schema: OpenAPISchema;
-  example?: any;
+  example?: unknown;
   examples?: Record<string, OpenAPIExample>;
 }
 
 export interface OpenAPIExample {
   summary?: string;
   description?: string;
-  value?: any;
+  value?: unknown;
   externalValue?: string;
 }
 
@@ -327,7 +327,7 @@ export interface OpenAPISchema {
   format?: string;
   title?: string;
   description?: string;
-  default?: any;
+  default?: unknown;
   multipleOf?: number;
   maximum?: number;
   exclusiveMaximum?: number;
@@ -342,7 +342,7 @@ export interface OpenAPISchema {
   maxProperties?: number;
   minProperties?: number;
   required?: string[];
-  enum?: any[];
+  enum?: unknown[];
   allOf?: OpenAPISchema[];
   oneOf?: OpenAPISchema[];
   anyOf?: OpenAPISchema[];
@@ -398,8 +398,8 @@ export interface OAuthFlow {
 export interface OpenAPILink {
   operationRef?: string;
   operationId?: string;
-  parameters?: Record<string, any>;
-  requestBody?: any;
+  parameters?: Record<string, unknown>;
+  requestBody?: unknown;
   description?: string;
   server?: OpenAPIServer;
 }
@@ -453,39 +453,39 @@ export interface OAuthCredentials {
 
 export interface InterceptorConfig {
   type: 'request' | 'response';
-  handler: string | Function;
-  options?: Record<string, any>;
+  handler: string | ((...args: unknown[]) => unknown);
+  options?: Record<string, unknown>;
 }
 
 export interface ApiClient {
   config: ApiClientConfig;
-  request<T = any>(options: RequestOptions): Promise<ApiResponse<T>>;
-  get<T = any>(url: string, options?: RequestOptions): Promise<ApiResponse<T>>;
-  post<T = any>(url: string, data?: any, options?: RequestOptions): Promise<ApiResponse<T>>;
-  put<T = any>(url: string, data?: any, options?: RequestOptions): Promise<ApiResponse<T>>;
-  patch<T = any>(url: string, data?: any, options?: RequestOptions): Promise<ApiResponse<T>>;
-  delete<T = any>(url: string, options?: RequestOptions): Promise<ApiResponse<T>>;
+  request<T = unknown>(options: RequestOptions): Promise<ApiResponse<T>>;
+  get<T = unknown>(url: string, options?: RequestOptions): Promise<ApiResponse<T>>;
+  post<T = unknown>(url: string, data?: unknown, options?: RequestOptions): Promise<ApiResponse<T>>;
+  put<T = unknown>(url: string, data?: unknown, options?: RequestOptions): Promise<ApiResponse<T>>;
+  patch<T = unknown>(url: string, data?: unknown, options?: RequestOptions): Promise<ApiResponse<T>>;
+  delete<T = unknown>(url: string, options?: RequestOptions): Promise<ApiResponse<T>>;
 }
 
 export interface RequestOptions {
   headers?: Record<string, string>;
-  params?: Record<string, any>;
-  query?: Record<string, any>;
+  params?: Record<string, unknown>;
+  query?: Record<string, unknown>;
   timeout?: number;
   retries?: number;
   signal?: AbortSignal;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data: T;
   status: number;
   statusText: string;
   headers: Record<string, string>;
   config: RequestOptions;
-  request?: any;
+  request?: unknown;
 }
 
-export interface SdkMethod<TRequest = any, TResponse = any> {
+export interface SdkMethod<TRequest = unknown, TResponse = unknown> {
   name: string;
   description?: string;
   parameters: SdkParameter[];
@@ -501,13 +501,13 @@ export interface SdkParameter {
   type: string;
   required: boolean;
   description?: string;
-  defaultValue?: any;
+  defaultValue?: unknown;
   validation?: ValidationRule[];
 }
 
 export interface ValidationRule {
   type: 'required' | 'min' | 'max' | 'pattern' | 'custom';
-  constraint: any;
+  constraint: unknown;
   message?: string;
 }
 
@@ -563,8 +563,8 @@ export interface MigrationInfo {
 export interface MigrationChange {
   type: 'add' | 'remove' | 'modify' | 'rename';
   path: string;
-  oldValue?: any;
-  newValue?: any;
+  oldValue?: unknown;
+  newValue?: unknown;
   breaking: boolean;
 }
 
@@ -660,7 +660,7 @@ export interface DashboardWidget {
   type: 'chart' | 'metric' | 'table' | 'heatmap';
   title: string;
   query: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
 // ============================================================================
@@ -717,8 +717,8 @@ export interface ErrorMapping {
 // ============================================================================
 
 export type ApiResponseData<T> = T extends Promise<infer U> ? U : T;
-export type ApiRequestBody<T> = T extends RestApiContract<infer R, any> ? R : never;
-export type ApiResponseBody<T> = T extends RestApiContract<any, infer R> ? R : never;
+export type ApiRequestBody<T> = T extends RestApiContract<infer R, unknown> ? R : never;
+export type ApiResponseBody<T> = T extends RestApiContract<unknown, infer R> ? R : never;
 
 export type ExtractEndpoints<T extends Record<string, RestApiContract>> = {
   [K in keyof T]: T[K];

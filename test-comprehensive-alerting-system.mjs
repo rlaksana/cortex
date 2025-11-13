@@ -16,13 +16,13 @@
 
 import { logger } from './src/utils/logger.js';
 import { alertSystemIntegrationService } from './src/monitoring/alert-system-integration.js';
-import { alertManagementService } from './src/monitoring/alert-management-service.js';
+import { alertManagementService, HealthStatus, AlertSeverity  } from './src/monitoring/alert-management-service.js';
 import { alertTestingService } from './src/monitoring/alert-testing-service.js';
 import { onCallManagementService } from './src/monitoring/oncall-management-service.js';
 import { runbookIntegrationService } from './src/monitoring/runbook-integration-service.js';
 import { alertMetricsService } from './src/monitoring/alert-metrics-service.js';
 import { notificationChannelRegistry } from './src/monitoring/notification-channels.js';
-import { HealthStatus, AlertSeverity } from './src/monitoring/alert-management-service.js';
+
 
 // Test configuration
 const TEST_CONFIG = {

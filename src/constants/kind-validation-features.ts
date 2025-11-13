@@ -14,7 +14,7 @@
  * @version 1.0.0 - Knowledge type validation utilities
  */
 
-import { type KnowledgeCategory, type KnowledgeTypeMetadata, type ValidationFeatures } from './supported-kinds.js';
+import { type KnowledgeCategory, type KnowledgeTypeMetadata, type SupportedKnowledgeKind,type ValidationFeatures } from './supported-kinds.js';
 import { KNOWLEDGE_TYPE_METADATA, SUPPORTED_KINDS } from './supported-kinds.js';
 
 // ============================================================================
@@ -111,7 +111,7 @@ export function isKnowledgeCategory(value: string): value is KnowledgeCategory {
  * Type guard to check if a string is a supported knowledge kind
  */
 export function isSupportedKind(kind: string): kind is (typeof SUPPORTED_KINDS)[number] {
-  return SUPPORTED_KINDS.includes(kind as any);
+  return SUPPORTED_KINDS.includes(kind as (typeof SUPPORTED_KINDS)[number]);
 }
 
 /**
@@ -132,7 +132,7 @@ export function validateKnowledgeTypeMetadata(): {
 
   // Check metadata consistency
   Object.entries(KNOWLEDGE_TYPE_METADATA).forEach(([kind, metadata]) => {
-    if (!SUPPORTED_KINDS.includes(kind as any)) {
+    if (!SUPPORTED_KINDS.includes(kind as (typeof SUPPORTED_KINDS)[number])) {
       issues.push(`Metadata for unknown knowledge type: ${kind}`);
     }
 
@@ -164,7 +164,7 @@ export function validateKnowledgeTypeMetadata(): {
 /**
  * Type for supported knowledge kinds (re-exported for convenience)
  */
-export type SupportedKnowledgeKind = (typeof SUPPORTED_KINDS)[number];
+// Note: SupportedKnowledgeKind is now imported from supported-kinds.ts to avoid circular dependencies
 
 /**
  * Type for validation feature keys (re-exported for convenience)
@@ -241,7 +241,7 @@ export function getCategoryMetadataSummary(category: KnowledgeCategory): {
   implementedTypes: string[];
 } {
   const types = getKnowledgeTypesByCategory(category);
-  const metadata = types.map((kind) => getKnowledgeTypeMetadata(kind as any));
+  const metadata = types.map((kind) => getKnowledgeTypeMetadata(kind as (typeof SUPPORTED_KINDS)[number]));
 
   return {
     category,

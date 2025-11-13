@@ -10,7 +10,7 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 export interface LogEntry {
   level: LogLevel;
   message: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   correlationId?: string;
   timestamp: string;
   service?: string;
@@ -21,7 +21,7 @@ export interface LogEntry {
   traceId?: string;
   spanId?: string;
   tags?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface LogQueryOptions {
@@ -30,9 +30,9 @@ export interface LogQueryOptions {
     start: Date;
     end: Date;
   };
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   contextFilters?: {
-    [key: string]: any | any[];
+    [key: string]: unknown | unknown[];
   };
   messagePattern?: RegExp | string;
   correlationId?: string;
@@ -59,7 +59,7 @@ export interface LogFilterOptions {
     end: Date;
   };
   contextFilters: {
-    [key: string]: any | any[];
+    [key: string]: unknown | unknown[];
   };
   messagePattern?: RegExp | string;
   tags?: string[];
@@ -74,7 +74,7 @@ export interface LogStorageConfig {
   compression?: boolean;
   encryption?: boolean;
   backupLocation?: string;
-  connectionConfig?: any;
+  connectionConfig?: unknown;
   retryPolicy?: {
     attempts: number;
     backoffMs: number;
@@ -318,7 +318,7 @@ export interface LogServiceIntegration {
   };
   authentication?: {
     type: 'jwt' | 'api_key' | 'oauth';
-    credentials: any;
+    credentials: unknown;
   };
 }
 
@@ -331,7 +331,7 @@ export interface LogTemplate {
   description?: string;
   examples?: Array<{
     name: string;
-    variables: Record<string, any>;
+    variables: Record<string, unknown>;
     result: string;
   }>;
 }
@@ -340,14 +340,14 @@ export interface LogAggregationOptions {
   groupBy: string[];
   timeWindow: string;
   metrics: string[];
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
   sortOrder?: 'asc' | 'desc';
   limit?: number;
 }
 
 export interface LogAggregation {
   groups: Array<{
-    key: Record<string, any>;
+    key: Record<string, unknown>;
     metrics: Record<string, number>;
   }>;
   timeRange: {

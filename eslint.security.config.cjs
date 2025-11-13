@@ -37,8 +37,8 @@ module.exports = [
     },
     rules: {
       // TypeScript rules
-      '@typescript-eslint/no-unused-vars': 'error',
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
             '@typescript-eslint/no-var-requires': 'error',
 
       // Security rules

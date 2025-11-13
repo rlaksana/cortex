@@ -198,7 +198,7 @@ export class QdrantBackupService {
   private client: QdrantClient;
   private config: BackupConfig;
   private backupJobs: Map<string, ScheduledTask> = new Map();
-  private activeBackups: Map<string, Promise<any>> = new Map();
+  private activeBackups: Map<string, Promise<unknown>> = new Map();
   private backupRegistry: Map<string, BackupMetadata> = new Map();
   private restoreTestResults: Map<string, RestoreTestResult> = new Map();
   private consistencyResults: Map<string, ConsistencyValidationResult> = new Map();
@@ -858,7 +858,7 @@ export class QdrantBackupService {
 
   private async backupCollectionChanges(
     collectionName: string,
-    changes: any,
+    changes: unknown,
     backupId: string
   ): Promise<{
     vectorCount: number;
@@ -868,7 +868,7 @@ export class QdrantBackupService {
     return { vectorCount: 0, size: 0 };
   }
 
-  private async getCollectionChanges(sinceTimestamp: string): Promise<Record<string, any>> {
+  private async getCollectionChanges(sinceTimestamp: string): Promise<Record<string, unknown>> {
     // Implementation would detect changes since given timestamp
     return {};
   }

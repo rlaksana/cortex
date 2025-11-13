@@ -40,7 +40,7 @@ interface FactExtraction {
   facts: Array<{
     type: 'measurement' | 'count' | 'date' | 'specification' | 'statistic' | 'reference' | 'claim';
     content: string;
-    value?: any;
+    value?: unknown;
     unit?: string;
     source?: string;
     confidence: number;
@@ -58,7 +58,7 @@ interface FactExtraction {
   }>;
   specifications: Array<{
     parameter: string;
-    value: any;
+    value: unknown;
     unit?: string;
     context: string;
     confidence: number;
@@ -104,7 +104,7 @@ interface FactualAnalysisResult {
     content: string;
     confidence: number;
     source_item: number;
-    fact_data: any;
+    fact_data: unknown;
   }>;
   external_verification: ExternalVerification;
   fact_comparison: {
@@ -393,14 +393,14 @@ export class FactualVerificationStrategy {
    */
   private extractSpecifications(content: string): Array<{
     parameter: string;
-    value: any;
+    value: unknown;
     unit?: string;
     context: string;
     confidence: number;
   }> {
     const specifications: Array<{
       parameter: string;
-      value: any;
+      value: unknown;
       unit?: string;
       context: string;
       confidence: number;
@@ -433,7 +433,7 @@ export class FactualVerificationStrategy {
     specPatterns.forEach(({ regex, parameter }) => {
       const matches = content.matchAll(regex);
       for (const match of matches) {
-        let value: any;
+        let value: unknown;
         let unit: string | undefined;
 
         if (parameter === 'version') {
@@ -521,7 +521,7 @@ export class FactualVerificationStrategy {
   ): Array<{
     type: 'measurement' | 'count' | 'date' | 'specification' | 'statistic' | 'reference' | 'claim';
     content: string;
-    value?: any;
+    value?: unknown;
     unit?: string;
     source?: string;
     confidence: number;
@@ -536,7 +536,7 @@ export class FactualVerificationStrategy {
         | 'reference'
         | 'claim';
       content: string;
-      value?: any;
+      value?: unknown;
       unit?: string;
       source?: string;
       confidence: number;

@@ -11397,7 +11397,7 @@ b`.split(/\n/).length != 3
             }
           }
           function S1(n, i) {
-            if (n.length > 1 && !/  /.test(n)) return n;
+            if (n.length > 1 && !/ {2}/.test(n)) return n;
             for (var a = i, l = '', u = 0; u < n.length; u++) {
               var g = n.charAt(u);
               (g == ' ' && a && (u == n.length - 1 || n.charCodeAt(u + 1) == 32) && (g = ' '),

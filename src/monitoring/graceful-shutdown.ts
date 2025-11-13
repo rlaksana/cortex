@@ -451,7 +451,7 @@ export class GracefulShutdownManager extends EventEmitter {
   /**
    * Health check for shutdown manager
    */
-  healthCheck(): { healthy: boolean; details: Record<string, any> } {
+  healthCheck(): { healthy: boolean; details: Record<string, unknown> } {
     return {
       healthy: !this.state.isShuttingDown,
       details: {

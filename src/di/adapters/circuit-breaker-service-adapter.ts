@@ -95,7 +95,7 @@ export class CircuitBreakerServiceAdapter implements ICircuitBreakerService {
    * Get statistics for all circuit breakers
    * Provides additional functionality beyond the interface requirements
    */
-  getAllStats(): Record<string, any> {
+  getAllStats(): Record<string, unknown> {
     return this.circuitBreakerManager.getAllStats();
   }
 
@@ -111,7 +111,7 @@ export class CircuitBreakerServiceAdapter implements ICircuitBreakerService {
    * Get overall system health based on circuit states
    * Provides additional functionality beyond the interface requirements
    */
-  getSystemHealth(): any {
+  getSystemHealth(): unknown {
     return this.circuitBreakerManager.getSystemHealth();
   }
 

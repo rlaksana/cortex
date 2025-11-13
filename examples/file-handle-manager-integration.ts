@@ -13,6 +13,8 @@ import {
   FileHandleManager,
   readFileManaged,
   writeFileManaged,
+  getFileHandleStats,
+  cleanupFileHandles,
 } from '../src/utils/file-handle-manager.js';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
@@ -25,13 +27,13 @@ class ConfigurationServiceOld {
     this.configPath = configPath;
   }
 
-  async loadConfiguration(): Promise<any> {
+  async loadConfiguration(): Promise<Record<string, unknown>> {
     // PROBLEM: Direct fs usage can cause EMFILE errors
     const content = await fs.readFile(this.configPath, 'utf-8');
     return JSON.parse(content);
   }
 
-  async saveConfiguration(config: any): Promise<void> {
+  async saveConfiguration(config: Record<string, unknown>): Promise<void> {
     // PROBLEM: Direct fs usage can cause EMFILE errors
     const content = JSON.stringify(config, null, 2);
     await fs.writeFile(this.configPath, content, 'utf-8');
@@ -45,7 +47,7 @@ class ConfigurationServiceNew {
     this.configPath = configPath;
   }
 
-  async loadConfiguration(): Promise<any> {
+  async loadConfiguration(): Promise<Record<string, unknown>> {
     // SOLUTION: Use managed file operations
     const content = await readFileManaged(this.configPath, {
       encoding: 'utf-8',
@@ -55,7 +57,7 @@ class ConfigurationServiceNew {
     return JSON.parse(content);
   }
 
-  async saveConfiguration(config: any): Promise<void> {
+  async saveConfiguration(config: Record<string, unknown>): Promise<void> {
     // SOLUTION: Use managed file operations
     const content = JSON.stringify(config, null, 2);
     await writeFileManaged(this.configPath, content, {
@@ -217,7 +219,7 @@ class LogFileManagerOld {
     this.logDir = logDir;
   }
 
-  async writeLog(level: string, message: string, metadata?: any): Promise<void> {
+  async writeLog(level: string, message: string, metadata?: Record<string, unknown>): Promise<void> {
     const timestamp = new Date().toISOString();
     const logEntry = {
       timestamp,
@@ -233,7 +235,7 @@ class LogFileManagerOld {
     await fs.writeFile(logFile, logLine, { flag: 'a' });
   }
 
-  async readLogs(level: string, limit: number = 100): Promise<any[]> {
+  async readLogs(level: string, limit: number = 100): Promise<Record<string, unknown>[]> {
     const logFile = join(this.logDir, `${level}.log`);
 
     // PROBLEM: Reading large log files can be problematic
@@ -259,7 +261,7 @@ class LogFileManagerNew {
     });
   }
 
-  async writeLog(level: string, message: string, metadata?: any): Promise<void> {
+  async writeLog(level: string, message: string, metadata?: Record<string, unknown>): Promise<void> {
     const timestamp = new Date().toISOString();
     const logEntry = {
       timestamp,
@@ -280,7 +282,7 @@ class LogFileManagerNew {
     });
   }
 
-  async readLogs(level: string, limit: number = 100): Promise<any[]> {
+  async readLogs(level: string, limit: number = 100): Promise<Record<string, unknown>[]> {
     const logFile = join(this.logDir, `${level}.log`);
 
     try {
@@ -380,11 +382,11 @@ async function demonstrateIntegration(): Promise<void> {
 
     const testContent = 'This is test content for demonstration';
 
-    const oldTestFile = await oldTestHelper.createTestFile('old-test.txt', testContent);
+    await oldTestHelper.createTestFile('old-test.txt', testContent);
     const oldContent = await oldTestHelper.readTestFile('old-test.txt');
     console.log(`   ✓ Old approach: ${oldContent.length} characters`);
 
-    const newTestFile = await newTestHelper.createTestFile('new-test.txt', testContent);
+    await newTestHelper.createTestFile('new-test.txt', testContent);
     const newContent = await newTestHelper.readTestFile('new-test.txt');
     console.log(`   ✓ New approach: ${newContent.length} characters\n`);
 
@@ -442,7 +444,6 @@ async function demonstrateIntegration(): Promise<void> {
 }
 
 // Convenience functions for the demo
-import { getFileHandleStats, cleanupFileHandles } from '../src/utils/file-handle-manager.js';
 
 // Run the demonstration
 if (import.meta.url === `file://${process.argv[1]}`) {

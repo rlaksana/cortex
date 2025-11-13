@@ -17,7 +17,7 @@ export interface ResolutionAction {
   type: 'merge' | 'delete' | 'update' | 'ignore' | 'flag_as_resolved';
   description: string;
   item_ids: string[];
-  parameters?: Record<string, any>;
+  parameters?: Record<string, unknown>;
   confidence: number;
   effort: 'low' | 'medium' | 'high';
   risk_level: 'low' | 'medium' | 'high';
@@ -36,7 +36,7 @@ export interface ResolutionWorkflow {
   total_steps: number;
   notes: string[];
   deadline?: Date;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export interface ContradictionCluster {
@@ -359,7 +359,7 @@ export class PointerResolutionService {
     workflowId: string,
     actionId: string,
     userId?: string,
-    customParameters?: Record<string, any>
+    customParameters?: Record<string, unknown>
   ): Promise<{
     success: boolean;
     message: string;
@@ -428,7 +428,7 @@ export class PointerResolutionService {
 
   private async performAction(
     action: ResolutionAction,
-    parameters: Record<string, any>
+    parameters: Record<string, unknown>
   ): Promise<{ success: boolean; message: string }> {
     switch (action.type) {
       case 'delete':
@@ -451,7 +451,7 @@ export class PointerResolutionService {
 
   private async performDeleteAction(
     action: ResolutionAction,
-    parameters: Record<string, any>
+    parameters: Record<string, unknown>
   ): Promise<{ success: boolean; message: string }> {
     // In a real implementation, this would call the storage service
     return {
@@ -462,7 +462,7 @@ export class PointerResolutionService {
 
   private async performUpdateAction(
     action: ResolutionAction,
-    parameters: Record<string, any>
+    parameters: Record<string, unknown>
   ): Promise<{ success: boolean; message: string }> {
     // In a real implementation, this would call the storage service
     const updateTypes = [];
@@ -478,7 +478,7 @@ export class PointerResolutionService {
 
   private async performMergeAction(
     action: ResolutionAction,
-    parameters: Record<string, any>
+    parameters: Record<string, unknown>
   ): Promise<{ success: boolean; message: string }> {
     // In a real implementation, this would call the storage service
     return {
@@ -489,7 +489,7 @@ export class PointerResolutionService {
 
   private async performIgnoreAction(
     action: ResolutionAction,
-    parameters: Record<string, any>
+    parameters: Record<string, unknown>
   ): Promise<{ success: boolean; message: string }> {
     return {
       success: true,
@@ -499,7 +499,7 @@ export class PointerResolutionService {
 
   private async performFlagResolvedAction(
     action: ResolutionAction,
-    parameters: Record<string, any>
+    parameters: Record<string, unknown>
   ): Promise<{ success: boolean; message: string }> {
     return {
       success: true,

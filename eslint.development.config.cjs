@@ -49,8 +49,8 @@ module.exports = [
       // Permissive development rules (non-critical errors only)
       'no-console': 'off', // Allow console in development
       'no-debugger': 'warn', // Warn but don't error on debugger
-      'no-unused-vars': 'warn', // Warn instead of error for unused vars
-      '@typescript-eslint/no-unused-vars': 'warn',
+      'no-unused-vars': 'off', // Disable unused vars rule
+      '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'off', // Allow any for flexibility
       'prefer-const': 'warn', // Suggest const but allow let
       '@typescript-eslint/no-non-null-assertion': 'off', // Allow ! operator

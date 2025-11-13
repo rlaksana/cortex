@@ -14,6 +14,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import type { SearchQuery } from '../../types/core-interfaces.js';
+import { memoryFindWithStrategies } from '../memory-find.js';
 import {
   ErrorCategory,
   ErrorSeverity,
@@ -114,7 +115,7 @@ describe('SearchStrategyManager', () => {
 
       it('should degrade gracefully when vector unavailable', async () => {
         // Mock vector health as unavailable
-        jest.spyOn(searchManager as any, 'updateVectorHealth').mockImplementation(async () => {
+        jest.spyOn(searchManager as unknown, 'updateVectorHealth').mockImplementation(async () => {
           searchManager['vectorHealth'].available = false;
           searchManager['vectorHealth'].consecutiveFailures = 3;
           searchManager['vectorHealth'].degradationReason = 'Mocked failure';
@@ -166,7 +167,7 @@ describe('SearchStrategyManager', () => {
 
       it('should degrade to auto when vector unavailable', async () => {
         // Mock vector health check to return false
-        jest.spyOn(searchManager as any, 'checkVectorBackendHealth').mockResolvedValue(false);
+        jest.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
 
         const query: SearchQuery = {
           query: 'test query',
@@ -334,7 +335,7 @@ describe('SearchStrategyManager', () => {
 
     it('should track degradation and fallback metrics', async () => {
       // Mock vector unavailability to trigger degradation
-      jest.spyOn(searchManager as any, 'checkVectorBackendHealth').mockResolvedValue(false);
+      jest.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
 
       const query: SearchQuery = {
         query: 'degradation test',
@@ -369,7 +370,7 @@ describe('SearchStrategyManager', () => {
 
     it('should detect degraded system state', async () => {
       // Mock vector backend failure
-      jest.spyOn(searchManager as any, 'checkVectorBackendHealth').mockResolvedValue(false);
+      jest.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
 
       const query: SearchQuery = {
         query: 'health test',
@@ -469,7 +470,7 @@ describe('SearchStrategyManager', () => {
 
   describe('Integration with Memory Find', () => {
     it('should work with memory find wrapper', async () => {
-      const { memoryFindWithStrategies } = require('../memory-find.js');
+      const memoryFindService = memoryFindWithStrategies;
 
       const query: SearchQuery = {
         query: 'integration test',
@@ -477,7 +478,7 @@ describe('SearchStrategyManager', () => {
         limit: 5,
       };
 
-      const result = await memoryFindWithStrategies(query);
+      const result = await memoryFindService(query);
 
       expect(result.results).toBeDefined();
       expect(result.observability).toBeDefined();
@@ -487,7 +488,7 @@ describe('SearchStrategyManager', () => {
     });
 
     it('should handle scope precedence correctly', async () => {
-      const { memoryFindWithStrategies } = require('../memory-find.js');
+      const memoryFindService = memoryFindWithStrategies;
 
       // Set environment variables
       process.env.CORTEX_ORG = 'test-org';
@@ -501,7 +502,7 @@ describe('SearchStrategyManager', () => {
         },
       };
 
-      const result = await memoryFindWithStrategies(query);
+      const result = await memoryFindService(query);
 
       expect(result.results).toBeDefined();
 

@@ -51,7 +51,7 @@ export interface DatabaseMetrics {
   storageSize?: number;
   lastHealthCheck?: string;
   vectorCount?: number;
-  collectionInfo?: any;
+  collectionInfo?: Readonly<Record<string, unknown>>;
 }
 
 export interface SearchOptions {
@@ -214,7 +214,11 @@ export interface IDatabase {
    * Bulk delete operations
    */
   bulkDelete(
-    _filter: { kind?: string; scope?: any; before?: string },
+    _filter: {
+      readonly kind?: string;
+      readonly scope?: Readonly<Record<string, unknown>>;
+      readonly before?: string
+    },
     _options?: DeleteOptions
   ): Promise<{ deleted: number }>;
 
@@ -273,12 +277,12 @@ export interface IDatabase {
   /**
    * Create or update collection schema
    */
-  updateCollectionSchema(_config: any): Promise<void>;
+  updateCollectionSchema(_config: Readonly<Record<string, unknown>>): Promise<void>;
 
   /**
    * Get collection information
    */
-  getCollectionInfo(): Promise<any>;
+  getCollectionInfo(): Promise<Readonly<Record<string, unknown>>>;
 }
 
 /**
@@ -308,24 +312,24 @@ export interface IDatabaseAdapter extends IDatabase {
   /**
    * Get the underlying Qdrant client (for advanced operations)
    */
-  getClient(): any;
+  getClient(): unknown;
 
   /**
    * Get Qdrant-specific capabilities
    */
   getCapabilities(): Promise<{
-    supportsVectors: boolean;
-    supportsFullTextSearch: boolean;
-    supportsPayloadFiltering: boolean;
-    maxBatchSize: number;
-    supportedDistanceMetrics: string[];
-    supportedOperations: string[];
+    readonly supportsVectors: boolean;
+    readonly supportsFullTextSearch: boolean;
+    readonly supportsPayloadFiltering: boolean;
+    readonly maxBatchSize: number;
+    readonly supportedDistanceMetrics: readonly string[];
+    readonly supportedOperations: readonly string[];
   }>;
 
   /**
    * Test specific Qdrant functionality
    */
-  testFunctionality(_operation: string, _params?: any): Promise<boolean>;
+  testFunctionality(_operation: string, _params?: Readonly<Record<string, unknown>>): Promise<boolean>;
 
   /**
    * Get collection statistics
@@ -347,12 +351,12 @@ export interface IConnectionPool {
   /**
    * Get a connection from the pool
    */
-  getConnection(): Promise<any>;
+  getConnection(): Promise<unknown>;
 
   /**
    * Release a connection back to the pool
    */
-  releaseConnection(_connection: any): Promise<void>;
+  releaseConnection(_connection: unknown): Promise<void>;
 
   /**
    * Close all connections in the pool
@@ -377,7 +381,7 @@ export interface ICollectionManager {
   /**
    * Create a new collection
    */
-  createCollection(_name: string, _config: any): Promise<void>;
+  createCollection(_name: string, _config: Readonly<Record<string, unknown>>): Promise<void>;
 
   /**
    * Delete a collection
@@ -387,17 +391,17 @@ export interface ICollectionManager {
   /**
    * List all collections
    */
-  listCollections(): Promise<string[]>;
+  listCollections(): Promise<readonly string[]>;
 
   /**
    * Get collection configuration
    */
-  getCollectionConfig(_name: string): Promise<any>;
+  getCollectionConfig(_name: string): Promise<Readonly<Record<string, unknown>>>;
 
   /**
    * Update collection configuration
    */
-  updateCollectionConfig(_name: string, _config: any): Promise<void>;
+  updateCollectionConfig(_name: string, _config: Readonly<Record<string, unknown>>): Promise<void>;
 }
 
 /**
@@ -406,9 +410,11 @@ export interface ICollectionManager {
 export class DatabaseError extends Error {
   constructor(
     _message: string,
-    public readonly _code: string,
-    public readonly _originalError?: Error,
-    public readonly _context?: Record<string, any>
+    public readonly code: string = 'DATABASE_ERROR',
+    public readonly originalError?: Error,
+    public readonly context?: Readonly<Record<string, unknown>>,
+    public readonly severity: 'low' | 'medium' | 'high' | 'critical' = 'medium',
+    public readonly retryable: boolean = true
   ) {
     super(_message);
     this.name = 'DatabaseError';
@@ -417,21 +423,21 @@ export class DatabaseError extends Error {
 
 export class ConnectionError extends DatabaseError {
   constructor(_message: string, _originalError?: Error) {
-    super(_message, 'CONNECTION_ERROR', _originalError);
+    super(_message, 'CONNECTION_ERROR', _originalError, undefined, 'high', false);
     this.name = 'ConnectionError';
   }
 }
 
 export class ValidationError extends DatabaseError {
   constructor(_message: string, _field?: string) {
-    super(_message, 'VALIDATION_ERROR', undefined, { field: _field });
+    super(_message, 'VALIDATION_ERROR', undefined, { field: _field }, 'medium', false);
     this.name = 'ValidationError';
   }
 }
 
 export class NotFoundError extends DatabaseError {
   constructor(_id: string, _type: string = 'item') {
-    super(`${_type} with id '${_id}' not found`, 'NOT_FOUND', undefined, { id: _id, type: _type });
+    super(`${_type} with id '${_id}' not found`, 'NOT_FOUND', undefined, { id: _id, type: _type }, 'low', false);
     this.name = 'NotFoundError';
   }
 }
@@ -441,21 +447,21 @@ export class DuplicateError extends DatabaseError {
     super(`${_type} with id '${_id}' already exists`, 'DUPLICATE_ERROR', undefined, {
       id: _id,
       type: _type,
-    });
+    }, 'medium', false);
     this.name = 'DuplicateError';
   }
 }
 
 export class EmbeddingError extends DatabaseError {
   constructor(_message: string, _originalError?: Error) {
-    super(_message, 'EMBEDDING_ERROR', _originalError);
+    super(_message, 'EMBEDDING_ERROR', _originalError, undefined, 'high', true);
     this.name = 'EmbeddingError';
   }
 }
 
 export class CollectionError extends DatabaseError {
   constructor(_message: string, _collection?: string, _originalError?: Error) {
-    super(_message, 'COLLECTION_ERROR', _originalError, { collection: _collection });
+    super(_message, 'COLLECTION_ERROR', _originalError, { collection: _collection }, 'high', false);
     this.name = 'CollectionError';
   }
 }

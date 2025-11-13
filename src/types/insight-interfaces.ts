@@ -32,8 +32,8 @@ export interface InsightGenerationRequest {
     id: string;
     kind: string;
     content?: string;
-    data: Record<string, any>;
-    scope: Record<string, any>;
+    data: Record<string, unknown>;
+    scope: Record<string, unknown>;
     created_at?: string;
   }>;
   options: {
@@ -122,7 +122,7 @@ export interface AnomalyInsight extends Insight {
   anomaly_data: {
     anomaly_type: string;
     severity: 'low' | 'medium' | 'high' | 'critical';
-    baseline_data: any;
+    baseline_data: unknown;
     deviation_score: number;
     potential_causes: string[];
   };
@@ -153,11 +153,11 @@ export interface InsightGenerationRule {
   condition: {
     field: string;
     operator: 'equals' | 'contains' | 'regex' | 'greater_than' | 'less_than' | 'exists';
-    value: any;
+    value: unknown;
   };
   action: {
     type: 'generate_insight' | 'modify_confidence' | 'skip';
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
   };
   priority: number;
   enabled: boolean;

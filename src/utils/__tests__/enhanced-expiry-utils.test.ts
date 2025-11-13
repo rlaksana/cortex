@@ -481,12 +481,12 @@ describe('Enhanced Expiry Utils', () => {
 
     it('should handle malformed input gracefully', () => {
       // Test with undefined, null, empty string
-      expect(() => enhancedExpiryUtils.validateExpiry(undefined as any)).not.toThrow();
-      expect(() => enhancedExpiryUtils.validateExpiry(null as any)).not.toThrow();
+      expect(() => enhancedExpiryUtils.validateExpiry(undefined as unknown)).not.toThrow();
+      expect(() => enhancedExpiryUtils.validateExpiry(null as unknown)).not.toThrow();
       expect(() => enhancedExpiryUtils.validateExpiry('')).not.toThrow();
 
-      const undefinedResult = enhancedExpiryUtils.validateExpiry(undefined as any);
-      const nullResult = enhancedExpiryUtils.validateExpiry(null as any);
+      const undefinedResult = enhancedExpiryUtils.validateExpiry(undefined as unknown);
+      const nullResult = enhancedExpiryUtils.validateExpiry(null as unknown);
       const emptyResult = enhancedExpiryUtils.validateExpiry('');
 
       expect(undefinedResult.isValid).toBe(false);

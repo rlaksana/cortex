@@ -10,40 +10,30 @@
  */
 
 import {
-  HealthCheckConfigSchema,
-  HttpClientConfigSchema,
   isStandardHealthCheckConfig,
   isStandardHttpClientConfig,
-  type StandardHealthCheckConfig,
-  type StandardHttpClientConfig,
   validateHealthCheckConfig,
   validateHttpClientConfig,
 } from './configuration-migration.js';
+import type {
+  ValidationError,
+  ValidationResult,
+  ValidationWarning} from '../types/config.js';
+import type { Dict, JSONValue } from '../types/index.js';
 
 // ============================================================================
-// Validation Result Types
+// Extended Validation Types (extend shared types)
 // ============================================================================
 
-export interface ValidationResult {
-  valid: boolean;
-  errors: ValidationError[];
-  warnings: ValidationWarning[];
+export interface ExtendedValidationResult extends ValidationResult {
   metadata?: ValidationMetadata;
 }
 
-export interface ValidationError {
-  code: string;
-  message: string;
-  path?: string;
-  value?: any;
+export interface ExtendedValidationError extends ValidationError {
   constraint?: string;
 }
 
-export interface ValidationWarning {
-  code: string;
-  message: string;
-  path?: string;
-  value?: any;
+export interface ExtendedValidationWarning extends ValidationWarning {
   suggestion?: string;
 }
 
@@ -53,6 +43,9 @@ export interface ValidationMetadata {
   migrationPerformed: boolean;
   deprecatedPropertiesUsed: string[];
 }
+
+// Local type definition for configuration validation
+type _LegacyConfig = Record<string, unknown>;
 
 export interface ConfigurationValidationOptions {
   strict?: boolean; // Fail on warnings
@@ -81,23 +74,26 @@ export class ConfigurationValidator {
   /**
    * Validate health check configuration
    */
-  validateHealthCheckConfig(config: any): ValidationResult {
-    const errors: ValidationError[] = [];
-    const warnings: ValidationWarning[] = [];
+  validateHealthCheckConfig(config: unknown): ExtendedValidationResult {
+    const errors: ExtendedValidationError[] = [];
+    const warnings: ExtendedValidationWarning[] = [];
     const deprecatedProperties: string[] = [];
     let migrationPerformed = false;
+
+    // Type assertion to access config properties
+    const configObj = config as Dict<JSONValue>;
 
     // Check for deprecated properties
     const deprecatedProps = ['timeout', 'retries', 'retryDelay'];
     for (const prop of deprecatedProps) {
-      if (prop in config) {
+      if (prop in configObj) {
         deprecatedProperties.push(prop);
         if (!this.options.allowDeprecated) {
           errors.push({
             code: 'DEPRECATED_PROPERTY',
             message: `Deprecated property '${prop}' is not allowed. Use '${prop}Ms' instead.`,
             path: prop,
-            value: config[prop],
+            value: configObj[prop],
             constraint: 'Use standard property names with Ms suffix',
           });
         } else {
@@ -105,7 +101,7 @@ export class ConfigurationValidator {
             code: 'DEPRECATED_PROPERTY',
             message: `Deprecated property '${prop}' should be replaced with '${prop}Ms'.`,
             path: prop,
-            value: config[prop],
+            value: configObj[prop],
             suggestion: `Use '${prop}Ms' instead of '${prop}'`,
           });
         }
@@ -115,16 +111,16 @@ export class ConfigurationValidator {
     // Check for missing required properties
     const requiredProps = ['timeoutMs', 'retryAttempts', 'retryDelayMs'];
     for (const prop of requiredProps) {
-      if (!(prop in config)) {
+      if (!(prop in configObj)) {
         // Check if legacy property exists
         const legacyProp = prop.replace('Ms', '');
-        if (legacyProp in config) {
+        if (legacyProp in configObj) {
           migrationPerformed = true;
           warnings.push({
             code: 'LEGACY_PROPERTY_AUTO_MIGRATED',
             message: `Legacy property '${legacyProp}' was automatically migrated to '${prop}'.`,
             path: legacyProp,
-            value: config[legacyProp],
+            value: configObj[legacyProp],
             suggestion: `Update configuration to use '${prop}' directly`,
           });
         } else {
@@ -140,11 +136,11 @@ export class ConfigurationValidator {
 
     // Type validation
     if (this.options.validateTypes) {
-      this.validateTypes(config, errors, warnings);
+      this.validateTypes(configObj, errors, warnings);
     }
 
     // Value constraints validation
-    this.validateValueConstraints(config, errors, warnings);
+    this.validateValueConstraints(configObj, errors, warnings);
 
     // If this is already a standard config, validate with schema
     if (isStandardHealthCheckConfig(config)) {
@@ -176,23 +172,26 @@ export class ConfigurationValidator {
   /**
    * Validate HTTP client configuration
    */
-  validateHttpClientConfig(config: any): ValidationResult {
-    const errors: ValidationError[] = [];
-    const warnings: ValidationWarning[] = [];
+  validateHttpClientConfig(config: unknown): ExtendedValidationResult {
+    const errors: ExtendedValidationError[] = [];
+    const warnings: ExtendedValidationWarning[] = [];
     const deprecatedProperties: string[] = [];
     let migrationPerformed = false;
+
+    // Type assertion to access config properties
+    const configObj = config as Dict<JSONValue>;
 
     // Check for deprecated properties
     const deprecatedProps = ['timeout', 'retries', 'retryDelay'];
     for (const prop of deprecatedProps) {
-      if (prop in config) {
+      if (prop in configObj) {
         deprecatedProperties.push(prop);
         if (!this.options.allowDeprecated) {
           errors.push({
             code: 'DEPRECATED_PROPERTY',
             message: `Deprecated property '${prop}' is not allowed. Use '${prop}Ms' instead.`,
             path: prop,
-            value: config[prop],
+            value: configObj[prop],
             constraint: 'Use standard property names with Ms suffix',
           });
         } else {
@@ -200,7 +199,7 @@ export class ConfigurationValidator {
             code: 'DEPRECATED_PROPERTY',
             message: `Deprecated property '${prop}' should be replaced with '${prop}Ms'.`,
             path: prop,
-            value: config[prop],
+            value: configObj[prop],
             suggestion: `Use '${prop}Ms' instead of '${prop}'`,
           });
         }
@@ -210,16 +209,16 @@ export class ConfigurationValidator {
     // Check for missing required properties
     const requiredProps = ['timeoutMs', 'retryAttempts', 'retryDelayMs'];
     for (const prop of requiredProps) {
-      if (!(prop in config)) {
+      if (!(prop in configObj)) {
         // Check if legacy property exists
         const legacyProp = prop.replace('Ms', '');
-        if (legacyProp in config) {
+        if (legacyProp in configObj) {
           migrationPerformed = true;
           warnings.push({
             code: 'LEGACY_PROPERTY_AUTO_MIGRATED',
             message: `Legacy property '${legacyProp}' was automatically migrated to '${prop}'.`,
             path: legacyProp,
-            value: config[legacyProp],
+            value: configObj[legacyProp],
             suggestion: `Update configuration to use '${prop}' directly`,
           });
         } else {
@@ -235,11 +234,11 @@ export class ConfigurationValidator {
 
     // Type validation
     if (this.options.validateTypes) {
-      this.validateTypes(config, errors, warnings);
+      this.validateTypes(configObj, errors, warnings);
     }
 
     // Value constraints validation
-    this.validateValueConstraints(config, errors, warnings);
+    this.validateValueConstraints(configObj, errors, warnings);
 
     // If this is already a standard config, validate with schema
     if (isStandardHttpClientConfig(config)) {
@@ -272,14 +271,17 @@ export class ConfigurationValidator {
    * Validate any configuration object
    */
   validateConfiguration(
-    config: any,
+    config: unknown,
     type?: 'health-check' | 'http-client' | 'auto'
-  ): ValidationResult {
+  ): ExtendedValidationResult {
+    // Type assertion to access config properties
+    const configObj = config as Dict<JSONValue>;
+
     if (type === 'auto' || !type) {
       // Auto-detect configuration type
-      if (this.isHealthCheckConfig(config)) {
+      if (this.isHealthCheckConfig(configObj)) {
         type = 'health-check';
-      } else if (this.isHttpClientConfig(config)) {
+      } else if (this.isHttpClientConfig(configObj)) {
         type = 'http-client';
       } else {
         return {
@@ -288,8 +290,10 @@ export class ConfigurationValidator {
             {
               code: 'UNKNOWN_CONFIGURATION_TYPE',
               message: 'Cannot determine configuration type. Specify type explicitly.',
+              path: undefined,
+              value: undefined,
               constraint: 'Type must be "health-check" or "http-client"',
-            },
+            } as ExtendedValidationError,
           ],
           warnings: [],
         };
@@ -308,8 +312,10 @@ export class ConfigurationValidator {
             {
               code: 'UNSUPPORTED_CONFIGURATION_TYPE',
               message: `Unsupported configuration type: ${type}`,
+              path: undefined,
+              value: undefined,
               constraint: 'Supported types: "health-check", "http-client"',
-            },
+            } as ExtendedValidationError,
           ],
           warnings: [],
         };
@@ -319,13 +325,13 @@ export class ConfigurationValidator {
   /**
    * Validate multiple configuration objects
    */
-  validateMultipleConfigurations(configs: Array<{ config: any; type?: string; name?: string }>): {
-    [name: string]: ValidationResult;
+  validateMultipleConfigurations(configs: Array<{ config: unknown; type?: string; name?: string }>): {
+    [name: string]: ExtendedValidationResult;
   } {
-    const results: { [name: string]: ValidationResult } = {};
+    const results: { [name: string]: ExtendedValidationResult } = {};
 
     for (const { config, type, name = 'unnamed' } of configs) {
-      results[name] = this.validateConfiguration(config, type as any);
+      results[name] = this.validateConfiguration(config, type as 'health-check' | 'http-client' | 'auto');
     }
 
     return results;
@@ -336,17 +342,17 @@ export class ConfigurationValidator {
   // ============================================================================
 
   private validateTypes(
-    config: any,
-    errors: ValidationError[],
-    warnings: ValidationWarning[]
+    config: Dict<JSONValue>,
+    errors: ExtendedValidationError[],
+    _warnings: ExtendedValidationWarning[]
   ): void {
     // Validate timeout properties are numbers
     const timeoutProps = ['timeout', 'timeoutMs'];
     for (const prop of timeoutProps) {
-      if (prop in config && typeof config[prop] !== 'number') {
+      if (prop in config && typeof config[prop] === 'number' ? 'number' : typeof config[prop] !== 'number') {
         errors.push({
           code: 'INVALID_TYPE',
-          message: `Property '${prop}' must be a number, got ${typeof config[prop]}.`,
+          message: `Property '${prop}' must be a number, got ${typeof config[prop] === 'number' ? 'number' : typeof config[prop]}.`,
           path: prop,
           value: config[prop],
           constraint: 'Must be a number',
@@ -357,10 +363,10 @@ export class ConfigurationValidator {
     // Validate retry properties are numbers
     const retryProps = ['retries', 'retryAttempts', 'retryDelay', 'retryDelayMs'];
     for (const prop of retryProps) {
-      if (prop in config && typeof config[prop] !== 'number') {
+      if (prop in config && typeof config[prop] === 'number' ? 'number' : typeof config[prop] !== 'number') {
         errors.push({
           code: 'INVALID_TYPE',
-          message: `Property '${prop}' must be a number, got ${typeof config[prop]}.`,
+          message: `Property '${prop}' must be a number, got ${typeof config[prop] === 'number' ? 'number' : typeof config[prop]}.`,
           path: prop,
           value: config[prop],
           constraint: 'Must be a number',
@@ -381,15 +387,15 @@ export class ConfigurationValidator {
   }
 
   private validateValueConstraints(
-    config: any,
-    errors: ValidationError[],
-    warnings: ValidationWarning[]
+    config: Dict<JSONValue>,
+    errors: ExtendedValidationError[],
+    warnings: ExtendedValidationWarning[]
   ): void {
     // Validate timeout values are reasonable
     const timeoutProps = ['timeout', 'timeoutMs'];
     for (const prop of timeoutProps) {
       if (prop in config) {
-        const value = config[prop];
+        const value = config[prop] as number;
         if (value < 0) {
           errors.push({
             code: 'INVALID_VALUE',
@@ -414,7 +420,7 @@ export class ConfigurationValidator {
     const retryAttemptProps = ['retries', 'retryAttempts'];
     for (const prop of retryAttemptProps) {
       if (prop in config) {
-        const value = config[prop];
+        const value = config[prop] as number;
         if (value < 0) {
           errors.push({
             code: 'INVALID_VALUE',
@@ -439,7 +445,7 @@ export class ConfigurationValidator {
     const retryDelayProps = ['retryDelay', 'retryDelayMs'];
     for (const prop of retryDelayProps) {
       if (prop in config) {
-        const value = config[prop];
+        const value = config[prop] as number;
         if (value < 0) {
           errors.push({
             code: 'INVALID_VALUE',
@@ -461,7 +467,7 @@ export class ConfigurationValidator {
     }
   }
 
-  private isHealthCheckConfig(config: any): boolean {
+  private isHealthCheckConfig(config: Dict<JSONValue>): boolean {
     const healthCheckProps = [
       'enabled',
       'intervalMs',
@@ -479,7 +485,7 @@ export class ConfigurationValidator {
     return healthCheckProps.some((prop) => prop in config);
   }
 
-  private isHttpClientConfig(config: any): boolean {
+  private isHttpClientConfig(config: Dict<JSONValue>): boolean {
     const httpClientProps = [
       'timeoutMs',
       'retryAttempts',
@@ -511,9 +517,9 @@ export function createConfigurationValidator(
  * Validate configuration with strict settings
  */
 export function validateConfigurationStrict(
-  config: any,
+  config: unknown,
   type?: 'health-check' | 'http-client' | 'auto'
-): ValidationResult {
+): ExtendedValidationResult {
   const validator = new ConfigurationValidator({ strict: true });
   return validator.validateConfiguration(config, type);
 }
@@ -522,9 +528,9 @@ export function validateConfigurationStrict(
  * Validate configuration with permissive settings (allows deprecated properties)
  */
 export function validateConfigurationPermissive(
-  config: any,
+  config: unknown,
   type?: 'health-check' | 'http-client' | 'auto'
-): ValidationResult {
+): ExtendedValidationResult {
   const validator = new ConfigurationValidator({ strict: false, allowDeprecated: true });
   return validator.validateConfiguration(config, type);
 }
@@ -533,7 +539,7 @@ export function validateConfigurationPermissive(
  * Quick validation check (returns boolean)
  */
 export function isValidConfiguration(
-  config: any,
+  config: unknown,
   type?: 'health-check' | 'http-client' | 'auto'
 ): boolean {
   const result = validateConfigurationPermissive(config, type);

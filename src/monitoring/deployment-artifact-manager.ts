@@ -10,7 +10,7 @@
  * @version 2.0.1
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync,writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync,writeFileSync } from 'fs';
 import { dirname,join } from 'path';
 import { createHash, createHmac } from 'crypto';
 
@@ -44,7 +44,7 @@ export interface ArtifactMetadata {
     version: string;
   }[];
   configuration: {
-    [key: string]: any;
+    [key: string]: unknown;
   };
   features: string[];
   tests: {
@@ -673,12 +673,12 @@ export class DeploymentArtifactManager {
       let deleted = false;
 
       if (existsSync(artifactPath)) {
-        require('fs').unlinkSync(artifactPath);
+        unlinkSync(artifactPath);
         deleted = true;
       }
 
       if (existsSync(metadataPath)) {
-        require('fs').unlinkSync(metadataPath);
+        unlinkSync(metadataPath);
         deleted = true;
       }
 
@@ -762,7 +762,7 @@ export class DeploymentArtifactManager {
     }
   }
 
-  private gatherConfiguration(): Record<string, any> {
+  private gatherConfiguration(): Record<string, unknown> {
     return {
       nodeEnv: process.env.NODE_ENV,
       port: process.env.PORT,
@@ -1090,7 +1090,7 @@ ${metadata.deployment.previousVersion ? `Rollback to: ${metadata.deployment.prev
     // In a real implementation, this would extract files to the target locations
   }
 
-  private async updateConfiguration(configuration: Record<string, any>): Promise<void> {
+  private async updateConfiguration(configuration: Record<string, unknown>): Promise<void> {
     this.logger.info('Updating configuration', { keys: Object.keys(configuration) });
     // In a real implementation, this would update system configuration
   }

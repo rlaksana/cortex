@@ -20,6 +20,36 @@
 import { logger } from '@/utils/logger.js';
 
 import type { MigrationConfig } from './database-config.js';
+import type { Dict,JSONValue } from '../types/index.js';
+import {
+  isDictJSONValue,
+  safePropertyAccess,
+  safeStringToEnum,
+  validateMigrationConfig} from '../utils/configuration-type-guards.js';
+
+/**
+ * Branded type for filter rule values to ensure type safety
+ */
+export type FilterValue = string | number | boolean | null | JSONValue;
+
+/**
+ * Database-specific configuration types
+ */
+export interface QdrantConfig {
+  host: string;
+  port: number;
+  apiKey?: string;
+  timeout?: number;
+  maxRetries?: number;
+  collection?: string;
+  vectorSize?: number;
+  distance?: 'Cosine' | 'Euclidean' | 'Dot';
+}
+
+export interface DatabaseConnectionConfig {
+  type: 'qdrant';
+  config: QdrantConfig;
+}
 
 export type MigrationMode = 'pg-to-qdrant' | 'qdrant-to-pg' | 'sync' | 'validate' | 'cleanup';
 
@@ -55,7 +85,7 @@ export interface FilterRule {
     | 'exists'
     | 'greaterThan'
     | 'lessThan';
-  value: any;
+  value: FilterValue;
   negate?: boolean;
 }
 
@@ -65,7 +95,7 @@ export interface TransformationRule {
   sourceField?: string;
   targetField?: string;
   transformation: string;
-  parameters?: Record<string, any>;
+  parameters?: Dict<JSONValue>;
 }
 
 export interface ValidationConfig {
@@ -119,14 +149,8 @@ export interface MigrationEnvironmentConfig {
   progressTracking: ProgressTrackingConfig;
   performance: PerformanceConfig;
   safety: SafetyConfig;
-  source: {
-    type: 'qdrant' | 'qdrant';
-    config: any;
-  };
-  target: {
-    type: 'qdrant' | 'qdrant';
-    config: any;
-  };
+  source: DatabaseConnectionConfig;
+  target: DatabaseConnectionConfig;
 }
 
 /**
@@ -354,8 +378,8 @@ export class MigrationConfigManager {
         rollbackOnFailure: baseConfig.preservePg,
         criticalOperations: ['delete', 'truncate', 'drop', 'cleanup'],
       },
-      source: { type: 'qdrant', config: {} }, // Will be populated later
-      target: { type: 'qdrant', config: {} }, // Will be populated later
+      source: { type: 'qdrant', config: { host: '', port: 6333 } }, // Will be populated later
+      target: { type: 'qdrant', config: { host: '', port: 6333 } }, // Will be populated later
     };
   }
 
@@ -464,15 +488,15 @@ export class MigrationConfigManager {
   /**
    * Set source database configuration
    */
-  setSourceConfig(_type: 'qdrant' | 'qdrant', config: any): void {
-    this.config.source = { type: _type, config };
+  setSourceConfig(config: QdrantConfig): void {
+    this.config.source = { type: 'qdrant', config };
   }
 
   /**
    * Set target database configuration
    */
-  setTargetConfig(_type: 'qdrant' | 'qdrant', config: any): void {
-    this.config.target = { type: _type, config };
+  setTargetConfig(config: QdrantConfig): void {
+    this.config.target = { type: 'qdrant', config };
   }
 
   /**
@@ -578,7 +602,7 @@ export class MigrationConfigManager {
     id: string;
     timestamp: Date;
     config: Partial<MigrationEnvironmentConfig>;
-    metadata: Record<string, any>;
+    metadata: Dict<JSONValue>;
   } {
     return {
       id: _checkpointId,
@@ -600,35 +624,40 @@ export class MigrationConfigManager {
   /**
    * Export configuration for persistence
    */
-  exportForPersistence(): Record<string, any> {
+  exportForPersistence(): Dict<JSONValue> {
     return {
       version: '2.0.0',
       timestamp: new Date().toISOString(),
       environment: this.environment,
-      config: this.config,
+      config: this.config as unknown as JSONValue,
     };
   }
 
   /**
    * Import configuration from persistence
    */
-  static importFromPersistence(_data: Record<string, any>): MigrationConfigManager {
+  static importFromPersistence(_data: Dict<JSONValue>): MigrationConfigManager {
     if (_data.version !== '2.0.0') {
       throw new Error(`Unsupported migration configuration version: ${_data.version}`);
     }
 
-    const baseConfig: MigrationConfig = {
-      mode: _data.config.mode,
-      batchSize: _data.config.dataTransformation.batchSize,
-      concurrency: _data.config.performance.maxConcurrency,
-      dryRun: _data.config.safety.dryRun,
-      preservePg: _data.config.safety.preserveSource,
-      validationEnabled: _data.config.validation.enabled,
-      skipValidation: !_data.config.validation.enabled,
-      progressFile: _data.config.progressTracking.filePath,
-    };
+    // Type-safe property access with validation
+    const configData = safePropertyAccess(_data, 'config', isDictJSONValue, {});
+    const environment = safeStringToEnum(
+      _data.environment,
+      ['development', 'test', 'production'] as const,
+      'production'
+    );
 
-    return new MigrationConfigManager(baseConfig, _data.environment);
+    const baseConfig = MigrationConfigManager.buildConfigFromData(configData);
+    return new MigrationConfigManager(baseConfig, environment);
+  }
+
+  /**
+   * Build configuration from data with proper validation and defaults
+   */
+  private static buildConfigFromData(configData: Dict<JSONValue>): MigrationConfig {
+    return validateMigrationConfig(configData);
   }
 }
 

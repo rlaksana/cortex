@@ -107,6 +107,27 @@ interface LogicalContradictionConfig {
 }
 
 /**
+ * Statement interface for logical analysis
+ */
+interface LogicalStatement {
+  type: 'assertion' | 'condition' | 'implication' | 'negation' | 'universal' | 'existential';
+  content: string;
+  variables: string[];
+  operators: string[];
+  confidence: number;
+}
+
+/**
+ * Condition interface for conditional analysis
+ */
+interface LogicalCondition {
+  type: 'if_then' | 'only_if' | 'if_and_only_if' | 'unless' | 'necessary' | 'sufficient';
+  antecedent: string;
+  consequent: string;
+  confidence: number;
+}
+
+/**
  * Default configuration
  */
 const DEFAULT_CONFIG: LogicalContradictionConfig = {
@@ -672,7 +693,7 @@ export class LogicalContradictionStrategy {
   /**
    * Check if two statements are direct negations
    */
-  private isDirectNegation(stmt1: any, stmt2: any): boolean {
+  private isDirectNegation(stmt1: LogicalStatement, stmt2: LogicalStatement): boolean {
     // Simple heuristic: if one is negation and they refer to similar content
     if (stmt1.type === 'negation' && stmt2.type === 'assertion') {
       return this.contentSimilarity(stmt1.content, stmt2.content) > 0.7;
@@ -686,7 +707,7 @@ export class LogicalContradictionStrategy {
   /**
    * Check if two conditions contradict each other
    */
-  private isConditionalContradiction(cond1: any, cond2: any): boolean {
+  private isConditionalContradiction(cond1: LogicalCondition, cond2: LogicalCondition): boolean {
     // Same antecedent with different consequents
     if (
       cond1.antecedent.toLowerCase() === cond2.antecedent.toLowerCase() &&

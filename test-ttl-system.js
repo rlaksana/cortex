@@ -12,8 +12,8 @@
 
 import { runExpiryWorkerManual } from './src/services/expiry-worker.js';
 import { calculateItemExpiry } from './src/utils/expiry-utils.js';
-import { EXPIRY_TIME_MAP } from './src/constants/expiry-times.js';
-import { getExpiryTimestamp } from './src/constants/expiry-times.js';
+import { EXPIRY_TIME_MAP, getExpiryTimestamp  } from './src/constants/expiry-times.js';
+
 
 console.log('=== P6-T6.1 TTL System Test ===');
 console.log('Testing TTL calculation and expiry functionality...\n');

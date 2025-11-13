@@ -402,7 +402,7 @@ describe('ZAI Enhanced Insight Service - Integration Tests', () => {
           include_metadata: false,
         },
         scope: {},
-      } as any;
+      } as unknown;
 
       const response = await service.generateInsights(malformedRequest);
 
@@ -426,7 +426,7 @@ describe('ZAI Enhanced Insight Service - Integration Tests', () => {
       };
 
       const response = await service.generateInsights(request, {
-        strategies: ['invalid_strategy'] as any,
+        strategies: ['invalid_strategy'] as unknown,
       });
 
       expect(response.insights).toHaveLength(0);

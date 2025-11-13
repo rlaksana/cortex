@@ -199,14 +199,14 @@ export class ZAIConfigManager {
    */
   private async loadOrchestratorConfig(): Promise<void> {
     const primaryProvider =
-      (process.env['ZAI_PRIMARY_PROVIDER'] as any) || DEFAULT_ORCHESTRATOR_CONFIG.primaryProvider;
+      (process.env['ZAI_PRIMARY_PROVIDER'] as unknown) || DEFAULT_ORCHESTRATOR_CONFIG.primaryProvider;
     const fallbackProvider =
-      (process.env['ZAI_FALLBACK_PROVIDER'] as any) || DEFAULT_ORCHESTRATOR_CONFIG.fallbackProvider;
+      (process.env['ZAI_FALLBACK_PROVIDER'] as unknown) || DEFAULT_ORCHESTRATOR_CONFIG.fallbackProvider;
 
     this.orchestratorConfig = {
       ...DEFAULT_ORCHESTRATOR_CONFIG,
-      primaryProvider,
-      fallbackProvider,
+      primaryProvider: primaryProvider as "openai" | "zai",
+      fallbackProvider: fallbackProvider as "openai" | "zai",
       autoFailover: process.env['ZAI_AUTO_FAILOVER'] !== 'false',
       healthCheckInterval: parseInt(
         process.env['ZAI_HEALTH_CHECK_INTERVAL'] ||

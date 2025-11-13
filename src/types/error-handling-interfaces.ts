@@ -18,7 +18,7 @@ export interface ErrorClassification {
   severity: 'info' | 'warning' | 'error' | 'critical';
   recoverable: boolean;
   recovery_priority: 'low' | 'medium' | 'high' | 'critical';
-  context: Record<string, any>;
+  context: Record<string, unknown>;
 }
 
 export interface ErrorRecoveryStrategy {
@@ -121,7 +121,7 @@ export interface ErrorMessage {
     field?: string;
     expected_format?: string;
     suggestions?: string[];
-    technical_details?: Record<string, any>;
+    technical_details?: Record<string, unknown>;
   };
   help_resources?: Array<{
     title: string;
@@ -215,7 +215,7 @@ export interface ErrorDetectionResult {
   type: string;
   severity: 'info' | 'warning' | 'error' | 'critical';
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   recommendations?: string[];
 }
 
@@ -232,7 +232,7 @@ export interface ErrorBoundaryResult {
 export interface GracefulDegradationResult {
   success: boolean;
   method?: string;
-  result?: any;
+  result?: unknown;
   degradation_level: 'none' | 'partial' | 'full' | 'complete';
   error?: string;
 }
@@ -253,7 +253,7 @@ export interface ErrorAlertResult {
   channel: string[];
   escalation: boolean;
   timestamp: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export interface PerformanceImpactResult {
@@ -304,7 +304,7 @@ export interface ErrorRecoveryResult {
   success: boolean;
   strategy?: string;
   attempts?: number;
-  result?: any;
+  result?: unknown;
   error?: string;
   recovery_time?: number;
 }
@@ -312,7 +312,7 @@ export interface ErrorRecoveryResult {
 export interface ErrorAggregationOptions {
   groupBy: string[];
   timeWindow?: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
   includePredictions?: boolean;
 }
 
@@ -359,7 +359,7 @@ export interface ErrorLocalizationContext {
 
 export interface ErrorPreventionContext {
   operation: string;
-  data: any;
+  data: unknown;
   user_context?: {
     plan: string;
     current_usage: Record<string, number>;
@@ -368,15 +368,15 @@ export interface ErrorPreventionContext {
   service_context?: {
     current_load: string;
     dependencies: string[];
-    health_status: Record<string, any>;
+    health_status: Record<string, unknown>;
   };
 }
 
 export interface ErrorMonitoringContext {
-  error: any;
+  error: unknown;
   classification?: ErrorClassification;
-  recovery?: any;
-  user_context?: Record<string, any>;
+  recovery?: unknown;
+  user_context?: Record<string, unknown>;
   trace_id?: string;
   span_id?: string;
 }
@@ -404,7 +404,7 @@ export type TechnicalLevel = 'basic' | 'intermediate' | 'advanced';
 export interface ErrorHandlingConfig {
   classification: {
     enabled: boolean;
-    custom_rules?: Record<string, (error: any) => ErrorClassification>;
+    custom_rules?: Record<string, (error: unknown) => ErrorClassification>;
   };
   recovery: {
     default_strategies: Record<string, ErrorRecoveryStrategy>;

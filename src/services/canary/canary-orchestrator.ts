@@ -19,10 +19,9 @@ import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
 
-import { killSwitchService, KillSwitchTrigger } from './kill-switch-service.js';
+import { KillSwitchScope, killSwitchService, KillSwitchTrigger } from './kill-switch-service.js';
 import { metricsService } from '../../monitoring/metrics-service.js';
-import { AlertSeverity,HealthStatus } from '../../types/unified-health-interfaces.js';
-import { FeatureFlag, featureFlagService, FlagStatus, TargetingStrategy } from '../feature-flag/feature-flag-service.js';
+import { featureFlagService, FlagStatus, TargetingStrategy } from '../feature-flag/feature-flag-service.js';
 
 // ============================================================================
 // Types and Interfaces
@@ -711,7 +710,7 @@ export class CanaryOrchestrator extends EventEmitter {
     const killSwitchConfig = {
       name: `canary-kill-switch-${deployment.config.serviceName}`,
       description: `Emergency kill switch for canary deployment of ${deployment.config.serviceName}`,
-      scope: 'deployment' as any,
+      scope: KillSwitchScope.DEPLOYMENT,
       targetComponent: deployment.config.serviceName,
       triggerConditions: [
         {
@@ -734,11 +733,11 @@ export class CanaryOrchestrator extends EventEmitter {
       },
       notifications: {
         enabled: true,
-        channels: ['email'] as any[],
+        channels: ['email' as const],
         recipients: [],
       },
       gracePeriodMs: 30000,
-      priority: 'high' as any,
+      priority: 'high' as const,
       enabled: true,
     };
 

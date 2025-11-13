@@ -101,7 +101,7 @@ export abstract class BaseError extends Error {
   public readonly code: ErrorCode;
   public readonly category: ErrorCategory;
   public readonly severity: ErrorSeverity;
-  public readonly context?: Record<string, any>;
+  public readonly context?: Record<string, unknown>;
   public readonly userMessage: string;
   public readonly technicalDetails?: string;
   public readonly timestamp: string;
@@ -122,7 +122,7 @@ export abstract class BaseError extends Error {
     severity: ErrorSeverity;
     message: string;
     userMessage: string;
-    context?: Record<string, any>;
+    context?: Record<string, unknown>;
     technicalDetails?: string;
     retryable?: boolean;
   }) {
@@ -162,7 +162,7 @@ export abstract class BaseError extends Error {
   }
 
   // Log with structured context
-  log(additionalContext?: Record<string, any>): void {
+  log(additionalContext?: Record<string, unknown>): void {
     const logContext = {
       error: {
         name: this.name,
@@ -195,7 +195,7 @@ export class ValidationError extends BaseError {
   constructor(
     message: string,
     userMessage: string = 'Invalid input provided',
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ) {
     super({
       code: ErrorCode.VALIDATION_FAILED,
@@ -212,7 +212,7 @@ export class AuthenticationError extends BaseError {
   constructor(
     message: string,
     userMessage: string = 'Authentication failed',
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ) {
     super({
       code: ErrorCode.INVALID_CREDENTIALS,
@@ -229,7 +229,7 @@ export class AuthorizationError extends BaseError {
   constructor(
     message: string,
     userMessage: string = 'Access denied',
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ) {
     super({
       code: ErrorCode.INSUFFICIENT_PERMISSIONS,
@@ -243,7 +243,7 @@ export class AuthorizationError extends BaseError {
 }
 
 export class DatabaseError extends BaseError {
-  constructor(message: string, context?: Record<string, any>, retryable: boolean = true) {
+  constructor(message: string, context?: Record<string, unknown>, retryable: boolean = true) {
     super({
       code: ErrorCode.DATABASE_QUERY_FAILED,
       category: ErrorCategory.DATABASE,
@@ -260,7 +260,7 @@ export class NetworkError extends BaseError {
   constructor(
     message: string,
     userMessage: string = 'Network connection failed',
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ) {
     super({
       code: ErrorCode.NETWORK_UNREACHABLE,
@@ -278,7 +278,7 @@ export class ExternalApiError extends BaseError {
   constructor(
     message: string,
     userMessage: string = 'External service unavailable',
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ) {
     super({
       code: ErrorCode.EXTERNAL_API_ERROR,
@@ -296,7 +296,7 @@ export class BusinessLogicError extends BaseError {
   constructor(
     message: string,
     userMessage: string = 'Operation not allowed',
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ) {
     super({
       code: ErrorCode.BUSINESS_RULE_VIOLATION,
@@ -313,7 +313,7 @@ export class ImmutabilityViolationError extends BaseError {
   constructor(
     message: string,
     userMessage: string = 'Cannot modify immutable data',
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ) {
     super({
       code: ErrorCode.IMMUTABILITY_VIOLATION,
@@ -327,7 +327,7 @@ export class ImmutabilityViolationError extends BaseError {
 }
 
 export class SystemError extends BaseError {
-  constructor(message: string, context?: Record<string, any>) {
+  constructor(message: string, context?: Record<string, unknown>) {
     super({
       code: ErrorCode.INTERNAL_ERROR,
       category: ErrorCategory.SYSTEM,
@@ -343,7 +343,7 @@ export class ConfigurationError extends BaseError {
   constructor(
     message: string,
     userMessage: string = 'System configuration error',
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ) {
     super({
       code: ErrorCode.CONFIGURATION_ERROR,
@@ -360,7 +360,7 @@ export class RateLimitError extends BaseError {
   constructor(
     message: string,
     userMessage: string = 'Rate limit exceeded',
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ) {
     super({
       code: ErrorCode.RATE_LIMIT_EXCEEDED,
@@ -384,7 +384,7 @@ export interface StandardErrorResponse {
     technical_details?: string;
     timestamp: string;
     retryable: boolean;
-    context?: Record<string, any>;
+    context?: Record<string, unknown>;
   };
 }
 
@@ -428,7 +428,7 @@ export class ErrorHandler {
   /**
    * Standardize any error into our error classes
    */
-  static standardize(error: any, operationName: string): BaseError {
+  static standardize(error: unknown, operationName: string): BaseError {
     // If it's already a BaseError, return as-is
     if (error instanceof BaseError) {
       return error;
@@ -473,7 +473,7 @@ export class ErrorHandler {
   /**
    * Create a user-friendly response from any error
    */
-  static createUserResponse(error: any): { content: Array<{ type: string; text: string }> } {
+  static createUserResponse(error: unknown): { content: Array<{ type: string; text: string }> } {
     const standardError = ErrorHandler.standardize(error, 'unknown');
 
     // Log the error
@@ -493,7 +493,7 @@ export class ErrorHandler {
   /**
    * Determine if an error is retryable
    */
-  static isRetryable(error: any): boolean {
+  static isRetryable(error: unknown): boolean {
     const standardError = ErrorHandler.standardize(error, 'unknown');
     return standardError.retryable;
   }
@@ -501,7 +501,7 @@ export class ErrorHandler {
   /**
    * Get recommended retry delay in milliseconds
    */
-  static getRetryDelay(_error: any, attempt: number = 1): number {
+  static getRetryDelay(_error: unknown, attempt: number = 1): number {
     // Base delay with exponential backoff
     const baseDelay = 1000; // 1 second
     const maxDelay = 30000; // 30 seconds

@@ -8,7 +8,7 @@ declare global {
 
   // Fallbacks used by orchestrators / services
    
-  var retryBudgetIntegration: any;
+  var retryBudgetIntegration: unknown;
 }
 
 // Loose unions to unblock string literals seen in code

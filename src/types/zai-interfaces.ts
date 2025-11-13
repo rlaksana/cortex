@@ -54,7 +54,7 @@ export interface ZAIMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
   timestamp?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -71,7 +71,7 @@ export interface ZAIChatRequest {
   stop?: string | string[];
   stream?: boolean;
   user?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -193,23 +193,23 @@ export interface ZAIJob {
   id: string;
   type: ZAIJobType;
   priority: 'low' | 'normal' | 'high' | 'critical';
-  payload: ZAIChatRequest | any;
+  payload: ZAIChatRequest | unknown;
   options: {
     timeout?: number;
     retries?: number;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   };
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   createdAt: number;
   startedAt?: number;
   completedAt?: number;
-  result?: any;
+  result?: unknown;
   error?: ZAIErrorResponse;
   attempts: number;
   maxAttempts: number;
   timeout?: number; // Adding timeout property for compatibility
   maxRetries?: number; // Adding maxRetries property for compatibility
-  metadata?: Record<string, any>; // Adding metadata property for compatibility
+  metadata?: Record<string, unknown>; // Adding metadata property for compatibility
 }
 
 /**
@@ -263,26 +263,26 @@ export interface AIOrchestratorConfig {
   enabled?: boolean; // Adding enabled property for compatibility
   providerConfigs: {
     zai: ZAIConfig;
-    openai: any; // OpenAI config if needed
+    openai: unknown; // OpenAI config if needed
   };
   // Extended properties for production config
   features?: {
-    insights: any;
-    contradiction_detection: any;
-    semantic_search: any;
-    background_processing: any;
+    insights: unknown;
+    contradiction_detection: unknown;
+    semantic_search: unknown;
+    background_processing: unknown;
   };
   performance?: {
-    latencyTargets: any;
-    throughputTargets: any;
-    resourceLimits: any;
-    caching: any;
+    latencyTargets: unknown;
+    throughputTargets: unknown;
+    resourceLimits: unknown;
+    caching: unknown;
   };
   quality?: {
-    accuracyThresholds: any;
-    confidenceThresholds: any;
-    monitoring: any;
-    fallback: any;
+    accuracyThresholds: unknown;
+    confidenceThresholds: unknown;
+    monitoring: unknown;
+    fallback: unknown;
   };
 }
 
@@ -342,8 +342,8 @@ export type ZAIEvent =
   | { type: 'provider_failed_over'; data: { from: string; to: string; reason: string } }
   | { type: 'job_queued'; data: { jobId: string; type: ZAIJobType } }
   | { type: 'job_started'; data: { jobId: string } }
-  | { type: 'job_completed'; data: { jobId: string; result: any } }
-  | { type: 'job_failed'; data: { jobId: string; error: any } };
+  | { type: 'job_completed'; data: { jobId: string; result: unknown } }
+  | { type: 'job_failed'; data: { jobId: string; error: unknown } };
 
 /**
  * Event listener type
@@ -396,7 +396,7 @@ export interface ZAIHealthCheckResponse {
   uptime: number;
   errorRate: number;
   responseTime: number;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   provider: {
     name: string;
     status: ZAIServiceStatus;
@@ -516,7 +516,7 @@ export interface ZAIContentFilter {
 export interface ZAIPerformanceMonitor {
   recordRequestStart(requestId: string): void;
   recordRequestEnd(requestId: string, success: boolean, responseTime: number): void;
-  recordError(error: ZAIError, context?: Record<string, any>): void;
+  recordError(error: ZAIError, context?: Record<string, unknown>): void;
   getPerformanceMetrics(): {
     averageResponseTime: number;
     p95ResponseTime: number;
@@ -524,7 +524,7 @@ export interface ZAIPerformanceMonitor {
     throughput: number;
     errorRate: number;
   };
-  getMetricsByTimeRange(start: number, end: number): any;
+  getMetricsByTimeRange(start: number, end: number): unknown;
   reset(): void;
 }
 
@@ -579,7 +579,7 @@ export interface HealthCheckResult {
   timestamp: Date;
   duration: number;
   message?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   metrics?: {
     responseTime: number;
     successRate: number;
@@ -603,7 +603,7 @@ export interface DependencyHealth {
     endpoint?: string;
   };
   // Allow additional properties for extended compatibility
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -666,7 +666,7 @@ export interface ServiceHealth {
   uptime: number;
   errorRate: number;
   responseTime: number;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 /**
@@ -828,7 +828,7 @@ export interface AIAlert {
   currentValue?: number;
   resolved: boolean;
   resolvedAt?: Date;
-  details?: any;
+  details?: unknown;
 }
 
 /**

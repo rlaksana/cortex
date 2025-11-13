@@ -991,7 +991,7 @@ export class HealthAggregationService extends EventEmitter {
     severity: AlertSeverity,
     title: string,
     message: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): void {
     const alertId = createHash('md5')
       .update(`${dependency}_${severity}_${Date.now()}`)

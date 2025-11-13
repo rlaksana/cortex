@@ -13,8 +13,8 @@ export interface KnowledgeItem {
     branch?: string;
     org?: string;
   };
-  data: Record<string, any>;
-  metadata?: Record<string, any>;
+  data: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
   created_at?: string;
   updated_at?: string;
   expiry_at?: string;
@@ -47,7 +47,7 @@ export interface StoreError {
   error_code?: string;
   message: string;
   field?: string;
-  item?: any;
+  item?: unknown;
 }
 
 // Unified response metadata contract
@@ -99,5 +99,5 @@ export interface PerformanceMetrics {
   operation: CortexOperation;
   success: boolean;
   error_code?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }

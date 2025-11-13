@@ -70,8 +70,8 @@ type MigrationOperation =
 interface MigrationStep {
   operation: MigrationOperation;
   collection: string;
-  parameters: Record<string, any>;
-  rollback?: Record<string, any>;
+  parameters: Record<string, unknown>;
+  rollback?: Record<string, unknown>;
 }
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

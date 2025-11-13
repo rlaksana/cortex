@@ -209,7 +209,7 @@
         }
         f && d.attr(b.anim[b.percents[y]]);
       }
-      if (!!j) {
+      if (j) {
         if (!k) {
           for (var A in j)
             if (j[g](A))
@@ -2851,7 +2851,7 @@
         ((e = e || 'normal'),
           (d = d || 'normal'),
           (c = +c || { normal: 400, bold: 700, lighter: 300, bolder: 800 }[c] || 400));
-        if (!!a.fonts) {
+        if (a.fonts) {
           var f = a.fonts[b];
           if (!f) {
             var h = new RegExp('(^|\\s)' + b.replace(/[^\w\d\s+!~.:_-]/g, p) + '(\\s|$)', 'i');

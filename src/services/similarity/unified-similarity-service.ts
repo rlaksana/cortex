@@ -54,7 +54,7 @@ export class UnifiedSimilarityService {
 /**
  * Export convenience function to create similarity service
  */
-export function createUnifiedSimilarityService(_dbConfig?: any): UnifiedSimilarityService {
+export function createUnifiedSimilarityService(_dbConfig?: unknown): UnifiedSimilarityService {
   return new UnifiedSimilarityService();
 }
 

@@ -23,7 +23,7 @@ const asEpoch = (v: unknown): number => Number(v ?? Date.now());
 const asDate  = (v: unknown): Date   => new Date(asEpoch(v));
 type ExternalSeverity = string;
 type InternalSeverity = 'warning'|'critical'|'info';
-const toSeverity = (s: ExternalSeverity): InternalSeverity => {
+const _toSeverity = (s: ExternalSeverity): InternalSeverity => {
   const k = String(s || '').toLowerCase();
   if (k === 'critical' || k === 'crit') return 'critical';
   if (k === 'warn' || k === 'warning')  return 'warning';
@@ -31,14 +31,7 @@ const toSeverity = (s: ExternalSeverity): InternalSeverity => {
 };
 import type {
   AIMetricsSnapshot,
-  AIOperationMetrics,
-  AIOrchestratorMetrics,
-  AIQualityMetrics,
-  AIResourceMetrics,
-  BackgroundProcessorMetrics,
-  ZAIMetrics,
 } from '../types/zai-interfaces.js';
-import { performanceMonitor } from '../utils/performance-monitor.js';
 
 /**
  * AI Metrics Configuration
@@ -87,7 +80,7 @@ export interface AIOperationRecord {
   tokensUsed?: number;
   model?: string;
   confidence?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -542,7 +535,7 @@ const asDate  = (v: unknown): Date   => new Date(asEpoch(v));
 
 type ExternalSeverity = string;
 type InternalSeverity = 'warning'|'critical'|'info';
-const toSeverity = (s: ExternalSeverity): InternalSeverity => {
+const _toSeverity = (s: ExternalSeverity): InternalSeverity => {
   const k = String(s || '').toLowerCase();
   if (k === 'critical' || k === 'crit') return 'critical';
   if (k === 'warn' || k === 'warning')  return 'warning';
@@ -815,7 +808,7 @@ const toSeverity = (s: ExternalSeverity): InternalSeverity => {
       performanceScore * performanceWeight;
 
     // Calculate availability (uptime in percentage)
-    const uptimeMs = Date.now() - this.startTime;
+    const _uptimeMs = Date.now() - this.startTime;
     q.availability = 100; // Assume full availability unless degraded
 
     // Calculate error rate

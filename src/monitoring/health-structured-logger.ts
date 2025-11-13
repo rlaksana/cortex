@@ -97,8 +97,8 @@ export interface StructuredLogEntry {
   };
 
   // Additional context
-  context: Record<string, any>;
-  metadata: Record<string, any>;
+  context: Record<string, unknown>;
+  metadata: Record<string, unknown>;
 }
 
 /**
@@ -153,7 +153,7 @@ export interface HealthStructuredLoggerConfig {
     includeSystemInfo: boolean;
     includeProcessInfo: boolean;
     includeEnvironmentVars: boolean;
-    customFields: Record<string, any>;
+    customFields: Record<string, unknown>;
   };
 }
 
@@ -828,7 +828,7 @@ export class HealthStructuredLogger extends EventEmitter {
   /**
    * Get system information
    */
-  private getSystemInfo(): any {
+  private getSystemInfo(): unknown {
     import('os').then(os => {
       return {
         hostname: os.hostname(),
@@ -860,7 +860,7 @@ export class HealthStructuredLogger extends EventEmitter {
   /**
    * Get process information
    */
-  private getProcessInfo(): any {
+  private getProcessInfo(): unknown {
     return {
       pid: process.pid,
       memoryUsage: process.memoryUsage(),

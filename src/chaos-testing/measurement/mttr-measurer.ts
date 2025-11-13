@@ -16,7 +16,7 @@ import {
   type RecoveryMetrics,
   type RecoveryPattern,
   type RecoveryStep,
-  type SystemMetrics
+  type SystemMetrics,
 } from '../types/chaos-testing-types.js';
 
 export interface IncidentTimeline {
@@ -32,7 +32,14 @@ export interface IncidentTimeline {
 
 export interface RecoveryEvent {
   timestamp: Date;
-  type: 'detection' | 'alert' | 'response' | 'mitigation' | 'recovery_start' | 'recovery_complete' | 'verification';
+  type:
+    | 'detection'
+    | 'alert'
+    | 'response'
+    | 'mitigation'
+    | 'recovery_start'
+    | 'recovery_complete'
+    | 'verification';
   description: string;
   component?: string;
   automated: boolean;
@@ -95,7 +102,7 @@ export class MTTRMeasurer extends EventEmitter {
       mitigationApplied: new Date(0),
       recoveryStarted: new Date(0),
       fullRecovery: new Date(0),
-      verificationComplete: new Date(0)
+      verificationComplete: new Date(0),
     };
 
     this.emit('mttr:measurement_started', { scenario, context });
@@ -133,7 +140,7 @@ export class MTTRMeasurer extends EventEmitter {
 
     const fullEvent: RecoveryEvent = {
       ...event,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     this.recoveryEvents.push(fullEvent);
@@ -169,7 +176,7 @@ export class MTTRMeasurer extends EventEmitter {
       component,
       state,
       timestamp: new Date(),
-      metadata: metadata || {}
+      metadata: metadata || {},
     };
 
     this.componentStates.set(component, componentState);
@@ -195,7 +202,7 @@ export class MTTRMeasurer extends EventEmitter {
       meanTimeToRespond: responseMetrics.timeToRespond,
       meanTimeToResolve: resolutionMetrics.timeToResolve,
       meanTimeToRecover: recoveryMetrics.recoveryTime,
-      overallMTTR: this.calculateOverallMTTR()
+      overallMTTR: this.calculateOverallMTTR(),
     };
   }
 
@@ -207,7 +214,7 @@ export class MTTRMeasurer extends EventEmitter {
       throw new Error('Timeline not initialized');
     }
 
-    const detectionEvent = this.recoveryEvents.find(e => e.type === 'detection');
+    const detectionEvent = this.recoveryEvents.find((e) => e.type === 'detection');
     const firstDetection = detectionEvent?.timestamp || this.timeline.firstDetection;
 
     const timeToDetect = firstDetection.getTime() - this.timeline.incidentStart.getTime();
@@ -221,7 +228,7 @@ export class MTTRMeasurer extends EventEmitter {
       detectionMethod,
       detectionSource,
       confidence,
-      falsePositive
+      falsePositive,
     };
   }
 
@@ -233,7 +240,7 @@ export class MTTRMeasurer extends EventEmitter {
       throw new Error('Timeline not initialized');
     }
 
-    const responseEvent = this.recoveryEvents.find(e => e.type === 'response');
+    const responseEvent = this.recoveryEvents.find((e) => e.type === 'response');
     const responseStarted = responseEvent?.timestamp || this.timeline.responseStarted;
 
     const timeToRespond = responseStarted.getTime() - this.timeline.incidentStart.getTime();
@@ -247,7 +254,7 @@ export class MTTRMeasurer extends EventEmitter {
       responseMethod,
       responder,
       responseEffectiveness,
-      escalationOccurred
+      escalationOccurred,
     };
   }
 
@@ -259,7 +266,7 @@ export class MTTRMeasurer extends EventEmitter {
       throw new Error('Timeline not initialized');
     }
 
-    const mitigationEvent = this.recoveryEvents.find(e => e.type === 'mitigation');
+    const mitigationEvent = this.recoveryEvents.find((e) => e.type === 'mitigation');
     const mitigationApplied = mitigationEvent?.timestamp || this.timeline.mitigationApplied;
 
     const timeToResolve = mitigationApplied.getTime() - this.timeline.incidentStart.getTime();
@@ -273,7 +280,7 @@ export class MTTRMeasurer extends EventEmitter {
       resolutionMethod,
       rootCauseAddressed,
       permanentFix,
-      temporaryFix
+      temporaryFix,
     };
   }
 
@@ -285,8 +292,8 @@ export class MTTRMeasurer extends EventEmitter {
       throw new Error('Timeline not initialized');
     }
 
-    const recoveryStartEvent = this.recoveryEvents.find(e => e.type === 'recovery_start');
-    const recoveryCompleteEvent = this.recoveryEvents.find(e => e.type === 'recovery_complete');
+    const recoveryStartEvent = this.recoveryEvents.find((e) => e.type === 'recovery_start');
+    const recoveryCompleteEvent = this.recoveryEvents.find((e) => e.type === 'recovery_complete');
 
     const recoveryStarted = recoveryStartEvent?.timestamp || this.timeline.recoveryStarted;
     const fullRecovery = recoveryCompleteEvent?.timestamp || this.timeline.fullRecovery;
@@ -301,7 +308,7 @@ export class MTTRMeasurer extends EventEmitter {
       recoveryTime,
       recoveryPattern,
       dataConsistencyCheck,
-      componentRecoveryOrder
+      componentRecoveryOrder,
     };
   }
 
@@ -362,7 +369,7 @@ export class MTTRMeasurer extends EventEmitter {
    * Calculate detection confidence
    */
   private calculateDetectionConfidence(): number {
-    const detectionEvents = this.recoveryEvents.filter(e => e.type === 'detection');
+    const detectionEvents = this.recoveryEvents.filter((e) => e.type === 'detection');
 
     if (detectionEvents.length === 0) {
       return 0;
@@ -372,11 +379,11 @@ export class MTTRMeasurer extends EventEmitter {
     let confidence = 0.5; // Base confidence
 
     // Automated detection increases confidence
-    const automatedDetections = detectionEvents.filter(e => e.automated);
+    const automatedDetections = detectionEvents.filter((e) => e.automated);
     confidence += (automatedDetections.length / detectionEvents.length) * 0.3;
 
     // Multiple detection sources increase confidence
-    const uniqueSources = new Set(detectionEvents.map(e => e.description));
+    const uniqueSources = new Set(detectionEvents.map((e) => e.description));
     confidence += Math.min(uniqueSources.size * 0.1, 0.2);
 
     return Math.min(confidence, 1.0);
@@ -387,8 +394,8 @@ export class MTTRMeasurer extends EventEmitter {
    */
   private async evaluateFalsePositive(): Promise<boolean> {
     // Check if system actually experienced the issue
-    const actualIssues = this.recoveryEvents.filter(e =>
-      e.type === 'mitigation' || e.type === 'recovery_start'
+    const actualIssues = this.recoveryEvents.filter(
+      (e) => e.type === 'mitigation' || e.type === 'recovery_start'
     );
 
     return actualIssues.length === 0;
@@ -398,8 +405,8 @@ export class MTTRMeasurer extends EventEmitter {
    * Evaluate response effectiveness
    */
   private async evaluateResponseEffectiveness(): Promise<number> {
-    const responseEvents = this.recoveryEvents.filter(e => e.type === 'response');
-    const mitigationEvents = this.recoveryEvents.filter(e => e.type === 'mitigation');
+    const responseEvents = this.recoveryEvents.filter((e) => e.type === 'response');
+    const mitigationEvents = this.recoveryEvents.filter((e) => e.type === 'mitigation');
 
     if (responseEvents.length === 0) {
       return 0;
@@ -413,8 +420,9 @@ export class MTTRMeasurer extends EventEmitter {
       return 0.3; // Response initiated but no mitigation yet
     }
 
-    const responseToMitigationTime = firstMitigation.timestamp.getTime() - firstResponse.timestamp.getTime();
-    const effectiveness = Math.max(0, 1 - (responseToMitigationTime / 300000)); // 5 minute max
+    const responseToMitigationTime =
+      firstMitigation.timestamp.getTime() - firstResponse.timestamp.getTime();
+    const effectiveness = Math.max(0, 1 - responseToMitigationTime / 300000); // 5 minute max
 
     return Math.min(effectiveness, 1.0);
   }
@@ -423,8 +431,8 @@ export class MTTRMeasurer extends EventEmitter {
    * Check if escalation occurred
    */
   private checkForEscalation(): boolean {
-    const escalationEvents = this.recoveryEvents.filter(e =>
-      e.metadata?.escalated === true || e.description.includes('escalation')
+    const escalationEvents = this.recoveryEvents.filter(
+      (e) => e.metadata?.escalated === true || e.description.includes('escalation')
     );
 
     return escalationEvents.length > 0;
@@ -434,27 +442,27 @@ export class MTTRMeasurer extends EventEmitter {
    * Evaluate if root cause was addressed
    */
   private async evaluateRootCauseAddressed(): Promise<boolean> {
-    const mitigationEvents = this.recoveryEvents.filter(e => e.type === 'mitigation');
+    const mitigationEvents = this.recoveryEvents.filter((e) => e.type === 'mitigation');
 
-    return mitigationEvents.some(e => e.metadata?.rootCauseAddressed === true);
+    return mitigationEvents.some((e) => e.metadata?.rootCauseAddressed === true);
   }
 
   /**
    * Evaluate if permanent fix was applied
    */
   private async evaluatePermanentFix(): Promise<boolean> {
-    const mitigationEvents = this.recoveryEvents.filter(e => e.type === 'mitigation');
+    const mitigationEvents = this.recoveryEvents.filter((e) => e.type === 'mitigation');
 
-    return mitigationEvents.some(e => e.metadata?.permanentFix === true);
+    return mitigationEvents.some((e) => e.metadata?.permanentFix === true);
   }
 
   /**
    * Evaluate if temporary fix was applied
    */
   private async evaluateTemporaryFix(): Promise<boolean> {
-    const mitigationEvents = this.recoveryEvents.filter(e => e.type === 'mitigation');
+    const mitigationEvents = this.recoveryEvents.filter((e) => e.type === 'mitigation');
 
-    return mitigationEvents.some(e => e.metadata?.temporaryFix === true);
+    return mitigationEvents.some((e) => e.metadata?.temporaryFix === true);
   }
 
   /**
@@ -465,8 +473,8 @@ export class MTTRMeasurer extends EventEmitter {
       throw new Error('Timeline not initialized');
     }
 
-    const recoveryEvents = this.recoveryEvents.filter(e =>
-      e.type === 'recovery_start' || e.type === 'recovery_complete'
+    const recoveryEvents = this.recoveryEvents.filter(
+      (e) => e.type === 'recovery_start' || e.type === 'recovery_complete'
     );
 
     if (recoveryEvents.length < 2) {
@@ -474,14 +482,15 @@ export class MTTRMeasurer extends EventEmitter {
         type: 'gradual',
         timeToFirstSignOfRecovery: 0,
         timeToFullRecovery: 0,
-        recoveryStability: 0
+        recoveryStability: 0,
       };
     }
 
     const recoveryStarted = recoveryEvents[0].timestamp;
     const fullRecovery = recoveryEvents[recoveryEvents.length - 1].timestamp;
 
-    const timeToFirstSignOfRecovery = recoveryStarted.getTime() - this.timeline.incidentStart.getTime();
+    const timeToFirstSignOfRecovery =
+      recoveryStarted.getTime() - this.timeline.incidentStart.getTime();
     const timeToFullRecovery = fullRecovery.getTime() - this.timeline.incidentStart.getTime();
 
     // Analyze recovery pattern from system metrics
@@ -492,7 +501,7 @@ export class MTTRMeasurer extends EventEmitter {
       type: pattern,
       timeToFirstSignOfRecovery,
       timeToFullRecovery,
-      recoveryStability: stability
+      recoveryStability: stability,
     };
   }
 
@@ -505,8 +514,8 @@ export class MTTRMeasurer extends EventEmitter {
     }
 
     const lastMetrics = this.systemMetrics.slice(-10);
-    const responseTimeTrend = this.calculateTrend(lastMetrics.map(m => m.responseTime.mean));
-    const errorRateTrend = this.calculateTrend(lastMetrics.map(m => m.errorRate.errorRate));
+    const responseTimeTrend = this.calculateTrend(lastMetrics.map((m) => m.responseTime.mean));
+    const errorRateTrend = this.calculateTrend(lastMetrics.map((m) => m.errorRate.errorRate));
 
     if (Math.abs(responseTimeTrend) < 0.1 && Math.abs(errorRateTrend) < 0.1) {
       return 'immediate';
@@ -546,7 +555,7 @@ export class MTTRMeasurer extends EventEmitter {
       return false;
     }
 
-    const responseTimes = metrics.map(m => m.responseTime.mean);
+    const responseTimes = metrics.map((m) => m.responseTime.mean);
     let signChanges = 0;
 
     for (let i = 1; i < responseTimes.length - 1; i++) {
@@ -570,14 +579,14 @@ export class MTTRMeasurer extends EventEmitter {
     }
 
     const lastMetrics = this.systemMetrics.slice(-10);
-    const responseTimes = lastMetrics.map(m => m.responseTime.mean);
-    const errorRates = lastMetrics.map(m => m.errorRate.errorRate);
+    const responseTimes = lastMetrics.map((m) => m.responseTime.mean);
+    const errorRates = lastMetrics.map((m) => m.errorRate.errorRate);
 
     const responseTimeVariance = this.calculateVariance(responseTimes);
     const errorRateVariance = this.calculateVariance(errorRates);
 
     // Lower variance indicates higher stability
-    const responseTimeStability = Math.max(0, 1 - (responseTimeVariance / 10000));
+    const responseTimeStability = Math.max(0, 1 - responseTimeVariance / 10000);
     const errorRateStability = Math.max(0, 1 - errorRateVariance);
 
     return (responseTimeStability + errorRateStability) / 2;
@@ -607,7 +616,7 @@ export class MTTRMeasurer extends EventEmitter {
     return {
       consistent: true,
       inconsistencies: [],
-      verificationTime: 5000
+      verificationTime: 5000,
     };
   }
 
@@ -619,8 +628,9 @@ export class MTTRMeasurer extends EventEmitter {
     const timeline: RecoveryStep[] = [];
 
     // Sort component states by timestamp
-    const sortedStates = Array.from(this.componentStates.values())
-      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    const sortedStates = Array.from(this.componentStates.values()).sort(
+      (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+    );
 
     let lastState: ComponentState | null = null;
 
@@ -632,7 +642,7 @@ export class MTTRMeasurer extends EventEmitter {
           component: state.component,
           recoveredAt: state.timestamp,
           recoveryTime: state.timestamp.getTime() - lastState.timestamp.getTime(),
-          method: state.metadata?.recoveryMethod || 'auto'
+          method: state.metadata?.recoveryMethod || 'auto',
         });
       }
 
@@ -641,7 +651,7 @@ export class MTTRMeasurer extends EventEmitter {
 
     return {
       sequence,
-      timeline
+      timeline,
     };
   }
 
@@ -661,7 +671,6 @@ export class MTTRMeasurer extends EventEmitter {
 
         // Check for component state changes
         await this.checkComponentStateChanges();
-
       } catch (error) {
         this.emit('mttr:monitoring_error', { error });
       }
@@ -680,44 +689,44 @@ export class MTTRMeasurer extends EventEmitter {
         p50: 120,
         p95: 300,
         p99: 500,
-        max: 1000
+        max: 1000,
       },
       throughput: {
         requestsPerSecond: 80,
         operationsPerSecond: 120,
-        bytesPerSecond: 800 * 1024
+        bytesPerSecond: 800 * 1024,
       },
       errorRate: {
         totalErrors: 5,
         errorRate: 1,
         errorsByType: {
-          'connection_error': 3,
-          'timeout_error': 2
-        }
+          connection_error: 3,
+          timeout_error: 2,
+        },
       },
       resourceUsage: {
         cpu: 50,
         memory: 60,
         diskIO: 30,
         networkIO: 40,
-        openConnections: 60
+        openConnections: 60,
       },
       circuitBreaker: {
         state: 'half-open',
         failureRate: 10,
         numberOfCalls: 80,
         numberOfSuccessfulCalls: 72,
-        numberOfFailedCalls: 8
+        numberOfFailedCalls: 8,
       },
       health: {
         overallStatus: 'degraded',
         componentStatus: {
           qdrant: 'degraded',
           api: 'healthy',
-          monitoring: 'healthy'
+          monitoring: 'healthy',
         },
-        lastHealthCheck: new Date()
-      }
+        lastHealthCheck: new Date(),
+      },
     };
   }
 

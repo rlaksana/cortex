@@ -401,7 +401,7 @@ export const MemoryStoreRequestSchema = z
 // Enhanced validation function with detailed error reporting
 export function validateKnowledgeItems(items: unknown[]) {
   const results = {
-    valid: [] as any[],
+    valid: [] as unknown[],
     errors: [] as Array<{
       index: number;
       field: string;

@@ -219,7 +219,11 @@ export class SimplifiedAIOrchestratorService {
   /**
    * Determine overall status based on provider health
    */
-  private determineOverallStatus(providerStatus: any): 'active' | 'failed_over' | 'degraded' {
+  private determineOverallStatus(providerStatus: {
+    activeProvider: string;
+    primaryProvider: { name: string; available: boolean };
+    fallbackProvider: { name: string; available: boolean };
+  }): 'active' | 'failed_over' | 'degraded' {
     const { activeProvider, primaryProvider, fallbackProvider } = providerStatus;
 
     if (activeProvider === primaryProvider.name) {

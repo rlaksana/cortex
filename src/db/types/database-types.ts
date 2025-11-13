@@ -133,8 +133,8 @@ export interface PoolStats {
 }
 
 export interface ConnectionPool {
-  getConnection(): Promise<any>;
-  releaseConnection(_connection: any): Promise<void>;
+  getConnection(): Promise<unknown>;
+  releaseConnection(_connection: unknown): Promise<void>;
   close(): Promise<void>;
   getStats(): PoolStats;
 }
@@ -143,8 +143,8 @@ export interface ConnectionPool {
 export interface Migration {
   id: string;
   name: string;
-  up: (_client: any) => Promise<void>;
-  down: (_client: any) => Promise<void>;
+  up: (_client: unknown) => Promise<void>;
+  down: (_client: unknown) => Promise<void>;
 }
 
 export interface MigrationOptions {

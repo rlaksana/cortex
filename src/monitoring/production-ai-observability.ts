@@ -110,7 +110,7 @@ export interface AIObservabilityAlert {
   resolvedAt?: number;
   recommendations: string[];
   correlationId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -135,7 +135,7 @@ export interface AIObservabilityIncident {
   rootCause: {
     primaryCause: string;
     contributingFactors: string[];
-    evidence: Record<string, any>;
+    evidence: Record<string, unknown>;
   };
   resolution: {
     action: string;

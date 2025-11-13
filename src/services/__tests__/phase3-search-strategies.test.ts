@@ -284,7 +284,7 @@ describe('Phase 3 Search Strategies', () => {
       // Test with an invalid query that should cause an error
       const params: CoreFindParams = {
         query: '',
-        mode: 'invalid-mode' as any,
+        mode: 'invalid-mode' as unknown,
       };
 
       const result = await coreMemoryFind(params);

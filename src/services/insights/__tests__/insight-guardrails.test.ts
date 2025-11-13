@@ -21,7 +21,7 @@ jest.mock('../../../utils/logger.js', () => ({
 
 describe('Insight Generation Guardrails', () => {
   let mockInsights: InsightTypeUnion[];
-  let mockInputItems: any[];
+  let mockInputItems: unknown[];
 
   beforeEach(() => {
     // Create mock insights for testing
@@ -190,7 +190,7 @@ describe('Insight Generation Guardrails', () => {
 
     it('should not apply templates when disabled', () => {
       // Create guardrails instance with deterministic templates disabled
-      const guardrailsNoTemplates = new (insightGenerationGuardrails.constructor as any)({
+      const guardrailsNoTemplates = new (insightGenerationGuardrails.constructor as unknown)({
         enableDeterministicTemplates: false,
       });
 
@@ -246,7 +246,7 @@ describe('Insight Generation Guardrails', () => {
     });
 
     it('should not track provenance when disabled', () => {
-      const guardrailsNoProvenance = new (insightGenerationGuardrails.constructor as any)({
+      const guardrailsNoProvenance = new (insightGenerationGuardrails.constructor as unknown)({
         enableProvenanceTracking: false,
       });
 
@@ -315,7 +315,7 @@ describe('Insight Generation Guardrails', () => {
     });
 
     it('should not modify insights when reproducible outputs disabled', () => {
-      const guardrailsNoReproducible = new (insightGenerationGuardrails.constructor as any)({
+      const guardrailsNoReproducible = new (insightGenerationGuardrails.constructor as unknown)({
         enableReproducibleOutputs: false,
       });
 
@@ -393,7 +393,7 @@ describe('Insight Generation Guardrails', () => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 31); // 31 days ago
 
-      // @ts-ignore - Accessing private method for testing
+      // @ts-expect-error - Accessing private method for testing
       insightGenerationGuardrails['provenanceStore'].forEach((_provenance, _id) => {
         _provenance.generation_timestamp = thirtyDaysAgo.toISOString();
       });
@@ -417,12 +417,12 @@ describe('Insight Generation Guardrails', () => {
 
   describe('Token Estimation Methods', () => {
     it('should estimate tokens using approximate method', () => {
-      const guardrailsApproximate = new (insightGenerationGuardrails.constructor as any)({
+      const guardrailsApproximate = new (insightGenerationGuardrails.constructor as unknown)({
         tokenCountingMethod: 'approximate',
       });
 
       const insight = mockInsights[0];
-      // @ts-ignore - Accessing private method for testing
+      // @ts-expect-error - Accessing private method for testing
       const estimatedTokens = guardrailsApproximate['estimateTokens'](insight);
 
       expect(estimatedTokens).toBeGreaterThan(0);
@@ -430,12 +430,12 @@ describe('Insight Generation Guardrails', () => {
     });
 
     it('should estimate tokens using exact method', () => {
-      const guardrailsExact = new (insightGenerationGuardrails.constructor as any)({
+      const guardrailsExact = new (insightGenerationGuardrails.constructor as unknown)({
         tokenCountingMethod: 'exact',
       });
 
       const insight = mockInsights[0];
-      // @ts-ignore - Accessing private method for testing
+      // @ts-expect-error - Accessing private method for testing
       const estimatedTokens = guardrailsExact['estimateTokens'](insight);
 
       expect(estimatedTokens).toBeGreaterThan(0);

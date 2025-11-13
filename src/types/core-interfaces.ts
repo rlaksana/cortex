@@ -13,8 +13,8 @@ export interface KnowledgeItem {
     branch?: string;
     org?: string;
   };
-  data: Record<string, any>;
-  metadata?: Record<string, any>;
+  data: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
   created_at?: string;
   updated_at?: string;
   expiry_at?: string;
@@ -47,8 +47,8 @@ export interface KnowledgeItemForStorage {
     branch?: string;
     org?: string;
   };
-  data: Record<string, any>;
-  metadata?: Record<string, any>; // Add metadata property for compatibility
+  data: Record<string, unknown>;
+  metadata?: Record<string, unknown>; // Add metadata property for compatibility
   created_at?: string;
   updated_at?: string;
   expiry_at?: string; // P6-T6.1: Add expiry timestamp
@@ -70,8 +70,8 @@ export interface AutonomousContext {
 export interface SearchResult {
   id: string;
   kind: string;
-  scope: Record<string, any>;
-  data: Record<string, any>;
+  scope: Record<string, unknown>;
+  data: Record<string, unknown>;
   created_at: string;
   confidence_score: number;
   match_type: 'exact' | 'fuzzy' | 'semantic' | 'keyword' | 'hybrid' | 'expanded' | 'graph';
@@ -189,7 +189,7 @@ export interface MemoryFindResponse {
   items: SearchResult[]; // Add items property for compatibility
   total_count: number;
   total?: number; // Add total property for compatibility
-  metadata?: Record<string, any>; // Added metadata property for compatibility
+  metadata?: Record<string, unknown>; // Added metadata property for compatibility
   autonomous_context: {
     search_mode_used: string;
     results_found: number;
@@ -271,7 +271,7 @@ export interface MemoryFindResponse {
 export interface SystemStatusResponse {
   operation: string;
   status: 'success' | 'error';
-  data?: any;
+  data?: unknown;
   error?: string;
 
   // Observability metadata
@@ -378,16 +378,16 @@ export interface SimilarityService {
  * Service interface for audit logging
  */
 export interface AuditService {
-  logOperation(_operation: string, _data: Record<string, any>): Promise<void>;
+  logOperation(_operation: string, _data: Record<string, unknown>): Promise<void>;
   logAccess(_resource: string, _userId?: string): Promise<void>;
-  logError(_error: Error, _context: Record<string, any>): Promise<void>;
+  logError(_error: Error, _context: Record<string, unknown>): Promise<void>;
 }
 
 /**
  * Memory store request interface
  */
 export interface MemoryStoreRequest {
-  items: any[];
+  items: unknown[];
 }
 
 /**
@@ -483,7 +483,7 @@ export interface SmartFindResult {
     recommendation: string;
   };
   debug?: Record<string, unknown>;
-  graph?: any;
+  graph?: unknown;
 }
 
 /**
@@ -647,11 +647,11 @@ export interface AnalyticsReport {
     endDate: Date;
   };
   filters?: AnalyticsFilter;
-  data: any;
+  data: unknown;
   visualizations: Array<{
     type: string;
     title: string;
-    data: any;
+    data: unknown;
   }>;
   summary: string;
   metadata: {
@@ -1190,5 +1190,5 @@ export interface StoragePolicy {
   principal: string | string[];
   action: string | string[];
   resource: string | string[];
-  conditions?: Record<string, any>;
+  conditions?: Record<string, unknown>;
 }

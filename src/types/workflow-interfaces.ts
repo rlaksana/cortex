@@ -64,7 +64,7 @@ export interface WorkflowTask {
   retry?: TaskRetry;
   escalation?: TaskEscalation;
   notifications?: TaskNotification[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export type TaskType =
@@ -78,16 +78,16 @@ export type TaskType =
   | 'timer';
 
 export interface TaskConfig {
-  [key: string]: any;
+  [key: string]: unknown;
   // Service tasks
   serviceName?: string;
   endpoint?: string;
   method?: string;
-  payload?: Record<string, any>;
+  payload?: Record<string, unknown>;
   // Human tasks
   instructions?: string;
   requiredData?: string[];
-  outputSchema?: Record<string, any>;
+  outputSchema?: Record<string, unknown>;
   // Approval tasks
   requiredApprovals?: number;
   votingMethod?: 'majority' | 'unanimous' | 'quorum';
@@ -108,7 +108,7 @@ export interface TaskConfig {
 export interface Condition {
   field: string;
   operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains' | 'in' | 'not_in';
-  value: any;
+  value: unknown;
   and?: Condition[];
   or?: Condition[];
 }
@@ -128,7 +128,7 @@ export interface TaskValidation {
 export interface ValidationRule {
   field: string;
   type: 'required' | 'format' | 'range' | 'custom';
-  constraint: any;
+  constraint: unknown;
   message: string;
 }
 
@@ -162,7 +162,7 @@ export interface TaskNotification {
   trigger: 'assigned' | 'completed' | 'failed' | 'timeout' | 'escalated';
   template?: string;
   recipients: string[];
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
 }
 
 // Workflow templates
@@ -183,7 +183,7 @@ export interface TemplateVariable {
   name: string;
   type: 'string' | 'number' | 'boolean' | 'object' | 'array';
   required: boolean;
-  defaultValue?: any;
+  defaultValue?: unknown;
   description?: string;
   validation?: ValidationRule[];
 }
@@ -231,7 +231,7 @@ export interface WorkflowExecution {
   context: WorkflowContext;
   state: WorkflowState;
   tasks: TaskExecution[];
-  variables: Record<string, any>;
+  variables: Record<string, unknown>;
   error?: WorkflowError;
   metadata: ExecutionMetadata;
 }
@@ -256,25 +256,25 @@ export interface TaskExecution {
   failedAt?: string;
   timeoutAt?: string;
   escalatedAt?: string;
-  result?: any;
+  result?: unknown;
   error?: string;
   duration?: number;
   retryCount?: number;
-  output?: Record<string, any>;
-  metadata?: Record<string, any>;
+  output?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface WorkflowContext {
   trigger?: WorkflowTrigger;
   initiator?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface WorkflowState {
   currentPhase?: string;
   completedPhases: string[];
-  variables: Record<string, any>;
-  checkpoints: Record<string, any>;
+  variables: Record<string, unknown>;
+  checkpoints: Record<string, unknown>;
   history: StateHistory[];
 }
 
@@ -282,7 +282,7 @@ export interface StateHistory {
   timestamp: string;
   action: string;
   task?: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   user?: string;
 }
 
@@ -305,7 +305,7 @@ export interface WorkflowExecutionRequest {
   tags?: string[];
   overrides?: {
     tasks?: Record<string, Partial<WorkflowTask>>;
-    variables?: Record<string, any>;
+    variables?: Record<string, unknown>;
   };
 }
 
@@ -318,7 +318,7 @@ export interface TaskAssignment {
   assignedAt: string;
   dueDate?: string;
   priority?: TaskPriority;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Human task types
@@ -328,8 +328,8 @@ export interface HumanTask extends WorkflowTask {
   dueDate?: string;
   instructions?: string;
   requiredData?: string[];
-  outputSchema?: Record<string, any>;
-  metadata?: Record<string, any>;
+  outputSchema?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ApprovalTask extends WorkflowTask {
@@ -364,7 +364,7 @@ export interface ServiceConfig {
   serviceName: string;
   endpoint: string;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  payload?: Record<string, any>;
+  payload?: Record<string, unknown>;
   headers?: Record<string, string>;
   timeout: number;
   retryConfig?: TaskRetry;
@@ -415,7 +415,7 @@ export interface WorkflowMetrics {
   value: number;
   unit?: string;
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface WorkflowPerformanceData {
@@ -467,8 +467,8 @@ export interface ReportMetrics {
 export interface ReportVisualization {
   type: 'chart' | 'graph' | 'table' | 'heatmap' | 'gauge';
   title: string;
-  data: any;
-  config: Record<string, any>;
+  data: unknown;
+  config: Record<string, unknown>;
 }
 
 export interface ReportRecommendation {
@@ -491,7 +491,7 @@ export interface WorkflowQuery {
     end: string;
   };
   tags?: string[];
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   includeMetrics?: boolean;
   includeTasks?: boolean;
   limit?: number;
@@ -515,7 +515,7 @@ export interface WorkflowFilter {
 export interface CustomFilter {
   field: string;
   operator: string;
-  value: any;
+  value: unknown;
 }
 
 // Workflow events
@@ -523,11 +523,11 @@ export interface WorkflowEvent {
   id: string;
   type: string;
   source: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   timestamp: string;
   correlationId?: string;
   causationId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Workflow notifications
@@ -545,8 +545,8 @@ export interface WorkflowNotification {
   scheduledAt?: string;
   sentAt?: string;
   template?: string;
-  variables?: Record<string, any>;
-  metadata?: Record<string, any>;
+  variables?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
 }
 
 // Workflow integration
@@ -564,12 +564,12 @@ export interface WorkflowIntegration {
 
 export interface IntegrationConfig {
   endpoint?: string;
-  authentication?: Record<string, any>;
+  authentication?: Record<string, unknown>;
   timeout?: number;
   retryConfig?: TaskRetry;
   mappings?: FieldMapping[];
   transformers?: DataTransformer[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface FieldMapping {
@@ -580,7 +580,7 @@ export interface FieldMapping {
 
 export interface DataTransformer {
   name: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
 export interface HealthCheck {
@@ -617,7 +617,7 @@ export interface WorkflowTrigger {
 }
 
 export interface TriggerConfig {
-  [key: string]: any;
+  [key: string]: unknown;
   // Event triggers
   eventType?: string;
   source?: string;
@@ -647,14 +647,14 @@ export interface WorkflowAction {
 }
 
 export interface ActionConfig {
-  [key: string]: any;
+  [key: string]: unknown;
   // Create actions
   entityType?: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   // Update actions
-  updateData?: Record<string, any>;
+  updateData?: Record<string, unknown>;
   // Delete actions
-  deleteCriteria?: Record<string, any>;
+  deleteCriteria?: Record<string, unknown>;
   // Approve/Reject actions
   decision?: 'approve' | 'reject';
   reason?: string;
@@ -670,7 +670,7 @@ export interface WorkflowResult {
   id: string;
   executionId: string;
   status: ExecutionStatus;
-  output?: Record<string, any>;
+  output?: Record<string, unknown>;
   error?: WorkflowError;
   metrics?: ExecutionMetrics;
   artifacts?: WorkflowArtifact[];
@@ -681,7 +681,7 @@ export interface WorkflowResult {
 export interface WorkflowError {
   code: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   stack?: string;
   taskId?: string;
   timestamp: string;
@@ -704,7 +704,7 @@ export interface WorkflowArtifact {
   type: 'document' | 'data' | 'log' | 'report' | 'other';
   url?: string;
   content?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: string;
 }
 
@@ -737,7 +737,7 @@ export interface WorkflowValidation {
 export interface CustomValidator {
   name: string;
   function: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
 export interface SecuritySettings {
@@ -811,8 +811,8 @@ export interface WorkflowMetadata {
     branch?: string;
     org?: string;
   };
-  data?: Record<string, any>;
-  metadata?: Record<string, any>;
+  data?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
   created_at?: string;
   updated_at?: string;
 }

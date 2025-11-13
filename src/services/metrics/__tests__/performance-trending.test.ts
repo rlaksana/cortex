@@ -8,11 +8,12 @@
 
 import { afterEach,beforeEach, describe, expect, it } from '@jest/globals';
 
+import { logger } from '../../../utils/logger.js';
 import { PerformanceTrendingService } from '../performance-trending.js';
 import { systemMetricsService } from '../system-metrics.js';
 
 // Mock the logger
-jest.mock('../../utils/logger.js', () => ({
+jest.mock('../../../utils/logger', () => ({
   logger: {
     info: jest.fn(),
     warn: jest.fn(),
@@ -353,7 +354,7 @@ describe('PerformanceTrendingService', () => {
       service.stopCollection();
 
       // The anomaly detection should have logged warnings
-      const mockLogger = require('../../utils/logger.js').logger;
+      const mockLogger = logger;
       expect(mockLogger.warn).toHaveBeenCalledWith(
         'Performance anomaly detected',
         expect.objectContaining({

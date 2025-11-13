@@ -8,9 +8,11 @@
 import { beforeEach,describe, expect, it } from 'vitest';
 
 import {
+  _HealthCheckConfigBuilder,
+  _HttpClientBuilder,
+  _validateHealthCheckConfig,
+  _validateHttpClientConfig,
   healthCheckConfig,
-  HealthCheckConfigBuilder,
-  HttpClientBuilder,
   httpClientConfig,
   isStandardHealthCheckConfig,
   isStandardHttpClientConfig,
@@ -20,15 +22,13 @@ import {
   migrateHttpClientConfig,
   type StandardHealthCheckConfig,
   type StandardHttpClientConfig,
-  validateHealthCheckConfig,
-  validateHttpClientConfig,
 } from '../configuration-migration.js';
 import {
+  type _ValidationResult,
   ConfigurationValidator,
   isValidConfiguration,
   validateConfigurationPermissive,
   validateConfigurationStrict,
-  type ValidationResult,
 } from '../configuration-validator.js';
 
 describe('Configuration Migration', () => {

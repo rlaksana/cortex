@@ -80,7 +80,7 @@ interface TemporalAnalysisResult {
     content: string;
     confidence: number;
     source_item: number;
-    temporal_data: any;
+    temporal_data: unknown;
   }>;
   timeline_analysis: {
     item1_events: Array<{ time: Date; description: string }>;

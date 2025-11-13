@@ -25,7 +25,7 @@ export interface VectorTransactionContext {
   startTime: number;
   operations: Array<{
     type: string;
-    data: any;
+    data: unknown;
     timestamp: number;
   }>;
 }
@@ -172,7 +172,7 @@ export async function executeParallelTransactions<T>(
       return {
         success: false,
         error: {
-          type: 'UNKNOWN_ERROR' as any,
+          type: 'UNKNOWN_ERROR' as unknown,
           message: error instanceof Error ? error.message : String(error),
           originalError: error,
         },

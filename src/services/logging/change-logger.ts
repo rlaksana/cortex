@@ -14,8 +14,11 @@
  * - Automatic metadata enrichment
  */
 
+import { execSync } from 'child_process';
+
 import { logger } from '@/utils/logger.js';
 
+import packageJson from '../../../package.json';
 import { memoryStore } from '../memory-store.js';
 
 export interface ChangeLogEntry {
@@ -114,7 +117,7 @@ export class ChangeLoggerService {
             branch: process.env.CORTEX_BRANCH || 'main',
             org: process.env.CORTEX_ORG || 'cortex',
           },
-          data: {
+          _data: {
             ...changeEntry,
             type: 'structural_change',
             category: entry.category,
@@ -157,7 +160,7 @@ export class ChangeLoggerService {
             branch: process.env.CORTEX_BRANCH || 'main',
             org: process.env.CORTEX_ORG || 'cortex',
           },
-          data: {
+          _data: {
             ...decisionEntry,
             type: 'architectural_decision',
             context: decisionEntry.context,
@@ -271,7 +274,6 @@ export class ChangeLoggerService {
 
   private getVersion(): string {
     try {
-      const packageJson = require('../../../package.json');
       return packageJson.version;
     } catch {
       return 'unknown';
@@ -280,7 +282,7 @@ export class ChangeLoggerService {
 
   private getCommitHash(): string | undefined {
     try {
-      return require('child_process').execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+      return execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
     } catch {
       return undefined;
     }
@@ -303,7 +305,7 @@ export class ChangeLoggerService {
             branch: 'main',
             org: 'cortex',
           },
-          data: {
+          _data: {
             type: 'system_test',
             service: 'change-logger',
             timestamp: new Date().toISOString(),

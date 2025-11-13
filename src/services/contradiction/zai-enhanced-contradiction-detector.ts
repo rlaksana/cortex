@@ -34,6 +34,18 @@ import type { ZAIChatRequest } from '../../types/zai-interfaces.js';
 import { zaiClientService } from '../ai/zai-client.service';
 
 /**
+ * Contradiction metadata interface
+ */
+interface ContradictionMetadata {
+  detection_method: string;
+  algorithm_version: string;
+  processing_time_ms: number;
+  comparison_details: Record<string, unknown>;
+  evidence: { item_id: string; evidence_type: string; content: string; confidence: number; }[];
+  [key: string]: unknown;
+}
+
+/**
  * ZAI-Enhanced contradiction detector configuration
  */
 interface ZAIContradictionDetectorConfig {
@@ -453,8 +465,8 @@ Consider the context and kind of each item when determining if there's a genuine
   private async analyzeTemporalContradiction(
     item1: KnowledgeItem,
     item2: KnowledgeItem,
-    temporal1: any,
-    temporal2: any
+    temporal1: unknown,
+    temporal2: unknown
   ): Promise<ContradictionResult | null> {
     const prompt = this.buildTemporalAnalysisPrompt(item1, item2, temporal1, temporal2);
 
@@ -534,8 +546,8 @@ Consider the context and kind of each item when determining if there's a genuine
   private buildTemporalAnalysisPrompt(
     item1: KnowledgeItem,
     item2: KnowledgeItem,
-    temporal1: any,
-    temporal2: any
+    temporal1: unknown,
+    temporal2: unknown
   ): string {
     const content1 = this.extractItemContent(item1);
     const content2 = this.extractItemContent(item2);
@@ -1005,8 +1017,8 @@ Consider the procedural implications and potential conflicts in execution.`;
   /**
    * Extract temporal data from an item
    */
-  private extractTemporalData(item: KnowledgeItem): any | null {
-    const temporalData: any = {};
+  private extractTemporalData(item: KnowledgeItem): { dates?: string[]; markers?: string[]; sequence?: string[]; created_at?: string; updated_at?: string } | null {
+    const temporalData: { dates?: string[]; markers?: string[]; sequence?: string[]; created_at?: string; updated_at?: string } = {};
     const content = this.extractItemContent(item);
 
     // Extract dates from content
@@ -1119,8 +1131,8 @@ Consider the procedural implications and potential conflicts in execution.`;
     confidence: number;
     description: string;
     reasoning: string;
-    evidence: any[];
-    metadata?: any;
+    evidence: unknown[];
+    metadata?: unknown;
   }): ContradictionResult {
     const severity = this.calculateSeverity(params.confidence, params.type);
 
@@ -1140,9 +1152,9 @@ Consider the procedural implications and potential conflicts in execution.`;
         model: 'zai-glm-4.6',
         processing_time_ms: 0,
         comparison_details: {},
-        evidence: params.evidence,
-        ...params.metadata,
-      },
+        evidence: params.evidence as { item_id: string; evidence_type: string; content: string; confidence: number; }[],
+        ...(params.metadata as Record<string, unknown>),
+      } as ContradictionMetadata,
       resolution_suggestions: this.generateResolutionSuggestions(params.type, severity),
     };
   }
@@ -1405,7 +1417,7 @@ Consider the procedural implications and potential conflicts in execution.`;
   /**
    * Get detector metrics
    */
-  getMetrics(): any {
+  getMetrics(): unknown {
     return {
       ...this.metrics,
       cacheSize: this.cache.size,

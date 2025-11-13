@@ -10,8 +10,9 @@
  * @version 2.0.1
  */
 
-import { existsSync,readFileSync } from 'fs';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { cpus,freemem, loadavg, totalmem } from 'os';
 
 import type { SimpleLogger } from '@/utils/logger.js';
 import { createChildLogger,ProductionLogger } from '@/utils/logger.js';
@@ -22,7 +23,7 @@ export interface ValidationResult {
   category: string;
   status: 'pass' | 'warn' | 'fail' | 'critical';
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   recommendation?: string;
   fixable: boolean;
 }
@@ -534,8 +535,8 @@ export class ProductionEnvironmentValidator extends BaseValidator {
    */
   private validateMemoryUsage(): ValidationResult {
     const memUsage = process.memoryUsage();
-    const totalMem = require('os').totalmem();
-    const availableMem = require('os').freemem();
+    const totalMem = totalmem();
+    const availableMem = freemem();
     const memUsagePercent = ((totalMem - availableMem) / totalMem) * 100;
 
     const status = memUsagePercent > 90 ? 'critical' : memUsagePercent > 80 ? 'warn' : 'pass';
@@ -555,9 +556,9 @@ export class ProductionEnvironmentValidator extends BaseValidator {
   }
 
   private validateCPUAvailability(): ValidationResult {
-    const loadAvg = require('os').loadavg();
-    const cpuCount = require('os').cpus().length;
-    const loadPercent = (loadAvg[0] / cpuCount) * 100;
+    const loadAvgValues = loadavg();
+    const cpuCount = cpus().length;
+    const loadPercent = (loadAvgValues[0] / cpuCount) * 100;
 
     const status = loadPercent > 90 ? 'critical' : loadPercent > 80 ? 'warn' : 'pass';
 
@@ -566,7 +567,7 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       status,
       message: `CPU usage: ${loadPercent.toFixed(1)}%`,
       details: {
-        loadAverage: loadAvg[0],
+        loadAverage: loadAvgValues[0],
         cpuCount,
         loadPercent: loadPercent.toFixed(1),
       },
@@ -689,8 +690,8 @@ export class ProductionEnvironmentValidator extends BaseValidator {
     // Check if we can read/write to essential directories
     try {
       const testFile = '.permission-test';
-      require('fs').writeFileSync(testFile, 'test');
-      require('fs').unlinkSync(testFile);
+      writeFileSync(testFile, 'test');
+      unlinkSync(testFile);
 
       return {
         category: 'infrastructure',

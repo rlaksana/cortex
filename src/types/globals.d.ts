@@ -13,7 +13,11 @@ declare global {
   var global: GlobalPerformance & typeof globalThis;
 
   // Performance service global for compatibility
-  var performanceService: import('./autofix-shims').PerformanceService;
+  var performanceService: {
+    collectMetrics?(): unknown;
+    trackPerformance?(name: string, duration: number): void;
+    getMetrics?(): Record<string, unknown>;
+  } | undefined;
 }
 
 // Global GC function for Node.js with --expose-gc
@@ -21,15 +25,15 @@ declare const gc: (() => void) | undefined;
 
 // Vitest globals for testing
 declare global {
-  const describe: any;
-  const it: any;
-  const test: any;
-  const expect: any;
-  const beforeEach: any;
-  const afterEach: any;
-  const beforeAll: any;
-  const afterAll: any;
-  const vi: any;
+  const describe: unknown;
+  const it: unknown;
+  const test: unknown;
+  const expect: unknown;
+  const beforeEach: unknown;
+  const afterEach: unknown;
+  const beforeAll: unknown;
+  const afterAll: unknown;
+  const vi: unknown;
 }
 
 // Node.js process extensions
@@ -84,14 +88,14 @@ declare global {
 
 // Common utility types
 export type LooseString = string;
-export type LooseObject = Record<string, any>;
-export type LooseArray = any[];
+export type LooseObject = Record<string, unknown>;
+export type LooseArray = unknown[];
 
 // Error handling types
 export interface EnhancedError extends Error {
   code?: string | number;
   statusCode?: number;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   timestamp?: Date;
   correlationId?: string;
 }
@@ -152,13 +156,13 @@ export interface CacheConfiguration {
 }
 
 // API response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: {
     code: string;
     message: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
   };
   meta?: {
     timestamp: Date;
@@ -189,7 +193,7 @@ export interface PaginatedResponse<T> {
 // Search and filter types
 export interface SearchParams {
   query?: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
   sort?: {
     field: string;
     direction: 'asc' | 'desc';

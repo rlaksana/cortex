@@ -27,7 +27,18 @@ export interface HttpClientConfig {
   retryDelayMs?: number;
 }
 
-export interface HttpClientResponse<T = any> {
+import type {
+  DeserializableResponseBody,
+  HttpError,
+  HttpErrorType,
+  SerializableRequestBody,
+  TypedHttpClient,
+  TypedHttpClientConfig,
+  TypedHttpError,
+  TypedHttpRequest,
+  TypedHttpResponse} from '../types/http-client-types.js';
+
+export interface HttpClientResponse<T = unknown> {
   data: T;
   status: number;
   statusText: string;
@@ -100,7 +111,7 @@ export class HttpClient {
   /**
    * Perform HTTP request with timeout handling
    */
-  async request<T = any>(
+  async request<T = unknown>(
     url: string,
     options: RequestInit & {
       timeout?: number;
@@ -194,7 +205,7 @@ export class HttpClient {
   /**
    * Convenience method for GET requests
    */
-  async get<T = any>(
+  async get<T = unknown>(
     url: string,
     options: Omit<RequestInit, 'method'> & { timeout?: number } = {}
   ): Promise<HttpClientResponse<T>> {
@@ -204,9 +215,9 @@ export class HttpClient {
   /**
    * Convenience method for POST requests
    */
-  async post<T = any>(
+  async post<T = unknown, TBody = SerializableRequestBody>(
     url: string,
-    data?: any,
+    data?: TBody,
     options: Omit<RequestInit, 'method' | 'body'> & { timeout?: number } = {}
   ): Promise<HttpClientResponse<T>> {
     return this.request<T>(url, {
@@ -223,9 +234,9 @@ export class HttpClient {
   /**
    * Convenience method for PUT requests
    */
-  async put<T = any>(
+  async put<T = unknown, TBody = SerializableRequestBody>(
     url: string,
-    data?: any,
+    data?: TBody,
     options: Omit<RequestInit, 'method' | 'body'> & { timeout?: number } = {}
   ): Promise<HttpClientResponse<T>> {
     return this.request<T>(url, {
@@ -242,7 +253,7 @@ export class HttpClient {
   /**
    * Convenience method for DELETE requests
    */
-  async delete<T = any>(
+  async delete<T = unknown>(
     url: string,
     options: Omit<RequestInit, 'method'> & { timeout?: number } = {}
   ): Promise<HttpClientResponse<T>> {

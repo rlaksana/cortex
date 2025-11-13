@@ -8,7 +8,7 @@
 export interface ApiEndpoint {
   path: string;
   method: string;
-  handler: (request: ApiRequest) => Promise<any>;
+  handler: (request: ApiRequest) => Promise<unknown>;
   middleware?: Array<
     (req: ApiRequest, res: ApiResponse, next: () => Promise<void>) => Promise<void>
   >;
@@ -18,9 +18,9 @@ export interface ApiEndpoint {
   version?: string;
   deprecated?: boolean;
   timeout?: number;
-  responses?: Record<string, any>;
+  responses?: Record<string, unknown>;
   description?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ApiVersion {
@@ -31,7 +31,7 @@ export interface ApiVersion {
   migrationPath?: string;
   supportedEndpoints: string[];
   description?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ApiRequest {
@@ -39,7 +39,7 @@ export interface ApiRequest {
   method: string;
   headers: Record<string, string>;
   query: Record<string, string>;
-  body?: any;
+  body?: unknown;
   params?: Record<string, string>;
   files?: UploadedFile[];
   user?: ApiUser;
@@ -50,7 +50,7 @@ export interface ApiRequest {
 export interface ApiResponse {
   status: number;
   headers: Record<string, string>;
-  body?: any;
+  body?: unknown;
   error?: ApiError;
   correlationId?: string;
   timestamp: Date;
@@ -63,14 +63,14 @@ export interface ApiParameter {
   required: boolean;
   in: 'path' | 'query' | 'header' | 'body';
   validation?: ValidationRule[];
-  defaultValue?: any;
+  defaultValue?: unknown;
   description?: string;
   minLength?: number;
   maxLength?: number;
   minimum?: number;
   maximum?: number;
   pattern?: string;
-  enum?: any[];
+  enum?: unknown[];
   minItems?: number;
   maxItems?: number;
   format?: string;
@@ -78,9 +78,9 @@ export interface ApiParameter {
 
 export interface ValidationRule {
   type: 'required' | 'min' | 'max' | 'pattern' | 'custom';
-  value?: any;
+  value?: unknown;
   message?: string;
-  validator?: (value: any) => boolean | string;
+  validator?: (value: unknown) => boolean | string;
 }
 
 export interface ApiMiddleware {
@@ -91,7 +91,7 @@ export interface ApiMiddleware {
 
 export interface AuthenticationMethod {
   type: 'api_key' | 'jwt' | 'oauth' | 'basic' | 'mfa';
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   validate: (request: ApiRequest) => Promise<ApiUser | null>;
 }
 
@@ -100,7 +100,7 @@ export interface ApiUser {
   username: string;
   roles: string[];
   permissions: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   authentication?: {
     method: string;
     expires?: Date;
@@ -119,9 +119,9 @@ export interface RateLimitConfig {
 
 export interface GraphQLSchema {
   typeDefs: string;
-  resolvers: Record<string, any>;
-  subscriptions?: Record<string, any>;
-  context?: (request: ApiRequest) => Promise<any>;
+  resolvers: Record<string, unknown>;
+  subscriptions?: Record<string, unknown>;
+  context?: (request: ApiRequest) => Promise<unknown>;
 }
 
 export interface ApiMetrics {
@@ -163,7 +163,7 @@ export interface CircuitBreakerConfig {
 
 export interface LoadBalancingStrategy {
   type: 'round-robin' | 'least-connections' | 'random' | 'weighted';
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
 }
 
 export interface UploadedFile {
@@ -178,7 +178,7 @@ export interface UploadedFile {
 export interface ApiError {
   code: string;
   message: string;
-  details?: any;
+  details?: unknown;
   stack?: string;
 }
 
@@ -193,10 +193,10 @@ export interface OpenAPIDocument {
     url: string;
     description?: string;
   }>;
-  paths: Record<string, any>;
+  paths: Record<string, unknown>;
   components?: {
-    schemas?: Record<string, any>;
-    securitySchemes?: Record<string, any>;
+    schemas?: Record<string, unknown>;
+    securitySchemes?: Record<string, unknown>;
   };
   security?: Array<Record<string, string[]>>;
 }

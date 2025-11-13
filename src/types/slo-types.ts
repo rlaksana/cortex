@@ -89,7 +89,7 @@ export interface DashboardWidget {
   defaultPosition: Position;
   category: string;
   query?: string;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
 }
 
 export interface WidgetConfig {

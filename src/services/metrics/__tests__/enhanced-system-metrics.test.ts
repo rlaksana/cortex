@@ -434,7 +434,7 @@ describe('Enhanced SystemMetricsService', () => {
     it('should handle invalid operation type gracefully', () => {
       expect(() => {
         service.updateMetrics({
-          operation: 'invalid_operation' as any,
+          operation: 'invalid_operation' as unknown,
           data: {},
         });
       }).not.toThrow();

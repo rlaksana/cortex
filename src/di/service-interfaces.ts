@@ -29,21 +29,29 @@ import type {
  * Configuration service interface
  */
 export interface IConfigService {
-  get(key: string): any;
+  get(key: string): unknown;
   get<T>(key: string, defaultValue: T): T;
   has(key: string): boolean;
   reload(): Promise<void>;
+  getSection<T extends Record<string, unknown>>(section: string): T;
+  getAll(): Record<string, unknown>;
+  set(key: string, value: unknown): void;
+  validate(key: string, validator: (value: unknown) => boolean): boolean;
 }
 
 /**
  * Logging service interface
  */
 export interface ILoggerService {
-  debug(message: string, ...args: any[]): void;
-  info(message: string, ...args: any[]): void;
-  warn(message: string, ...args: any[]): void;
-  error(message: string, error?: any, ...args: any[]): void;
-  child(context: Record<string, any>): ILoggerService;
+  debug(message: string, ...args: unknown[]): void;
+  info(message: string, ...args: unknown[]): void;
+  warn(message: string, ...args: unknown[]): void;
+  error(message: string, error?: Error | unknown, ...args: unknown[]): void;
+  child(context: Record<string, unknown>): ILoggerService;
+  withContext(context: Record<string, unknown>): ILoggerService;
+  setLevel(level: 'debug' | 'info' | 'warn' | 'error'): void;
+  getLevel(): string;
+  isLevelEnabled(level: string): boolean;
 }
 
 /**
@@ -76,9 +84,12 @@ export interface IMemoryStoreOrchestrator {
  */
 export interface IMemoryFindOrchestrator {
   find(query: SearchQuery): Promise<MemoryFindResponse>;
-  search(filters: Record<string, any>): Promise<SearchResult[]>;
+  search(filters: Record<string, unknown>): Promise<SearchResult[]>;
   getById(id: string): Promise<KnowledgeItem | null>;
   getByType(type: string): Promise<KnowledgeItem[]>;
+  findByTags(tags: string[]): Promise<KnowledgeItem[]>;
+  findSimilar(query: string, threshold?: number): Promise<KnowledgeItem[]>;
+  validateQuery(query: SearchQuery): ValidationResult;
 }
 
 /**
@@ -94,19 +105,115 @@ export interface IDatabaseService {
  * Authentication service interface
  */
 export interface IAuthService {
-  authenticate(token: string): Promise<boolean>;
-  authorize(user: any, resource: string, action: string): Promise<boolean>;
-  generateToken(user: any): Promise<string>;
-  validateToken(token: string): Promise<any>;
+  authenticate(token: string): Promise<AuthResult>;
+  authorize(user: User, resource: string, action: string): Promise<AuthzResult>;
+  generateToken(user: User): Promise<string>;
+  validateToken(token: string): Promise<TokenValidationResult>;
+  refreshToken(refreshToken: string): Promise<TokenRefreshResult>;
+  revokeToken(token: string): Promise<boolean>;
+  getUserPermissions(userId: string): Promise<string[]>;
+  checkRole(userId: string, role: string): Promise<boolean>;
+}
+
+// Supporting types for authentication
+export interface User {
+  id: string;
+  username: string;
+  email?: string;
+  roles: string[];
+  permissions: string[];
+  isActive: boolean;
+  lastLogin?: Date;
+}
+
+export interface AuthResult {
+  success: boolean;
+  user?: User;
+  error?: string;
+  requiresMfa?: boolean;
+}
+
+export interface AuthzResult {
+  allowed: boolean;
+  reason?: string;
+  conditions?: string[];
+}
+
+export interface TokenValidationResult {
+  valid: boolean;
+  user?: User;
+  error?: string;
+  expiresAt?: Date;
+}
+
+export interface TokenRefreshResult {
+  success: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  error?: string;
 }
 
 /**
  * Audit service interface
  */
 export interface IAuditService {
-  log(action: string, data: any): Promise<void>;
-  query(filters: Record<string, any>): Promise<any[]>;
-  archive(before: Date): Promise<number>;
+  log(action: string, data: AuditLogData): Promise<void>;
+  query(filters: AuditQueryFilters): Promise<AuditLogEntry[]>;
+  archive(before: Date): Promise<ArchiveResult>;
+  getStats(timeRange: TimeRange): Promise<AuditStats>;
+  export(filters: AuditQueryFilters, format: 'json' | 'csv'): Promise<string>;
+}
+
+// Supporting types for audit service
+export interface AuditLogData {
+  action: string;
+  userId?: string;
+  resource?: string;
+  timestamp: Date;
+  metadata?: Record<string, unknown>;
+  severity?: 'low' | 'medium' | 'high' | 'critical';
+  category?: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  userId?: string;
+  resource?: string;
+  timestamp: Date;
+  metadata?: Record<string, unknown>;
+  severity: string;
+  category?: string;
+}
+
+export interface AuditQueryFilters {
+  userId?: string;
+  action?: string;
+  resource?: string;
+  timeRange?: TimeRange;
+  severity?: string[];
+  category?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface TimeRange {
+  start: Date;
+  end: Date;
+}
+
+export interface ArchiveResult {
+  success: boolean;
+  archivedCount: number;
+  error?: string;
+}
+
+export interface AuditStats {
+  totalEntries: number;
+  entriesByAction: Record<string, number>;
+  entriesByUser: Record<string, number>;
+  entriesBySeverity: Record<string, number>;
+  timeRange: TimeRange;
 }
 
 /**
@@ -149,7 +256,7 @@ export interface IMetricsService {
   gauge(name: string, value: number, tags?: Record<string, string>): void;
   histogram(name: string, value: number, tags?: Record<string, string>): void;
   timing(name: string, duration: number, tags?: Record<string, string>): void;
-  collect(): Promise<Record<string, any>>;
+  collect(): Promise<Record<string, unknown>>;
 }
 
 /**
@@ -173,31 +280,82 @@ export interface IHealthCheckService {
  */
 export interface ICacheService {
   get<T>(key: string): Promise<T | null>;
-  set(key: string, value: any, ttl?: number): Promise<void>;
-  delete(key: string): Promise<void>;
+  set(key: string, value: unknown, ttl?: number): Promise<void>;
+  delete(key: string): Promise<boolean>;
   clear(): Promise<void>;
   has(key: string): Promise<boolean>;
+  getMultiple<T>(keys: string[]): Promise<Map<string, T | null>>;
+  setMultiple(entries: Map<string, unknown>, ttl?: number): Promise<void>;
+  deleteMultiple(keys: string[]): Promise<number>;
+  increment(key: string, amount?: number): Promise<number>;
+  getStats(): Promise<CacheStats>;
+}
+
+export interface CacheStats {
+  hitCount: number;
+  missCount: number;
+  hitRate: number;
+  itemCount: number;
+  memoryUsage: number;
+  evictionCount: number;
 }
 
 /**
  * Event service interface for loose coupling
  */
 export interface IEventService {
-  emit(event: string, data: any): void;
-  on(event: string, handler: (data: any) => void): void;
-  off(event: string, handler: (data: any) => void): void;
-  once(event: string, handler: (data: any) => void): void;
+  emit<T = unknown>(event: string, data: T): void;
+  on<T = unknown>(event: string, handler: (data: T) => void): EventSubscription;
+  off<T = unknown>(event: string, handler: (data: T) => void): void;
+  once<T = unknown>(event: string, handler: (data: T) => void): EventSubscription;
   removeAllListeners(event?: string): void;
+  getListenerCount(event: string): number;
+  getEventNames(): string[];
+  emitAsync<T = unknown>(event: string, data: T): Promise<void>;
+}
+
+export interface EventSubscription {
+  unsubscribe(): void;
+  isActive: boolean;
+  eventId: string;
 }
 
 /**
  * Validation service interface
  */
 export interface IValidationService {
-  validate<T>(data: any, schema: string): Promise<T>;
-  validateAsync<T>(data: any, schema: string): Promise<T>;
-  addSchema(name: string, schema: any): void;
+  validate<T>(data: unknown, schema: string): Promise<ValidationResult<T>>;
+  validateAsync<T>(data: unknown, schema: string): Promise<ValidationResult<T>>;
+  addSchema(name: string, schema: unknown): void;
   removeSchema(name: string): void;
+  hasSchema(name: string): boolean;
+  getSchemas(): string[];
+  compileSchema(schema: unknown): CompiledSchema;
+}
+
+export interface ValidationResult<T = unknown> {
+  valid: boolean;
+  data?: T;
+  errors?: ValidationError[];
+  warnings?: ValidationWarning[];
+}
+
+export interface ValidationError {
+  path: string;
+  message: string;
+  code: string;
+  value?: unknown;
+}
+
+export interface ValidationWarning {
+  path: string;
+  message: string;
+  code: string;
+  value?: unknown;
+}
+
+export interface CompiledSchema {
+  validate(data: unknown): ValidationResult;
 }
 
 /**

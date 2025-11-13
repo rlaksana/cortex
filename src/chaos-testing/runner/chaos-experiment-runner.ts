@@ -22,7 +22,8 @@ import {
   type RecoveryMetrics,
   type SafetyCheck,
   type SystemMetrics,
-  type VerificationResults} from '../types/chaos-testing-types.js';
+  type VerificationResults,
+} from '../types/chaos-testing-types.js';
 import { AlertVerifier } from '../verification/alert-verifier.js';
 import { GracefulDegradationVerifier } from '../verification/graceful-degradation-verifier.js';
 
@@ -100,19 +101,31 @@ export class ChaosExperimentRunner extends EventEmitter {
       phases: [],
       startTime: new Date(),
       status: 'running',
-      steadyStateMetrics: []
+      steadyStateMetrics: [],
     };
 
     this.runningExperiments.set(experimentId, experimentContext);
 
     try {
       // Execute experiment phases
-      await this.executePhase(experimentContext, 'setup', () => this.setupExperiment(experimentContext));
-      await this.executePhase(experimentContext, 'steady_state', () => this.establishSteadyState(experimentContext));
-      await this.executePhase(experimentContext, 'chaos_injection', () => this.injectChaos(experimentContext));
-      await this.executePhase(experimentContext, 'verification', () => this.verifySystemBehavior(experimentContext));
-      await this.executePhase(experimentContext, 'recovery', () => this.monitorRecovery(experimentContext));
-      await this.executePhase(experimentContext, 'cleanup', () => this.cleanupExperiment(experimentContext));
+      await this.executePhase(experimentContext, 'setup', () =>
+        this.setupExperiment(experimentContext)
+      );
+      await this.executePhase(experimentContext, 'steady_state', () =>
+        this.establishSteadyState(experimentContext)
+      );
+      await this.executePhase(experimentContext, 'chaos_injection', () =>
+        this.injectChaos(experimentContext)
+      );
+      await this.executePhase(experimentContext, 'verification', () =>
+        this.verifySystemBehavior(experimentContext)
+      );
+      await this.executePhase(experimentContext, 'recovery', () =>
+        this.monitorRecovery(experimentContext)
+      );
+      await this.executePhase(experimentContext, 'cleanup', () =>
+        this.cleanupExperiment(experimentContext)
+      );
 
       // Generate final report
       const report = await this.generateExperimentReport(experimentContext);
@@ -124,7 +137,6 @@ export class ChaosExperimentRunner extends EventEmitter {
       this.emit('experiment:completed', { experimentId, report });
 
       return report;
-
     } catch (error) {
       experimentContext.status = 'failed';
       experimentContext.error = error as Error;
@@ -157,7 +169,7 @@ export class ChaosExperimentRunner extends EventEmitter {
     const phase: ExperimentPhase = {
       name: phaseName,
       startTime: new Date(),
-      status: 'running'
+      status: 'running',
     };
 
     context.phases.push(phase);
@@ -174,9 +186,8 @@ export class ChaosExperimentRunner extends EventEmitter {
       this.emit('experiment:phase_completed', {
         experimentId: context.id,
         phase: phaseName,
-        duration: phase.duration
+        duration: phase.duration,
       });
-
     } catch (error) {
       phase.endTime = new Date();
       phase.duration = phase.endTime.getTime() - phase.startTime.getTime();
@@ -186,7 +197,7 @@ export class ChaosExperimentRunner extends EventEmitter {
       this.emit('experiment:phase_failed', {
         experimentId: context.id,
         phase: phaseName,
-        error
+        error,
       });
 
       throw error;
@@ -221,7 +232,7 @@ export class ChaosExperimentRunner extends EventEmitter {
 
     this.emit('experiment:steady_state_started', {
       experimentId: context.id,
-      duration: steadyStateDuration
+      duration: steadyStateDuration,
     });
 
     // Monitor system for steady state period
@@ -241,7 +252,7 @@ export class ChaosExperimentRunner extends EventEmitter {
     }, 2000);
 
     // Wait for steady state duration or stability
-    await new Promise(resolve => {
+    await new Promise((resolve) => {
       setTimeout(resolve, steadyStateDuration);
     });
 
@@ -255,7 +266,7 @@ export class ChaosExperimentRunner extends EventEmitter {
   private async injectChaos(context: ExperimentContext): Promise<void> {
     this.emit('experiment:chaos_injection_started', {
       experimentId: context.id,
-      scenario: context.scenario
+      scenario: context.scenario,
     });
 
     // Start monitoring systems
@@ -266,14 +277,14 @@ export class ChaosExperimentRunner extends EventEmitter {
 
     // Wait for chaos duration
     const chaosDuration = context.config.experimentDuration * 1000;
-    await new Promise(resolve => setTimeout(resolve, chaosDuration));
+    await new Promise((resolve) => setTimeout(resolve, chaosDuration));
 
     // Collect chaos metrics
     context.chaosMetrics = await this.collectChaosMetrics();
 
     this.emit('experiment:chaos_injection_completed', {
       experimentId: context.id,
-      metrics: context.chaosMetrics
+      metrics: context.chaosMetrics,
     });
   }
 
@@ -288,19 +299,16 @@ export class ChaosExperimentRunner extends EventEmitter {
     const alertingResult = await this.alertVerifier.stopMonitoring();
 
     // Verify system against expected behavior
-    context.verificationResults = await this.performVerification(
-      context.scenario.verification,
-      {
-        gracefulDegradation: gracefulDegradationResult,
-        alerting: alertingResult,
-        performance: await this.verifyPerformance(context),
-        recovery: await this.verifyRecoveryBehavior(context)
-      }
-    );
+    context.verificationResults = await this.performVerification(context.scenario.verification, {
+      gracefulDegradation: gracefulDegradationResult,
+      alerting: alertingResult,
+      performance: await this.verifyPerformance(context),
+      recovery: await this.verifyRecoveryBehavior(context),
+    });
 
     this.emit('experiment:verification_completed', {
       experimentId: context.id,
-      results: context.verificationResults
+      results: context.verificationResults,
     });
   }
 
@@ -315,7 +323,7 @@ export class ChaosExperimentRunner extends EventEmitter {
 
     // Wait for recovery duration
     const recoveryDuration = context.config.recoveryDuration * 1000;
-    await new Promise(resolve => setTimeout(resolve, recoveryDuration));
+    await new Promise((resolve) => setTimeout(resolve, recoveryDuration));
 
     // Stop MTTR measurement
     context.mttrMetrics = await this.mttrMeasurer.stopMeasurement();
@@ -323,7 +331,7 @@ export class ChaosExperimentRunner extends EventEmitter {
 
     this.emit('experiment:recovery_monitoring_completed', {
       experimentId: context.id,
-      mttrMetrics: context.mttrMetrics
+      mttrMetrics: context.mttrMetrics,
     });
   }
 
@@ -369,7 +377,9 @@ export class ChaosExperimentRunner extends EventEmitter {
   /**
    * Generate comprehensive experiment report
    */
-  private async generateExperimentReport(context: ExperimentContext): Promise<ExperimentExecutionReport> {
+  private async generateExperimentReport(
+    context: ExperimentContext
+  ): Promise<ExperimentExecutionReport> {
     const endTime = new Date();
     const totalDuration = endTime.getTime() - context.startTime.getTime();
 
@@ -379,12 +389,13 @@ export class ChaosExperimentRunner extends EventEmitter {
       startTime: context.startTime,
       endTime,
       status: context.status as ExperimentStatus,
-      steadyStateMetrics: context.steadyStateMetrics[context.steadyStateMetrics.length - 1] || {} as SystemMetrics,
-      chaosMetrics: context.chaosMetrics || {} as ChaosMetrics,
-      recoveryMetrics: context.recoveryMetrics || {} as RecoveryMetrics,
-      verificationResults: context.verificationResults || {} as VerificationResults,
-      mttrMetrics: context.mttrMetrics || {} as MTTRMetrics,
-      incidentReport: await this.generateIncidentReport(context)
+      steadyStateMetrics:
+        context.steadyStateMetrics[context.steadyStateMetrics.length - 1] || ({} as SystemMetrics),
+      chaosMetrics: context.chaosMetrics || ({} as ChaosMetrics),
+      recoveryMetrics: context.recoveryMetrics || ({} as RecoveryMetrics),
+      verificationResults: context.verificationResults || ({} as VerificationResults),
+      mttrMetrics: context.mttrMetrics || ({} as MTTRMetrics),
+      incidentReport: await this.generateIncidentReport(context),
     };
 
     const summary = this.generateExperimentSummary(context, result);
@@ -398,7 +409,7 @@ export class ChaosExperimentRunner extends EventEmitter {
       result,
       summary,
       recommendations,
-      artifacts
+      artifacts,
     };
   }
 
@@ -422,7 +433,7 @@ export class ChaosExperimentRunner extends EventEmitter {
       hypothesisValidated,
       systemResilience,
       keyFindings,
-      criticalIssues
+      criticalIssues,
     };
   }
 
@@ -449,7 +460,8 @@ export class ChaosExperimentRunner extends EventEmitter {
     }
 
     // Analyze MTTR metrics
-    if (result.mttrMetrics.overallMTTR > 300000) { // 5 minutes
+    if (result.mttrMetrics.overallMTTR > 300000) {
+      // 5 minutes
       recommendations.push('Reduce Mean Time To Recovery through improved automation');
     }
 
@@ -492,7 +504,7 @@ export class ChaosExperimentRunner extends EventEmitter {
 
     return {
       safe: violations.length === 0,
-      violations
+      violations,
     };
   }
 
@@ -507,7 +519,7 @@ export class ChaosExperimentRunner extends EventEmitter {
     // For now, return mock results
     return {
       passed: true,
-      message: 'Safety check passed'
+      message: 'Safety check passed',
     };
   }
 
@@ -529,11 +541,14 @@ export class ChaosExperimentRunner extends EventEmitter {
     await this.degradationVerifier.startMonitoring(context.scenario, context.context);
 
     // Start alert verification
-    await this.alertVerifier.startMonitoring(
-      context.scenario,
-      context.context,
-      context.scenario.verification.alerting.expectedAlerts
-    );
+    const alertExpectations = context.scenario.verification.alerting.expectedAlerts.map(alert => ({
+      alertType: alert.name,
+      expectedSeverity: alert.severity as 'low' | 'medium' | 'high' | 'critical',
+      expectedWithinMs: context.scenario.verification.alerting.maxAlertDelay,
+      description: `Expected alert: ${alert.name} from ${alert.source}`
+    }));
+
+    await this.alertVerifier.startMonitoring(context.scenario.id, alertExpectations);
   }
 
   /**
@@ -578,10 +593,7 @@ export class ChaosExperimentRunner extends EventEmitter {
   /**
    * Perform verification against criteria
    */
-  private async performVerification(
-    criteria: any,
-    results: any
-  ): Promise<VerificationResults> {
+  private async performVerification(criteria: any, results: any): Promise<VerificationResults> {
     // Implementation would perform comprehensive verification
     return {} as VerificationResults;
   }
@@ -621,7 +633,9 @@ export class ChaosExperimentRunner extends EventEmitter {
   /**
    * Calculate system resilience score
    */
-  private calculateSystemResilience(result: ChaosExperimentResult): ExperimentSummary['systemResilience'] {
+  private calculateSystemResilience(
+    result: ChaosExperimentResult
+  ): ExperimentSummary['systemResilience'] {
     const overallScore = result.verificationResults.overall.score;
 
     if (overallScore >= 90) return 'excellent';
@@ -641,10 +655,13 @@ export class ChaosExperimentRunner extends EventEmitter {
     }
 
     if (result.verificationResults.alerting.alertsTriggered > 0) {
-      findings.push(`Alerting system triggered ${result.verificationResults.alerting.alertsTriggered} alerts`);
+      findings.push(
+        `Alerting system triggered ${result.verificationResults.alerting.alertsTriggered} alerts`
+      );
     }
 
-    if (result.mttrMetrics.overallMTTR < 60000) { // 1 minute
+    if (result.mttrMetrics.overallMTTR < 60000) {
+      // 1 minute
       findings.push('System demonstrated fast recovery capabilities');
     }
 
@@ -665,7 +682,8 @@ export class ChaosExperimentRunner extends EventEmitter {
       issues.push('Alerting system did not function as expected');
     }
 
-    if (result.mttrMetrics.overallMTTR > 600000) { // 10 minutes
+    if (result.mttrMetrics.overallMTTR > 600000) {
+      // 10 minutes
       issues.push('Recovery time exceeded acceptable limits');
     }
 
@@ -717,7 +735,7 @@ export class ChaosExperimentRunner extends EventEmitter {
       this.emit('experiment:degradation_detected', data);
     });
 
-    this.alertVerifier.on('alert:triggered', (data) => {
+    this.alertVerifier.on('alert:triggered', (data: any) => {
       this.emit('experiment:alert_triggered', data);
     });
 
@@ -744,7 +762,7 @@ export class ChaosExperimentRunner extends EventEmitter {
    * Get experiment by ID
    */
   getExperiment(experimentId: string): ExperimentExecutionReport | null {
-    return this.completedExperiments.find(exp => exp.experimentId === experimentId) || null;
+    return this.completedExperiments.find((exp) => exp.experimentId === experimentId) || null;
   }
 
   /**

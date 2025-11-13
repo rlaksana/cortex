@@ -447,7 +447,7 @@ export class SecurityUtils {
   // Security audit helpers
   auditLog(
     action: string,
-    details: Record<string, any>,
+    details: Record<string, unknown>,
     severity: 'low' | 'medium' | 'high' | 'critical' = 'medium'
   ): void {
     const auditEntry = {

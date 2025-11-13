@@ -11,7 +11,6 @@
  */
 
 import {
-  SLOIntegrationService,
   sloIntegrationService,
 } from '../src/services/slo-integration-service.js';
 import {
@@ -625,10 +624,10 @@ async function main() {
     await monitorSLOPerformance();
 
     // Generate custom reports
-    const reports = await generateCustomReports();
+    await generateCustomReports();
 
     // Demonstrate error budget management
-    const budgetManagement = await demonstrateErrorBudgetManagement();
+    await demonstrateErrorBudgetManagement();
 
     console.log('✅ Example completed successfully!');
     console.log('🌐 Dashboard available at:', setupResult.dashboard.url);

@@ -105,10 +105,10 @@ export class ProductionHealthChecker {
   // Import logger lazily to avoid circular dependencies
   private get logger() {
     return {
-      info: (message: string, data?: any) => console.log(`[health-checker] ${message}`, data || ''),
-      warn: (message: string, data?: any) =>
+      info: (message: string, data?: unknown) => console.log(`[health-checker] ${message}`, data || ''),
+      warn: (message: string, data?: unknown) =>
         console.warn(`[health-checker] ${message}`, data || ''),
-      error: (message: string, data?: any) =>
+      error: (message: string, data?: unknown) =>
         console.error(`[health-checker] ${message}`, data || ''),
     };
   }

@@ -13,7 +13,7 @@ export interface SecurityEvent {
   severity: 'low' | 'medium' | 'high' | 'critical';
   source: string;
   description: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   resolved: boolean;
   resolvedAt?: Date;
   assignedTo?: string;

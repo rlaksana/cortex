@@ -87,7 +87,7 @@ export interface Alert {
   source: string;
   message: string;
   timestamp: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   acknowledged: boolean;
   resolved: boolean;
 }
@@ -489,7 +489,7 @@ export class ProductionMonitoringService extends EventEmitter {
     type: 'error' | 'warning' | 'critical',
     source: string,
     message: string,
-    metadata: Record<string, any> = {}
+    metadata: Record<string, unknown> = {}
   ): void {
     const id = `${source}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const alert: Alert = {

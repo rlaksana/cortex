@@ -671,7 +671,7 @@ export class AuthMiddleware {
     isSuspicious: boolean;
     wasBypassed: boolean;
     bypassReason?: string;
-    clientInfo?: any;
+    clientInfo?: unknown;
   }> {
     // Default configuration
     const validationConfig: IPValidationConfig = {
@@ -763,7 +763,7 @@ export class AuthMiddleware {
     isSuspicious: boolean;
     wasBypassed: boolean;
     bypassReason?: string;
-    clientInfo?: any;
+    clientInfo?: unknown;
   } {
     try {
       // Check if IPs are in same subnet

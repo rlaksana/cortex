@@ -57,7 +57,7 @@ export interface ServiceTarget {
     region?: string;
     zone?: string;
     instanceType?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -174,7 +174,7 @@ export interface RoutingDecision {
   matchedConditions: string[];
   sessionAffinityUsed: boolean;
   routingTime: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 /**

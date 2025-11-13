@@ -15,6 +15,20 @@ import { ProductionEnvironmentValidator } from './production-validator.js';
 import { ProductionSecurityMiddleware } from '../middleware/production-security-middleware.js';
 import { GracefulShutdownManager } from '../monitoring/graceful-shutdown.js';
 import { HealthEndpointManager } from '../monitoring/health-endpoint.js';
+import type { Dict, JSONValue, MutableDict } from '../types/index.js';
+import {
+  isDictJSONValue,
+  isJSONObject,
+  isProductionConfig,
+  safeDeepMergeDict,
+  safeMergeProductionConfig,
+  validateAndCastProductionConfig,
+  validateAndConvertHealthConfig,
+  validateAndConvertLoggingConfig,
+  validateAndConvertMonitoringConfig,
+  validateAndConvertPerformanceConfig,
+  validateAndConvertSecurityConfig,
+  validateAndConvertShutdownConfig} from '../utils/configuration-type-guards.js';
 import { type SimpleLogger } from '../utils/logger-wrapper.js';
 
 export interface ProductionConfig {
@@ -103,74 +117,146 @@ export class ProductionConfigManager {
   }
 
   /**
-   * Load production configuration from environment variables
+   * Load production configuration from environment variables with safe parsing
    */
   private loadConfiguration(): ProductionConfig {
     return {
       security: {
-        corsOrigin: (process.env.CORS_ORIGIN || '')
-          .split(',')
-          .map((origin) => origin.trim())
-          .filter(Boolean),
-        rateLimitEnabled: process.env.RATE_LIMIT_ENABLED === 'true',
-        rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-        rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000'),
-        helmetEnabled: process.env.HELMET_ENABLED === 'true',
-        requireApiKey: process.env.REQUIRE_API_KEY === 'true',
-        maxRequestSizeMb: parseInt(process.env.MAX_REQUEST_SIZE_MB || '10'),
-        enableCompression: process.env.ENABLE_COMPRESSION === 'true',
+        corsOrigin: this.getEnvArray('CORS_ORIGIN', []),
+        rateLimitEnabled: this.getEnvBoolean('RATE_LIMIT_ENABLED', false),
+        rateLimitWindowMs: this.getEnvNumber('RATE_LIMIT_WINDOW_MS', 900000),
+        rateLimitMaxRequests: this.getEnvNumber('RATE_LIMIT_MAX_REQUESTS', 1000),
+        helmetEnabled: this.getEnvBoolean('HELMET_ENABLED', false),
+        requireApiKey: this.getEnvBoolean('REQUIRE_API_KEY', false),
+        maxRequestSizeMb: this.getEnvNumber('MAX_REQUEST_SIZE_MB', 10),
+        enableCompression: this.getEnvBoolean('ENABLE_COMPRESSION', false),
       },
       health: {
-        enabled: process.env.ENABLE_HEALTH_CHECKS === 'true',
-        detailedEndpoints: process.env.ENABLE_DETAILED_HEALTH_ENDPOINTS === 'true',
-        metricsEndpoint: process.env.ENABLE_METRICS_ENDPOINT === 'true',
-        authenticationRequired: process.env.HEALTH_ENDPOINT_AUTH_REQUIRED === 'true',
-        allowedIPs: (process.env.HEALTH_ENDPOINT_ALLOWED_IPS || '')
-          .split(',')
-          .map((ip) => ip.trim())
-          .filter(Boolean),
+        enabled: this.getEnvBoolean('ENABLE_HEALTH_CHECKS', false),
+        detailedEndpoints: this.getEnvBoolean('ENABLE_DETAILED_HEALTH_ENDPOINTS', false),
+        metricsEndpoint: this.getEnvBoolean('ENABLE_METRICS_ENDPOINT', false),
+        authenticationRequired: this.getEnvBoolean('HEALTH_ENDPOINT_AUTH_REQUIRED', false),
+        allowedIPs: this.getEnvArray('HEALTH_ENDPOINT_ALLOWED_IPS', []),
       },
       shutdown: {
-        timeout: parseInt(process.env.SHUTDOWN_TIMEOUT || '30000'), // 30 seconds
-        forceTimeout: parseInt(process.env.FORCE_SHUTDOWN_TIMEOUT || '60000'), // 60 seconds
-        enableDrainMode: process.env.ENABLE_DRAIN_MODE !== 'false',
-        drainTimeout: parseInt(process.env.DRAIN_TIMEOUT || '10000'), // 10 seconds
+        timeout: this.getEnvNumber('SHUTDOWN_TIMEOUT', 30000),
+        forceTimeout: this.getEnvNumber('FORCE_SHUTDOWN_TIMEOUT', 60000),
+        enableDrainMode: this.getEnvBoolean('ENABLE_DRAIN_MODE', true),
+        drainTimeout: this.getEnvNumber('DRAIN_TIMEOUT', 10000),
       },
       logging: {
-        level: process.env.LOG_LEVEL || 'info',
-        format: process.env.LOG_FORMAT === 'text' ? 'text' : 'json',
-        structured: process.env.LOG_STRUCTURED === 'true',
-        includeTimestamp: process.env.LOG_TIMESTAMP !== 'false',
-        includeRequestId: process.env.LOG_REQUEST_ID !== 'false',
+        level: this.getEnvString('LOG_LEVEL', 'info'),
+        format: (this.getEnvString('LOG_FORMAT', 'json') === 'text' ? 'text' : 'json') as 'json' | 'text',
+        structured: this.getEnvBoolean('LOG_STRUCTURED', false),
+        includeTimestamp: this.getEnvBoolean('LOG_TIMESTAMP', true),
+        includeRequestId: this.getEnvBoolean('LOG_REQUEST_ID', true),
       },
       performance: {
-        enableMetrics: process.env.ENABLE_METRICS_COLLECTION === 'true',
-        enablePerformanceMonitoring: process.env.ENABLE_PERFORMANCE_MONITORING === 'true',
-        nodeOptions: process.env.NODE_OPTIONS || '',
-        maxOldSpaceSize: parseInt(process.env.MAX_OLD_SPACE_SIZE || '8192'),
-        maxHeapSize: parseInt(process.env.MAX_HEAP_SIZE || '8192'),
+        enableMetrics: this.getEnvBoolean('ENABLE_METRICS_COLLECTION', false),
+        enablePerformanceMonitoring: this.getEnvBoolean('ENABLE_PERFORMANCE_MONITORING', false),
+        nodeOptions: this.getEnvString('NODE_OPTIONS', ''),
+        maxOldSpaceSize: this.getEnvNumber('MAX_OLD_SPACE_SIZE', 8192),
+        maxHeapSize: this.getEnvNumber('MAX_HEAP_SIZE', 8192),
       },
       monitoring: {
-        enableSystemMetrics: process.env.ENABLE_SYSTEM_METRICS === 'true',
-        enableHealthChecks: process.env.ENABLE_HEALTH_CHECKS === 'true',
-        metricsInterval: parseInt(process.env.METRICS_INTERVAL || '60000'), // 1 minute
-        healthCheckInterval: parseInt(process.env.HEALTH_CHECK_INTERVAL || '30000'), // 30 seconds
+        enableSystemMetrics: this.getEnvBoolean('ENABLE_SYSTEM_METRICS', false),
+        enableHealthChecks: this.getEnvBoolean('ENABLE_HEALTH_CHECKS', false),
+        metricsInterval: this.getEnvNumber('METRICS_INTERVAL', 60000),
+        healthCheckInterval: this.getEnvNumber('HEALTH_CHECK_INTERVAL', 30000),
       },
     };
   }
 
+  // ============================================================================
+  // Safe Environment Variable Parsing Utilities
+  // ============================================================================
+
   /**
-   * Validate configuration
+   * Get environment variable as string with default value
+   */
+  private getEnvString(key: string, defaultValue: string): string {
+    const value = process.env[key];
+    if (value === undefined || value === null) {
+      return defaultValue;
+    }
+    return String(value).trim();
+  }
+
+  /**
+   * Get environment variable as number with default value and validation
+   */
+  private getEnvNumber(key: string, defaultValue: number): number {
+    const value = process.env[key];
+    if (value === undefined || value === null) {
+      return defaultValue;
+    }
+
+    const parsed = Number(value);
+    if (isNaN(parsed) || !isFinite(parsed)) {
+      this.logger.warn(`Invalid number value for environment variable ${key}: "${value}". Using default: ${defaultValue}`);
+      return defaultValue;
+    }
+
+    return parsed;
+  }
+
+  /**
+   * Get environment variable as boolean with default value
+   */
+  private getEnvBoolean(key: string, defaultValue: boolean): boolean {
+    const value = process.env[key];
+    if (value === undefined || value === null) {
+      return defaultValue;
+    }
+
+    const normalized = String(value).toLowerCase().trim();
+
+    // Explicit true values
+    if (['true', '1', 'yes', 'on', 'enabled'].includes(normalized)) {
+      return true;
+    }
+
+    // Explicit false values
+    if (['false', '0', 'no', 'off', 'disabled'].includes(normalized)) {
+      return false;
+    }
+
+    // Warn for unclear values and return default
+    this.logger.warn(
+      `Invalid boolean value for environment variable ${key}: "${value}". ` +
+      `Expected 'true'/'false', '1'/'0', 'yes'/'no', 'on'/'off', or 'enabled'/'disabled'. Using default: ${defaultValue}`
+    );
+    return defaultValue;
+  }
+
+  /**
+   * Get environment variable as array of strings with default value
+   */
+  private getEnvArray(key: string, defaultValue: string[]): string[] {
+    const value = process.env[key];
+    if (value === undefined || value === null || value.trim() === '') {
+      return defaultValue;
+    }
+
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+  }
+
+  /**
+   * Validate configuration with comprehensive type safety
    */
   private validateConfiguration(): void {
     const errors: string[] = [];
+    const warnings: string[] = [];
 
     // Validate security configuration
     if (
       this.config.security.rateLimitEnabled &&
       this.config.security.rateLimitMaxRequests > 10000
     ) {
-      errors.push('Rate limit is too permissive for production (>10000 requests)');
+      warnings.push('Rate limit is too permissive for production (>10000 requests)');
     }
 
     if (this.config.security.maxRequestSizeMb > 100) {
@@ -183,7 +269,39 @@ export class ProductionConfigManager {
     }
 
     if (this.config.security.corsOrigin.includes('*') && process.env.NODE_ENV === 'production') {
-      errors.push('Wildcard CORS origin is not recommended for production');
+      warnings.push('Wildcard CORS origin is not recommended for production');
+    }
+
+    // Validate each CORS origin format
+    const invalidCorsOrigins = this.config.security.corsOrigin.filter(origin => {
+      if (origin === '*') return false; // Wildcard is handled separately
+      if (!origin.startsWith('http://') && !origin.startsWith('https://')) return true;
+      try {
+        new URL(origin);
+        return false;
+      } catch {
+        return true;
+      }
+    });
+
+    if (invalidCorsOrigins.length > 0) {
+      errors.push(`Invalid CORS origin formats: ${invalidCorsOrigins.join(', ')}`);
+    }
+
+    // Validate health configuration
+    if (this.config.health.authenticationRequired && this.config.health.allowedIPs.length === 0) {
+      warnings.push('Health endpoint authentication enabled but no allowed IPs configured');
+    }
+
+    // Validate IP address formats in allowedIPs
+    const invalidIPs = this.config.health.allowedIPs.filter(ip => {
+      const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+      const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+      return !ipv4Regex.test(ip) && !ipv6Regex.test(ip);
+    });
+
+    if (invalidIPs.length > 0) {
+      warnings.push(`Invalid IP address formats in health allowed IPs: ${invalidIPs.join(', ')}`);
     }
 
     // Validate timeouts
@@ -195,10 +313,14 @@ export class ProductionConfigManager {
       errors.push('Force shutdown timeout must be greater than normal shutdown timeout');
     }
 
+    if (this.config.shutdown.drainTimeout >= this.config.shutdown.timeout) {
+      warnings.push('Drain timeout should be less than normal shutdown timeout');
+    }
+
     // Validate logging
     const validLogLevels = ['error', 'warn', 'info', 'debug'];
     if (!validLogLevels.includes(this.config.logging.level)) {
-      errors.push(`Invalid log level: ${this.config.logging.level}`);
+      errors.push(`Invalid log level: ${this.config.logging.level}. Valid values: ${validLogLevels.join(', ')}`);
     }
 
     // Validate performance settings
@@ -206,12 +328,77 @@ export class ProductionConfigManager {
       errors.push('Max old space size should be at least 1024MB for production');
     }
 
+    if (this.config.performance.maxHeapSize < 1024) {
+      errors.push('Max heap size should be at least 1024MB for production');
+    }
+
+    if (this.config.performance.maxOldSpaceSize > 32768) {
+      warnings.push('Max old space size is very large (>32GB), ensure sufficient memory is available');
+    }
+
+    // Validate monitoring intervals
+    if (this.config.monitoring.metricsInterval < 1000) {
+      warnings.push('Metrics interval is very frequent (<1s), may impact performance');
+    }
+
+    if (this.config.monitoring.healthCheckInterval < 5000) {
+      warnings.push('Health check interval is very frequent (<5s), may impact performance');
+    }
+
+    // Validate Node.js options format
+    if (this.config.performance.nodeOptions && !this.isValidNodeOptions(this.config.performance.nodeOptions)) {
+      warnings.push('Node.js options format may be invalid');
+    }
+
+    // Log validation results
+    if (warnings.length > 0) {
+      this.logger.warn('Production configuration validation warnings', { warnings });
+    }
+
     if (errors.length > 0) {
       this.logger.error('Production configuration validation failed', { errors });
       throw new Error(`Configuration validation failed: ${errors.join(', ')}`);
     }
 
-    this.logger.info('Production configuration validated successfully');
+    this.logger.info('Production configuration validated successfully', {
+      corsOrigins: this.config.security.corsOrigin.length,
+      rateLimitEnabled: this.config.security.rateLimitEnabled,
+      healthChecksEnabled: this.config.health.enabled,
+      metricsEnabled: this.config.performance.enableMetrics,
+    });
+  }
+
+  /**
+   * Validate Node.js options format
+   */
+  private isValidNodeOptions(options: string): boolean {
+    if (!options || typeof options !== 'string') {
+      return true; // Empty is valid
+    }
+
+    try {
+      // Basic validation: check if options look like Node.js CLI flags
+      const optionParts = options.split(/\s+/);
+      for (const part of optionParts) {
+        if (!part) continue; // Skip empty parts
+
+        // Valid Node.js options typically start with --
+        if (part.startsWith('--')) {
+          continue;
+        }
+
+        // Allow some single-dash options
+        if (part.startsWith('-') && ['e', 'eval', 'p', 'print'].includes(part.slice(1))) {
+          continue;
+        }
+
+        // If we reach here, the option format is suspicious
+        return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -354,11 +541,26 @@ export class ProductionConfigManager {
   }
 
   /**
-   * Update configuration at runtime
+   * Update configuration at runtime with type safety
    */
   updateConfig(updates: Partial<ProductionConfig>): void {
-    // Deep merge the updates
-    this.config = this.deepMerge(this.config, updates);
+    // Validate updates first
+    if (!isProductionConfig(updates)) {
+      throw new Error('Invalid configuration updates provided');
+    }
+
+    // Convert current config to Dict<JSONValue> for safe merging
+    const currentConfigAsDict = this.config as unknown as Dict<JSONValue>;
+    const updatesAsDict = updates as unknown as Dict<JSONValue>;
+
+    // Safely merge configurations
+    const mergedConfigDict = safeMergeProductionConfig(currentConfigAsDict, updatesAsDict);
+
+    // Validate the merged configuration structure
+    const validatedConfig = validateAndCastProductionConfig(mergedConfigDict);
+
+    // Cast back to ProductionConfig with proper type safety
+    this.config = this.castToProductionConfig(validatedConfig);
 
     this.logger.info('Production configuration updated', { updates });
 
@@ -367,9 +569,31 @@ export class ProductionConfigManager {
   }
 
   /**
-   * Deep merge objects
+   * Safely cast validated configuration to ProductionConfig using type-safe converters
    */
-  private deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
+  private castToProductionConfig(validatedConfig: {
+    security: Record<string, unknown>;
+    health: Record<string, unknown>;
+    shutdown: Record<string, unknown>;
+    logging: Record<string, unknown>;
+    performance: Record<string, unknown>;
+    monitoring: Record<string, unknown>;
+  }): ProductionConfig {
+    // Use type-safe converters for each configuration section
+    return {
+      security: validateAndConvertSecurityConfig(validatedConfig.security),
+      health: validateAndConvertHealthConfig(validatedConfig.health),
+      shutdown: validateAndConvertShutdownConfig(validatedConfig.shutdown),
+      logging: validateAndConvertLoggingConfig(validatedConfig.logging),
+      performance: validateAndConvertPerformanceConfig(validatedConfig.performance),
+      monitoring: validateAndConvertMonitoringConfig(validatedConfig.monitoring),
+    };
+  }
+
+  /**
+   * Deep merge helper for generic Dict<JSONValue>
+   */
+  private deepMergeDict(source: Dict<JSONValue>, target: Dict<JSONValue>): Dict<JSONValue> {
     const result = { ...target };
 
     for (const key in source) {
@@ -379,9 +603,9 @@ export class ProductionConfigManager {
           source[key] !== null &&
           !Array.isArray(source[key])
         ) {
-          result[key] = this.deepMerge((result[key] as any) || {}, source[key] as any) as any;
+          result[key] = this.deepMergeDict(source[key] as Dict<JSONValue>, (result[key] as Dict<JSONValue>) || {}) as unknown as JSONValue;
         } else {
-          result[key] = source[key] as any;
+          result[key] = source[key] as JSONValue;
         }
       }
     }
@@ -392,28 +616,28 @@ export class ProductionConfigManager {
   /**
    * Get environment information
    */
-  getEnvironmentInfo(): Record<string, any> {
+  getEnvironmentInfo(): Dict<JSONValue> {
     return {
       nodeVersion: process.version,
       platform: process.platform,
       arch: process.arch,
       pid: process.pid,
       uptime: process.uptime(),
-      memoryUsage: process.memoryUsage(),
-      environment: process.env.NODE_ENV,
+      memoryUsage: process.memoryUsage() as unknown as JSONValue,
+      environment: process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString(),
-      configuration: this.config,
+      configuration: this.config as unknown as JSONValue,
     };
   }
 
   /**
    * Health check for configuration manager
    */
-  healthCheck(): { healthy: boolean; details: Record<string, any> } {
+  healthCheck(): { healthy: boolean; details: Dict<JSONValue> } {
     return {
       healthy: true,
       details: {
-        environment: process.env.NODE_ENV,
+        environment: process.env.NODE_ENV || 'development',
         securityConfigured: !!this.securityMiddleware,
         healthEndpointsConfigured: !!this.healthEndpointManager,
         gracefulShutdownReady: true,
@@ -426,15 +650,15 @@ export class ProductionConfigManager {
   /**
    * Export configuration for monitoring
    */
-  exportConfiguration(): Record<string, any> {
+  exportConfiguration(): Dict<JSONValue> {
     return {
-      security: this.config.security,
-      health: this.config.health,
-      shutdown: this.config.shutdown,
-      logging: this.config.logging,
-      performance: this.config.performance,
-      monitoring: this.config.monitoring,
-      environment: process.env.NODE_ENV,
+      security: this.config.security as unknown as JSONValue,
+      health: this.config.health as unknown as JSONValue,
+      shutdown: this.config.shutdown as unknown as JSONValue,
+      logging: this.config.logging as unknown as JSONValue,
+      performance: this.config.performance as unknown as JSONValue,
+      monitoring: this.config.monitoring as unknown as JSONValue,
+      environment: process.env.NODE_ENV || 'development',
       version: process.env.npm_package_version || '2.0.1',
     };
   }

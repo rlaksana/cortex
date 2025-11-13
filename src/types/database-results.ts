@@ -1,5 +1,5 @@
 // Auto-generated database result types
-export interface DatabaseResult<T = any> {
+export interface DatabaseResult<T = unknown> {
   rows: T[];
   rowCount: number;
   command: string;
@@ -11,12 +11,12 @@ export interface SectionRow {
   heading: string;
   body_md?: string;
   body_text?: string;
-  body_jsonb: Record<string, any>;
+  body_jsonb: Record<string, unknown>;
   content_hash?: string;
   created_at: Date;
   updated_at: Date;
-  tags: Record<string, any>;
-  metadata: Record<string, any>;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
 }
 
 export interface AuditEventRow {
@@ -24,8 +24,8 @@ export interface AuditEventRow {
   table_name: string;
   operation: string;
   user_id?: string;
-  old_data?: Record<string, any>;
-  new_data?: Record<string, any>;
+  old_data?: Record<string, unknown>;
+  new_data?: Record<string, unknown>;
   created_at: Date;
 }
 

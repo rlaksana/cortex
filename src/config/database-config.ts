@@ -20,18 +20,10 @@ import { logger } from '@/utils/logger.js';
 
 import { environment } from './environment.js';
 import type { DatabaseConfig } from '../db/database-interface.js';
-
-// Polyfill fetch for Node.js compatibility
-async function polyfillFetch() {
-  if (typeof fetch === 'undefined') {
-    const { default: fetch } = await import('node-fetch');
-    // Type assertion to handle fetch interface compatibility
-    (globalThis as any).fetch = fetch as any;
-  }
-}
+import { isPlainObject, safeDeepMerge, safeFetchPolyfill } from '../utils/configuration-type-guards.js';
 
 // Initialize polyfill
-polyfillFetch().catch(err =>
+safeFetchPolyfill().catch(err =>
   logger.warn('Failed to polyfill fetch', { error: err })
 );
 
@@ -49,12 +41,28 @@ export interface QdrantConfig {
 }
 
 export interface VectorConfig {
+  // Direct properties for compatibility with qdrant-adapter
+  url?: string;
+  apiKey?: string;
+  type: 'qdrant' | 'weaviate' | 'pinecone' | 'milvus';
+  vectorSize?: number;
+  dimensions?: number;
+  distance?: 'Cosine' | 'Euclid' | 'Dot' | 'Manhattan';
+  distanceMetric?: 'Cosine' | 'Euclid' | 'Dot' | 'Manhattan';
+  collectionName?: string;
+  logQueries?: boolean;
+  connectionTimeout?: number;
+  maxConnections?: number;
+  maxRetries?: number;
+  timeout?: number;
+
+  // OpenAI configuration
   openaiApiKey?: string;
   size: number;
-  distance: 'Cosine' | 'Euclid' | 'Dot' | 'Manhattan';
   embeddingModel: string;
   batchSize: number;
-  // Qdrant-specific nested config to match vector-adapter interface
+
+  // Qdrant-specific nested config for backward compatibility
   qdrant?: {
     url: string;
     apiKey?: string;
@@ -128,12 +136,25 @@ export class DatabaseConfigManager {
         collectionPrefix: rawConfig.QDRANT_COLLECTION_PREFIX || 'cortex',
       },
       vector: {
-        ...(rawConfig.OPENAI_API_KEY && { openaiApiKey: rawConfig.OPENAI_API_KEY }),
-        size: parseInt(String(rawConfig.VECTOR_SIZE || '1536')),
+        // Direct qdrant properties for adapter compatibility
+        type: 'qdrant',
+        url: rawConfig.QDRANT_URL || 'http://localhost:6333',
+        ...(rawConfig.QDRANT_API_KEY && { apiKey: rawConfig.QDRANT_API_KEY }),
+        connectionTimeout: parseInt(String(rawConfig.QDRANT_TIMEOUT || '30000')),
+        collectionName: rawConfig.QDRANT_COLLECTION_PREFIX || 'cortex_knowledge',
+
+        // Vector properties
+        vectorSize: parseInt(String(rawConfig.VECTOR_SIZE || '1536')),
         distance:
           (rawConfig.VECTOR_DISTANCE as 'Cosine' | 'Euclid' | 'Dot' | 'Manhattan') || 'Cosine',
+
+        // OpenAI configuration
+        ...(rawConfig.OPENAI_API_KEY && { openaiApiKey: rawConfig.OPENAI_API_KEY }),
+        size: parseInt(String(rawConfig.VECTOR_SIZE || '1536')),
         embeddingModel: rawConfig.EMBEDDING_MODEL || 'text-embedding-3-small',
         batchSize: parseInt(String(rawConfig.EMBEDDING_BATCH_SIZE || '10')),
+
+        // Legacy nested config for backward compatibility
         qdrant: {
           url: rawConfig.QDRANT_URL || 'http://localhost:6333',
           ...(rawConfig.QDRANT_API_KEY && { apiKey: rawConfig.QDRANT_API_KEY }),
@@ -284,12 +305,12 @@ export class DatabaseConfigManager {
   createFactoryConfig(): DatabaseConfig {
     const baseConfig: DatabaseConfig = {
       type: this.config.selection.type,
-      url: this.config.qdrant.url || 'http://localhost:6333',
-      ...(this.config.qdrant.apiKey && { apiKey: this.config.qdrant.apiKey }),
+      url: this.config.vector.url || this.config.qdrant.url || 'http://localhost:6333',
+      ...(this.config.vector.apiKey && { apiKey: this.config.vector.apiKey }),
       logQueries: this.config.features.debugMode,
-      connectionTimeout: this.config.qdrant.timeout,
+      connectionTimeout: this.config.vector.connectionTimeout || this.config.qdrant.timeout,
       maxConnections: 10, // Default value since pool doesn't exist anymore
-      vectorSize: this.config.vector.size,
+      vectorSize: this.config.vector.size || this.config.vector.vectorSize,
       distance: this.config.vector.distance,
     };
 
@@ -349,8 +370,11 @@ export class DatabaseConfigManager {
    * Update configuration (for dynamic updates)
    */
   updateConfiguration(updates: Partial<CompleteDatabaseConfig>): void {
-    // Merge updates with existing configuration
-    this.config = this.deepMerge(this.config, updates);
+    // Merge updates with existing configuration using type-safe utility
+    this.config = safeDeepMerge(
+      this.config as unknown as Record<string, unknown>,
+      updates as unknown as Record<string, unknown>
+    ) as unknown as CompleteDatabaseConfig;
 
     // Re-validate and optimize
     this.validateAndOptimize();
@@ -430,38 +454,6 @@ export class DatabaseConfigManager {
    */
   exportForExternal(): Record<string, unknown> {
     return environment.exportForMcp();
-  }
-
-  /**
-   * Deep merge utility for configuration updates
-   */
-  private deepMerge(
-    _target: Partial<CompleteDatabaseConfig>,
-    source: Partial<CompleteDatabaseConfig>
-  ): CompleteDatabaseConfig {
-    const result = { ..._target };
-
-    for (const key in source) {
-      const sourceValue = source[key as keyof CompleteDatabaseConfig];
-
-      if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
-        // Type-safe nested merge with proper typing
-        const targetValue = result[key as keyof CompleteDatabaseConfig];
-
-        if (targetValue && typeof targetValue === 'object' && !Array.isArray(targetValue)) {
-          result[key as keyof CompleteDatabaseConfig] = this.deepMerge(
-            targetValue as Partial<CompleteDatabaseConfig>,
-            sourceValue as Partial<CompleteDatabaseConfig>
-          ) as any;
-        } else {
-          result[key as keyof CompleteDatabaseConfig] = sourceValue as any;
-        }
-      } else {
-        result[key as keyof CompleteDatabaseConfig] = sourceValue as any;
-      }
-    }
-
-    return result as CompleteDatabaseConfig;
   }
 }
 

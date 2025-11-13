@@ -11,9 +11,7 @@ import {
   getSensitivityThresholds,
 } from '../../config/contradiction-detector-config.js';
 import {
-  AttributeContradiction,
   type ContradictionAnalysis,
-  ContradictionDetail,
   type ContradictionDetectionRequest,
   type ContradictionDetectionResponse,
   type ContradictionDetectorConfig,
@@ -24,10 +22,6 @@ import {
   type ContradictionResult,
   type ContradictionSafetyConfig,
   type ContradictionType,
-  FactualContradiction,
-  LogicalContradiction,
-  StoragePipelineHook,
-  TemporalContradiction,
 } from '../../types/contradiction-detector.interface';
 import { type KnowledgeItem } from '../../types/core-interfaces.js';
 import { generateId } from '../../utils/id-generator.js';
@@ -36,7 +30,7 @@ export class ContradictionDetector implements ContradictionDetectorService {
   private config: ContradictionDetectorConfig;
   private safetyConfig: ContradictionSafetyConfig;
   private contradictionTypes: ContradictionType[];
-  private cache: Map<string, any> = new Map();
+  private cache: Map<string, unknown> = new Map();
   private metrics: Map<string, number> = new Map();
   private eventQueue: ContradictionEvent[] = [];
 
@@ -162,7 +156,7 @@ export class ContradictionDetector implements ContradictionDetectorService {
 
   private async detectFactualContradictions(
     items: KnowledgeItem[],
-    type: ContradictionType
+    _type: ContradictionType
   ): Promise<ContradictionResult[]> {
     const contradictions: ContradictionResult[] = [];
     const sensitivityThresholds = getSensitivityThresholds();
@@ -210,7 +204,7 @@ export class ContradictionDetector implements ContradictionDetectorService {
         confidence_score: hasDirectNegation.confidence,
         description: hasDirectNegation.description,
         reasoning: hasDirectNegation.reasoning,
-        evidence: hasDirectNegation.evidence,
+        evidence: hasDirectNegation.evidence as { item_id: string; evidence_type: string; content: string; confidence: number; }[],
       });
     }
 
@@ -224,7 +218,7 @@ export class ContradictionDetector implements ContradictionDetectorService {
         confidence_score: semanticContradiction.confidence,
         description: semanticContradiction.description,
         reasoning: semanticContradiction.reasoning,
-        evidence: semanticContradiction.evidence,
+        evidence: semanticContradiction.evidence as { item_id: string; evidence_type: string; content: string; confidence: number; }[],
       });
     }
 
@@ -238,7 +232,7 @@ export class ContradictionDetector implements ContradictionDetectorService {
     confidence: number;
     description: string;
     reasoning: string;
-    evidence: any[];
+    evidence: unknown[];
   } | null {
     const negationMarkers = [
       'not',
@@ -281,7 +275,7 @@ export class ContradictionDetector implements ContradictionDetectorService {
     confidence: number;
     description: string;
     reasoning: string;
-    evidence: any[];
+    evidence: unknown[];
   } | null> {
     // Simplified semantic contradiction detection
     // In a real implementation, this would use embedding similarity or NLP models
@@ -513,7 +507,7 @@ export class ContradictionDetector implements ContradictionDetectorService {
         confidence_score: mutualExclusion.confidence,
         description: mutualExclusion.description,
         reasoning: mutualExclusion.reasoning,
-        evidence: mutualExclusion.evidence,
+        evidence: mutualExclusion.evidence as { item_id: string; evidence_type: string; content: string; confidence: number; }[],
       });
     }
 
@@ -527,7 +521,7 @@ export class ContradictionDetector implements ContradictionDetectorService {
     confidence: number;
     description: string;
     reasoning: string;
-    evidence: any[];
+    evidence: unknown[];
   } | null {
     const mutualExclusionPatterns = [
       { pattern: /exclusive.*or/i, confidence: 0.9 },
@@ -614,7 +608,7 @@ export class ContradictionDetector implements ContradictionDetectorService {
             confidence_score: conflict.confidence,
             description: conflict.description,
             reasoning: conflict.reasoning,
-            evidence: conflict.evidence,
+            evidence: conflict.evidence as { item_id: string; evidence_type: string; content: string; confidence: number; }[],
           });
         }
       }
@@ -623,8 +617,8 @@ export class ContradictionDetector implements ContradictionDetectorService {
     return null;
   }
 
-  private extractAttributes(item: KnowledgeItem): Record<string, any> {
-    const attributes: Record<string, any> = {};
+  private extractAttributes(item: KnowledgeItem): Record<string, unknown> {
+    const attributes: Record<string, unknown> = {};
 
     // Extract from data fields
     if (item.data) {
@@ -648,13 +642,13 @@ export class ContradictionDetector implements ContradictionDetectorService {
 
   private analyzeAttributeConflict(
     attrName: string,
-    value1: any,
-    value2: any
+    value1: unknown,
+    value2: unknown
   ): {
     confidence: number;
     description: string;
     reasoning: string;
-    evidence: any[];
+    evidence: unknown[];
   } | null {
     // Type conflict
     if (typeof value1 !== typeof value2) {
@@ -732,7 +726,7 @@ export class ContradictionDetector implements ContradictionDetectorService {
     confidence_score: number;
     description: string;
     reasoning: string;
-    evidence: any[];
+    evidence: { item_id: string; evidence_type: string; content: string; confidence: number; }[];
   }): ContradictionResult {
     const severity = this.calculateSeverity(params.confidence_score, params.type);
 

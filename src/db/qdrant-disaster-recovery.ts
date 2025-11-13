@@ -175,7 +175,7 @@ export interface DisasterRecoveryPlan {
   activationCriteria: {
     automaticTriggers: Array<{
       condition: string;
-      threshold: any;
+      threshold: unknown;
       action: 'declare-incident' | 'notify-team' | 'start-monitoring';
     }>;
     manualTriggers: Array<{
@@ -1295,7 +1295,7 @@ export class DisasterRecoveryManager {
   private async executeRecoveryPhase(
     executionId: string,
     phase: RecoveryPhase,
-    options: any
+    options: unknown
   ): Promise<void> {
     // Implementation would execute individual recovery phase procedures
     logger.debug({ executionId, phaseId: phase.id }, 'Executing recovery phase procedures');

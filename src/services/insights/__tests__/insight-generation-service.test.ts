@@ -111,7 +111,7 @@ describe('InsightGenerationService', () => {
 
     it('should enable insights in development mode', () => {
       mockEnvironment.isDevelopmentMode.mockReturnValue(true);
-      const newService = new (InsightGenerationService as any)();
+      const newService = new (InsightGenerationService as unknown)();
       expect(newService.config.environment_enabled).toBe(true);
     });
   });
@@ -397,7 +397,7 @@ describe('InsightGenerationService', () => {
         include_metadata: true,
         filter_duplicates: true,
         prioritize_by_confidence: true,
-      } as any);
+      } as unknown);
 
       const request: InsightGenerationRequest = {
         items: [
@@ -489,7 +489,7 @@ describe('InsightGenerationService', () => {
         include_metadata: true,
         filter_duplicates: true,
         prioritize_by_confidence: true,
-      } as any);
+      } as unknown);
 
       const request: InsightGenerationRequest = {
         items: Array.from({ length: 6 }, (_, i) => ({
@@ -590,8 +590,8 @@ describe('InsightGenerationService', () => {
             data: { content: 'Valid item' },
             scope: { project: 'test' },
           },
-          null as any, // Invalid item
-          undefined as any, // Invalid item
+          null as unknown, // Invalid item
+          undefined as unknown, // Invalid item
         ],
         options: {
           enabled: true,

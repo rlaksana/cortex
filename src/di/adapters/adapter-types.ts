@@ -46,7 +46,7 @@ export interface IBaseAdapter {
   /**
    * Get the underlying implementation for advanced operations
    */
-  getUnderlyingImplementation(): any;
+  getUnderlyingImplementation(): unknown;
 
   /**
    * Check if adapter is healthy
@@ -56,7 +56,7 @@ export interface IBaseAdapter {
   /**
    * Get adapter metrics
    */
-  getMetrics(): Promise<Record<string, any>>;
+  getMetrics(): Promise<Record<string, unknown>>;
 }
 
 /**

@@ -190,14 +190,14 @@ class TruncationStrategies {
   /**
    * Recursively truncate JSON object to fit character limit
    */
-  private static truncateJsonObject(obj: any, limit: number): any {
+  private static truncateJsonObject(obj: unknown, limit: number): unknown {
     const str = JSON.stringify(obj);
     if (str.length <= limit) {
       return obj;
     }
 
     if (Array.isArray(obj)) {
-      const truncatedArray: any[] = [];
+      const truncatedArray: unknown[] = [];
       let currentLength = 2; // Start with '[]'
 
       for (const item of obj) {
@@ -213,7 +213,7 @@ class TruncationStrategies {
     }
 
     if (typeof obj === 'object' && obj !== null) {
-      const truncatedObj: Record<string, any> = {};
+      const truncatedObj: Record<string, unknown> = {};
       let currentLength = 2; // Start with '{}'
 
       const entries = Object.entries(obj);

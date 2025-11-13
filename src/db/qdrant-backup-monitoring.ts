@@ -177,7 +177,7 @@ export interface SuppressionRule {
     };
   };
   action: 'suppress' | 'deduplicate' | 'transform';
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
 }
 
 /**
@@ -195,7 +195,7 @@ export interface DashboardWidget {
   };
   dataSource: {
     metric: string;
-    filters?: Record<string, any>;
+    filters?: Record<string, unknown>;
     aggregation?: 'avg' | 'sum' | 'min' | 'max' | 'count';
     timeRange: number; // Minutes
   };
@@ -245,7 +245,7 @@ export interface Alert {
   source: string;
   title: string;
   description: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   metrics: Array<{
     name: string;
     value: number;
@@ -280,7 +280,7 @@ export interface PerformanceMetric {
     disk: number;
     network: number;
   };
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 /**
@@ -293,7 +293,7 @@ export interface HealthStatus {
   lastCheck: string;
   responseTime: number;
   uptime: number;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   checks: Array<{
     name: string;
     status: 'pass' | 'fail' | 'warn';

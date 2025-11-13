@@ -215,7 +215,7 @@ export interface SecurityAuditLog {
   user_agent: string;
   resource?: string;
   action?: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   severity: 'low' | 'medium' | 'high' | 'critical';
   created_at: string;
 }
@@ -231,7 +231,7 @@ export interface AuthError {
     | 'RATE_LIMITED'
     | 'IP_VALIDATION_FAILED';
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   stack?: string;
   timestamp?: string;
 }

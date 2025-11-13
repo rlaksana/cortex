@@ -16,7 +16,7 @@ export interface DeduplicationStrategyConfig {
   similarityThreshold?: number;
 
   // Strategy-specific options can be added by individual strategies
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface DeduplicationResult {
@@ -132,7 +132,7 @@ export abstract class DeduplicationStrategy {
             result[key] = item.data![key];
             return result;
           },
-          {} as Record<string, any>
+          {} as Record<string, unknown>
         ),
     };
 

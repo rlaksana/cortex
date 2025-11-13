@@ -151,7 +151,7 @@ export class ValidationService implements IValidationService {
    */
   private async validateKindSpecificData(
     kind: string,
-    data: Record<string, any>
+    data: Record<string, unknown>
   ): Promise<{ valid: boolean; errors: string[] }> {
     const errors: string[] = [];
 

@@ -913,7 +913,7 @@ describe('UnifiedKnowledgeTypeValidator', () => {
     });
 
     it('should warn about deeply nested objects', async () => {
-      const deepObject: any = {};
+      const deepObject: unknown = {};
       let current = deepObject;
 
       // Create a 12-level deep object
@@ -948,7 +948,7 @@ describe('UnifiedKnowledgeTypeValidator', () => {
 
   describe('Error Handling', () => {
     it('should handle circular references gracefully', async () => {
-      const circularObject: any = { name: 'test' };
+      const circularObject: unknown = { name: 'test' };
       circularObject.self = circularObject;
 
       const entity = {

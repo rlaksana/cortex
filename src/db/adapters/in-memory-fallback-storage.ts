@@ -15,7 +15,6 @@ import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
 
-import type { ExpiryTimeLabel } from '../../constants/expiry-times.js';
 import type {
   BatchSummary,
   ItemResult,
@@ -23,9 +22,7 @@ import type {
   SearchQuery,
   SearchResult,
   StoreError,
-  StoreResult,
 } from '../../types/core-interfaces.js';
-import { calculateItemExpiry } from '../../utils/expiry-utils.js';
 
 /**
  * In-memory storage configuration
@@ -343,7 +340,7 @@ export class InMemoryFallbackStorage extends EventEmitter {
       const searchTerm = query.query.toLowerCase();
 
       // Simple text-based search
-      for (const [id, entry] of this.storage) {
+      for (const [_id, entry] of this.storage) {
         if (this.isExpired(entry)) {
           continue;
         }
@@ -569,7 +566,7 @@ export class InMemoryFallbackStorage extends EventEmitter {
    */
   private calculateExpiryTime(item: KnowledgeItem): number {
     // Use item's expiry if available
-    if (item.data.expiry_at) {
+    if (item.data.expiry_at && typeof item.data.expiry_at === 'string') {
       try {
         return new Date(item.data.expiry_at).getTime();
       } catch {
@@ -691,7 +688,10 @@ export class InMemoryFallbackStorage extends EventEmitter {
   /**
    * Check if item matches scope
    */
-  private matchesScope(itemScope: any, queryScope: any): boolean {
+  private matchesScope(
+    itemScope: Readonly<Record<string, unknown>>,
+    queryScope: Readonly<Record<string, unknown>>
+  ): boolean {
     if (queryScope.project && itemScope.project !== queryScope.project) return false;
     if (queryScope.branch && itemScope.branch !== queryScope.branch) return false;
     if (queryScope.org && itemScope.org !== queryScope.org) return false;

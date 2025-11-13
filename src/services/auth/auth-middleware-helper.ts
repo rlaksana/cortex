@@ -60,7 +60,7 @@ export class MCPAuthHelper {
   async extractAuthContext(
     authToken: string,
     requestInfo: MCPRequestInfo
-  ): Promise<{ auth: MCPAuthContext; user: any }> {
+  ): Promise<{ auth: MCPAuthContext; user: unknown }> {
     try {
       // Try JWT token first
       if (authToken.startsWith('eyJ')) {
@@ -92,7 +92,7 @@ export class MCPAuthHelper {
     auth: MCPAuthContext,
     resource: string,
     action: string,
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ): Promise<{ allowed: boolean; reason: string; required_scopes: AuthScope[] }> {
     try {
       const authContext = convertToAuthContext(auth);

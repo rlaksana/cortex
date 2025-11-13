@@ -46,7 +46,7 @@ export interface ValidationResult {
 
 export interface ValidationRule {
   name: string;
-  validator: (_config: any) => ValidationError[];
+  validator: (_config: CompleteDatabaseConfig) => ValidationError[];
   enabled: boolean;
   category: 'security' | 'performance' | 'connectivity' | 'compatibility' | 'best-practices';
 }
@@ -261,7 +261,7 @@ export class ConfigurationValidator {
         };
 
         // Check JWT secrets (these would come from environment config)
-        const env = (global as any).environment; // Access to environment if available
+        const env = (global as unknown as { environment?: { config?: Record<string, string> } }).environment; // Access to environment if available
         if (env) {
           checkJwtSecret(env.config?.JWT_SECRET, 'JWT_SECRET');
           checkJwtSecret(env.config?.JWT_REFRESH_SECRET, 'JWT_REFRESH_SECRET');

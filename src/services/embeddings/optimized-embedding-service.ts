@@ -375,7 +375,7 @@ export class OptimizedEmbeddingService {
     vector: number[];
     cached: boolean;
     model: string;
-    usage?: any;
+    usage?: unknown;
   }> {
     // Check circuit breaker
     if (!this.checkCircuitBreaker()) {

@@ -37,5 +37,36 @@ export {
   type ValidationFeatures,
 } from './supported-kinds.js';
 
+// Export configuration constants
+export {
+  API_KEY_VALIDATION,
+  createConfigFromEnvironment,
+  type DatabaseType,
+  DEFAULT_MIGRATION_CONFIG,
+  DEFAULT_PERFORMANCE_CONFIG,
+  DEFAULT_QDRANT_CONFIG,
+  DEFAULT_SECURITY_CONFIG,
+  DEFAULT_VALIDATION_CONFIG,
+  type Environment,
+  ENVIRONMENT_SETTINGS,
+  ERROR_CODES,
+  getEnvironmentConfig,
+  getErrorCode,
+  isSupportedDatabaseType,
+  isSupportedEnvironment,
+  isSupportedMigrationMode,
+  isSupportedValidationLevel,
+  MIGRATION_MODES,
+  MIGRATION_STRATEGIES,
+  type MigrationMode,
+  PASSWORD_VALIDATION_PATTERNS,
+  SUPPORTED_DATABASE_TYPES,
+  SUPPORTED_ENVIRONMENTS,
+  validateApiKey,
+  validatePassword,
+  VALIDATION_LEVELS,
+  type ValidationLevel,
+} from './configuration-constants.js';
+
 // Future constants can be exported here as they are added
 // export { OTHER_CONSTANT } from './other-constants.js';

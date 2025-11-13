@@ -10,7 +10,6 @@ import {
   type ContradictionResult,
   type KnowledgeItem,
 } from '../../types/contradiction-detector.interface';
-import { generateId } from '../../utils/id-generator.js';
 
 export class MetadataFlaggingService {
   private flags: Map<string, ContradictionFlag[]> = new Map();
@@ -89,7 +88,7 @@ export class MetadataFlaggingService {
     targetId: string,
     type: 'contradicts' | 'conflicts_with' | 'supersedes' | 'relates_to',
     strength: number,
-    metadata: Record<string, any>
+    metadata: Record<string, unknown>
   ): void {
     const pointer: ContradictionPointer = {
       source_id: sourceId,
@@ -122,7 +121,7 @@ export class MetadataFlaggingService {
     }
 
     // Ensure metadata exists
-    const metadata = item.metadata ? { ...item.metadata } : {};
+    const metadata = item.metadata ? { ...item.metadata } : {} as Record<string, unknown>;
 
     // Add contradiction flags
     const contradictionIds = new Set<string>();
@@ -130,8 +129,8 @@ export class MetadataFlaggingService {
       flag.contradiction_ids.forEach((id) => contradictionIds.add(id));
     });
 
-    if (contradictionIds.size > 0 && !metadata.flags?.includes('possible_contradiction')) {
-      metadata.flags = [...(metadata.flags || []), 'possible_contradiction'];
+    if (contradictionIds.size > 0 && !(metadata.flags as string[])?.includes('possible_contradiction')) {
+      metadata.flags = [...((metadata.flags as string[]) || []), 'possible_contradiction'];
       metadata.contradiction_ids = Array.from(contradictionIds);
       metadata.contradiction_flagged_at = new Date().toISOString();
       metadata.contradiction_count = contradictionIds.size;
@@ -225,8 +224,8 @@ export class MetadataFlaggingService {
     for (const [itemId, pointers] of this.pointers.entries()) {
       const updatedPointers = pointers.filter(
         (pointer) =>
-          !pointer.metadata.contradiction_id ||
-          !contradictionIds.includes(pointer.metadata.contradiction_id)
+          !(pointer.metadata as Record<string, unknown>).contradiction_id ||
+          !contradictionIds.includes((pointer.metadata as Record<string, unknown>).contradiction_id as string)
       );
 
       if (updatedPointers.length === 0) {

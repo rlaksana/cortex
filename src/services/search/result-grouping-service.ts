@@ -13,9 +13,9 @@ export interface ChunkResult {
   chunk_index: number;
   total_chunks: number;
   confidence_score: number;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   kind: string;
-  scope: Record<string, any>;
+  scope: Record<string, unknown>;
   created_at: string;
   match_type: 'exact' | 'fuzzy' | 'semantic' | 'keyword' | 'hybrid' | 'expanded' | 'graph';
 }

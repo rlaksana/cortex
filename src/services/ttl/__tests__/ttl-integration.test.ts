@@ -47,7 +47,7 @@ describe('TTL Integration Test Suite', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    ttlManagementService = createTTLManagementService(mockDatabaseLayer as any);
+    ttlManagementService = createTTLManagementService(mockDatabaseLayer as unknown);
 
     testItems = [
       {
@@ -277,7 +277,7 @@ describe('TTL Integration Test Suite', () => {
       mockDatabaseLayer.search.mockResolvedValue({
         results: expiredItems,
         total_count: expiredItems.length,
-      } as any);
+      } as unknown);
 
       mockDatabaseLayer.delete.mockResolvedValue({ deleted: expiredItems.length, errors: [] });
 
@@ -304,7 +304,7 @@ describe('TTL Integration Test Suite', () => {
           data: item.data,
           created_at: item.created_at,
         })),
-      } as any);
+      } as unknown);
 
       mockDatabaseLayer.store.mockResolvedValue({});
 
@@ -338,7 +338,7 @@ describe('TTL Integration Test Suite', () => {
           },
           created_at: item.created_at,
         })),
-      } as any);
+      } as unknown);
 
       const stats = await ttlManagementService.getTTLStatistics();
 
@@ -500,7 +500,7 @@ describe('TTL Integration Test Suite', () => {
           data: item.data,
           created_at: item.created_at,
         })),
-      } as any);
+      } as unknown);
 
       const stats = await ttlManagementService.getTTLStatistics();
       expect(stats.itemsWithExpiry).toBe(itemsWithTTL.length);
@@ -508,7 +508,7 @@ describe('TTL Integration Test Suite', () => {
       // Step 4: Cleanup simulation (dry run)
       mockDatabaseLayer.search.mockResolvedValue({
         results: [], // No expired items
-      } as any);
+      } as unknown);
 
       const cleanupResult = await ttlManagementService.cleanupExpiredItems({
         dryRun: true,

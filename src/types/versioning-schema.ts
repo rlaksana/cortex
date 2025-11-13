@@ -411,7 +411,7 @@ export function validateInputForVersion(
   toolName: string,
   version: string,
   input: unknown
-): { isValid: boolean; error?: string; validatedInput?: any } {
+): { isValid: boolean; error?: string; validatedInput?: unknown } {
   const contract = BUILTIN_TOOL_CONTRACTS[toolName]?.contracts[version];
   if (!contract) {
     return {

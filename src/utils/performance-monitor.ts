@@ -19,7 +19,7 @@ export interface PerformanceMetric {
   startTime: number;
   endTime?: number;
   duration?: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   status: 'running' | 'completed' | 'failed';
   error?: Error;
 }
@@ -64,7 +64,7 @@ export class PerformanceMonitor {
   /**
    * Start monitoring an operation
    */
-  startOperation(operation: string, metadata: Record<string, any> = {}): string {
+  startOperation(operation: string, metadata: Record<string, unknown> = {}): string {
     const id = this.generateOperationId(operation);
     const metric: PerformanceMetric = {
       operation,
@@ -215,10 +215,10 @@ export class PerformanceMonitor {
    * Generate performance report
    */
   generateReport(): {
-    summary: any;
+    summary: unknown;
     operations: PerformanceMetric[];
     resources: ResourceUsage[];
-    alerts: any[];
+    alerts: unknown[];
   } {
     const metrics = this.getCurrentMetrics();
     const alerts = this.generateAlerts();
@@ -335,8 +335,8 @@ export class PerformanceMonitor {
     }
   }
 
-  private generateAlerts(): any[] {
-    const alerts: any[] = [];
+  private generateAlerts(): unknown[] {
+    const alerts: unknown[] = [];
     const metrics = this.getCurrentMetrics();
 
     // Performance alerts
@@ -383,7 +383,7 @@ export const performanceMonitor = PerformanceMonitor.getInstance();
  * Performance monitoring decorator for functions
  */
 export function withPerformanceMonitoring(operation: string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (target: unknown, propertyName: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {

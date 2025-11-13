@@ -14,6 +14,9 @@
 
 import { z } from 'zod';
 
+import type {
+  LegacyConfig} from '../types/config.js';
+
 // ============================================================================
 // Migration Schemas and Interfaces
 // ============================================================================
@@ -464,9 +467,9 @@ export function httpClientConfig(): HttpClientConfigBuilder {
  * Migrate configuration object recursively
  */
 export function migrateConfiguration(
-  config: Record<string, any>,
+  config: LegacyConfig,
   type: 'health-check' | 'http-client' | 'auto' = 'auto'
-): Record<string, any> {
+): LegacyConfig | StandardHealthCheckConfig | StandardHttpClientConfig {
   if (type === 'auto') {
     // Auto-detect configuration type based on property names
     if (hasHealthCheckProperties(config)) {
@@ -490,7 +493,7 @@ export function migrateConfiguration(
 /**
  * Check if configuration object has health check properties
  */
-function hasHealthCheckProperties(config: Record<string, any>): boolean {
+function hasHealthCheckProperties(config: LegacyConfig): boolean {
   const healthCheckProps = [
     'enabled',
     'intervalMs',
@@ -511,7 +514,7 @@ function hasHealthCheckProperties(config: Record<string, any>): boolean {
 /**
  * Check if configuration object has HTTP client properties
  */
-function hasHttpClientProperties(config: Record<string, any>): boolean {
+function hasHttpClientProperties(config: LegacyConfig): boolean {
   const httpClientProps = [
     'timeoutMs',
     'retryAttempts',
@@ -532,21 +535,21 @@ function hasHttpClientProperties(config: Record<string, any>): boolean {
 /**
  * Type guard for legacy health check configuration
  */
-export function isLegacyHealthCheckConfig(config: any): config is LegacyHealthCheckConfig {
+export function isLegacyHealthCheckConfig(config: unknown): config is LegacyHealthCheckConfig {
   return typeof config === 'object' && config !== null;
 }
 
 /**
  * Type guard for legacy HTTP client configuration
  */
-export function isLegacyHttpClientConfig(config: any): config is LegacyHttpClientConfig {
+export function isLegacyHttpClientConfig(config: unknown): config is LegacyHttpClientConfig {
   return typeof config === 'object' && config !== null;
 }
 
 /**
  * Type guard for standardized health check configuration
  */
-export function isStandardHealthCheckConfig(config: any): config is StandardHealthCheckConfig {
+export function isStandardHealthCheckConfig(config: unknown): config is StandardHealthCheckConfig {
   return (
     typeof config === 'object' &&
     config !== null &&
@@ -559,7 +562,7 @@ export function isStandardHealthCheckConfig(config: any): config is StandardHeal
 /**
  * Type guard for standardized HTTP client configuration
  */
-export function isStandardHttpClientConfig(config: any): config is StandardHttpClientConfig {
+export function isStandardHttpClientConfig(config: unknown): config is StandardHttpClientConfig {
   return (
     typeof config === 'object' &&
     config !== null &&

@@ -98,7 +98,7 @@ export class StoragePipelineIntegration implements StoragePipelineHook {
    */
   async after_store(
     items: KnowledgeItem[],
-    results: any[]
+    results: unknown[]
   ): Promise<ContradictionDetectionResponse | null> {
     if (!this.config.enabled) {
       return null;
@@ -106,7 +106,7 @@ export class StoragePipelineIntegration implements StoragePipelineHook {
 
     // Check for contradictions against existing knowledge
     const storedItems = items.filter(
-      (item, index) => results[index] && results[index].status !== 'error'
+      (item, index) => results[index] && (results[index] as { status?: string }).status !== 'error'
     );
 
     if (storedItems.length === 0) {

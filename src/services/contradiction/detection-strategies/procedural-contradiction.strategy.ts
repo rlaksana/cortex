@@ -110,7 +110,7 @@ interface ProceduralAnalysisResult {
     content: string;
     confidence: number;
     source_item: number;
-    procedural_element: any;
+    procedural_element: unknown;
   }>;
   procedural_analysis: {
     item1_structure: ProcessStructure;

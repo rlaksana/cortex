@@ -13,7 +13,7 @@
 import path from 'path';
 
 import { EventEmitter } from 'events';
-import express from 'express';
+import express, { json, static as serveStatic } from 'express';
 import { createServer } from 'http';
 import { Server, type Socket } from 'socket.io';
 
@@ -509,8 +509,8 @@ export class SLODashboardService extends EventEmitter {
    * Setup Express application
    */
   private setupExpress(): void {
-    this.app.use(express.json());
-    this.app.use(express.static(path.join(__dirname, '../../public')));
+    this.app.use(json());
+    this.app.use(serveStatic(path.join(__dirname, '../../public')));
 
     // API Routes
     this.app.get('/api/dashboards', (req, res) => {

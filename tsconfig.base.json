@@ -39,20 +39,20 @@
     "allowUnusedLabels": false,
 
     // Path mappings (centralized for all environments)
-    "baseUrl": ".",
+    "baseUrl": "src",
     "paths": {
-      "@/*": ["src/*"],
-      "@/types/*": ["src/types/*"],
-      "@/services/*": ["src/services/*"],
-      "@/config/*": ["src/config/*"],
-      "@/utils/*": ["src/utils/*"],
-      "@/schemas/*": ["src/schemas/*"],
-      "@/middleware/*": ["src/middleware/*"],
-      "@/db/*": ["src/db/*"],
-      "@/monitoring/*": ["src/monitoring/*"],
-      "@docs/*": ["docs/*"],
-      "@scripts/*": ["scripts/*"],
-      "@tests/*": ["tests/*"]
+      "@/*": ["*"],
+      "@/types/*": ["types/*"],
+      "@/services/*": ["services/*"],
+      "@/config/*": ["config/*"],
+      "@/utils/*": ["utils/*"],
+      "@/schemas/*": ["schemas/*"],
+      "@/middleware/*": ["middleware/*"],
+      "@/db/*": ["db/*"],
+      "@/monitoring/*": ["monitoring/*"],
+      "@docs/*": ["../docs/*"],
+      "@scripts/*": ["../scripts/*"],
+      "@tests/*": ["../tests/*"]
     },
 
     // Type definitions

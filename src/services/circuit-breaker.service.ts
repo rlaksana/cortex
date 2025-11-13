@@ -94,7 +94,7 @@ export interface CircuitBreakerAnnotation {
   timestamp: number;
   type: 'state_change' | 'failure' | 'recovery' | 'performance' | 'slo_violation' | 'manual_intervention';
   message: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   severity: 'info' | 'warning' | 'error' | 'critical';
   correlationId?: string;
   sloImpact?: {
@@ -137,45 +137,6 @@ export interface CircuitBreakerStats {
   recommendations: string[];
 }
 
-export interface CircuitBreakerState {
-  // Current circuit state: 'closed', 'open', or 'half-open'
-  state: 'closed' | 'open' | 'half-open';
-  // Number of consecutive failures
-  failures: number;
-  // Total number of calls in monitoring window
-  totalCalls: number;
-  // Number of successful calls
-  successCalls: number;
-  // Number of failed calls
-  failedCalls: number;
-  // Timestamp of last failure
-  lastFailureTime: number;
-  // Timestamp when circuit was opened
-  openedAt: number;
-  // Timestamp of last state change
-  lastStateChange: number;
-  // Types of failures encountered
-  failureTypes: Record<string, number>;
-  // Performance metrics
-  averageResponseTime: number;
-  responseTimeSamples: number[];
-}
-
-export interface CircuitBreakerStats {
-  state: CircuitBreakerState['state'];
-  failures: number;
-  totalCalls: number;
-  successRate: number;
-  failureRate: number;
-  averageResponseTime: number;
-  timeSinceLastFailure: number;
-  timeSinceStateChange: number;
-  isOpen: boolean;
-  failureTypes: Record<string, number>;
-  // Additional properties for monitoring
-  isHalfOpen: boolean;
-  successes: number;
-}
 
 /**
  * Enhanced Circuit Breaker with Logging and Annotations
@@ -238,7 +199,7 @@ export class CircuitBreaker extends EventEmitter {
   private addAnnotation(
     type: CircuitBreakerAnnotation['type'],
     message: string,
-    details: Record<string, any> = {},
+    details: Record<string, unknown> = {},
     severity: CircuitBreakerAnnotation['severity'] = 'info',
     correlationId?: string,
     sloImpact?: CircuitBreakerAnnotation['sloImpact']
@@ -283,7 +244,7 @@ export class CircuitBreaker extends EventEmitter {
   private logAnnotation(
     level: 'info' | 'warn' | 'error',
     message: string,
-    details: Record<string, any> = {},
+    details: Record<string, unknown> = {},
     correlationId?: string
   ): void {
     const logData = {

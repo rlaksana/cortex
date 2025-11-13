@@ -15,7 +15,7 @@ import {
   type FailSafe,
   SafetyCheck,
   type SafetyContext,
-  type SystemMetrics
+  type SystemMetrics,
 } from '../types/chaos-testing-types.js';
 
 export interface SafetyViolation {
@@ -86,7 +86,7 @@ export class SafetyController extends EventEmitter {
     this.blastRadiusControl = {
       maxAffectedComponents: this.calculateMaxAffectedComponents(config),
       isolationZones: this.defineIsolationZones(config),
-      failSafes: this.configureFailSafes(config)
+      failSafes: this.configureFailSafes(config),
     };
 
     // Configure safety context
@@ -95,7 +95,7 @@ export class SafetyController extends EventEmitter {
       maxAllowedDowntime: config.duration * 0.1, // 10% of experiment duration
       maxAllowedErrorRate: this.calculateMaxErrorRate(config),
       healthCheckEndpoints: this.getHealthCheckEndpoints(),
-      rollbackProcedures: this.getRollbackProcedures()
+      rollbackProcedures: this.getRollbackProcedures(),
     };
 
     // Reset safety state
@@ -129,20 +129,24 @@ export class SafetyController extends EventEmitter {
 
     // Check basic safety constraints
     if (context.environment === 'production' && config.severity === 'critical') {
-      violations.push(this.createViolation(
-        'threshold_exceeded',
-        'critical',
-        'Critical severity experiments not allowed in production environment'
-      ));
+      violations.push(
+        this.createViolation(
+          'threshold_exceeded',
+          'critical',
+          'Critical severity experiments not allowed in production environment'
+        )
+      );
     }
 
     // Check concurrent experiment limits
     if (this.activeExperiments.size > 2) {
-      violations.push(this.createViolation(
-        'system_limit_reached',
-        'high',
-        'Too many concurrent experiments running'
-      ));
+      violations.push(
+        this.createViolation(
+          'system_limit_reached',
+          'high',
+          'Too many concurrent experiments running'
+        )
+      );
       recommendations.push('Wait for other experiments to complete');
     }
 
@@ -155,40 +159,46 @@ export class SafetyController extends EventEmitter {
     // Check system health before starting
     const healthCheck = await this.performSystemHealthCheck();
     if (!healthCheck.healthy) {
-      violations.push(this.createViolation(
-        'health_check_failed',
-        'high',
-        'System health check failed: ' + healthCheck.issues.join(', ')
-      ));
+      violations.push(
+        this.createViolation(
+          'health_check_failed',
+          'high',
+          'System health check failed: ' + healthCheck.issues.join(', ')
+        )
+      );
       recommendations.push('Resolve system health issues before running experiment');
     }
 
     // Check resource availability
     const resourceCheck = await this.checkResourceAvailability(config);
     if (!resourceCheck.available) {
-      violations.push(this.createViolation(
-        'system_limit_reached',
-        'medium',
-        'Insufficient resources: ' + resourceCheck.constraints.join(', ')
-      ));
+      violations.push(
+        this.createViolation(
+          'system_limit_reached',
+          'medium',
+          'Insufficient resources: ' + resourceCheck.constraints.join(', ')
+        )
+      );
       recommendations.push('Free up system resources or reduce experiment intensity');
     }
 
     // Validate against business hours and critical periods
     const businessCheck = await this.validateBusinessContext(context);
     if (!businessCheck.safe) {
-      violations.push(this.createViolation(
-        'threshold_exceeded',
-        'medium',
-        'Experiment not safe during current business period: ' + businessCheck.reason
-      ));
+      violations.push(
+        this.createViolation(
+          'threshold_exceeded',
+          'medium',
+          'Experiment not safe during current business period: ' + businessCheck.reason
+        )
+      );
       recommendations.push('Schedule experiment during off-peak hours');
     }
 
     return {
       safe: violations.length === 0,
       violations,
-      recommendations
+      recommendations,
     };
   }
 
@@ -222,7 +232,6 @@ export class SafetyController extends EventEmitter {
       // Update safety state
       this.safetyState.lastSafetyCheck = new Date();
       this.safetyState.systemHealth = await this.calculateSystemHealth();
-
     } catch (error) {
       this.emit('safety:monitoring_error', { experimentId, error });
     }
@@ -231,10 +240,7 @@ export class SafetyController extends EventEmitter {
   /**
    * Handle safety violation
    */
-  async handleSafetyViolation(
-    experimentId: string,
-    violation: SafetyViolation
-  ): Promise<void> {
+  async handleSafetyViolation(experimentId: string, violation: SafetyViolation): Promise<void> {
     this.safetyState.activeViolations.push(violation);
     this.emit('safety:violation_detected', { experimentId, violation });
 
@@ -258,10 +264,7 @@ export class SafetyController extends EventEmitter {
   /**
    * Trigger emergency shutdown
    */
-  async triggerEmergencyShutdown(
-    experimentId: string,
-    violation: SafetyViolation
-  ): Promise<void> {
+  async triggerEmergencyShutdown(experimentId: string, violation: SafetyViolation): Promise<void> {
     this.safetyState.emergencyShutdown = true;
     this.safetyContext.emergencyShutdown = true;
 
@@ -282,10 +285,7 @@ export class SafetyController extends EventEmitter {
   /**
    * Trigger experiment abort sequence
    */
-  async triggerAbortSequence(
-    experimentId: string,
-    violation: SafetyViolation
-  ): Promise<void> {
+  async triggerAbortSequence(experimentId: string, violation: SafetyViolation): Promise<void> {
     this.emit('safety:abort_triggered', { experimentId, violation });
 
     // Execute abort procedures
@@ -297,10 +297,7 @@ export class SafetyController extends EventEmitter {
   /**
    * Trigger mitigation sequence
    */
-  async triggerMitigationSequence(
-    experimentId: string,
-    violation: SafetyViolation
-  ): Promise<void> {
+  async triggerMitigationSequence(experimentId: string, violation: SafetyViolation): Promise<void> {
     this.emit('safety:mitigation_triggered', { experimentId, violation });
 
     // Execute mitigation procedures
@@ -332,7 +329,7 @@ export class SafetyController extends EventEmitter {
     this.emit('safety:blast_radius_checked', {
       experimentId,
       metrics: blastRadiusMetrics,
-      contained
+      contained,
     });
   }
 
@@ -347,17 +344,17 @@ export class SafetyController extends EventEmitter {
       userImpact: {
         affectedUsers: 100,
         totalUsers: 10000,
-        impactPercentage: 1.0
+        impactPercentage: 1.0,
       },
       businessImpact: {
         revenueImpact: 0.01,
-        customerSatisfactionImpact: 0.05
+        customerSatisfactionImpact: 0.05,
       },
       systemImpact: {
         availabilityImpact: 2.0,
         performanceImpact: 15.0,
-        dataIntegrityRisk: 0.1
-      }
+        dataIntegrityRisk: 0.1,
+      },
     };
   }
 
@@ -371,12 +368,14 @@ export class SafetyController extends EventEmitter {
     }
 
     // Check user impact
-    if (metrics.userImpact.impactPercentage > 5) { // 5% user impact threshold
+    if (metrics.userImpact.impactPercentage > 5) {
+      // 5% user impact threshold
       return false;
     }
 
     // Check business impact
-    if (metrics.businessImpact.revenueImpact > 0.1) { // 10% revenue impact threshold
+    if (metrics.businessImpact.revenueImpact > 0.1) {
+      // 10% revenue impact threshold
       return false;
     }
 
@@ -434,7 +433,7 @@ export class SafetyController extends EventEmitter {
       `Manual emergency shutdown triggered: ${reason}`
     );
 
-    for (const experimentId of this.activeExperiments) {
+    for (const experimentId of Array.from(this.activeExperiments)) {
       await this.triggerEmergencyShutdown(experimentId, violation);
     }
   }
@@ -448,7 +447,7 @@ export class SafetyController extends EventEmitter {
       activeViolations: [],
       blastRadiusContained: true,
       systemHealth: 'healthy',
-      lastSafetyCheck: new Date()
+      lastSafetyCheck: new Date(),
     };
   }
 
@@ -478,18 +477,18 @@ export class SafetyController extends EventEmitter {
       {
         trigger: 'error_rate > 10%',
         action: 'abort_experiment',
-        threshold: 10
+        threshold: 10,
       },
       {
         trigger: 'response_time > 5s',
         action: 'reduce_intensity',
-        threshold: 5000
+        threshold: 5000,
       },
       {
         trigger: 'availability < 95%',
         action: 'abort_experiment',
-        threshold: 95
-      }
+        threshold: 95,
+      },
     ];
   }
 
@@ -509,12 +508,7 @@ export class SafetyController extends EventEmitter {
   }
 
   private getHealthCheckEndpoints(): string[] {
-    return [
-      '/health',
-      '/api/health',
-      '/monitoring/health',
-      '/qdrant/health'
-    ];
+    return ['/health', '/api/health', '/monitoring/health', '/qdrant/health'];
   }
 
   private getRollbackProcedures(): string[] {
@@ -522,7 +516,7 @@ export class SafetyController extends EventEmitter {
       'rollback-chaos-injection',
       'restore-configuration',
       'restart-services',
-      'verify-system-health'
+      'verify-system-health',
     ];
   }
 
@@ -548,7 +542,7 @@ export class SafetyController extends EventEmitter {
       type,
       severity,
       message,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
@@ -560,21 +554,23 @@ export class SafetyController extends EventEmitter {
 
     // Check if scenario affects critical components
     const criticalComponents = ['authentication', 'payment', 'user-data'];
-    const affectedCritical = criticalComponents.filter(comp =>
+    const affectedCritical = criticalComponents.filter((comp) =>
       scenario.injectionPoint.component.includes(comp)
     );
 
     if (affectedCritical.length > 0) {
-      violations.push(this.createViolation(
-        'threshold_exceeded',
-        'high',
-        `Scenario affects critical components: ${affectedCritical.join(', ')}`
-      ));
+      violations.push(
+        this.createViolation(
+          'threshold_exceeded',
+          'high',
+          `Scenario affects critical components: ${affectedCritical.join(', ')}`
+        )
+      );
     }
 
     return {
       safe: violations.length === 0,
-      violations
+      violations,
     };
   }
 
@@ -585,7 +581,7 @@ export class SafetyController extends EventEmitter {
     // Implementation would perform actual health checks
     return {
       healthy: true,
-      issues: []
+      issues: [],
     };
   }
 
@@ -596,7 +592,7 @@ export class SafetyController extends EventEmitter {
     // Implementation would check actual resource availability
     return {
       available: true,
-      constraints: []
+      constraints: [],
     };
   }
 
@@ -607,7 +603,7 @@ export class SafetyController extends EventEmitter {
     // Implementation would validate business hours, critical periods, etc.
     return {
       safe: true,
-      reason: ''
+      reason: '',
     };
   }
 
@@ -617,21 +613,25 @@ export class SafetyController extends EventEmitter {
     // Check error rate
     const currentErrorRate = await this.getCurrentErrorRate();
     if (currentErrorRate > this.safetyContext.maxAllowedErrorRate) {
-      violations.push(this.createViolation(
-        'threshold_exceeded',
-        'high',
-        `Error rate exceeded threshold: ${currentErrorRate}% > ${this.safetyContext.maxAllowedErrorRate}%`
-      ));
+      violations.push(
+        this.createViolation(
+          'threshold_exceeded',
+          'high',
+          `Error rate exceeded threshold: ${currentErrorRate}% > ${this.safetyContext.maxAllowedErrorRate}%`
+        )
+      );
     }
 
     // Check downtime
     const currentDowntime = await this.getCurrentDowntime();
     if (currentDowntime > this.safetyContext.maxAllowedDowntime) {
-      violations.push(this.createViolation(
-        'threshold_exceeded',
-        'high',
-        `Downtime exceeded threshold: ${currentDowntime}ms > ${this.safetyContext.maxAllowedDowntime}ms`
-      ));
+      violations.push(
+        this.createViolation(
+          'threshold_exceeded',
+          'high',
+          `Downtime exceeded threshold: ${currentDowntime}ms > ${this.safetyContext.maxAllowedDowntime}ms`
+        )
+      );
     }
 
     return violations;
@@ -644,11 +644,13 @@ export class SafetyController extends EventEmitter {
     for (const endpoint of this.safetyContext.healthCheckEndpoints) {
       const healthy = await this.checkHealthEndpoint(endpoint);
       if (!healthy) {
-        violations.push(this.createViolation(
-          'health_check_failed',
-          'medium',
-          `Health check failed for endpoint: ${endpoint}`
-        ));
+        violations.push(
+          this.createViolation(
+            'health_check_failed',
+            'medium',
+            `Health check failed for endpoint: ${endpoint}`
+          )
+        );
       }
     }
 
@@ -662,11 +664,9 @@ export class SafetyController extends EventEmitter {
     const contained = await this.verifyBlastRadiusContainment(blastRadiusMetrics);
 
     if (!contained) {
-      violations.push(this.createViolation(
-        'threshold_exceeded',
-        'high',
-        'Blast radius containment failure'
-      ));
+      violations.push(
+        this.createViolation('threshold_exceeded', 'high', 'Blast radius containment failure')
+      );
     }
 
     return violations;
@@ -674,8 +674,8 @@ export class SafetyController extends EventEmitter {
 
   private async calculateSystemHealth(): Promise<SafetyState['systemHealth']> {
     const violations = this.safetyState.activeViolations;
-    const criticalViolations = violations.filter(v => v.severity === 'critical');
-    const highViolations = violations.filter(v => v.severity === 'high');
+    const criticalViolations = violations.filter((v) => v.severity === 'critical');
+    const highViolations = violations.filter((v) => v.severity === 'high');
 
     if (criticalViolations.length > 0) {
       return 'shutdown';
