@@ -1,6 +1,7 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
+// PHASE 2.1 RECOVERY: Core interface synchronization complete
+// Status: TypeScript recovery in progress - @ts-nocheck removed systematically
+// Recovery Date: 2025-11-14T16:20:00+07:00 (Asia/Jakarta)
+// Recovery Method: Sequential file-by-file approach with quality gates
 
 /**
  * Core interfaces for the Cortex Memory MCP system
@@ -25,10 +26,7 @@ export interface KnowledgeItem {
 }
 
 // Import unified contracts to maintain consistency (excluding KnowledgeItem to avoid circular imports)
-import type {
-  StoreError,
-  StoreResult,
-} from './contracts.js';
+import type { StoreError, StoreResult } from './contracts.js';
 
 // Re-export for backward compatibility
 export type {
@@ -93,14 +91,23 @@ export interface SearchQuery {
   top_k?: number;
   expand?: 'relations' | 'parents' | 'children' | 'none'; // P4-T4.2: Graph expansion options
 
-  text?: unknown
+  text?: unknown;
 
-  filters?: unknown
+  filters?: unknown;
 }
 
 export interface ItemResult {
   input_index: number;
-  status: 'stored' | 'updated' | 'deleted' | 'created' | 'skipped' | 'batch' | 'skipped_dedupe' | 'business_rule_blocked' | 'validation_error';
+  status:
+    | 'stored'
+    | 'updated'
+    | 'deleted'
+    | 'created'
+    | 'skipped'
+    | 'batch'
+    | 'skipped_dedupe'
+    | 'business_rule_blocked'
+    | 'validation_error';
   kind: string;
   content?: string;
   id?: string;
