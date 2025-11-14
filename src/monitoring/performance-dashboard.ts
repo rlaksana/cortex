@@ -7,7 +7,7 @@
  * Provides HTTP endpoints for performance monitoring and alerting
  */
 
-import express, { type NextFunction, type Request, type Response, Router } from 'express';
+import { type NextFunction, type Request, type Response, Router } from 'express';
 
 import { logger } from '@/utils/logger.js';
 

@@ -24,7 +24,6 @@ import { EventEmitter } from 'events';
 
 import { performanceMonitor } from './performance-monitor';
 import { zaiServicesManager } from '../services/ai/index';
-import type { ZAIMetrics } from '../types/zai-interfaces';
 import { logger } from '../utils/logger.js';
 
 /**

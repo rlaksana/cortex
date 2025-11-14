@@ -20,8 +20,6 @@
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 
-import * as cron from 'node-cron';
-
 import { logger } from '@/utils/logger.js';
 
 /**

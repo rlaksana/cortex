@@ -23,10 +23,7 @@ import { DependencyType } from '../services/deps-registry.js';
 import { EmbeddingService } from '../services/embeddings/embedding-service.js';
 import {
   type ComponentHealth,
-  ComponentHealthResult,
-  dependencyStatusToHealthStatus,
   HealthStatus,
-  healthStatusToDependencyStatus,
   type SystemHealthResult,
 } from '../types/unified-health-interfaces.js';
 

@@ -14,8 +14,6 @@ import { type PointerResolutionService } from './pointer-resolution.service';
 import {
   type ContradictionDetectionRequest,
   type ContradictionDetectionResponse,
-  ContradictionFlag,
-  ContradictionResult,
   type KnowledgeItem,
   type StoragePipelineHook,
 } from '../../types/contradiction-detector.interface';

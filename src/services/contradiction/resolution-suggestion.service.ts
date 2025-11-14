@@ -21,7 +21,6 @@ import { logger } from '@/utils/logger.js';
 
 import type {
   ContradictionResult,
-  ContradictionType,
   KnowledgeItem,
 } from '../../types/contradiction-detector.interface';
 import { zaiClientService } from '../ai/zai-client.service';

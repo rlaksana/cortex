@@ -25,13 +25,13 @@
 
 import { performance } from 'node:perf_hooks';
 import { promises as fs } from 'fs';
-import { dirname,join } from 'path';
+import {join } from 'path';
 import { createHash } from 'crypto';
 
 import { logger } from '@/utils/logger.js';
 
 import type { IVectorAdapter } from '../../db/interfaces/vector-adapter.interface.js';
-import type { KnowledgeItem, MemoryStoreResponse } from '../../types/core-interfaces.js';
+import type { KnowledgeItem } from '../../types/core-interfaces.js';
 import { systemMetricsService } from '../metrics/system-metrics.js';
 
 // === Type Definitions ===

@@ -20,7 +20,6 @@ import type {
   AuthenticationMethod,
   GraphQLSchema,
   RateLimitConfig,
-  ServiceEndpoint,
 } from '../types/api-interfaces.js';
 
 export interface UploadedFile {

@@ -15,11 +15,8 @@
 
 import type {
   Dict,
-  isDict,
-  isJSONArray,
   isJSONObject,
   isJSONValue,
-  JSONArray,
   JSONObject,
   JSONValue} from '../types/index.js';
 

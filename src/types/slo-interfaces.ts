@@ -13,7 +13,6 @@
  * @since 2025
  */
 
-import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 // ============================================================================
 // Core SLO/SLI Interfaces

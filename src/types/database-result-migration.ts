@@ -13,7 +13,7 @@
  * @since 2025
  */
 
-import type { DatabaseResult as OptimalDatabaseResult, DatabaseError } from './database-generics.js';
+import type { DatabaseError,DatabaseResult as OptimalDatabaseResult } from './database-generics.js';
 
 // ============================================================================
 // Legacy Type Definitions (for backward compatibility)

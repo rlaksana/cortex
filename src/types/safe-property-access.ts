@@ -10,22 +10,9 @@
  */
 
 import type {
-  AsyncResult,
   Config,
-  ConfigPath,
-  ConfigValue,
-  Dict,
-  JSONArray,
-  JSONObject,
-  JSONPrimitive,
-  JSONValue,
-  Result,
   Validator} from './base-types.js';
-import type {
-  isJSONArray,
-  isJSONObject,
-  isJSONPrimitive,
-  isJSONValue} from './type-guards-enhanced.js';
+
 
 // ============================================================================
 // Core Property Access Types

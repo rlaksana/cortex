@@ -30,12 +30,8 @@ import { logger } from '@/utils/logger.js';
 
 import type { DatabaseManager } from '../../db/database-manager.js';
 import {
-  ApiKey,
-  AuthContext,
   type AuthScope,
   type AuthSession,
-  AuthToken,
-  DEFAULT_ROLE_PERMISSIONS,
   type TokenPayload,
   type User,
   type UserRole,
@@ -43,7 +39,6 @@ import {
 import {
   AuthenticationError,
   ConfigurationError,
-  ErrorCategory,
   ValidationError,
 } from '../../utils/error-handler.js';
 

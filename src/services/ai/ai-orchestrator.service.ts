@@ -24,7 +24,6 @@ import type {
   AIProvider,
   ZAIChatRequest,
   ZAIChatResponse,
-  ZAIError,
   ZAIEvent,
   ZAIEventListener,
   ZAIMetrics,

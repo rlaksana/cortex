@@ -13,10 +13,7 @@ import { logger } from '@/utils/logger.js';
 import { environment } from '../../config/environment.js';
 import type {
   TruncationConfig,
-  TruncationMetadata,
   TruncationResult,
-  TruncationStrategy,
-  TruncationWarning,
 } from '../../config/truncation-config.js';
 import { CONTENT_TYPE_PATTERNS, TRUNCATION_STRATEGIES } from '../../config/truncation-config.js';
 

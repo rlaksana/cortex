@@ -18,7 +18,7 @@ import { EventEmitter } from 'events';
 import { logger } from '@/utils/logger.js';
 
 import { CircuitBreaker } from '../services/circuit-breaker.service.js';
-import { DependencyType,HealthStatus } from '../types/unified-health-interfaces.js';
+import {HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**
  * Qdrant connection status types

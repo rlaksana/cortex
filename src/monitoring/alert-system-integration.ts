@@ -33,7 +33,6 @@ import { type Alert, alertManagementService, AlertSeverity } from './alert-manag
 import { alertMetricsService } from './alert-metrics-service.js';
 import { alertTestingService } from './alert-testing-service.js';
 import { HealthCheckService } from './health-check-service.js';
-import { notificationChannelRegistry } from './notification-channels.js';
 import { onCallManagementService } from './oncall-management-service.js';
 import { runbookIntegrationService } from './runbook-integration-service.js';
 import { DependencyType } from '../services/deps-registry.js';

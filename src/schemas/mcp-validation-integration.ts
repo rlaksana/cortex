@@ -15,7 +15,6 @@
 import { logger } from '@/utils/logger.js';
 
 import type { JSONValue,ValidationErrorDetail,ValidationResult } from './unified-knowledge-validator.js';
-import { MCPValidationIntegration, ValidationErrorConverter } from './validation-migration.js';
 import { mcpToolValidator } from '../services/validation/enhanced-validation-service.js';
 import type { Dict } from '../types/index.js';
 

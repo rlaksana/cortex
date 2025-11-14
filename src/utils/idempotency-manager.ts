@@ -23,7 +23,7 @@
 
 import { createHash } from 'crypto';
 
-import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
+import { v5 as uuidv5 } from 'uuid';
 
 import { logger } from '@/utils/logger.js';
 

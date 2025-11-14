@@ -33,13 +33,11 @@ import type {
   IMemoryStoreOrchestrator,
   IPerformanceMonitor,
 } from './di/service-interfaces.js';
-import { ServiceTokens } from './di/service-interfaces.js';
 import { serviceLocator } from './di/service-locator.js';
 // Import DI components
 import { createServiceRegistry } from './di/service-registry.js';
 // Import schemas and types
 import { ALL_JSON_SCHEMAS } from './schemas/json-schemas.js';
-import type { MemoryFindResponse,MemoryStoreResponse,SearchResult  } from './types/core-interfaces.js';
 
 
 /**

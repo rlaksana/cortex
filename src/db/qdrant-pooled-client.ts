@@ -29,7 +29,6 @@ import {
   type CircuitBreakerStats,
 } from '../services/circuit-breaker.service';
 import type { PoolId, ResourceId } from '../types/pool-interfaces.js';
-import { performanceMonitor } from '../utils/performance-monitor.js';
 
 /**
  * Typed Qdrant connection wrapper

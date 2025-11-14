@@ -14,18 +14,10 @@
  */
 
 import type {
-  Config,
-  Dict,
-  isDict,
   isJSONArray,
   isJSONObject,
   isJSONPrimitive,
-  isJSONValue,
-  isMetadata,
-  isTags,
-  JSONArray,
   JSONObject,
-  JSONPrimitive,
   JSONValue,
 } from '../types/index.js';
 

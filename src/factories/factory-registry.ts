@@ -8,11 +8,9 @@
  */
 
 import type {
-  ConnectionTestResult,
   FactoryError,
   FactoryId,
   FactoryRegistry as IFactoryRegistry,
-  ServiceId,
   TypedFactory,
   ValidationResult} from './factory-types';
 import { EnhancedDIContainer } from '../di/enhanced-di-container';

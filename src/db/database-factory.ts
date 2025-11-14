@@ -37,7 +37,6 @@ import {
   convertArrayResponse,
   convertDeleteResponse,
   convertMemoryStoreResponse,
-  convertMetricsResponse,
   convertSearchResponse,
   unwrapDatabaseResult} from '../utils/database-result-unwrapper.js';
 import { ValidationError } from '../utils/error-handler.js';

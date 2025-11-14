@@ -13,7 +13,6 @@
  * @since 2025
  */
 
-import { logger } from '@/utils/logger.js';
 
 import { Injectable } from '../di-container.js';
 import type { IConfigService, ILoggerService  } from '../service-interfaces.js';

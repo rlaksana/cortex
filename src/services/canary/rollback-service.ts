@@ -26,9 +26,7 @@ import { logger } from '@/utils/logger.js';
 
 import { type CanaryDeployment, canaryOrchestrator } from './canary-orchestrator.js';
 import { killSwitchService } from './kill-switch-service.js';
-import { trafficSplitterService } from './traffic-splitter.js';
 import { metricsService } from '../../monitoring/metrics-service.js';
-import { AlertSeverity, HealthStatus } from '../../types/unified-health-interfaces.js';
 import { featureFlagService, FlagStatus } from '../feature-flag/feature-flag-service.js';
 
 // ============================================================================

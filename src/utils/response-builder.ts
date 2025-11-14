@@ -17,7 +17,6 @@
  * @since 2025
  */
 
-import { logger } from './logger.js';
 import { createResponseMeta, type UnifiedToolResponse } from '../types/unified-response.interface';
 
 /**

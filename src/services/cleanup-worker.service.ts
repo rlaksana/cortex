@@ -15,10 +15,7 @@
 import { logger } from '@/utils/logger.js';
 
 import {
-  getPurgeStatistics,
-  getRecentPurgeReports,
   runExpiryWorker,
-  runExpiryWorkerWithReport,
 } from './expiry-worker.js';
 import { memoryFind } from './memory-find.js';
 import { memoryStore } from './memory-store.js';

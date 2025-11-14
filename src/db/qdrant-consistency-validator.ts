@@ -18,15 +18,12 @@
 // EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
 // TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
-import { createHash } from 'crypto';
 
 import { type QdrantClient } from '@qdrant/js-client-rest';
 
 import { logger } from '@/utils/logger.js';
 
-import type {
-  BackupMetadata,
-  ConsistencyValidationResult} from './qdrant-backup-config.js';
+
 
 /**
  * Validation configuration

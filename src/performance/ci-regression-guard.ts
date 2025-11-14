@@ -9,11 +9,11 @@
  * with configurable thresholds, automated reporting, and failure handling
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 
-import type { PerformanceMetrics,PerformanceRegression,PerformanceTestResult } from './performance-harness.js';
+import type {PerformanceTestResult } from './performance-harness.js';
 import type { PerformanceTestConfig } from './performance-targets.js';
 
 export interface RegressionGuardConfig {

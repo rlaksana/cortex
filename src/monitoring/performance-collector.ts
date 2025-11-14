@@ -11,8 +11,38 @@ import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
 
-import type { OperationType } from './operation-types.js';
-import type { OperationMetadata, TypedPerformanceAlert,TypedPerformanceMetric, TypedPerformanceSummary } from '../types/monitoring-types.js';
+// Define OperationType locally to avoid import issues with @ts-nocheck
+enum OperationType {
+  MEMORY_STORE = 'memory_store',
+  MEMORY_FIND = 'memory_find',
+  EMBEDDING = 'embedding',
+  SEARCH = 'search',
+  VALIDATION = 'validation',
+  AUDIT = 'audit',
+  HEALTH_CHECK = 'health_check',
+  BATCH_OPERATION = 'batch_operation',
+  EXPORT = 'export',
+  PURGE = 'purge',
+  MAINTENANCE = 'maintenance',
+  RATE_LIMIT = 'rate_limit',
+  AUTH = 'auth',
+  CHUNKING = 'chunking',
+  DEDUPLICATION = 'deduplication',
+  DATABASE_HEALTH = 'database_health',
+  DATABASE_STATS = 'database_stats',
+  AUTHENTICATION = 'authentication',
+  SYSTEM = 'system',
+  ERROR = 'error',
+  KILL_SWITCH_TRIGGERED = 'kill_switch_triggered',
+  KILL_SWITCH_DEACTIVATED = 'kill_switch_deactivated',
+  KILL_SWITCH_RECOVERED = 'kill_switch_recovered',
+}
+
+// Re-export OperationType for other files that need it
+export { OperationType };
+
+// import type { OperationType } from './operation-types.js';
+import type { OperationMetadata } from '../types/monitoring-types.js';
 
 export interface PerformanceMetric {
   operation: OperationType;

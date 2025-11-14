@@ -14,7 +14,6 @@ import type {
   EnhancedServiceRegistration,
   FactoryServiceRegistration,
   InstanceServiceRegistration,
-  isServiceId,
   ResolutionOptions,
   ServiceId,
   ServiceLifetime,

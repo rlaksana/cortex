@@ -32,7 +32,6 @@ import {
   validateSLO,
   type ValidationResult,
 } from '../types/slo-interfaces.js';
-import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**
  * SLO Service - Main service for SLO management and evaluation

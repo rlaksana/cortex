@@ -25,9 +25,7 @@ import { zaiConfigManager } from '../../config/zai-config.js';
 import type {
   ZAIChatRequest,
   ZAIChatResponse,
-  ZAIConfig,
   ZAIHealthCheckResponse,
-  ZAIMetrics,
 } from '../../types/zai-interfaces.js';
 
 /**

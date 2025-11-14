@@ -25,7 +25,6 @@ import {
 } from './mcp-inputs.js';
 import {
   type Dict,
-  isDict,
   isJSONValue,
   type JSONValue,
   type MutableDict,

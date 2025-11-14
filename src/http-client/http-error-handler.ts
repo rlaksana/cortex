@@ -14,30 +14,11 @@
  */
 
 import type {
-  AuthenticationError,
-  AuthorizationError,
   HttpError,
   HttpErrorType,
-  HttpStatus,
-  HttpStatusError,
-  isAuthenticationError,
-  isAuthorizationError,
   isHttpError,
-  isHttpStatusError,
-  isNetworkError,
-  isRateLimitError,
-  isRetryableError,
-  isServerError,
-  isTimeoutError,
-  isValidationError,
-  NetworkHttpError,
-  ParseHttpError,
-  RateLimitError,
-  ServerError,
-  TimeoutHttpError,
   TypedHttpRequest,
   TypedHttpResponse,
-  ValidationError,
 } from '../types/http-client-types.js';
 
 // ============================================================================

@@ -24,7 +24,6 @@ import {
   type NotificationChannel,
   type SLO,
   type SLOAlert,
-  SLOAlertType,
   type SLOEvaluation,
   SLOEvaluationStatus,
 } from '../types/slo-interfaces.js';

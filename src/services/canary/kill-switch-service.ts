@@ -25,7 +25,7 @@ import { logger } from '@/utils/logger.js';
 import { gracefulShutdown } from '../../monitoring/graceful-shutdown.js';
 import { metricsService } from '../../monitoring/metrics-service.js';
 import { OperationType } from '../../monitoring/operation-types.js';
-import { AlertSeverity, HealthStatus } from '../../types/unified-health-interfaces.js';
+import { HealthStatus } from '../../types/unified-health-interfaces.js';
 
 // ============================================================================
 // Types and Interfaces

@@ -34,10 +34,8 @@ import type {
   ZAIChatRequest,
   ZAIChatResponse,
   ZAIMetrics,
-  ZAIServiceStatus,
   ZAIStreamChunk,
 } from '../../types/zai-interfaces.js';
-import { performanceMonitor } from '../../utils/performance-monitor.js';
 
 /**
  * Cache entry with TTL and metadata

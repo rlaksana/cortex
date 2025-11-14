@@ -22,7 +22,6 @@ import type {
   AIOrchestratorConfig,
   ZAIChatRequest,
   ZAIChatResponse,
-  ZAIEvent,
   ZAIEventListener,
   ZAIStreamChunk,
 } from '../../types/zai-interfaces.js';

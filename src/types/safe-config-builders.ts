@@ -10,49 +10,19 @@
  */
 
 import type {
-  Config,
-  ConfigPath,
-  ConfigValue,
-  Dict,
-  JSONObject,
-  JSONValue} from './base-types.js';
+  Config} from './base-types.js';
 import type {
-  ConfigKey,
-  ConnectionString,
-  createConfigKey,
-  createConnectionString,
-  createEnvironment,
-  createFeatureFlag,
-  createHostname,
-  createMetricName,
-  createPort,
-  createSecret,
-  createServiceName,
-  createTagKey,
-  createTagValue,
-  createVersion,
   Environment,
-  FeatureFlag,
-  Hostname,
-  MetricName,
-  Port,
-  Secret,
-  ServiceName,
-  TagKey,
-  TagValue,
   Version} from './branded-types.js';
 import type {
   ValidationError,
-  ValidationResult,
   ValidationWarning
 } from './config-validation-schema.js';
 import type {
   arrayGuard,
   booleanGuard,
-  defaultGuard,
   enumGuard,
   guard,
-  nullableGuard,
   numberGuard,
   objectGuard,
   optionalGuard,
@@ -62,11 +32,8 @@ import type {
   TypeGuard,
   ValidationContext} from './runtime-type-guard-framework.js';
 import type {
-  PropertyAccessResult,
   safeGetNestedProperty,
-  safeGetProperty,
-  safeSetNestedProperty,
-  safeSetProperty} from './safe-property-access.js';
+  safeSetNestedProperty} from './safe-property-access.js';
 
 // ============================================================================
 // Configuration Builder Types
@@ -526,7 +493,7 @@ export class ConfigBuilder {
   /**
    * Add an environment property
    */
-  environment(
+  environmentProperty(
     name: string,
     options: {
       required?: boolean;
@@ -1161,7 +1128,7 @@ export function createAppConfigBuilder(
   context?: Partial<ConfigBuilderContext>
 ): ConfigBuilder {
   return new ConfigBuilder('application', version, 'Basic application configuration', context)
-    .environment('environment', {
+    .environmentProperty('environment', {
       required: true,
       description: 'Application environment',
       envVar: 'NODE_ENV'

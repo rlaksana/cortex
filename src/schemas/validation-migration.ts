@@ -15,21 +15,13 @@
 import {
   type JSONValue,
   UnifiedKnowledgeTypeValidator,
-  validateDeleteRequest,
-  validateKnowledgeItem,
-  validateMemoryFindRequest,
-  validateMemoryStoreRequest,
-  ValidationErrorCategory,
   type ValidationErrorDetail,
-  ValidationErrorSeverity,
   ValidationMode,
   type ValidationOptions,
   type ValidationResult,
 } from './unified-knowledge-validator.js';
 import type {
   KnowledgeItem as IKnowledgeItem,
-  MemoryFindRequest as IMemoryFindRequest,
-  MemoryStoreRequest as IMemoryStoreRequest,
   StoreError,
   ValidationService as IValidationService,
 } from '../types/core-interfaces.js';

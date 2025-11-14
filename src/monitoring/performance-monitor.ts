@@ -15,7 +15,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 import type { OperationType } from './operation-types.js';
-import type { OperationMetadata, PerformanceBaseline, PerformanceRegression,PerformanceThresholds, TypedPerformanceMetric, TypedPerformanceSummary } from '../types/monitoring-types.js';
+import type { OperationMetadata, PerformanceBaseline,PerformanceThresholds } from '../types/monitoring-types.js';
 
 export interface PerformanceMetrics {
   timestamp: number;

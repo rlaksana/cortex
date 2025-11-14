@@ -10,10 +10,6 @@
  */
 
 import type {
-  DependencyResolutionError,
-  ServiceId,
-  ServiceLifetime,
-  ServiceRegistrationError,
   ValidationResult} from '../factories/factory-types';
 
 // Runtime type validation interfaces

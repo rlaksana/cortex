@@ -10,23 +10,14 @@
  * error reporting with context and suggestions.
  */
 
+
 import type {
-  Dict,
-  JSONArray,
-  JSONObject,
-  JSONPrimitive,
-  JSONValue} from './base-types.js';
+  ValidationError} from './config-validation-schema.js';
 import type {
-  ValidationError,
-  ValidationResult,
-  ValidationWarning} from './config-validation-schema.js';
-import type {
-  ValidationError as GuardValidationError,
-  ValidationWarning as GuardValidationWarning
+  ValidationError as GuardValidationError
 } from './runtime-type-guard-framework.js';
 import type {
   JSONConversionError,
-  JSONConversionWarning,
   PropertyAccessError} from './safe-property-access.js';
 
 // ============================================================================

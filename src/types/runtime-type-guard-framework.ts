@@ -10,12 +10,7 @@
  * contexts, caching, and detailed error reporting.
  */
 
-import type {
-  Dict,
-  JSONArray,
-  JSONObject,
-  JSONPrimitive,
-  JSONValue} from './base-types.js';
+
 
 // ============================================================================
 // Core Type Guard Types

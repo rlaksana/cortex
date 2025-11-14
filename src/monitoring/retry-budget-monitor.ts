@@ -19,7 +19,6 @@ import { logger } from '@/utils/logger.js';
 
 import {
   type CircuitBreakerEvent,
-  type CircuitBreakerHealthStatus,
   circuitBreakerMonitor} from './circuit-breaker-monitor.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 

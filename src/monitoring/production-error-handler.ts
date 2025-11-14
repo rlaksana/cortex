@@ -15,7 +15,7 @@
 
 import { EventEmitter } from 'events';
 
-import { createChildLogger,ProductionLogger, type SimpleLogger } from '@/utils/logger.js';
+import { createChildLogger, type SimpleLogger } from '@/utils/logger.js';
 
 import { type ProductionMonitoringService } from './production-monitoring-service.js';
 

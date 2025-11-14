@@ -18,11 +18,9 @@ import { EventEmitter } from 'events';
 import { logger } from '@/utils/logger.js';
 
 import {
-  type CircuitBreakerEvent,
   type CircuitBreakerHealthStatus,
   circuitBreakerMonitor} from './circuit-breaker-monitor.js';
 import {
-  type RetryBudgetConfig,
   type RetryBudgetMetrics,
   retryBudgetMonitor} from './retry-budget-monitor.js';
 

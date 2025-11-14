@@ -14,14 +14,10 @@
  */
 
 import { performance } from 'perf_hooks';
-import { z, ZodSchema, ZodType } from 'zod';
 
 import {
   type AuthenticationError,
   type AuthorizationError,
-  type DeserializableResponseBody,
-  type HttpError,
-  type HttpErrorType,
   type HttpMethod,
   type HttpStatus,
   type HttpStatusError,
@@ -32,8 +28,6 @@ import {
   type NetworkHttpError,
   type ParseHttpError,
   type RateLimitError,
-  type RequestValidator,
-  type ResponseValidator,
   type SerializableRequestBody,
   type ServerError,
   type TimeoutHttpError,
@@ -41,8 +35,7 @@ import {
   type TypedHttpClientConfig,
   type TypedHttpRequest,
   type TypedHttpResponse,
-  type ValidationError,
-  type ValidationResult} from '../types/http-client-types.js';
+  type ValidationError} from '../types/http-client-types.js';
 
 /**
  * Default HTTP client configuration

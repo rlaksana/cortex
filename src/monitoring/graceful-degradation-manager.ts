@@ -30,7 +30,6 @@ import type {
   KnowledgeItem,
   SearchQuery,
   SearchResult,
-  StoreResult,
 } from '../types/core-interfaces.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 

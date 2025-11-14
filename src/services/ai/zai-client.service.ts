@@ -17,7 +17,6 @@
  * @since 2025
  */
 
-import { Readable } from 'node:stream';
 import { randomUUID } from 'crypto';
 
 import { logger } from '@/utils/logger.js';
@@ -28,7 +27,6 @@ import { SimpleRateLimiter } from './utils/rate-limiter.js';
 import { zaiConfigManager } from '../../config/zai-config.js';
 import type {
   CircuitBreaker,
-  CircuitBreakerState,
   RateLimiter,
   ZAICache,
   ZAIChatRequest,
@@ -37,7 +35,6 @@ import type {
   ZAIErrorResponse,
   ZAIEvent,
   ZAIEventListener,
-  ZAIMessage,
   ZAIMetrics,
   ZAIPerformanceMonitor,
   ZAIServiceStatus,

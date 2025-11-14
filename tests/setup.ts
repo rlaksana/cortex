@@ -15,7 +15,7 @@ process.env['LOG_LEVEL'] = 'error'; // Minimize logs during testing
 process.env['QDRANT_COLLECTION_NAME'] = 'test-cortex-memory';
 
 // Mock VectorDatabase for tests that expect it
-global['V']ectorDatabase = class MockVectorDatabase {
+(global as any).VectorDatabase = class MockVectorDatabase {
   client: any;
 
   constructor() {

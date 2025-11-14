@@ -17,10 +17,35 @@ import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
 
-import { OperationType } from './operation-types.js';
 import { performanceCollector } from './performance-collector.js';
+
+// Define OperationType locally to avoid circular dependency issues
+enum OperationType {
+  MEMORY_STORE = 'memory_store',
+  MEMORY_FIND = 'memory_find',
+  EMBEDDING = 'embedding',
+  SEARCH = 'search',
+  VALIDATION = 'validation',
+  AUDIT = 'audit',
+  HEALTH_CHECK = 'health_check',
+  BATCH_OPERATION = 'batch_operation',
+  EXPORT = 'export',
+  PURGE = 'purge',
+  MAINTENANCE = 'maintenance',
+  RATE_LIMIT = 'rate_limit',
+  AUTH = 'auth',
+  CHUNKING = 'chunking',
+  DEDUPLICATION = 'deduplication',
+  DATABASE_HEALTH = 'database_health',
+  DATABASE_STATS = 'database_stats',
+  AUTHENTICATION = 'authentication',
+  SYSTEM = 'system',
+  ERROR = 'error',
+  KILL_SWITCH_TRIGGERED = 'kill_switch_triggered',
+  KILL_SWITCH_DEACTIVATED = 'kill_switch_deactivated',
+  KILL_SWITCH_RECOVERED = 'kill_switch_recovered',
+}
 import type {
-  QueryDetails,
   RequestContext,
   SlowQueryAnalysis,
   SlowQueryContext,
@@ -567,5 +592,12 @@ export class SlowQueryLogger extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const slowQueryLogger = SlowQueryLogger.getInstance();
+// Export lazy singleton getter to avoid circular dependency issues during module loading
+export const slowQueryLogger = (() => {
+  try {
+    return SlowQueryLogger.getInstance();
+  } catch (error) {
+    console.warn('⚠️  Could not initialize slowQueryLogger:', error);
+    return null;
+  }
+})();

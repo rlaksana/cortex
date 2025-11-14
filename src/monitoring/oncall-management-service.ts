@@ -22,7 +22,7 @@ import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
 
-import { type Alert, AlertSeverity, type EscalationPolicy, EscalationRule } from './alert-management-service.js';
+import { type Alert, type EscalationPolicy } from './alert-management-service.js';
 
 // ============================================================================
 // On-Call Management Interfaces

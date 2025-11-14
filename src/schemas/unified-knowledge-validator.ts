@@ -23,7 +23,6 @@ import type {
   MemoryFindRequest,
   MemoryStoreRequest,
   StoreError,
-  ValidationResult as IValidationResult,
 } from '../types/core-interfaces.js';
 
 // ============================================================================

@@ -13,7 +13,7 @@
  * @version 2.0.1
  */
 
-import { createHash, randomBytes } from 'crypto';
+import { randomBytes } from 'crypto';
 
 import { type NextFunction,type Request, type Response } from 'express';
 import { rateLimit as createRateLimit } from 'express-rate-limit';

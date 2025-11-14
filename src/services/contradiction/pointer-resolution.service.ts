@@ -9,7 +9,6 @@
  */
 
 import {
-  ContradictionFlag,
   type ContradictionPointer,
   type ContradictionResult,
   type KnowledgeItem,

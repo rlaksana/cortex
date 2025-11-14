@@ -22,7 +22,6 @@
 
 import { EventEmitter } from 'events';
 
-import { monitoringHealthCheckService } from '../../monitoring/health-check-service.js';
 import { metricsService } from '../../monitoring/metrics-service.js';
 import { AlertSeverity,HealthStatus } from '../../types/unified-health-interfaces.js';
 import { logger } from '../../utils/logger.js';

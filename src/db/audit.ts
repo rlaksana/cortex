@@ -19,16 +19,12 @@ import {
   type AuditOperation,
   AuditSource,
   type AuditValidationResult,
-  ComplianceFramework,
-  ComplianceRegulation,
   createTypedAuditEvent,
-  isTypedAuditEvent,
   isTypedAuditQueryOptions,
   SensitivityLevel,
   type TypedAuditEvent,
   type TypedAuditFilter,
   type TypedAuditQueryOptions,
-  TypedAuditStatistics,
   validateAuditEvent} from '../types/audit-types.js';
 
 /**

@@ -20,7 +20,7 @@
 
 import { logger } from '@/utils/logger.js';
 
-import { type Alert, AlertAction, NotificationAttempt } from './alert-management-service.js';
+import { type Alert } from './alert-management-service.js';
 
 // ============================================================================
 // Base Notification Channel Interface

@@ -26,7 +26,7 @@ import { EventEmitter } from 'events';
 import { logger } from '@/utils/logger.js';
 
 import { type TTLManagementService } from './ttl-management-service.js';
-import { type TTLCalculationResult,type TTLPolicy, type TTLPolicyService } from './ttl-policy-service.js';
+import {type TTLPolicy, type TTLPolicyService } from './ttl-policy-service.js';
 import { type QdrantAdapter } from '../../db/adapters/qdrant-adapter.js';
 import type {
   KnowledgeItem,

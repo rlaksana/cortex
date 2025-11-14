@@ -32,22 +32,13 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { autoEnvironment } from './config/auto-environment.js';
 import { EnhancedDIContainer } from './di/enhanced-di-container';
 import {
-  assertIsEnhancedServerConfig,
-  assertIsMemoryFindSchema,
-  assertIsMemoryStoreItem,
-  assertIsSystemStatusSchema,
-  isEnhancedServerConfig,
   isMemoryFindSchema,
   isSystemStatusSchema,
   isTypedMemoryStoreItem,
   validateMemoryStoreItems,
   validateServerConfig} from './factories/factory-type-guards';
 import type {
-  DependencyResolutionError,
-  ServiceId,
-  ServiceRegistrationError,
-  TypedDIContainer,
-  ValidationResult} from './factories/factory-types';
+  TypedDIContainer} from './factories/factory-types';
 
 // Enhanced logger with configurable output and complete type safety
 export interface LoggerConfig {

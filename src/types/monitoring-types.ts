@@ -7,7 +7,6 @@
  * Provides type-safe interfaces for all logging, metrics, and monitoring operations
  */
 
-import type { AuthContext } from './auth-types.js';
 import { type OperationType } from '../monitoring/operation-types.js';
 
 // ============================================================================

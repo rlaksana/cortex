@@ -13,15 +13,12 @@
  * @since 2025-11-12
  */
 
-import { z, ZodSchema, type ZodType, type ZodTypeDef } from 'zod';
+import { z, type ZodType, type ZodTypeDef } from 'zod';
 
 import type {
-  DeserializableResponseBody,
-  HttpError,
   RequestValidator,
   ResponseValidator,
   SerializableRequestBody,
-  TypedHttpRequest,
   TypedHttpResponse,
   ValidationResult,
 } from '../types/http-client-types.js';

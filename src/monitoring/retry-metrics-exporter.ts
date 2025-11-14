@@ -13,7 +13,7 @@
  * @version 2.0.1
  */
 
-import { createWriteStream, type WriteStream } from 'fs';
+import { type WriteStream } from 'fs';
 
 import { EventEmitter } from 'events';
 
@@ -23,7 +23,6 @@ import {
   type CircuitBreakerHealthStatus,
   circuitBreakerMonitor} from './circuit-breaker-monitor.js';
 import {
-  type RetryBudgetConfig,
   type RetryBudgetMetrics,
   retryBudgetMonitor} from './retry-budget-monitor.js';
 

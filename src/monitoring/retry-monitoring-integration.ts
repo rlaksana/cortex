@@ -18,7 +18,6 @@ import { EventEmitter } from 'events';
 import { logger } from '@/utils/logger.js';
 
 import {
-  type CircuitBreakerHealthStatus,
   circuitBreakerMonitor} from './circuit-breaker-monitor.js';
 import { comprehensiveRetryDashboard } from './comprehensive-retry-dashboard.js';
 import { enhancedCircuitDashboard } from './enhanced-circuit-dashboard.js';

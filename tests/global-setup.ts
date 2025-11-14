@@ -4,7 +4,14 @@
  * This file provides global setup for all test suites with Windows-specific EMFILE prevention.
  */
 
-import { performanceCollector } from '../src/monitoring/performance-collector.js';
+// Import performance collector with error handling
+let performanceCollector: any = null;
+try {
+  const perfCollectorModule = await import('../src/monitoring/performance-collector.js');
+  performanceCollector = perfCollectorModule.performanceCollector;
+} catch (error) {
+  console.warn('⚠️  Could not import performance collector:', error);
+}
 import { EventEmitter } from 'events';
 
 interface FileHandleMonitor {
@@ -280,7 +287,13 @@ export async function setup() {
   process.env['LOG_LEVEL'] = 'error';
 
   // Cleanup performance collector before tests to prevent memory leaks
-  performanceCollector.cleanup();
+  if (performanceCollector) {
+    try {
+      performanceCollector.cleanup();
+    } catch (error) {
+      console.warn('⚠️  Could not cleanup performance collector:', error);
+    }
+  }
 
   // Mock database connection for unit tests
   global.console = {
@@ -306,7 +319,13 @@ export async function teardown() {
     }
 
     // Cleanup performance collector after tests to prevent memory leaks
-    performanceCollector.cleanup();
+    if (performanceCollector) {
+      try {
+        performanceCollector.cleanup();
+      } catch (error) {
+        console.warn('⚠️  Could not cleanup performance collector during teardown:', error);
+      }
+    }
 
     // Platform-specific cleanup
     if (process.platform === 'win32') {

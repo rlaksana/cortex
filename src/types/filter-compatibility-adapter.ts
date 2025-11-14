@@ -13,8 +13,8 @@
  * @since 2025
  */
 
-import type { QueryFilter, FilterOperator, LogicalOperators } from './database-generics.js';
-import type { QueryFilters, VectorFilter, FilterCondition, ScopeFilter, DateRangeFilter } from './database-types-enhanced.js';
+import type { LogicalOperators,QueryFilter } from './database-generics.js';
+import type { DateRangeFilter,FilterCondition, QueryFilters, ScopeFilter, VectorFilter } from './database-types-enhanced.js';
 
 // ============================================================================
 // Unified Filter Interface
@@ -171,19 +171,19 @@ export class FilterAdapter {
     const legacy: QueryFilters = {} as QueryFilters;
 
     if (Object.keys(custom).length > 0) {
-      (legacy as any).custom = custom;
+      (legacy as unknown).custom = custom;
     }
     if (Object.keys(scope).length > 0) {
-      (legacy as any).scope = scope as ScopeFilter;
+      (legacy as unknown).scope = scope as ScopeFilter;
     }
     if (Object.keys(dateRange).length > 0) {
-      (legacy as any).dateRange = dateRange as DateRangeFilter;
+      (legacy as unknown).dateRange = dateRange as DateRangeFilter;
     }
     if (Object.keys(tags).length > 0) {
-      (legacy as any).tags = tags;
+      (legacy as unknown).tags = tags;
     }
     if (Object.keys(metadata).length > 0) {
-      (legacy as any).metadata = metadata;
+      (legacy as unknown).metadata = metadata;
     }
 
     return legacy;
@@ -222,13 +222,13 @@ export class FilterAdapter {
     const vector: VectorFilter = {} as VectorFilter;
 
     if (mustConditions.length > 0) {
-      (vector as any).must = mustConditions;
+      (vector as unknown).must = mustConditions;
     }
     if (mustNotConditions.length > 0) {
-      (vector as any).must_not = mustNotConditions;
+      (vector as unknown).must_not = mustNotConditions;
     }
     if (shouldConditions.length > 0) {
-      (vector as any).should = shouldConditions;
+      (vector as unknown).should = shouldConditions;
     }
 
     return vector;
@@ -274,7 +274,7 @@ export class FilterAdapter {
         if ('$lte' in value) range.lte = (value as { $lte: number }).$lte;
 
         if (Object.keys(range).length > 0) {
-          (rangeCondition as any).range = range;
+          (rangeCondition as unknown).range = range;
           conditions.push(rangeCondition);
         } else {
           // Fallback to direct match
@@ -367,18 +367,18 @@ export class FilterAdapter {
     if (mongodbParts.length === 1) {
       Object.assign(result, mongodbParts[0]);
     } else if (mongodbParts.length > 1) {
-      (result as any).$and = mongodbParts;
+      (result as unknown).$and = mongodbParts;
     }
 
     // Add must_not part
     if (mustNotPart) {
-      (result as any).$not = mustNotPart;
+      (result as unknown).$not = mustNotPart;
     }
 
     // Add should part
     if (shouldPart) {
       if (shouldPart.$or) {
-        (result as any).$or = shouldPart.$or;
+        (result as unknown).$or = shouldPart.$or;
       } else {
         Object.assign(result, shouldPart);
       }
@@ -396,16 +396,16 @@ export class FilterAdapter {
     const mongodb: QueryFilter = {} as QueryFilter;
 
     if (condition.match !== undefined) {
-      (mongodb as any)[condition.key] = condition.match;
+      (mongodb as unknown)[condition.key] = condition.match;
     } else if (condition.range) {
       const rangeObj: Record<string, number> = {};
       if (condition.range.gt !== undefined) rangeObj.$gt = condition.range.gt;
       if (condition.range.gte !== undefined) rangeObj.$gte = condition.range.gte;
       if (condition.range.lt !== undefined) rangeObj.$lt = condition.range.lt;
       if (condition.range.lte !== undefined) rangeObj.$lte = condition.range.lte;
-      (mongodb as any)[condition.key] = rangeObj;
+      (mongodb as unknown)[condition.key] = rangeObj;
     } else if (condition.values && condition.values.length > 0) {
-      (mongodb as any)[condition.key] = { $in: condition.values };
+      (mongodb as unknown)[condition.key] = { $in: condition.values };
     }
 
     return mongodb;
@@ -435,12 +435,12 @@ export class FilterAdapter {
     if (typeof value === 'object' && value !== null) {
       const v = value as Record<string, unknown>;
       if ('$gt' in v || '$gte' in v) {
-        (dateRange as any).from = v.$gt || v.$gte;
-        (dateRange as any).field = (dateRange as any).field || key as 'created_at' | 'updated_at' | 'timestamp';
+        (dateRange as unknown).from = v.$gt || v.$gte;
+        (dateRange as unknown).field = (dateRange as unknown).field || key as 'created_at' | 'updated_at' | 'timestamp';
       }
       if ('$lt' in v || '$lte' in v) {
-        (dateRange as any).to = v.$lt || v.$lte;
-        (dateRange as any).field = (dateRange as any).field || key as 'created_at' | 'updated_at' | 'timestamp';
+        (dateRange as unknown).to = v.$lt || v.$lte;
+        (dateRange as unknown).field = (dateRange as unknown).field || key as 'created_at' | 'updated_at' | 'timestamp';
       }
     }
   }
@@ -483,7 +483,7 @@ export class FilterAdapter {
     }
 
     if (Object.keys(fieldCondition).length > 0) {
-      (filter as any)[field] = fieldCondition;
+      (filter as unknown)[field] = fieldCondition;
     }
 
     return filter;

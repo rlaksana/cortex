@@ -27,7 +27,6 @@ import type {
   SearchStrategy,
   StructuredLogEntry as TypedStructuredLogEntry,
   SystemHealth,
-  TTLInfo,
   UserContext} from '../types/monitoring-types.js';
 
 /**

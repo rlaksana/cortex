@@ -40,13 +40,10 @@ import type {
   PoolHealthIssue,
   PoolHealthResult,
   PoolStats,
-  ResourceDestroyer,
-  ResourceFactory,
   ResourceId,
   ResourceMetrics,
   ResourceState,
   ResourceValidationResult,
-  ResourceValidator,
 } from '../types/pool-interfaces.js';
 
 /**

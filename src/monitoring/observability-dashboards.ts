@@ -28,7 +28,7 @@
 
 import { EventEmitter } from 'events';
 
-import { adaptWidget,type DashboardWidget as CentralizedDashboardWidget } from '../types/slo-types.js';
+import {type DashboardWidget as CentralizedDashboardWidget } from '../types/slo-types.js';
 // Socket.IO is optional at runtime. We type minimally and avoid adding a hard dep.
 type Socket = {
   id: string;
@@ -54,17 +54,8 @@ import { createServer } from 'http';
 import { logger } from '@/utils/logger.js';
 
 import type {
-  AlertRule,
-  ChartType,
-  CircuitBreakerStats,
   DashboardTemplate,
-  ErrorBudget,
-  MetricDefinition,
   MonitoringDashboardConfig,
-  SLO,
-  SLODashboard,
-  SLOEvaluation,
-  WidgetType,
 } from '../types/slo-interfaces.js';
 
 // Use our centralized DashboardWidget type

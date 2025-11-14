@@ -18,11 +18,9 @@ import { EventEmitter } from 'events';
 import { logger } from '@/utils/logger.js';
 
 import {
-  CircuitBreaker,
-  type CircuitBreakerConfig,
   circuitBreakerManager,
   type CircuitBreakerStats} from '../services/circuit-breaker.service.js';
-import { DependencyType,HealthStatus } from '../types/unified-health-interfaces.js';
+import {HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**
  * Circuit breaker monitoring event types

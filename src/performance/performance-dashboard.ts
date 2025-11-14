@@ -9,10 +9,10 @@
  * trends, and regression analysis with interactive charts and reports
  */
 
-import { existsSync, mkdirSync, readFileSync,writeFileSync } from 'fs';
+import { mkdirSync,writeFileSync } from 'fs';
 import { join } from 'path';
 
-import type { PerformanceArtifact, PerformanceMetrics,PerformanceRegression, PerformanceTestResult } from './performance-harness.js';
+import type {PerformanceRegression, PerformanceTestResult } from './performance-harness.js';
 
 export interface DashboardConfig {
   /** Dashboard title */

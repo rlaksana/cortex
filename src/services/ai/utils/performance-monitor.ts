@@ -17,7 +17,7 @@
  * @since 2025
  */
 
-import type { ZAIError as IZAIError, ZAIPerformanceMonitor } from '../../../types/zai-interfaces.js';
+import type { ZAIPerformanceMonitor } from '../../../types/zai-interfaces.js';
 /**
  * Simple performance monitor implementation
  */

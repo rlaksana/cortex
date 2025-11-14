@@ -18,7 +18,6 @@ import type {
   ServiceId,
   ServiceLifetime,
   StoredItemKind,
-  TypedDIContainer,
   TypedFactory,
   ValidationResult} from './factory-types';
 

@@ -26,11 +26,9 @@ import type {
   AIProvider,
   ZAIChatRequest,
   ZAIChatResponse,
-  ZAIError,
   ZAIEvent,
   ZAIEventListener,
   ZAIMetrics,
-  ZAIServiceStatus,
   ZAIStreamChunk,
 } from '../../types/zai-interfaces.js';
 import { embeddingService } from '../embeddings/embedding-service.js';

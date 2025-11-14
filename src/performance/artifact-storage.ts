@@ -13,7 +13,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, unlinkSync, writeFileSyn
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 
-import type { BenchmarkResult,IterationResult,PerformanceArtifact,PerformanceMetrics,PerformanceTestResult } from './performance-harness.js';
+import type { BenchmarkResult,IterationResult,PerformanceArtifact,PerformanceTestResult } from './performance-harness.js';
 
 export interface ArtifactStorageConfig {
   /** Base directory for artifact storage */

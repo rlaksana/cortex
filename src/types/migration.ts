@@ -15,9 +15,7 @@
 import {
   adaptWidget as baseAdaptWidget,
   BreachSeverity,
-  DashboardWidget,
   IncidentStatus,
-  LegacyDashboardWidget,
   type ModernDashboardWidget} from './slo-types.js';
 import { AlertSeverity } from './unified-health-interfaces.js';
 

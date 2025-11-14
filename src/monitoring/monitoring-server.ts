@@ -18,10 +18,8 @@ import { logger } from '@/utils/logger.js';
 
 import { monitoringHealthCheckService } from './health-check-service.js';
 import { metricsService } from './metrics-service.js';
-import type { OperationType } from './operation-types.js';
 import { performanceDashboard } from './performance-dashboard.js';
 import { circuitBreakerManager } from '../services/circuit-breaker.service.js';
-import type { TypedPerformanceAlert } from '../types/monitoring-types.js';
 
 export interface MonitoringServerConfig {
   port?: number;

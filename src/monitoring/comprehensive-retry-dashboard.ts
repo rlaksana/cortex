@@ -23,15 +23,12 @@ import {
   circuitBreakerMonitor} from './circuit-breaker-monitor.js';
 import {
   type Alert,
-  type AlertSeverity,
   retryAlertSystem} from './retry-alert-system.js';
 import {
-  type RetryBudgetConfig,
   type RetryBudgetMetrics,
   retryBudgetMonitor} from './retry-budget-monitor.js';
 import {
   type AnomalyDetection,
-  type PatternDetection,
   type PredictiveAnalysis,
   retryTrendAnalyzer,
   type TrendAnalysis} from './retry-trend-analyzer.js';

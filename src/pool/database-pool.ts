@@ -25,14 +25,12 @@ import { logger } from '@/utils/logger.js';
 
 import { GenericResourcePool } from './generic-resource-pool.js';
 import type {
-  ConfigKey,
   IResourcePool,
   PoolConfig,
   PoolId,
   ResourceDestroyer,
   ResourceFactory,
   ResourceId,
-  ResourceValidationResult,
   ResourceValidator,
 } from '../types/pool-interfaces.js';
 

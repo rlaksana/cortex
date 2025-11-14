@@ -15,25 +15,20 @@ import { EventEmitter } from 'events';
 import type {
   DependencyResolutionError,
   EnhancedServiceRegistration,
-  FactoryServiceRegistration,
-  InstanceServiceRegistration,
   ResolutionOptions,
   ServiceId,
   ServiceLifetime,
   ServiceRegistrationError,
   TypedDIContainer as ITypedDIContainer,
-  TypedServiceRegistration,
   ValidationResult} from '../factories/factory-types';
 
 // Re-export ServiceLifetime for test usage
 export { ServiceLifetime } from '../factories/factory-types';
 import {
   DependencyResolutionValidator,
-  RuntimeTypeChecker,
   type RuntimeValidator,
   type ServiceTypeDescriptor,
   ServiceValidationError,
-  TypeValidationError,
   ValidatedServiceRegistry} from './runtime-validation';
 
 // Enhanced service registration with runtime validation

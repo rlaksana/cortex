@@ -28,10 +28,9 @@ import {
   type MCPOperationMetrics,
   type SystemPerformanceMetrics} from './enhanced-performance-collector.js';
 import {
-  type HealthHistoryEntry,
   type MCPServerHealthMetrics,
   mcpServerHealthMonitor} from './mcp-server-health-monitor.js';
-import { type QdrantHealthCheckResult,QdrantHealthMonitor } from './qdrant-health-monitor.js';
+import { type QdrantHealthCheckResult } from './qdrant-health-monitor.js';
 import {
   DependencyType,
   HealthStatus} from '../types/unified-health-interfaces.js';

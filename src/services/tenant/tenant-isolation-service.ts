@@ -28,7 +28,6 @@ import { EventEmitter } from 'node:events';
 import { logger } from '@/utils/logger.js';
 
 import type { IVectorAdapter } from '../../db/interfaces/vector-adapter.interface.js';
-import { systemMetricsService } from '../metrics/system-metrics.js';
 
 // === Type Definitions ===
 

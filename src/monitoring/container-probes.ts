@@ -18,11 +18,9 @@ import { type Request, type Response } from 'express';
 import { logger } from '@/utils/logger.js';
 
 import {
-  type MCPServerHealthMetrics,
   mcpServerHealthMonitor} from './mcp-server-health-monitor.js';
 import { circuitBreakerManager } from '../services/circuit-breaker.service.js';
 import {
-  DependencyType,
   HealthStatus} from '../types/unified-health-interfaces.js';
 
 /**

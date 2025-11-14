@@ -30,7 +30,6 @@ import { EnhancedCircuitDashboard } from './enhanced-circuit-dashboard.js';
 import { QdrantGracefulDegradationManager } from './graceful-degradation-manager.js';
 import { RetryBudgetMonitor } from './retry-budget-monitor.js';
 import { SLODashboardService } from './slo-dashboard-service.js';
-import { circuitBreakerManager } from '../services/circuit-breaker.service.js';
 import { ErrorBudgetService } from '../services/error-budget-service.js';
 import { SLOBreachDetectionService } from '../services/slo-breach-detection-service.js';
 import { SLOReportingService } from '../services/slo-reporting-service.js';
@@ -40,11 +39,9 @@ import type {
 AlertSeverity, 
   AutomatedResponse,
   BudgetAlert,
-  BurnRateAnalysis,
   CircuitBreakerStats,
   ErrorBudget,
   IntegratedMonitoringSnapshot,
-  SLO,
   SLOAlert,
   SLOEvaluation,
   SLOHealthStatus,

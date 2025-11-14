@@ -15,11 +15,9 @@
  */
 
 import { type NextFunction,type Request, type Response } from 'express';
-import { z } from 'zod';
 
 import { logger } from '@/utils/logger.js';
 
-import { rateLimitService } from './rate-limiter.js';
 import { type AuthContext } from '../types/auth-types.js';
 
 import '../types/express.d.js'; // Reference the type extensions

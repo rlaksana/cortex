@@ -14,19 +14,14 @@
 // TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
 import {
-  AlertSeverity,
   AuditCategory,
   AuditEventType,
   AuditOperation,
   AuditSource,
-  type AuditValidationResult,
-  CollectorType,
   ComplianceFramework,
   ComplianceRegulation,
   MetricCategory,
   MetricType,
-  type MetricValidationResult,
-  OutputFormat,
   SensitivityLevel,
   type TypedAuditEvent,
   type TypedMetric} from '../types/index.js';

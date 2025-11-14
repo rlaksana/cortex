@@ -24,8 +24,8 @@ import { logger } from '@/utils/logger.js';
 import { type CanaryHealthConfig } from './canary-health-monitor.js';
 import { type CanaryDeploymentConfig, type DeploymentPhase } from './canary-orchestrator.js';
 import { type KillSwitchConfig } from './kill-switch-service.js';
-import { Action, type RollbackAction, type RollbackConfig } from './rollback-service.js';
-import { type ServiceTarget, type TrafficRule } from './traffic-splitter.js';
+import { type RollbackConfig } from './rollback-service.js';
+import { type TrafficRule } from './traffic-splitter.js';
 import { type FeatureFlag } from '../feature-flag/feature-flag-service.js';
 
 // ============================================================================

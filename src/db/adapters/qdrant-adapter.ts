@@ -27,7 +27,7 @@
 
 import * as crypto from 'crypto';
 
-import { QdrantClient } from '@qdrant/js-client-rest';
+import { QdrantClient, type QdrantClientConfig  } from '@qdrant/js-client-rest';
 import { OpenAI } from 'openai';
 
 import { logger } from '@/utils/logger.js';
@@ -68,14 +68,13 @@ import type {
   QdrantClientConfig,
   QdrantPointStruct,
   QdrantScoredPoint,
-  QdrantSearchResult,
   RangeCondition,
 } from '../../types/database.js';
 import type {
-  DatabaseResult,
-  PointId,
   ConnectionError,
+  DatabaseResult,
   NotFoundError,
+  PointId,
 } from '../../types/database-generics.js';
 import type {
   DatabaseMetrics,
@@ -120,6 +119,24 @@ export interface QdrantCollectionStats {
  * Qdrant adapter implementing vector database operations
  */
 // Note: @ts-nocheck removed - strategic type fixes applied for public API safety
+// =============================================================================
+// QDRANT ADAPTER - MAIN FILE
+// =============================================================================
+// This file has been refactored into focused modules:
+// - Client bootstrap: src/db/qdrant/qdrant-client.ts
+// - Collection management: src/db/qdrant/qdrant-collections.ts  
+// - Query/search: src/db/qdrant/qdrant-queries.ts
+// - Index/maintenance: src/db/qdrant/qdrant-maintenance.ts
+// - Health/diagnostics: src/db/qdrant/qdrant-health.ts
+// =============================================================================
+
+// Placeholder file to create qdrant subdirectory
+
+// =============================================================================
+// IMPORTS FROM MODULARIZED QDRANT ADAPTER
+// =============================================================================
+import { createClient } from '../qdrant/qdrant-client';
+
 export class QdrantAdapter implements IVectorAdapter {
   private client!: QdrantClient;
   private openai!: OpenAI;
@@ -183,6 +200,13 @@ export class QdrantAdapter implements IVectorAdapter {
     }
   }
 
+// =============================================================================
+// CLIENT BOOTSTRAP SECTION
+// =============================================================================
+// =============================================================================
+// CLIENT BOOTSTRAP SECTION
+// =============================================================================
+// Delegated to: src/db/qdrant/qdrant-client.ts
   constructor(config: VectorConfig) {
     // Store config for later async initialization
     this.config = {
@@ -222,7 +246,7 @@ export class QdrantAdapter implements IVectorAdapter {
       const resolvedOpenAIKey = openaiKey?.value || process.env.OPENAI_API_KEY || '';
 
       // Initialize Qdrant client
-      const clientConfig: QdrantClientConfig = {
+      const clientConfig: LocalQdrantClientConfig = {
         url: this.config.url || 'http://localhost:6333',
         timeout: this.config.connectionTimeout,
       };
@@ -259,7 +283,7 @@ export class QdrantAdapter implements IVectorAdapter {
       const fallbackApiKey = this.config.apiKey || process.env.QDRANT_API_KEY || '';
       const fallbackOpenAIKey = process.env.OPENAI_API_KEY || '';
 
-      const clientConfig: QdrantClientConfig = {
+      const clientConfig: LocalQdrantClientConfig = {
         url: this.config.url || 'http://localhost:6333',
         timeout: this.config.connectionTimeout,
       };
@@ -391,6 +415,10 @@ export class QdrantAdapter implements IVectorAdapter {
       throw new ConnectionError('Failed to initialize Qdrant connection', error as Error);
     }
   }
+
+// =============================================================================
+// HEALTH/DIAGNOSTICS SECTION
+// =============================================================================
 
   async healthCheck(): Promise<boolean> {
     try {
@@ -744,6 +772,10 @@ export class QdrantAdapter implements IVectorAdapter {
   }
 
   // === Search Operations ===
+
+// =============================================================================
+// QUERY/SEARCH SECTION
+// =============================================================================
 
   async search(query: SearchQuery, options: SearchOptions = {}): Promise<DatabaseResult<MemoryFindResponse>> {
     return this.wrapAsyncOperation(async () => {
@@ -1540,6 +1572,10 @@ export class QdrantAdapter implements IVectorAdapter {
       await this.initialize();
     }
   }
+
+// =============================================================================
+// COLLECTION MANAGEMENT SECTION  
+// =============================================================================
 
   private async ensureCollection(): Promise<void> {
     try {
@@ -2350,4 +2386,520 @@ export class QdrantAdapter implements IVectorAdapter {
     this.openaiCircuitBreaker.reset();
     logger.info('OpenAI embeddings circuit breaker reset');
   }
+}
+
+// =============================================================================
+// QDRANT ADAPTER - CLIENT BOOTSTRAP MODULE
+// =============================================================================
+// This module handles Qdrant and OpenAI client initialization, configuration,
+// and connection management.
+// =============================================================================
+
+
+
+import { getKeyVaultService } from '../../../config/key-vault';
+import { EmbeddingService } from '../../../services/embedding/embedding-service';
+import { DatabaseError } from '../../../types/database-types';
+import { circuitBreakerManager } from '../../../utils/circuit-breaker';
+import { logger } from '../../../utils/logger';
+import { type VectorConfig } from '../../database-interface';
+
+/**
+ * Qdrant client configuration with all necessary parameters
+ */
+export interface LocalQdrantClientConfig {
+  url: string;
+  timeout: number;
+  apiKey?: string;
+}
+
+/**
+ * Client bootstrap result containing initialized clients
+ */
+export interface ClientBootstrapResult {
+  qdrantClient: QdrantClient;
+  openaiClient?: OpenAI;
+  embeddingService?: EmbeddingService;
+  config: VectorConfig;
+}
+
+/**
+ * Creates and initializes Qdrant and OpenAI clients with key vault integration
+ */
+export async function createClient(config: VectorConfig): Promise<QdrantClient> {
+  const keyVault = getKeyVaultService();
+
+  try {
+    // Get API keys from key vault
+    const [qdrantKey, openaiKey] = await Promise.all([
+      keyVault.get_key_by_name('qdrant_api_key'),
+      keyVault.get_key_by_name('openai_api_key'),
+    ]);
+
+    // Update config with resolved keys
+    const resolvedApiKey = config.apiKey || qdrantKey?.value || process.env.QDRANT_API_KEY || '';
+    const resolvedOpenAIKey = openaiKey?.value || process.env.OPENAI_API_KEY || '';
+
+    // Initialize Qdrant client
+    const clientConfig: LocalQdrantClientConfig = {
+      url: config.url || 'http://localhost:6333',
+      timeout: config.connectionTimeout,
+    };
+
+    if (resolvedApiKey) {
+      clientConfig.apiKey = resolvedApiKey;
+    }
+
+    const client = new QdrantClient(clientConfig);
+
+    logger.info('Qdrant client initialized with key vault integration');
+    return client;
+  } catch (error) {
+    logger.warn(
+      { error },
+      'Failed to initialize clients from key vault, using environment fallback'
+    );
+
+    // Fallback to environment variables
+    const fallbackApiKey = config.apiKey || process.env.QDRANT_API_KEY || '';
+
+    const clientConfig: LocalQdrantClientConfig = {
+      url: config.url || 'http://localhost:6333',
+      timeout: config.connectionTimeout,
+    };
+
+    if (fallbackApiKey) {
+      clientConfig.apiKey = fallbackApiKey;
+    }
+
+    const client = new QdrantClient(clientConfig);
+    return client;
+  }
+}
+
+/**
+ * Creates OpenAI client for embeddings
+ */
+export function createOpenAIClient(apiKey: string): OpenAI {
+  return new OpenAI({
+    apiKey,
+  });
+}
+
+/**
+ * Creates embedding service for enhanced chunking support
+ */
+export function createEmbeddingService(apiKey: string): EmbeddingService {
+  return new EmbeddingService({
+    apiKey,
+  });
+}
+
+/**
+ * Validates client configuration
+ */
+export function validateClientConfig(config: VectorConfig): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (!config.url && !process.env.QDRANT_URL) {
+    errors.push('Qdrant URL is required');
+  }
+
+  if (!config.connectionTimeout || config.connectionTimeout < 1000) {
+    errors.push('Connection timeout must be at least 1000ms');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Tests client connectivity
+ */
+export async function testClientConnection(client: QdrantClient, timeoutMs: number = 5000): Promise<boolean> {
+  try {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Connection test timeout')), timeoutMs);
+    });
+
+    await Promise.race([
+      client.getCollections(),
+      timeoutPromise,
+    ]);
+
+    return true;
+  } catch (error) {
+    logger.error({ error }, 'Client connection test failed');
+    return false;
+  }
+}
+
+/**
+ * Creates a circuit breaker for Qdrant operations
+ */
+export function createQdrantCircuitBreaker() {
+  return circuitBreakerManager.getCircuitBreaker('qdrant', {
+    failureThreshold: 2,
+    recoveryTimeoutMs: 10000,
+    failureRateThreshold: 0.4,
+    minimumCalls: 2,
+  });
+}
+
+/**
+ * Creates a circuit breaker for OpenAI operations
+ */
+export function createOpenAICircuitBreaker() {
+  return circuitBreakerManager.getCircuitBreaker('openai', {
+    failureThreshold: 3,
+    recoveryTimeoutMs: 30000,
+    failureRateThreshold: 0.4,
+    minimumCalls: 5,
+  });
+}
+
+// =============================================================================
+// QDRANT ADAPTER - CLIENT BOOTSTRAP MODULE
+// =============================================================================
+// This module handles Qdrant and OpenAI client initialization, configuration,
+// and connection management.
+// =============================================================================
+
+
+
+
+
+
+
+
+
+
+/**
+ * Qdrant client configuration with all necessary parameters
+ */
+export interface LocalQdrantClientConfig {
+  url: string;
+  timeout: number;
+  apiKey?: string;
+}
+
+/**
+ * Client bootstrap result containing initialized clients
+ */
+export interface ClientBootstrapResult {
+  qdrantClient: QdrantClient;
+  openaiClient?: OpenAI;
+  embeddingService?: EmbeddingService;
+  config: VectorConfig;
+}
+
+/**
+ * Creates and initializes Qdrant and OpenAI clients with key vault integration
+ */
+export async function createClient(config: VectorConfig): Promise<QdrantClient> {
+  const keyVault = getKeyVaultService();
+
+  try {
+    // Get API keys from key vault
+    const [qdrantKey, openaiKey] = await Promise.all([
+      keyVault.get_key_by_name('qdrant_api_key'),
+      keyVault.get_key_by_name('openai_api_key'),
+    ]);
+
+    // Update config with resolved keys
+    const resolvedApiKey = config.apiKey || qdrantKey?.value || process.env.QDRANT_API_KEY || '';
+    const resolvedOpenAIKey = openaiKey?.value || process.env.OPENAI_API_KEY || '';
+
+    // Initialize Qdrant client
+    const clientConfig: LocalQdrantClientConfig = {
+      url: config.url || 'http://localhost:6333',
+      timeout: config.connectionTimeout,
+    };
+
+    if (resolvedApiKey) {
+      clientConfig.apiKey = resolvedApiKey;
+    }
+
+    const client = new QdrantClient(clientConfig);
+
+    logger.info('Qdrant client initialized with key vault integration');
+    return client;
+  } catch (error) {
+    logger.warn(
+      { error },
+      'Failed to initialize clients from key vault, using environment fallback'
+    );
+
+    // Fallback to environment variables
+    const fallbackApiKey = config.apiKey || process.env.QDRANT_API_KEY || '';
+
+    const clientConfig: LocalQdrantClientConfig = {
+      url: config.url || 'http://localhost:6333',
+      timeout: config.connectionTimeout,
+    };
+
+    if (fallbackApiKey) {
+      clientConfig.apiKey = fallbackApiKey;
+    }
+
+    const client = new QdrantClient(clientConfig);
+    return client;
+  }
+}
+
+/**
+ * Creates OpenAI client for embeddings
+ */
+export function createOpenAIClient(apiKey: string): OpenAI {
+  return new OpenAI({
+    apiKey,
+  });
+}
+
+/**
+ * Creates embedding service for enhanced chunking support
+ */
+export function createEmbeddingService(apiKey: string): EmbeddingService {
+  return new EmbeddingService({
+    apiKey,
+  });
+}
+
+/**
+ * Validates client configuration
+ */
+export function validateClientConfig(config: VectorConfig): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (!config.url && !process.env.QDRANT_URL) {
+    errors.push('Qdrant URL is required');
+  }
+
+  if (!config.connectionTimeout || config.connectionTimeout < 1000) {
+    errors.push('Connection timeout must be at least 1000ms');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Tests client connectivity
+ */
+export async function testClientConnection(client: QdrantClient, timeoutMs: number = 5000): Promise<boolean> {
+  try {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Connection test timeout')), timeoutMs);
+    });
+
+    await Promise.race([
+      client.getCollections(),
+      timeoutPromise,
+    ]);
+
+    return true;
+  } catch (error) {
+    logger.error({ error }, 'Client connection test failed');
+    return false;
+  }
+}
+
+/**
+ * Creates a circuit breaker for Qdrant operations
+ */
+export function createQdrantCircuitBreaker() {
+  return circuitBreakerManager.getCircuitBreaker('qdrant', {
+    failureThreshold: 2,
+    recoveryTimeoutMs: 10000,
+    failureRateThreshold: 0.4,
+    minimumCalls: 2,
+  });
+}
+
+/**
+ * Creates a circuit breaker for OpenAI operations
+ */
+export function createOpenAICircuitBreaker() {
+  return circuitBreakerManager.getCircuitBreaker('openai', {
+    failureThreshold: 3,
+    recoveryTimeoutMs: 30000,
+    failureRateThreshold: 0.4,
+    minimumCalls: 5,
+  });
+}
+
+// =============================================================================
+// QDRANT ADAPTER - CLIENT BOOTSTRAP MODULE
+// =============================================================================
+// This module handles Qdrant and OpenAI client initialization, configuration,
+// and connection management.
+// =============================================================================
+
+
+
+
+
+
+
+
+
+
+/**
+ * Qdrant client configuration with all necessary parameters
+ */
+export interface LocalQdrantClientConfig {
+  url: string;
+  timeout: number;
+  apiKey?: string;
+}
+
+/**
+ * Client bootstrap result containing initialized clients
+ */
+export interface ClientBootstrapResult {
+  qdrantClient: QdrantClient;
+  openaiClient?: OpenAI;
+  embeddingService?: EmbeddingService;
+  config: VectorConfig;
+}
+
+/**
+ * Creates and initializes Qdrant and OpenAI clients with key vault integration
+ */
+export async function createClient(config: VectorConfig): Promise<QdrantClient> {
+  const keyVault = getKeyVaultService();
+
+  try {
+    // Get API keys from key vault
+    const [qdrantKey, openaiKey] = await Promise.all([
+      keyVault.get_key_by_name('qdrant_api_key'),
+      keyVault.get_key_by_name('openai_api_key'),
+    ]);
+
+    // Update config with resolved keys
+    const resolvedApiKey = config.apiKey || qdrantKey?.value || process.env.QDRANT_API_KEY || '';
+    const resolvedOpenAIKey = openaiKey?.value || process.env.OPENAI_API_KEY || '';
+
+    // Initialize Qdrant client
+    const clientConfig: LocalQdrantClientConfig = {
+      url: config.url || 'http://localhost:6333',
+      timeout: config.connectionTimeout,
+    };
+
+    if (resolvedApiKey) {
+      clientConfig.apiKey = resolvedApiKey;
+    }
+
+    const client = new QdrantClient(clientConfig);
+
+    logger.info('Qdrant client initialized with key vault integration');
+    return client;
+  } catch (error) {
+    logger.warn(
+      { error },
+      'Failed to initialize clients from key vault, using environment fallback'
+    );
+
+    // Fallback to environment variables
+    const fallbackApiKey = config.apiKey || process.env.QDRANT_API_KEY || '';
+
+    const clientConfig: LocalQdrantClientConfig = {
+      url: config.url || 'http://localhost:6333',
+      timeout: config.connectionTimeout,
+    };
+
+    if (fallbackApiKey) {
+      clientConfig.apiKey = fallbackApiKey;
+    }
+
+    const client = new QdrantClient(clientConfig);
+    return client;
+  }
+}
+
+/**
+ * Creates OpenAI client for embeddings
+ */
+export function createOpenAIClient(apiKey: string): OpenAI {
+  return new OpenAI({
+    apiKey,
+  });
+}
+
+/**
+ * Creates embedding service for enhanced chunking support
+ */
+export function createEmbeddingService(apiKey: string): EmbeddingService {
+  return new EmbeddingService({
+    apiKey,
+  });
+}
+
+/**
+ * Validates client configuration
+ */
+export function validateClientConfig(config: VectorConfig): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (!config.url && !process.env.QDRANT_URL) {
+    errors.push('Qdrant URL is required');
+  }
+
+  if (!config.connectionTimeout || config.connectionTimeout < 1000) {
+    errors.push('Connection timeout must be at least 1000ms');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Tests client connectivity
+ */
+export async function testClientConnection(client: QdrantClient, timeoutMs: number = 5000): Promise<boolean> {
+  try {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Connection test timeout')), timeoutMs);
+    });
+
+    await Promise.race([
+      client.getCollections(),
+      timeoutPromise,
+    ]);
+
+    return true;
+  } catch (error) {
+    logger.error({ error }, 'Client connection test failed');
+    return false;
+  }
+}
+
+/**
+ * Creates a circuit breaker for Qdrant operations
+ */
+export function createQdrantCircuitBreaker() {
+  return circuitBreakerManager.getCircuitBreaker('qdrant', {
+    failureThreshold: 2,
+    recoveryTimeoutMs: 10000,
+    failureRateThreshold: 0.4,
+    minimumCalls: 2,
+  });
+}
+
+/**
+ * Creates a circuit breaker for OpenAI operations
+ */
+export function createOpenAICircuitBreaker() {
+  return circuitBreakerManager.getCircuitBreaker('openai', {
+    failureThreshold: 3,
+    recoveryTimeoutMs: 30000,
+    failureRateThreshold: 0.4,
+    minimumCalls: 5,
+  });
 }

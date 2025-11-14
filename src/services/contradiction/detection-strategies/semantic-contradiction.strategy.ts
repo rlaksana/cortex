@@ -18,7 +18,6 @@
 import { randomUUID } from 'crypto';
 
 import type {
-  ContradictionDetail,
   ContradictionResult,
   KnowledgeItem,
 } from '../../../types/contradiction-detector.interface';

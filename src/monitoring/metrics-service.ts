@@ -20,14 +20,10 @@ import { OperationType } from './operation-types.js';
 import { performanceCollector } from './performance-collector.js';
 import {
   type AlertSeverity,
-  CollectorType,
   createDefaultCollectorConfig,
   createTypedMetric,
-  isTypedMetric,
   isTypedMetricQuery,
-  MetricCategory,
   type MetricsCollectorConfig,
-  MetricType,
   type MetricValidationResult,
   OutputFormat,
   type TypedMetric,
@@ -35,15 +31,12 @@ import {
   type TypedMetricQuery,
   type TypedMetricQueryResult,
   type TypedMetricSeries,
-  TypedPerformanceMetrics,
   validateTypedMetric} from '../types/metrics-types.js';
 import type {
-  DeduplicationStrategy,
   HistoricalMetrics,
   MetricsConfig,
   OperationMetadata,
-  RealTimeMetrics,
-  SearchStrategy} from '../types/monitoring-types.js';
+  RealTimeMetrics} from '../types/monitoring-types.js';
 
 // Re-export from monitoring-types for backward compatibility
 export {

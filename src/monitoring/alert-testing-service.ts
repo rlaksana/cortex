@@ -22,9 +22,9 @@ import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
 
-import { Alert, AlertRule, AlertSeverity, type AlertTestResult,type AlertTestScenario } from './alert-management-service.js';
+import { AlertSeverity, type AlertTestResult,type AlertTestScenario } from './alert-management-service.js';
 import { DependencyType } from '../services/deps-registry.js';
-import { ComponentHealth, HealthStatus,type SystemHealthResult } from '../types/unified-health-interfaces.js';
+import { HealthStatus,type SystemHealthResult } from '../types/unified-health-interfaces.js';
 
 // ============================================================================
 // Alert Testing Interfaces

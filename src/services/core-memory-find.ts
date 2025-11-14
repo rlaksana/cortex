@@ -9,7 +9,6 @@ import {
   type TraversalOptions,
   traverseGraphWithExpansion,
 } from './graph-traversal.js';
-import { memoryStore } from './memory-store.js';
 import type { MemoryFindResponse, SearchQuery,SearchResult } from '../types/core-interfaces.js';
 
 /**

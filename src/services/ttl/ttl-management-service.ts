@@ -24,21 +24,15 @@
 import { logger } from '@/utils/logger.js';
 
 import {
-  type TTLCalculationResult,
   type TTLPolicyOptions,
   ttlPolicyService,
 } from './ttl-policy-service.js';
 import { type QdrantOnlyDatabaseLayer } from '../../db/unified-database-layer-v2.js';
 import type {
   KnowledgeItem,
-  MemoryFindResponse,
-  SearchQuery,
-  StoreResult,
 } from '../../types/core-interfaces.js';
-import {
-  enhancedExpiryUtils,
-  type ExpiryCalculationOptions,
-} from '../../utils/enhanced-expiry-utils.js';
+
+
 
 /**
  * TTL management operation result interface

@@ -17,7 +17,7 @@
 import { EventEmitter } from 'events';
 
 import { ErrorBudgetService } from './error-budget-service.js';
-import { type ExtendedSLOBreachIncident,SLOBreachDetectionService } from './slo-breach-detection-service.js';
+import {SLOBreachDetectionService } from './slo-breach-detection-service.js';
 import { SLOReportingService } from './slo-reporting-service.js';
 import { SLOService } from './slo-service.js';
 import { SLODashboardService } from '../monitoring/slo-dashboard-service.js';
@@ -30,7 +30,6 @@ import {
   type SLOEvaluation,
   type SLOFrameworkConfig,
   type SLOTrendAnalysis,
-  TimeRange,
 } from '../types/slo-interfaces.js';
 
 /**

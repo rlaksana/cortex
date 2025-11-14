@@ -485,34 +485,34 @@ export type {
 
 // Database Result Types (Optimal Pattern)
 export type {
-  DatabaseResult,
-  DatabaseError,
   BatchResult,
+  DatabaseError,
+  DatabaseResult,
   PaginatedResult,
-  SearchResult,
   SearchResponse,
+  SearchResult,
 } from './database-generics.js';
 
 // Migration utilities for backward compatibility
 export {
-  migrateToOptimal,
-  migrateLegacyResult,
-  migrateEnhancedResult,
-  isLegacyResult,
-  isEnhancedResult,
   DatabaseResultMigration,
+  isEnhancedResult,
+  isLegacyResult,
+  migrateEnhancedResult,
+  migrateLegacyResult,
+  migrateToOptimal,
 } from './database-result-migration.js';
 
 // Filter compatibility adapters for seamless conversion between filter patterns
 export {
   FilterAdapter,
-  toQueryFilter,
-  toLegacyFilter,
-  toVectorFilter,
-  isMongoDBFilter,
-  isLegacyFilter,
-  isVectorFilter,
   FilterMigration,
+  isLegacyFilter,
+  isMongoDBFilter,
+  isVectorFilter,
+  toLegacyFilter,
+  toQueryFilter,
+  toVectorFilter,
 } from './filter-compatibility-adapter.js';
 
 // Re-export unified filter types

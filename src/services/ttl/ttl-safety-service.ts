@@ -24,9 +24,7 @@
 import { logger } from '@/utils/logger.js';
 
 import type { TTLCalculationResult } from './ttl-policy-service.js';
-import { ttlPolicyService } from './ttl-policy-service.js';
 import type { KnowledgeItem } from '../../types/core-interfaces.js';
-import { enhancedExpiryUtils } from '../../utils/enhanced-expiry-utils.js';
 
 /**
  * Safety validation result interface

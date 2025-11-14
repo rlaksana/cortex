@@ -29,8 +29,6 @@ import type {
   BackgroundProcessorStatus,
   ZAIChatRequest,
   ZAIChatResponse,
-  ZAIEvent,
-  ZAIEventListener,
   ZAIJob,
   ZAIJobType,
 } from '../../types/zai-interfaces.js';

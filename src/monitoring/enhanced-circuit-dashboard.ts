@@ -22,7 +22,6 @@ import {
   type CircuitBreakerHealthStatus,
   circuitBreakerMonitor} from './circuit-breaker-monitor.js';
 import {
-  type RetryBudgetConfig,
   type RetryBudgetMetrics,
   retryBudgetMonitor} from './retry-budget-monitor.js';
 import {
