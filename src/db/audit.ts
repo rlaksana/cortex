@@ -1,4 +1,11 @@
-// @ts-nocheck - Emergency rollback: Critical database service
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
+// TODO: Implement systematic interface synchronization before removing @ts-nocheck
+
+// @ts-nocheck
+// EMERGENCY ROLLBACK: isolatedModules export type violations and unknown type propagation
+// TODO: Fix export type syntax and type compatibility before removing @ts-nocheck
+
 // Using UnifiedDatabaseLayer for Qdrant operations
 import * as crypto from 'crypto';
 

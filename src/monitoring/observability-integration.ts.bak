@@ -1,0 +1,732 @@
+/**
+ * Observability Integration Hub
+ *
+ * Central integration point for all observability components including:
+ * - System status monitoring
+ * - OpenTelemetry distributed tracing
+ * - EventEmitter lifecycle management
+ * - Security vulnerability monitoring
+ * - SRE dashboards and alerting
+ *
+ * Provides unified initialization, configuration, and lifecycle management
+ * for the complete observability stack.
+ *
+ * @author Cortex Team
+ * @version 1.0.0
+ * @since 2025-11-10
+ */
+
+import { EventEmitter } from 'node:events';
+import { systemEventEmitter } from './event-emitter-lifecycle.js';
+import { openTelemetryTracer, defaultTracingConfig } from './opentelemetry-tracer.js';
+import { sreDashboardManager } from './sre-dashboards.js';
+import { systemStatusService } from './system-status-service.js';
+import { logger } from '@/utils/logger.js';
+
+/**
+ * Observability configuration
+ */
+export interface ObservabilityConfig {
+  // System status configuration
+  systemStatus: {
+    enabled: boolean;
+    healthCheckInterval: number;
+    degradedModeEnabled: boolean;
+    alertingEnabled: boolean;
+  };
+
+  // Tracing configuration
+  tracing: {
+    enabled: boolean;
+    serviceName: string;
+    serviceVersion: string;
+    environment: string;
+    endpoint: string;
+    samplingRatio: number;
+  };
+
+  // EventEmitter configuration
+  eventEmitter: {
+    enabled: boolean;
+    leakDetectionEnabled: boolean;
+    maxListeners: number;
+    maxListenerAge: number;
+    memoryThreshold: number;
+  };
+
+  // SRE dashboard configuration
+  dashboards: {
+    enabled: boolean;
+    monitoringEnabled: boolean;
+    alertingEnabled: boolean;
+    refreshInterval: number;
+  };
+
+  // Security monitoring configuration
+  security: {
+    enabled: boolean;
+    auditInterval: number;
+    failLevel: string;
+    registry: string;
+  };
+
+  // Metrics configuration
+  metrics: {
+    enabled: boolean;
+    collectionInterval: number;
+    retentionPeriod: number;
+    exportEnabled: boolean;
+  };
+}
+
+/**
+ * Observability health status
+ */
+export interface ObservabilityHealthStatus {
+  overall: 'healthy' | 'degraded' | 'unhealthy';
+  components: {
+    systemStatus: 'healthy' | 'unhealthy' | 'disabled';
+    tracing: 'healthy' | 'unhealthy' | 'disabled';
+    eventEmitter: 'healthy' | 'unhealthy' | 'disabled';
+    dashboards: 'healthy' | 'unhealthy' | 'disabled';
+    security: 'healthy' | 'unhealthy' | 'disabled';
+  };
+  metrics: {
+    uptime: number;
+    componentsStarted: number;
+    alertsTriggered: number;
+    incidentsCreated: number;
+    spansCollected: number;
+    eventListenersTracked: number;
+  };
+  issues: Array<{
+    component: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    message: string;
+    timestamp: Date;
+  }>;
+}
+
+/**
+ * Observability Integration Hub
+ */
+export class ObservabilityIntegration extends EventEmitter {
+  private config: ObservabilityConfig;
+  private isInitialized = false;
+  private isStarted = false;
+  private startTime: number;
+  private _metrics: unknown;
+  private healthCheckInterval: NodeJS.Timeout | null = null;
+
+  constructor(config?: Partial<ObservabilityConfig>) {
+    super();
+
+    this.config = this.mergeWithDefaults(config);
+    this.startTime = Date.now();
+    this.metrics = {
+      uptime: 0,
+      componentsStarted: 0,
+      alertsTriggered: 0,
+      incidentsCreated: 0,
+      spansCollected: 0,
+      eventListenersTracked: 0,
+    };
+
+    this.setupEventListeners();
+  }
+
+  /**
+   * Initialize all observability components
+   */
+  async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      logger.warn('Observability already initialized');
+      return;
+    }
+
+    logger.info('Initializing observability stack...');
+
+    try {
+      // Initialize system status monitoring
+      if (this.config.systemStatus.enabled) {
+        await this.initializeSystemStatus();
+      }
+
+      // Initialize OpenTelemetry tracing
+      if (this.config.tracing.enabled) {
+        await this.initializeTracing();
+      }
+
+      // Initialize EventEmitter lifecycle management
+      if (this.config.eventEmitter.enabled) {
+        this.initializeEventEmitter();
+      }
+
+      // Initialize SRE dashboards
+      if (this.config.dashboards.enabled) {
+        this.initializeDashboards();
+      }
+
+      // Initialize security monitoring
+      if (this.config.security.enabled) {
+        this.initializeSecurity();
+      }
+
+      this.isInitialized = true;
+      this.metrics.componentsStarted = this.getEnabledComponentsCount();
+
+      logger.info('Observability stack initialized successfully', {
+        componentsEnabled: this.getEnabledComponents(),
+        config: this.config,
+      });
+
+      this.emit('initialized');
+    } catch (error) {
+      logger.error('Failed to initialize observability stack', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Start all observability components
+   */
+ start(): Promise<void> {
+    if (!this.isInitialized) {
+      throw new Error('Observability must be initialized before starting');
+    }
+
+    if (this.isStarted) {
+      logger.warn('Observability already started');
+      return;
+    }
+
+    logger.info('Starting observability components...');
+
+    try {
+      // Start system status monitoring
+      if (this.config.systemStatus.enabled) {
+        systemStatusService.startMonitoring();
+      }
+
+      // Start SRE dashboards
+      if (this.config.dashboards.enabled && this.config.dashboards.monitoringEnabled) {
+        sreDashboardManager.startMonitoring();
+      }
+
+      // Start health monitoring
+      this.startHealthMonitoring();
+
+      this.isStarted = true;
+      logger.info('Observability components started successfully');
+
+      this.emit('started');
+    } catch (error) {
+      logger.error('Failed to start observability components', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Stop all observability components
+   */
+  async stop(): Promise<void> {
+    if (!this.isStarted) {
+      logger.warn('Observability not started');
+      return;
+    }
+
+    logger.info('Stopping observability components...');
+
+    try {
+      // Stop health monitoring
+      if (this.healthCheckInterval) {
+        clearInterval(this.healthCheckInterval);
+        this.healthCheckInterval = null;
+      }
+
+      // Stop system status monitoring
+      if (this.config.systemStatus.enabled) {
+        systemStatusService.stopMonitoring();
+      }
+
+      // Stop SRE dashboards
+      if (this.config.dashboards.enabled && this.config.dashboards.monitoringEnabled) {
+        sreDashboardManager.stopMonitoring();
+      }
+
+      // Shutdown OpenTelemetry
+      if (this.config.tracing.enabled) {
+        await openTelemetryTracer.shutdown();
+      }
+
+      // Cleanup EventEmitter
+      if (this.config.eventEmitter.enabled) {
+        await systemEventEmitter.shutdown();
+      }
+
+      this.isStarted = false;
+      logger.info('Observability components stopped successfully');
+
+      this.emit('stopped');
+    } catch (error) {
+      logger.error('Failed to stop observability components', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get comprehensive health status
+   */
+  getHealthStatus(): ObservabilityHealthStatus {
+    const issues: Array<{
+      component: string;
+      severity: 'low' | 'medium' | 'high' | 'critical';
+      message: string;
+      timestamp: Date;
+    }> = [];
+
+    // Check system status
+    let systemStatusHealth: 'healthy' | 'unhealthy' | 'disabled' = 'disabled';
+    if (this.config.systemStatus.enabled) {
+      const systemStatus = systemStatusService.getSystemStatus();
+      if (_systemStatus) {
+        systemStatusHealth = systemStatus.status === 'healthy' ? 'healthy' : 'unhealthy';
+        if (systemStatus.degraded) {
+          issues.push({
+            component: 'systemStatus',
+            severity: 'medium',
+            message: 'System is running in degraded mode',
+            timestamp: new Date(),
+          });
+        }
+      } else {
+        systemStatusHealth = 'unhealthy';
+        issues.push({
+          component: 'systemStatus',
+          severity: 'high',
+          message: 'System status service not available',
+          timestamp: new Date(),
+        });
+      }
+    }
+
+    // Check tracing health
+    let tracingHealth: 'healthy' | 'unhealthy' | 'disabled' = 'disabled';
+    if (this.config.tracing.enabled) {
+      try {
+        const tracingMetrics = openTelemetryTracer.getMetrics();
+        tracingHealth = tracingMetrics.spansCreated >= 0 ? 'healthy' : 'unhealthy';
+      } catch {
+        tracingHealth = 'unhealthy';
+        issues.push({
+          component: 'tracing',
+          severity: 'medium',
+          message: 'OpenTelemetry tracer not responding',
+          timestamp: new Date(),
+        });
+      }
+    }
+
+    // Check EventEmitter health
+    let eventEmitterHealth: 'healthy' | 'unhealthy' | 'disabled' = 'disabled';
+    if (this.config.eventEmitter.enabled) {
+      try {
+        const emitterMetrics = systemEventEmitter.getMetrics();
+        const leakIssues = systemEventEmitter.checkForLeaks();
+
+        eventEmitterHealth = leakIssues.length === 0 ? 'healthy' : 'unhealthy';
+
+        if (leakIssues.length > 0) {
+          issues.push(
+            ...leakIssues.map((leak) => ({
+              component: 'eventEmitter',
+              severity: leak.severity as 'low' | 'medium' | 'high' | 'critical',
+              message: leak.message,
+              timestamp: new Date(),
+            }))
+          );
+        }
+      } catch {
+        eventEmitterHealth = 'unhealthy';
+        issues.push({
+          component: 'eventEmitter',
+          severity: 'high',
+          message: 'Event emitter not responding',
+          timestamp: new Date(),
+        });
+      }
+    }
+
+    // Check dashboards health
+    let dashboardsHealth: 'healthy' | 'unhealthy' | 'disabled' = 'disabled';
+    if (this.config.dashboards.enabled) {
+      try {
+        const sreMetrics = sreDashboardManager.getSREMetrics();
+        dashboardsHealth = sreMetrics ? 'healthy' : 'unhealthy';
+      } catch {
+        dashboardsHealth = 'unhealthy';
+        issues.push({
+          component: 'dashboards',
+          severity: 'medium',
+          message: 'SRE dashboards not responding',
+          timestamp: new Date(),
+        });
+      }
+    }
+
+    // Check security health (mock for now)
+    let securityHealth: 'healthy' | 'unhealthy' | 'disabled' = 'disabled';
+    if (this.config.security.enabled) {
+      securityHealth = 'healthy'; // Would implement actual security checks
+    }
+
+    // Determine overall health
+    const componentHealthes = [
+      systemStatusHealth,
+      tracingHealth,
+      eventEmitterHealth,
+      dashboardsHealth,
+      securityHealth,
+    ].filter((h) => h !== 'disabled');
+
+    const unhealthyComponents = componentHealthes.filter((h) => h === 'unhealthy');
+    const overallHealth =
+      unhealthyComponents.length === 0
+        ? 'healthy'
+        : unhealthyComponents.length >= 3
+          ? 'unhealthy'
+          : 'degraded';
+
+    // Update metrics
+    this.metrics.uptime = Date.now() - this.startTime;
+    this.metrics.spansCollected =
+      tracingHealth !== 'disabled' ? openTelemetryTracer.getMetrics().spansCreated : 0;
+    this.metrics.eventListenersTracked =
+      eventEmitterHealth !== 'disabled' ? systemEventEmitter.getMetrics().totalListeners : 0;
+
+    return {
+      overall: overallHealth,
+      components: {
+        systemStatus: systemStatusHealth,
+        tracing: tracingHealth,
+        eventEmitter: eventEmitterHealth,
+        dashboards: dashboardsHealth,
+        security: securityHealth,
+      },
+      metrics: { ...this.metrics },
+      issues,
+    };
+  }
+
+  /**
+   * Get comprehensive observability metrics
+   */
+  getMetrics(): unknown {
+    return {
+      uptime: Date.now() - this.startTime,
+      components: {
+        systemStatus: this.config.systemStatus.enabled
+          ? systemStatusService.getSystemStatus()
+          : null,
+        tracing: this.config.tracing.enabled ? openTelemetryTracer.getMetrics() : null,
+        eventEmitter: this.config.eventEmitter.enabled ? systemEventEmitter.getMetrics() : null,
+        dashboards: this.config.dashboards.enabled ? sreDashboardManager.getSREMetrics() : null,
+      },
+      health: this.getHealthStatus(),
+      configuration: this.config,
+    };
+  }
+
+  /**
+   * Get enabled components
+   */
+  getEnabledComponents(): string[] {
+    const components: string[] = [];
+    if (this.config.systemStatus.enabled) components.push('systemStatus');
+    if (this.config.tracing.enabled) components.push('tracing');
+    if (this.config.eventEmitter.enabled) components.push('eventEmitter');
+    if (this.config.dashboards.enabled) components.push('dashboards');
+    if (this.config.security.enabled) components.push('security');
+    return components;
+  }
+
+  /**
+   * Update configuration
+   */
+  updateConfig(config: Partial<ObservabilityConfig>): void {
+    this.config = { ...this.config, ...config };
+    logger.info('Observability configuration updated', { config: this.config });
+    this.emit('config_updated', this.config);
+  }
+
+  // Private methods
+
+  private mergeWithDefaults(config?: Partial<ObservabilityConfig>): ObservabilityConfig {
+    return {
+      systemStatus: {
+        enabled: true,
+        healthCheckInterval: 30000,
+        degradedModeEnabled: true,
+        alertingEnabled: true,
+        ...config?.systemStatus,
+      },
+      tracing: {
+        enabled: true,
+        serviceName: process.env.SERVICE_NAME || 'mcp-cortex',
+        serviceVersion: process.env.npm_package_version || '2.0.0',
+        environment: process.env.NODE_ENV || 'development',
+        endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
+        samplingRatio: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+        ...config?.tracing,
+      },
+      eventEmitter: {
+        enabled: true,
+        leakDetectionEnabled: true,
+        maxListeners: 100,
+        maxListenerAge: 300000, // 5 minutes
+        memoryThreshold: 100, // 100MB
+        ...config?.eventEmitter,
+      },
+      dashboards: {
+        enabled: true,
+        monitoringEnabled: true,
+        alertingEnabled: true,
+        refreshInterval: 30000, // 30 seconds
+        ...config?.dashboards,
+      },
+      security: {
+        enabled: true,
+        auditInterval: 300000, // 5 minutes
+        failLevel: 'moderate',
+        registry: 'https://registry.npmjs.org/',
+        ...config?.security,
+      },
+      metrics: {
+        enabled: true,
+        collectionInterval: 60000, // 1 minute
+        retentionPeriod: 86400000, // 24 hours
+        exportEnabled: true,
+        ...config?.metrics,
+      },
+    };
+  }
+
+  private async initializeSystemStatus(): Promise<void> {
+    logger.debug('Initializing system status monitoring');
+    // System status service is already instantiated and ready
+    logger.info('System status monitoring initialized');
+  }
+
+  private async initializeTracing(): Promise<void> {
+    logger.debug('Initializing OpenTelemetry tracing');
+
+    const tracingConfig = {
+      ...defaultTracingConfig,
+      serviceName: this.config.tracing.serviceName,
+      serviceVersion: this.config.tracing.serviceVersion,
+      environment: this.config.tracing.environment,
+      exporter: {
+        ...defaultTracingConfig.exporter,
+        endpoint: this.config.tracing.endpoint,
+      },
+      sampling: {
+        ...defaultTracingConfig.sampling,
+        ratio: this.config.tracing.samplingRatio,
+      },
+    };
+
+    await openTelemetryTracer.initialize();
+    logger.info('OpenTelemetry tracing initialized');
+  }
+
+  private initializeEventEmitter(): void {
+    logger.debug('Initializing EventEmitter lifecycle management');
+
+    if (this.config.eventEmitter.leakDetectionEnabled) {
+      // System event emitter is already configured with leak detection
+      logger.info('EventEmitter lifecycle management initialized');
+    }
+  }
+
+  private initializeDashboards(): void {
+    logger.debug('Initializing SRE dashboards');
+    // SRE dashboard manager is already instantiated and ready
+    logger.info('SRE dashboards initialized');
+  }
+
+  private initializeSecurity(): void {
+    logger.debug('Initializing security monitoring');
+    // Security monitoring would be initialized here
+    logger.info('Security monitoring initialized');
+  }
+
+  private setupEventListeners(): void {
+    // Listen to system status events
+    systemStatusService.on('health_check',  (health) => {
+      if (health.status !== 'healthy') {
+        this.metrics.alertsTriggered++;
+        this.emit('health_issue', health);
+      }
+    });
+
+    // Listen to SRE dashboard events
+    sreDashboardManager.on('alert_fired',  (alert) => {
+      this.metrics.alertsTriggered++;
+      this.emit('alert_fired', alert);
+    });
+
+    sreDashboardManager.on('incident_created',  (incident) => {
+      this.metrics.incidentsCreated++;
+      this.emit('incident_created', incident);
+    });
+
+    // Listen to EventEmitter events
+    systemEventEmitter.on('leak_detected',  (issue: unknown) => {
+      this.emit('memory_leak_detected', issue);
+    });
+  }
+
+  private startHealthMonitoring(): void {
+    this.healthCheckInterval = setInterval(() => {
+      const health = this.getHealthStatus();
+      this.emit('health_check', health);
+
+      // Log health issues
+      if (health.issues.length > 0) {
+        logger.warn('Observability health issues detected', {
+          issues: health.issues,
+          overall: health.overall,
+        });
+      }
+    }, 60000); // Check every minute
+  }
+
+  private getEnabledComponentsCount(): number {
+    return this.getEnabledComponents().length;
+  }
+}
+
+/**
+ * Default observability configuration
+ */
+export const defaultObservabilityConfig: ObservabilityConfig = {
+  systemStatus: {
+    enabled: true,
+    healthCheckInterval: 30000,
+    degradedModeEnabled: true,
+    alertingEnabled: true,
+  },
+  tracing: {
+    enabled: true,
+    serviceName: 'mcp-cortex',
+    serviceVersion: '2.0.0',
+    environment: 'development',
+    endpoint: 'http://localhost:4318/v1/traces',
+    samplingRatio: 1.0,
+  },
+  eventEmitter: {
+    enabled: true,
+    leakDetectionEnabled: true,
+    maxListeners: 100,
+    maxListenerAge: 300000,
+    memoryThreshold: 100,
+  },
+  dashboards: {
+    enabled: true,
+    monitoringEnabled: true,
+    alertingEnabled: true,
+    refreshInterval: 30000,
+  },
+  security: {
+    enabled: true,
+    auditInterval: 300000,
+    failLevel: 'moderate',
+    registry: 'https://registry.npmjs.org/',
+  },
+  metrics: {
+    enabled: true,
+    collectionInterval: 60000,
+    retentionPeriod: 86400000,
+    exportEnabled: true,
+  },
+};
+
+/**
+ * Global observability instance
+ */
+export const observabilityIntegration = new ObservabilityIntegration(defaultObservabilityConfig);
+
+/**
+ * Observability middleware for Express applications
+ */
+export function observabilityMiddleware(
+  options: {
+    includeTracing?: boolean;
+    includeMetrics?: boolean;
+    customTags?: Record<string,  string>;
+  } = {}
+) {
+  return (_req: unknown,  _res: unknown,  _next: unknown) => {
+    // Add observability headers
+    res.setHeader('X-Observability-Enabled', 'true');
+    res.setHeader('X-Service-Version', process.env.npm_package_version || '2.0.0');
+
+    // Add custom tags
+    if (options.customTags) {
+      req.observabilityTags = options.customTags;
+    }
+
+    // Continue with request processing
+    next();
+  };
+}
+
+/**
+ * Initialize observability with environment-based configuration
+ */
+export async function initializeObservability(): Promise<ObservabilityIntegration> {
+  // Load configuration from environment variables
+  const config: Partial<ObservabilityConfig> = {
+    systemStatus: {
+      enabled: process.env.OBSERVABILITY_SYSTEM_STATUS !== 'false',
+    },
+    tracing: {
+      enabled: process.env.OBSERVABILITY_TRACING !== 'false',
+      serviceName: process.env.SERVICE_NAME,
+      serviceVersion: process.env.npm_package_version,
+      environment: process.env.NODE_ENV,
+      endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+      samplingRatio: parseFloat(process.env.TRACING_SAMPLING_RATIO || '1.0'),
+    },
+    eventEmitter: {
+      enabled: process.env.OBSERVABILITY_EVENT_EMITTER !== 'false',
+      leakDetectionEnabled: process.env.EVENT_LEAK_DETECTION !== 'false',
+    },
+    dashboards: {
+      enabled: process.env.OBSERVABILITY_DASHBOARDS !== 'false',
+      monitoringEnabled: process.env.DASHBOARD_MONITORING !== 'false',
+      alertingEnabled: process.env.DASHBOARD_ALERTING !== 'false',
+    },
+    security: {
+      enabled: process.env.OBSERVABILITY_SECURITY !== 'false',
+      failLevel: process.env.SECURITY_FAIL_LEVEL || 'moderate',
+      registry: process.env.SECURITY_REGISTRY || 'https://registry.npmjs.org/',
+    },
+  };
+
+  // Initialize with merged configuration
+  await observabilityIntegration.initialize();
+  await observabilityIntegration.start();
+
+  logger.info('Observability initialized with environment configuration', {
+    config: observabilityIntegration.config,
+  });
+
+  return observabilityIntegration;
+}

@@ -1,0 +1,700 @@
+/**
+ * Tenant Rate Limiter Middleware
+ *
+ * Redis-backed rate limiting and quota management for multi-tenant deployments.
+ * Implements per-tenant rate limits, quotas, and circuit breaking for production.
+ *
+ * @author Cortex Team
+ * @version 2.0.1
+ */
+
+import { createHash, randomBytes } from 'crypto';
+import type { Request, Response, NextFunction } from 'express';
+import type { RedisClientType } from 'redis';
+import { createClient } from 'redis';
+import type { ExtendedRequest } from '../types/express-extensions.js';
+import { logger } from '../utils/logger.js';
+
+export interface TenantRateLimitConfig {
+  enabled: boolean;
+  redis: {
+    host: string;
+    port: number;
+    password?: string;
+    db: number;
+    tlsEnabled: boolean;
+    connectTimeoutMs: number;
+    commandTimeoutMs: number;
+  };
+  rateLimit: {
+    windowMs: number;
+    maxRequests: number;
+    burstSize: number;
+  };
+  quota: {
+    maxMemoryItems: number;
+    maxStorageGB: number;
+    maxRequestsPerDay: number;
+  };
+  circuitBreaker: {
+    enabled: boolean;
+    errorThreshold: number;
+    timeoutMs: number;
+    halfOpenMaxCalls: number;
+  };
+  slidingWindow: {
+    enabled: boolean;
+    granularity: 'second' | 'minute' | 'hour';
+    maxBuckets: number;
+  };
+}
+
+export interface TenantQuota {
+  tenantId: string;
+  usedMemoryItems: number;
+  usedStorageGB: number;
+  usedRequestsToday: number;
+  maxMemoryItems: number;
+  maxStorageGB: number;
+  maxRequestsPerDay: number;
+  resetDate: Date;
+}
+
+export interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  resetTime: number;
+  retryAfter?: number;
+  quotaExceeded?: boolean;
+  reason: string;
+}
+
+export class TenantRateLimiter {
+  private config: TenantRateLimitConfig;
+  private redis: RedisClientType;
+  private isHealthy = false;
+  private circuitBreakerState: 'closed' | 'open' | 'half-open' = 'closed';
+  private circuitBreakerErrors = 0;
+  private circuitBreakerLastFailure = 0;
+  private readonly CIRCUIT_BREAKER_KEY_PREFIX = 'circuit_breaker:';
+  private readonly RATE_LIMIT_KEY_PREFIX = 'rate_limit:';
+  private readonly QUOTA_KEY_PREFIX = 'quota:';
+  private readonly USAGE_KEY_PREFIX = 'usage:';
+  private readonly SLIDING_WINDOW_KEY_PREFIX = 'sliding:';
+
+  constructor(config: TenantRateLimitConfig) {
+    this.config = config;
+    this.redis = createClient({
+      socket: {
+        host: config.redis.host,
+        port: config.redis.port,
+        connectTimeout: config.redis.connectTimeoutMs,
+        lazyConnect: true,
+      },
+      password: config.redis.password,
+      database: config.redis.db,
+      ...(config.redis.tlsEnabled && {
+        socket: {
+          tls: true,
+          rejectUnauthorized: true,
+        },
+      }),
+    });
+
+    this.setupRedisEventHandlers();
+  }
+
+  /**
+   * Initialize Redis connection and perform health check
+   */
+  async initialize(): Promise<void> {
+    if (!this.config.enabled) {
+      logger.info('Tenant rate limiter is disabled');
+      return;
+    }
+
+    try {
+      await this.redis.connect();
+      await this.redis.ping();
+      this.isHealthy = true;
+      logger.info('Tenant rate limiter connected to Redis', {
+        host: this.config.redis.host,
+        port: this.config.redis.port,
+        db: this.config.redis.db,
+      });
+    } catch (error) {
+      this.isHealthy = false;
+      logger.error('Failed to connect to Redis for rate limiting', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        host: this.config.redis.host,
+        port: this.config.redis.port,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Create rate limiting middleware
+   */
+  createMiddleware(): (req: Request, res: Response, next: NextFunction) => void {
+    return async (req: ExtendedRequest, res: Response, next: NextFunction): Promise<void> => {
+      if (!this.config.enabled || !this.isHealthy) {
+        next();
+        return;
+      }
+
+      try {
+        const tenantId = this.extractTenantId(req);
+        const result = await this.checkRateLimit(tenantId, req);
+
+        // Set rate limit headers
+        res.setHeader('X-RateLimit-Limit', this.config.rateLimit.maxRequests);
+        res.setHeader('X-RateLimit-Remaining', result.remaining);
+        res.setHeader('X-RateLimit-Reset', Math.ceil(result.resetTime / 1000));
+
+        if (!result.allowed) {
+          logger.warn('Rate limit exceeded', {
+            tenantId,
+            ip: req.ip,
+            path: req.path,
+            userAgent: req.headers['user-agent'],
+            remaining: result.remaining,
+            retryAfter: result.retryAfter,
+            reason: result.reason,
+          });
+
+          if (result.retryAfter) {
+            res.setHeader('Retry-After', Math.ceil(result.retryAfter / 1000));
+          }
+
+          const statusCode = result.quotaExceeded ? 402 : 429;
+          res.status(statusCode).json({
+            error: result.quotaExceeded ? 'Payment Required' : 'Too Many Requests',
+            message: result.reason,
+            code: result.quotaExceeded ? 'QUOTA_EXCEEDED' : 'RATE_LIMIT_EXCEEDED',
+            retryAfter: result.retryAfter,
+            tenantId,
+          });
+          return;
+        }
+
+        // Add tenant context to request
+        req.tenantId = tenantId;
+        req.rateLimitInfo = result;
+
+        next();
+      } catch (error) {
+        logger.error('Rate limiter error', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          path: req.path,
+          ip: req.ip,
+        });
+
+        // Fail open - allow request if rate limiter fails
+        next();
+      }
+    };
+  }
+
+  /**
+   * Extract tenant ID from request
+   */
+  private extractTenantId(_req: Request): string {
+    // Priority order for tenant ID extraction
+    const sources = [
+      req.headers['x-tenant-id'],
+      req.headers['tenant-id'],
+      req.query.tenantId,
+      req.query['tenant-id'],
+      req.body?.tenantId,
+      (req as unknown).user?.tenantId,
+      (req as unknown).tenantId,
+    ];
+
+    for (const source of sources) {
+      if (source && typeof source === 'string' && source.trim()) {
+        return source.trim();
+      }
+    }
+
+    // Default tenant ID for backward compatibility
+    return 'default';
+  }
+
+  /**
+   * Check rate limit for a tenant
+   */
+  private async checkRateLimit(tenantId: string, req: Request): Promise<RateLimitResult> {
+    // Check circuit breaker
+    if (this.config.circuitBreaker.enabled && !this.isCircuitBreakerAvailable()) {
+      return {
+        allowed: false,
+        remaining: 0,
+        resetTime: Date.now() + this.config.circuitBreaker.timeoutMs,
+        retryAfter: this.config.circuitBreaker.timeoutMs,
+        reason: 'Circuit breaker is open',
+      };
+    }
+
+    try {
+      if (this.config.slidingWindow.enabled) {
+        return await this.checkSlidingWindowRateLimit(tenantId, req);
+      } else {
+        return await this.checkFixedWindowRateLimit(tenantId, req);
+      }
+    } catch (error) {
+      this.handleCircuitBreakerError();
+      throw error;
+    }
+  }
+
+  /**
+   * Check fixed window rate limit
+   */
+  private async checkFixedWindowRateLimit(
+    tenantId: string,
+    req: Request
+  ): Promise<RateLimitResult> {
+    const key = this.getRateLimitKey(tenantId);
+    const windowMs = this.config.rateLimit.windowMs;
+    const maxRequests = this.config.rateLimit.maxRequests;
+    const now = Date.now();
+    const windowStart = Math.floor(now / windowMs) * windowMs;
+    const windowEnd = windowStart + windowMs;
+
+    const pipeline = this.redis.multi();
+    pipeline.expire(key, Math.ceil(windowMs / 1000) + 1);
+    pipeline.incr(key);
+    pipeline.ttl(key);
+
+    const results = (await pipeline.exec()) as [Error | null, number][];
+    const [, count] = results[1];
+    const [, ttl] = results[2];
+
+    const remaining = Math.max(0, maxRequests - count);
+    const allowed = count <= maxRequests;
+
+    if (!allowed) {
+      logger.debug('Rate limit exceeded', {
+        tenantId,
+        count,
+        maxRequests,
+        windowStart,
+        windowEnd,
+      });
+    }
+
+    return {
+      allowed,
+      remaining,
+      resetTime: windowEnd,
+      reason: allowed ? 'OK' : 'Rate limit exceeded',
+    };
+  }
+
+  /**
+   * Check sliding window rate limit
+   */
+  private async checkSlidingWindowRateLimit(
+    tenantId: string,
+    req: Request
+  ): Promise<RateLimitResult> {
+    const key = this.getSlidingWindowKey(tenantId);
+    const now = Date.now();
+    const windowMs = this.config.rateLimit.windowMs;
+    const maxRequests = this.config.rateLimit.maxRequests;
+    const granularity = this.config.slidingWindow.granularity;
+    const bucketSize = this.getBucketSize(granularity);
+    const maxBuckets = this.config.slidingWindow.maxBuckets;
+
+    // Add current request timestamp
+    const pipeline = this.redis.multi();
+    pipeline.zAdd(key, { score: now, value: `${now}-${String(randomBytes(8).toString('hex'))}` });
+    pipeline.zRemRangeByScore(key, 0, now - windowMs);
+    pipeline.zCard(key);
+    pipeline.expire(key, Math.ceil(windowMs / bucketSize) + 1);
+
+    const results = (await pipeline.exec()) as [Error | null, unknown][];
+    const [, count] = results[2];
+
+    // Trim old buckets to prevent memory growth
+    const allBuckets = await this.redis.zRange(key, 0, -1);
+    if (allBuckets.length > maxBuckets * bucketSize) {
+      await this.redis.zRemRangeByRank(key, 0, allBuckets.length - maxBuckets * bucketSize - 1);
+    }
+
+    const remaining = Math.max(0, maxRequests - count);
+    const allowed = count <= maxRequests;
+    const resetTime = now + windowMs;
+
+    if (!allowed) {
+      logger.debug('Sliding window rate limit exceeded', {
+        tenantId,
+        count,
+        maxRequests,
+        windowMs,
+        bucketSize,
+      });
+    }
+
+    return {
+      allowed,
+      remaining,
+      resetTime,
+      reason: allowed ? 'OK' : 'Sliding window rate limit exceeded',
+    };
+  }
+
+  /**
+   * Check tenant quota
+   */
+  checkTenantQuota(_tenantId: string): Promise<{ allowed: boolean; quota: TenantQuota }> {
+    const quotaKey = this.getQuotaKey(tenantId);
+    const usageKey = this.getUsageKey(tenantId);
+
+    try {
+      const quota = await this.getTenantQuota(tenantId);
+      const usage = await this.getTenantUsage(tenantId);
+
+      const allowed =
+        usage.usedMemoryItems <= quota.maxMemoryItems &&
+        usage.usedStorageGB <= quota.maxStorageGB &&
+        usage.usedRequestsToday <= quota.maxRequestsPerDay;
+
+      return { allowed, quota: { ...quota, ...usage } };
+    } catch (error) {
+      logger.error('Failed to check tenant quota', {
+        tenantId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      // Fail open for quota checks
+      return {
+        allowed: true,
+        quota: {
+          tenantId,
+          usedMemoryItems: 0,
+          usedStorageGB: 0,
+          usedRequestsToday: 0,
+          maxMemoryItems: this.config.quota.maxMemoryItems,
+          maxStorageGB: this.config.quota.maxStorageGB,
+          maxRequestsPerDay: this.config.quota.maxRequestsPerDay,
+          resetDate: new Date(),
+        },
+      };
+    }
+  }
+
+  /**
+   * Update tenant usage
+   */
+ updateTenantUsage(
+    tenantId: string,
+    usage: {
+      memoryItems?: number;
+      storageGB?: number;
+      requests?: number;
+    }
+  ): Promise<void> {
+    if (!this.config.enabled || !this.isHealthy) {
+      return;
+    }
+
+    try {
+      const usageKey = this.getUsageKey(tenantId);
+      const now = Date.now();
+      const today = new Date().toDateString();
+
+      const pipeline = this.redis.multi();
+
+      if (usage.memoryItems) {
+        pipeline.hIncrBy(usageKey, 'usedMemoryItems', usage.memoryItems);
+      }
+      if (usage.storageGB) {
+        pipeline.hIncrByFloat(usageKey, 'usedStorageGB', usage.storageGB);
+      }
+      if (usage.requests) {
+        // Reset daily counter if it's a new day
+        const currentDay = await this.redis.hGet(usageKey, 'currentDay');
+        if (currentDay !== today) {
+          pipeline.hSet(usageKey, 'usedRequestsToday', '0');
+          pipeline.hSet(usageKey, 'currentDay', today);
+        }
+        pipeline.hIncrBy(usageKey, 'usedRequestsToday', usage.requests);
+      }
+
+      pipeline.hSet(usageKey, 'lastUpdated', now.toString());
+      pipeline.expire(usageKey, 7 * 24 * 60 * 60); // 7 days TTL
+
+      await pipeline.exec();
+    } catch (error) {
+      logger.error('Failed to update tenant usage', {
+        tenantId,
+        usage,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * Get tenant quota configuration
+   */
+  private async getTenantQuota(tenantId: string): Promise<Partial<TenantQuota>> {
+    const quotaKey = this.getQuotaKey(tenantId);
+
+    try {
+      const quotaData = await this.redis.hGetAll(quotaKey);
+
+      if (Object.keys(quotaData).length === 0) {
+        // Set default quota for new tenant
+        const defaultQuota = {
+          maxMemoryItems: this.config.quota.maxMemoryItems,
+          maxStorageGB: this.config.quota.maxStorageGB,
+          maxRequestsPerDay: this.config.quota.maxRequestsPerDay,
+        };
+
+        await this.redis.hSet(quotaKey, defaultQuota);
+        return defaultQuota;
+      }
+
+      return {
+        maxMemoryItems: parseInt(quotaData.maxMemoryItems || '0'),
+        maxStorageGB: parseFloat(quotaData.maxStorageGB || '0'),
+        maxRequestsPerDay: parseInt(quotaData.maxRequestsPerDay || '0'),
+      };
+    } catch (error) {
+      logger.error('Failed to get tenant quota', {
+        tenantId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+
+      return {
+        maxMemoryItems: this.config.quota.maxMemoryItems,
+        maxStorageGB: this.config.quota.maxStorageGB,
+        maxRequestsPerDay: this.config.quota.maxRequestsPerDay,
+      };
+    }
+  }
+
+  /**
+   * Get current tenant usage
+   */
+  private async getTenantUsage(tenantId: string): Promise<Partial<TenantQuota>> {
+    const usageKey = this.getUsageKey(tenantId);
+
+    try {
+      const usageData = await this.redis.hGetAll(usageKey);
+
+      return {
+        usedMemoryItems: parseInt(usageData.usedMemoryItems || '0'),
+        usedStorageGB: parseFloat(usageData.usedStorageGB || '0'),
+        usedRequestsToday: parseInt(usageData.usedRequestsToday || '0'),
+        resetDate: new Date(),
+      };
+    } catch (error) {
+      logger.error('Failed to get tenant usage', {
+        tenantId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+
+      return {
+        usedMemoryItems: 0,
+        usedStorageGB: 0,
+        usedRequestsToday: 0,
+        resetDate: new Date(),
+      };
+    }
+  }
+
+  /**
+   * Circuit breaker management
+   */
+  private isCircuitBreakerAvailable(): boolean {
+    const now = Date.now();
+
+    if (this.circuitBreakerState === 'open') {
+      if (now - this.circuitBreakerLastFailure > this.config.circuitBreaker.timeoutMs) {
+        this.circuitBreakerState = 'half-open';
+        logger.info('Circuit breaker transitioning to half-open');
+        return true;
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  private handleCircuitBreakerError(): void {
+    this.circuitBreakerErrors++;
+    this.circuitBreakerLastFailure = Date.now();
+
+    if (this.circuitBreakerErrors >= this.config.circuitBreaker.errorThreshold) {
+      this.circuitBreakerState = 'open';
+      logger.warn('Circuit breaker opened', {
+        errors: this.circuitBreakerErrors,
+        threshold: this.config.circuitBreaker.errorThreshold,
+      });
+    }
+  }
+
+  private handleCircuitBreakerSuccess(): void {
+    if (this.circuitBreakerState === 'half-open') {
+      this.circuitBreakerState = 'closed';
+      this.circuitBreakerErrors = 0;
+      logger.info('Circuit breaker closed');
+    }
+  }
+
+  /**
+   * Redis key helpers
+   */
+  private getRateLimitKey(_tenantId: string): string {
+    const key = `${this.RATE_LIMIT_KEY_PREFIX}${tenantId}:${Math.floor(Date.now() / this.config.rateLimit.windowMs)}`;
+    return this.hashKey(key);
+  }
+
+  private getSlidingWindowKey(_tenantId: string): string {
+    const key = `${this.SLIDING_WINDOW_KEY_PREFIX}${tenantId}`;
+    return this.hashKey(key);
+  }
+
+  private getQuotaKey(_tenantId: string): string {
+    const key = `${this.QUOTA_KEY_PREFIX}${tenantId}`;
+    return this.hashKey(key);
+  }
+
+  private getUsageKey(_tenantId: string): string {
+    const key = `${this.USAGE_KEY_PREFIX}${tenantId}`;
+    return this.hashKey(key);
+  }
+
+  private hashKey(_key: string): string {
+    return createHash('sha256').update(key).digest('hex').substring(0, 16);
+  }
+
+  private getBucketSize(_granularity: 'second' | 'minute' | 'hour'): number {
+    switch (_granularity) {
+      case 'second':
+        return 1000;
+      case 'minute':
+        return 60 * 1000;
+      case 'hour':
+        return 60 * 60 * 1000;
+      default:
+        return 60 * 1000;
+    }
+  }
+
+  /**
+   * Redis event handlers
+   */
+  private setupRedisEventHandlers(): void {
+    this.redis.on('connect',  () => {
+      logger.info('Redis client connected');
+    });
+
+    this.redis.on('ready',  () => {
+      this.isHealthy = true;
+      logger.info('Redis client ready');
+    });
+
+    this.redis.on('error',  (error: { message: unknown }) => {
+      this.isHealthy = false;
+      logger.error('Redis client error', {
+        error: error.message,
+      });
+    });
+
+    this.redis.on('end',  () => {
+      this.isHealthy = false;
+      logger.warn('Redis client disconnected');
+    });
+
+    this.redis.on('reconnecting',  () => {
+      logger.info('Redis client reconnecting');
+    });
+  }
+
+  /**
+   * Health check
+   */
+  healthCheck(): Promise<{ healthy: boolean; details: unknown }> {
+    const details: unknown = {
+      config: {
+        enabled: this.config.enabled,
+        redisConnected: this.isHealthy,
+      },
+      circuitBreaker: {
+        state: this.circuitBreakerState,
+        errors: this.circuitBreakerErrors,
+        lastFailure: this.circuitBreakerLastFailure,
+      },
+    };
+
+    if (this.config.enabled && this.isHealthy) {
+      try {
+        const startTime = Date.now();
+        await this.redis.ping();
+        details.redis = {
+          connected: true,
+          latency: Date.now() - startTime,
+        };
+      } catch (error) {
+        details.redis = {
+          connected: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        };
+        return { healthy: false, details };
+      }
+    }
+
+    return {
+      healthy: this.config.enabled ? this.isHealthy : true,
+      details,
+    };
+  }
+
+  /**
+   * Graceful shutdown
+   */
+  async shutdown(): Promise<void> {
+    if (this.redis.isOpen) {
+      await this.redis.quit();
+    }
+    this.isHealthy = false;
+    logger.info('Tenant rate limiter shutdown complete');
+  }
+
+  /**
+   * Get rate limiter statistics
+   */
+  async getStatistics(): Promise<unknown> {
+    if (!this.config.enabled || !this.isHealthy) {
+      return { enabled: false };
+    }
+
+    try {
+      const info = await this.redis.info('memory');
+      const keyspace = await this.redis.info('keyspace');
+
+      return {
+        enabled: true,
+        redis: {
+          connected: this.isHealthy,
+          memory: info,
+          keyspace,
+        },
+        circuitBreaker: {
+          state: this.circuitBreakerState,
+          errors: this.circuitBreakerErrors,
+        },
+      };
+    } catch (error) {
+      return {
+        enabled: true,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+}
+
+export default TenantRateLimiter;

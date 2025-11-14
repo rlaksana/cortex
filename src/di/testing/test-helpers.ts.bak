@@ -1,0 +1,456 @@
+/**
+ * Test Helpers for DI Container
+ *
+ * Utility functions and helpers for testing DI containers and services.
+ * Provides common test patterns and assertion utilities.
+ *
+ * @author Cortex Team
+ * @version 3.0.0
+ * @since 2025
+ */
+
+import { DecoratorUtils } from '../decorators.js';
+import type { EnhancedDIContainer } from '../enhanced-di-container.js';
+import { TestContainer, createTestContainer } from './test-container.js';
+
+/**
+ * Test configuration
+ */
+export interface TestConfiguration {
+  containerConfig?: unknown;
+  mockConfig?: unknown;
+  autoCleanup?: boolean;
+  timeout?: number;
+}
+
+/**
+ * Service test result
+ */
+export interface ServiceTestResult {
+  serviceName: string;
+  success: boolean;
+  instantiationTime: number;
+  dependencies: string[];
+  errors?: string[];
+  warnings?: string[];
+}
+
+/**
+ * Integration test result
+ */
+export interface IntegrationTestResult {
+  moduleName: string;
+  success: boolean;
+  services: ServiceTestResult[];
+  totalTime: number;
+  errors?: string[];
+}
+
+/**
+ * DI Container Test Helpers
+ */
+export class DITestHelpers {
+  private testContainer: TestContainer;
+  private testConfig: TestConfiguration;
+
+  constructor(config: TestConfiguration = {}) {
+    this.testConfig = {
+      autoCleanup: true,
+      timeout: 5000,
+      ...config,
+    };
+
+    this.testContainer = createTestContainer(this.testConfig.mockConfig);
+  }
+
+  /**
+   * Get the test container
+   */
+  getContainer(): TestContainer {
+    return this.testContainer;
+  }
+
+  /**
+   * Test a service class for DI compatibility
+   */
+  async testService<T>(
+    serviceClass: new (...args: unknown[]) => T,
+    dependencies?: Array<{ token: string | symbol; mock?: unknown }>
+  ): Promise<ServiceTestResult> {
+    const serviceName = serviceClass.name;
+    const startTime = Date.now();
+
+    const result: ServiceTestResult = {
+      serviceName,
+      success: false,
+      instantiationTime: 0,
+      dependencies: [],
+    };
+
+    try {
+      // Register dependencies if provided
+      if (_dependencies) {
+        for (const dep of dependencies) {
+          if (dep.mock) {
+            this.testContainer.registerMock({
+              token: dep.token,
+              implementation: dep.mock,
+            });
+          }
+        }
+        result.dependencies = dependencies.map((dep) => String(dep.token));
+      }
+
+      // Check if class is decorated
+      if (!DecoratorUtils.isInjectable(serviceClass)) {
+        result.warnings = [`${serviceName} is not decorated with @Injectable`];
+      }
+
+      // Get injection tokens
+      const tokens = DecoratorUtils.getInjectionTokens(serviceClass);
+      if (tokens.length === 0) {
+        result.warnings = result.warnings || [];
+        result.warnings.push(`${serviceName} has no dependencies injected`);
+      }
+
+      // Try to instantiate the service
+      const instance = this.testContainer.resolve<T>(serviceClass);
+
+      if (!instance) {
+        throw new Error('Failed to resolve service instance');
+      }
+
+      // Verify instance
+      if (typeof instance !== 'object' || instance === null) {
+        result.warnings = result.warnings || [];
+        result.warnings.push(`${serviceName} instance is not an object`);
+      }
+
+      result.success = true;
+      result.instantiationTime = Date.now() - startTime;
+    } catch (error) {
+      result.success = false;
+      result.errors = [error instanceof Error ? error.message : 'Unknown error'];
+      result.instantiationTime = Date.now() - startTime;
+    }
+
+    return result;
+  }
+
+  /**
+   * Test multiple services
+   */
+ testServices(
+    services: Array<{
+      class: new (...args: unknown[]) => unknown;
+      dependencies?: Array<{ token: string | symbol; mock?: unknown }>;
+    }>
+  ): Promise<ServiceTestResult[]> {
+    const _results: ServiceTestResult[] = [];
+
+    for (const service of services) {
+      const result = await this.testService(service.class, service.dependencies);
+      results.push(result);
+    }
+
+    return results;
+  }
+
+  /**
+   * Test a module integration
+   */
+  async testModule(
+    moduleClass: unknown,
+    expectedServices?: string[]
+  ): Promise<IntegrationTestResult> {
+    const moduleName = moduleClass.name;
+    const startTime = Date.now();
+
+    const result: IntegrationTestResult = {
+      moduleName,
+      success: false,
+      services: [],
+      totalTime: 0,
+    };
+
+    try {
+      // Get module metadata
+      const moduleMetadata = DecoratorUtils.getModuleMetadata(moduleClass);
+      if (!moduleMetadata) {
+        throw new Error(`${moduleName} is not decorated with @Module`);
+      }
+
+      // Register module providers
+      if (moduleMetadata.providers) {
+        for (const provider of moduleMetadata.providers) {
+          this.testContainer.registerMock({
+            token: provider.token,
+            implementation: provider.implementation,
+          });
+        }
+      }
+
+      // Test each service
+      const serviceResults: ServiceTestResult[] = [];
+
+      if (moduleMetadata.providers) {
+        for (const provider of moduleMetadata.providers) {
+          if (provider.implementation) {
+            const serviceResult = await this.testService(
+              provider.implementation as new (...args: unknown[]) => unknown
+            );
+            serviceResults.push(serviceResult);
+          }
+        }
+      }
+
+      // Verify expected services are available
+      if (_expectedServices) {
+        for (const serviceName of expectedServices) {
+          const container = this.testContainer.getContainer();
+          if (!container.isRegistered(serviceName)) {
+            result.errors = result.errors || [];
+            result.errors.push(`Expected service ${serviceName} not found in module ${moduleName}`);
+          }
+        }
+      }
+
+      result.services = serviceResults;
+      result.success =
+        result.services.every((s) => s.success) && (!result.errors || result.errors.length === 0);
+      result.totalTime = Date.now() - startTime;
+    } catch (error) {
+      result.success = false;
+      result.errors = [error instanceof Error ? error.message : 'Unknown error'];
+      result.totalTime = Date.now() - startTime;
+    }
+
+    return result;
+  }
+
+  /**
+   * Test container health and performance
+   */
+  testContainerHealth(): Promise<{
+    healthy: boolean;
+    services: number;
+    resolutionTime: number;
+    errors: string[];
+  }> {
+    const container = this.testContainer.getContainer();
+    const startTime = Date.now();
+
+    try {
+      const health = container.getHealthStatus();
+      const resolutionTime = Date.now() - startTime;
+
+      return {
+        healthy: health.status === 'healthy',
+        services: health.services.total,
+        resolutionTime,
+        errors: health.issues,
+      };
+    } catch (error) {
+      return {
+        healthy: false,
+        services: 0,
+        resolutionTime: Date.now() - startTime,
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
+    }
+  }
+
+  /**
+   * Verify dependency injection is working correctly
+   */
+  async verifyDependencyInjection<T>(
+    serviceClass: new (...args: unknown[]) => T,
+    dependencyChecks: Array<{
+      dependency: string;
+      shouldExist: boolean;
+      property?: string;
+    }>
+  ): Promise<boolean> {
+    try {
+      const instance = this.testContainer.resolve<T>(serviceClass);
+
+      if (!instance || typeof instance !== 'object') {
+        return false;
+      }
+
+      for (const check of dependencyChecks) {
+        const property = check.property || check.dependency;
+        const hasDependency = (instance as unknown)[property] !== undefined;
+
+        if (hasDependency !== check.shouldExist) {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Benchmark service resolution
+   */
+  async benchmarkResolution<T>(
+    serviceClass: new (...args: unknown[]) => T,
+    iterations: number = 100
+  ): Promise<{
+    averageTime: number;
+    minTime: number;
+    maxTime: number;
+    totalTime: number;
+  }> {
+    const times: number[] = [];
+
+    for (let i = 0; i < iterations; i++) {
+      const startTime = performance.now();
+
+      try {
+        this.testContainer.resolve<T>(serviceClass);
+        const endTime = performance.now();
+        times.push(endTime - startTime);
+      } catch (error) {
+        // Skip failed resolutions
+      }
+    }
+
+    if (times.length === 0) {
+      throw new Error('No successful resolutions recorded');
+    }
+
+    const totalTime = times.reduce((sum,  _time) => sum + time, 0);
+    const averageTime = totalTime / times.length;
+    const minTime = Math.min(...times);
+    const maxTime = Math.max(...times);
+
+    return {
+      averageTime,
+      minTime,
+      maxTime,
+      totalTime,
+    };
+  }
+
+  /**
+   * Clean up test resources
+   */
+  cleanup(): void {
+    if (this.testConfig.autoCleanup) {
+      this.testContainer.clear();
+    }
+  }
+}
+
+/**
+ * Utility function to create test helpers
+ */
+export function createTestHelpers(config?: TestConfiguration): DITestHelpers {
+  return new DITestHelpers(config);
+}
+
+/**
+ * Quick test function for a single service
+ */
+export async function testService<T>(
+  serviceClass: new (...args: unknown[]) => T,
+  dependencies?: Array<{ token: string | symbol; mock?: unknown }>
+): Promise<ServiceTestResult> {
+  const helpers = createTestHelpers();
+  const result = await helpers.testService(serviceClass, dependencies);
+  helpers.cleanup();
+  return result;
+}
+
+/**
+ * Quick test function for a module
+ */
+export async function testModule(
+  moduleClass: unknown,
+  expectedServices?: string[]
+): Promise<IntegrationTestResult> {
+  const helpers = createTestHelpers();
+  const result = await helpers.testModule(moduleClass, expectedServices);
+  helpers.cleanup();
+  return result;
+}
+
+/**
+ * Assertion helpers for testing
+ */
+export class DIAssertions {
+  /**
+   * Assert that a service can be resolved
+   */
+  static async canResolve<T>(
+    container: EnhancedDIContainer | TestContainer,
+    token: string | symbol | (new (...args: unknown[]) => T)
+  ): Promise<void> {
+    const isTestContainer = container instanceof TestContainer;
+    const instance = isTestContainer ? container.resolve<T>(token) : container.resolve<T>(token);
+
+    if (instance === null || instance === undefined) {
+      throw new Error(`Expected service ${String(token)} to be resolvable`);
+    }
+  }
+
+  /**
+   * Assert that a service has specific dependencies
+   */
+  static hasDependencies(
+    serviceClass: new (...args: unknown[]) => unknown,
+    expectedDependencies: string[]
+  ): void {
+    const tokens = DecoratorUtils.getInjectionTokens(serviceClass);
+    const missingDeps = expectedDependencies.filter((dep) => !tokens.includes(dep));
+
+    if (missingDeps.length > 0) {
+      throw new Error(
+        `Service ${serviceClass.name} missing dependencies: ${missingDeps.join(', ')}`
+      );
+    }
+  }
+
+  /**
+   * Assert that a service is properly decorated
+   */
+  static isInjectable(serviceClass: new (...args: unknown[]) => unknown): void {
+    if (!DecoratorUtils.isInjectable(serviceClass)) {
+      throw new Error(`Service ${serviceClass.name} is not decorated with @Injectable`);
+    }
+  }
+
+  /**
+   * Assert that a module is properly configured
+   */
+  static isModule(_moduleClass: unknown): void {
+    const metadata = DecoratorUtils.getModuleMetadata(moduleClass);
+    if (!metadata) {
+      throw new Error(`Class ${moduleClass.name} is not decorated with @Module`);
+    }
+
+    if (!metadata.name) {
+      throw new Error(`Module ${moduleClass.name} must have a name`);
+    }
+
+    if (!metadata.providers || metadata.providers.length === 0) {
+      throw new Error(`Module ${moduleClass.name} must have at least one provider`);
+    }
+  }
+
+  /**
+   * Assert container health
+   */
+  static isHealthy(_container: EnhancedDIContainer): void {
+    const health = container.getHealthStatus();
+    if (health.status !== 'healthy') {
+      throw new Error(
+        `Container is not healthy: ${health.status}. Issues: ${health.issues.join(', ')}`
+      );
+    }
+  }
+}

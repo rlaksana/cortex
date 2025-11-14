@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical business service
 /**
  * Dependency Registry & Health Monitoring System
  *

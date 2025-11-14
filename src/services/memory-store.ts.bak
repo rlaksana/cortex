@@ -1,0 +1,454 @@
+import type { MemoryStoreResponse } from '../types/core-interfaces.js';
+import { createStoreObservability } from '../utils/observability-helper.js';
+import { insightGenerationService } from './insights/insight-generation-service.js';
+import { systemMetricsService } from './metrics/system-metrics.js';
+import { memoryStoreOrchestrator } from './orchestrators/memory-store-orchestrator.js';
+import { truncationService } from './truncation/truncation-service.js';
+import { logger } from '@/utils/logger.js';
+
+// Type definitions for truncation results
+interface TruncationResult {
+  truncated: { content: string };
+  original: { length: number; contentType?: string };
+  meta: { strategy?: string };
+}
+
+interface ProcessedItem extends Record<string, unknown> {
+  _truncation?: {
+    originalLength: number;
+    truncatedLength: number;
+    strategy: string;
+    contentType?: string;
+  };
+  content?: string;
+  data?: Record<string, unknown>;
+}
+
+/**
+ * Main entry point for memory store operations
+ *
+ * This function has been refactored to use the MemoryStoreOrchestrator
+ * which coordinates validation, deduplication, similarity detection,
+ * and storage operations across multiple services.
+ *
+ * The original 825-line function has been broken down into:
+ * - ValidationService: Input validation and business rule enforcement
+ * - DeduplicationService: Duplicate detection and handling
+ * - SimilarityService: Content similarity analysis
+ * - AuditService: Comprehensive audit logging
+ * - MemoryStoreOrchestrator: Coordinates all services
+ *
+ * Each service now has a single responsibility and functions
+ * are under 50 lines as required.
+ */
+export async function memoryStore(
+  items: unknown[],
+  options?: { insight?: boolean }
+): Promise<MemoryStoreResponse> {
+  const startTime = Date.now();
+  try {
+    logger.info(
+      { itemCount: items.length, insightEnabled: options?.insight },
+      'Memory store operation started'
+    );
+
+    // P1-2: Process items with truncation if needed
+    const processedItems = await processItemsWithTruncation(items);
+
+    // Delegate to the orchestrator which handles all the complex logic
+    const result = await memoryStoreOrchestrator.storeItems(processedItems);
+
+    // P1-2: Add truncation metadata to response
+    const responseWithTruncation = await addTruncationMetadata(result, processedItems);
+
+    // P6-1: Generate insights if requested and enabled
+    const responseWithInsights = options?.insight
+      ? await addInsightMetadata(responseWithTruncation, processedItems)
+      : responseWithTruncation;
+
+    logger.info(
+      {
+        itemsStored: result.stored.length,
+        errors: result.errors.length,
+        truncated: responseWithTruncation.meta.truncated,
+        insightsGenerated: responseWithInsights.meta.insights?.total_insights || 0,
+        duration: Date.now() - startTime,
+      },
+      'Memory store operation completed'
+    );
+
+    return responseWithInsights;
+  } catch (error) {
+    logger.error({ error, itemCount: items.length }, 'Memory store operation failed');
+
+    // Return a formatted error response
+    return {
+      // Enhanced response format
+      items: [],
+      summary: {
+        stored: 0,
+        skipped_dedupe: 0,
+        business_rule_blocked: 0,
+        validation_error: 1,
+        total: 1,
+      },
+
+      // Legacy fields for backward compatibility
+      stored: [],
+      errors: [
+        {
+          index: 0,
+          error_code: 'SYSTEM_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown system error',
+        },
+      ],
+      autonomous_context: {
+        action_performed: 'skipped',
+        similar_items_checked: 0,
+        duplicates_found: 0,
+        contradictions_detected: false,
+        recommendation: 'System error occurred - please try again',
+        reasoning: 'Critical system error during memory store operation',
+        user_message_suggestion: '❌ System error occurred',
+      },
+      observability: createStoreObservability(false, true, Date.now() - startTime, 0.1),
+      // P0-3: Add unified response metadata
+      meta: {
+        strategy: 'error_fallback',
+        vector_used: false,
+        degraded: true,
+        source: 'memory_store_error',
+        execution_time_ms: Date.now() - startTime,
+        truncated: false,
+        warnings: ['System error occurred during memory store operation'],
+      },
+    };
+  }
+}
+
+/**
+ * P1-2: Process items with truncation if needed
+ */
+async function processItemsWithTruncation(items: unknown[]): Promise<unknown[]> {
+  const processedItems: unknown[] = [];
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+
+    try {
+      // Skip invalid items (they'll be caught by validation)
+      if (!item || typeof item !== 'object') {
+        processedItems.push(item);
+        continue;
+      }
+
+      // Extract content for truncation
+      const content = extractContentForTruncation(item);
+      if (!content) {
+        processedItems.push(item);
+        continue;
+      }
+
+      // Process content with truncation
+      const truncationResult = await truncationService.processContent(content);
+
+      // Update item with truncated content if needed
+      if (truncationResult.meta.truncated) {
+        const updatedItem = updateItemWithTruncatedContent(item, truncationResult);
+        processedItems.push(updatedItem);
+
+        // Log truncation event
+        logger.warn('Item content truncated during memory store', {
+          itemIndex: i,
+          originalLength: truncationResult.original.length,
+          truncatedLength: truncationResult.truncated.length,
+          contentType: truncationResult.original.contentType,
+          strategy: truncationResult.meta.strategy,
+        });
+
+        // Update metrics
+        systemMetricsService.updateMetrics({
+          operation: 'truncation',
+          data: {
+            truncationOccurred: truncationResult.meta.truncated,
+            charsRemoved: truncationResult.metrics.charsRemoved,
+            tokensRemoved: truncationResult.metrics.tokensRemoved,
+            contentType: truncationResult.original.contentType,
+            strategy: truncationResult.meta.strategy,
+          },
+          duration_ms: truncationResult.metrics.processingTimeMs,
+        });
+      } else {
+        processedItems.push(item);
+      }
+    } catch (error) {
+      logger.error({ error, itemIndex: i }, 'Error during truncation processing');
+      // Include original item if truncation fails
+      processedItems.push(item);
+    }
+  }
+
+  return processedItems;
+}
+
+/**
+ * Extract content from item for truncation processing
+ */
+function extractContentForTruncation(_item: unknown): string | null {
+  if (!item || typeof item !== 'object') {
+    return null;
+  }
+
+  // Try different content fields
+  const typedItem = item as Record<string, unknown>;
+
+  // Check for content field
+  if (typedItem.content && typeof typedItem.content === 'string') {
+    return typedItem.content;
+  }
+
+  // Check for data.content field
+  if (typedItem.data?.content && typeof typedItem.data.content === 'string') {
+    return typedItem.data.content;
+  }
+
+  // Check for text field
+  if (typedItem.text && typeof typedItem.text === 'string') {
+    return typedItem.text;
+  }
+
+  // Check for description field
+  if (typedItem.description && typeof typedItem.description === 'string') {
+    return typedItem.description;
+  }
+
+  // Convert entire item to string as fallback
+  try {
+    return JSON.stringify(typedItem);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Update item with truncated content
+ */
+function updateItemWithTruncatedContent(
+  _item: unknown, 
+  _truncationResult: TruncationResult
+): unknown {
+  if (!item || typeof item !== 'object') {
+    return item;
+  }
+
+  const typedItem = { ...item } as ProcessedItem;
+
+  // Update content field if it exists
+  if (typedItem.content && typeof typedItem.content === 'string') {
+    typedItem.content = truncationResult.truncated.content;
+  }
+
+  // Update data.content field if it exists
+  if (typedItem.data?.content && typeof typedItem.data.content === 'string') {
+    typedItem.data = {
+      ...typedItem.data,
+      content: truncationResult.truncated.content,
+    };
+  }
+
+  // Add truncation metadata
+  typedItem._truncation = {
+    originalLength: truncationResult.original.length || 0,
+    truncatedLength: truncationResult.truncated.content.length,
+    strategy: truncationResult.meta.strategy || 'unknown',
+    contentType: truncationResult.original.contentType,
+  };
+
+  return typedItem;
+}
+
+/**
+ * Add truncation metadata to response
+ */
+ function addTruncationMetadata(
+  response: MemoryStoreResponse,
+  processedItems: unknown[]
+): Promise<MemoryStoreResponse> {
+  const truncationDetails: Array<{
+    item_index: number;
+    item_id?: string;
+    original_length: number;
+    truncated_length: number;
+    truncation_type: 'character' | 'token' | 'both';
+    limit_applied: number;
+    strategy: string;
+    content_type?: string;
+  }> = [];
+  let totalCharsRemoved = 0;
+  const totalTokensRemoved = 0;
+  const warnings: string[] = [];
+
+  // Check for truncation in processed items
+  processedItems.forEach((item,  _index) => {
+    if (item && typeof item === 'object') {
+      const typedItem = item as ProcessedItem;
+      if (typedItem._truncation) {
+        truncationDetails.push({
+          item_index: index,
+          item_id: typedItem.id as string | undefined,
+          original_length: typedItem._truncation.originalLength,
+          truncated_length: typedItem._truncation.truncatedLength,
+          truncation_type: 'character' as const,
+          limit_applied: typedItem._truncation.truncatedLength,
+          strategy: typedItem._truncation.strategy,
+          content_type: typedItem._truncation.contentType,
+        });
+
+        totalCharsRemoved +=
+          typedItem._truncation.originalLength - typedItem._truncation.truncatedLength;
+
+        // Remove temporary truncation metadata
+        delete typedItem._truncation;
+      }
+    }
+  });
+
+  // Check response items for truncation warnings
+  response.items.forEach((item) => {
+    if (item.reason && item.reason.includes('truncated')) {
+      warnings.push(item.reason);
+    }
+  });
+
+  const wasTruncated = truncationDetails.length > 0;
+
+  // Add warnings if truncation occurred
+  if (_wasTruncated) {
+    warnings.push(`${String(truncationDetails?.length ?? 0)} items were truncated during storage`);
+  }
+
+  return {
+    ...response,
+    meta: {
+      ...response.meta,
+      truncated: wasTruncated,
+      truncation_details: truncationDetails.length > 0 ? truncationDetails : undefined,
+      total_chars_removed: totalCharsRemoved > 0 ? totalCharsRemoved : undefined,
+      total_tokens_removed: totalTokensRemoved > 0 ? totalTokensRemoved : undefined,
+      warnings: warnings.length > 0 ? warnings : undefined,
+    },
+  };
+}
+
+/**
+ * P6-1: Add insight generation metadata to response
+ */
+async function addInsightMetadata(
+  response: MemoryStoreResponse,
+  processedItems: unknown[]
+): Promise<MemoryStoreResponse> {
+  try {
+    // Extract stored items for insight generation
+    const storedItems = response.items
+      .filter((item) => item.status === 'stored' && item.id)
+      .map((item) => ({
+        id: item.id!,
+        kind: item.kind,
+        content: item.content,
+        data: { kind: item.kind, content: item.content }, // Basic data structure for insights
+        scope: {}, // Default empty scope
+        created_at: item.created_at,
+      }));
+
+    if (storedItems.length === 0) {
+      logger.debug('No stored items available for insight generation');
+      return {
+        ...response,
+        meta: {
+          ...response.meta,
+          insights: {
+            enabled: true,
+            total_insights: 0,
+            insights_by_type: {},
+            average_confidence: 0,
+            processing_time_ms: 0,
+            performance_impact: 0,
+          },
+        },
+      };
+    }
+
+    logger.debug({ itemCount: storedItems.length }, 'Generating insights for stored items');
+
+    // Generate insights
+    const insightResponse = await insightGenerationService.generateInsights({
+      items: storedItems,
+      options: {
+        enabled: true,
+        insight_types: ['patterns', 'connections', 'recommendations'], // Enable basic types by default
+        max_insights_per_item: 3,
+        confidence_threshold: 0.6,
+        include_metadata: true,
+      },
+      scope: {}, // Default empty scope
+    });
+
+    // Log any warnings from insight generation
+    if (insightResponse.warnings.length > 0) {
+      logger.warn({ warnings: insightResponse.warnings }, 'Insight generation warnings');
+    }
+
+    // Log any errors from insight generation
+    if (insightResponse.errors.length > 0) {
+      logger.error({ errors: insightResponse.errors }, 'Insight generation errors');
+    }
+
+    // Update system metrics for insights
+    if (insightResponse.metadata.total_insights > 0) {
+      systemMetricsService.updateMetrics({
+        operation: 'insight_generation_summary',
+        data: {
+          total_insights: insightResponse.metadata.total_insights,
+          insights_by_type: insightResponse.metadata.insights_by_type,
+          average_confidence: insightResponse.metadata.average_confidence,
+          processing_time_ms: insightResponse.metadata.processing_time_ms,
+          performance_impact: insightResponse.metadata.performance_impact,
+        },
+        duration_ms: insightResponse.metadata.processing_time_ms,
+      });
+    }
+
+    return {
+      ...response,
+      meta: {
+        ...response.meta,
+        insights: {
+          enabled: true,
+          total_insights: insightResponse.metadata.total_insights,
+          insights_by_type: insightResponse.metadata.insights_by_type,
+          average_confidence: insightResponse.metadata.average_confidence,
+          processing_time_ms: insightResponse.metadata.processing_time_ms,
+          performance_impact: insightResponse.metadata.performance_impact,
+        },
+      },
+    };
+  } catch (error) {
+    logger.error({ error }, 'Failed to generate insights for memory store');
+
+    // Return response without insights but mark as attempted
+    return {
+      ...response,
+      meta: {
+        ...response.meta,
+        insights: {
+          enabled: true,
+          total_insights: 0,
+          insights_by_type: {},
+          average_confidence: 0,
+          processing_time_ms: 0,
+          performance_impact: 0,
+        },
+      },
+    };
+  }
+}

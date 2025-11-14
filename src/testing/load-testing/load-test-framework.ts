@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical infrastructure service
 /**
  * Comprehensive Load Testing Framework for MCP-Cortex
  *

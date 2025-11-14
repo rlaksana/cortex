@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical business service
 import { logger } from '@/utils/logger.js';
 
 import type { RunbookData, ScopeFilter } from '../../types/knowledge-data.js';

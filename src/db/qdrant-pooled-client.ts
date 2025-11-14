@@ -1,4 +1,3 @@
-// @ts-nocheck - Emergency rollback: Critical database service
 /**
  * Enhanced Qdrant Client with Connection Pooling and Performance Optimization
  *
@@ -15,6 +14,10 @@
  * @version 2.0.0
  * @since 2025
  */
+
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
+// TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
 import { QdrantClient } from '@qdrant/js-client-rest';
 

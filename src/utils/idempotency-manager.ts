@@ -1,4 +1,7 @@
-// @ts-nocheck - Emergency rollback: Critical utility service
+// @ts-nocheck
+// FINAL COMPREHENSIVE EMERGENCY ROLLBACK: Utility layer type issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
+
 /**
  * P2-P3: Advanced Idempotency Management System
  *

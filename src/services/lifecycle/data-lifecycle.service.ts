@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical business service
 /**
  * P3 Data Management: Data Lifecycle Service
  *

@@ -1,0 +1,807 @@
+/**
+ * OpenTelemetry Distributed Tracing Implementation
+ *
+ * Provides comprehensive distributed tracing across adapter/service boundaries
+ * with correlation IDs, span propagation, and observability integration.
+ *
+ * Features:
+ * - Automatic span creation for adapter/service calls
+ * - Correlation ID propagation across service boundaries
+ * - Performance metrics and latency tracking
+ * - Error tracking and exception handling
+ * - Integration with Jaeger/Tempo backends
+ * - Custom span enrichment and tagging
+ *
+ * @author Cortex Team
+ * @version 1.0.0
+ * @since 2025-11-10
+ */
+
+import type { Attributes } from '@opentelemetry/api';
+import { trace, context, SpanKind, SpanStatusCode } from '@opentelemetry/api';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-otlp-http';
+import { OTLPMetricExporter } from '@opentelemetry/exporter-otlp-http';
+import { Resource } from '@opentelemetry/resources';
+import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { logger } from '@/utils/logger.js';
+
+/**
+ * Tracing configuration
+ */
+export interface TracingConfig {
+  // Service identification
+  serviceName: string;
+  serviceVersion: string;
+  serviceNamespace?: string;
+  environment: string;
+
+  // Exporter configuration
+  exporter: {
+    endpoint: string;
+    headers?: Record<string, string>;
+    timeout?: number;
+  };
+
+  // Sampling configuration
+  sampling: {
+    enabled: boolean;
+    ratio: number; // 0.0 to 1.0
+    parentBased: boolean;
+  };
+
+  // Span configuration
+  spans: {
+    maxAttributes?: number;
+    maxEvents?: number;
+    maxLinks?: number;
+    maxAttributesPerEvent?: number;
+  };
+
+  // Performance tracking
+  performance: {
+    trackSlowQueries: boolean;
+    slowQueryThreshold: number; // milliseconds
+    trackMemoryUsage: boolean;
+    trackCpuUsage: boolean;
+  };
+
+  // Error tracking
+  errorTracking: {
+    captureExceptions: boolean;
+    captureRejections: boolean;
+    includeStackTrace: boolean;
+  };
+
+  // Custom attributes
+  attributes: Record<string, string | number | boolean>;
+}
+
+/**
+ * Span context for propagation
+ */
+export interface SpanContext {
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  traceFlags: number;
+  baggage?: Record<string, string>;
+}
+
+/**
+ * Trace options for span creation
+ */
+export interface TraceOptions {
+  name: string;
+  kind?: SpanKind;
+  attributes?: Attributes;
+  links?: unknown[];
+  startTime?: number;
+  root?: boolean;
+}
+
+/**
+ * Tracing metrics
+ */
+export interface TracingMetrics {
+  spansCreated: number;
+  spansEnded: number;
+  spansDropped: number;
+  errorsRecorded: number;
+  averageLatency: number;
+  p95Latency: number;
+  p99Latency: number;
+}
+
+/**
+ * OpenTelemetry Tracer Service
+ */
+export class OpenTelemetryTracer {
+  private sdk: NodeSDK | null = null;
+  private config: TracingConfig;
+  private tracer = trace.getTracer(this.config?.serviceName || 'mcp-cortex');
+  private _metrics: TracingMetrics = {
+    spansCreated: 0,
+    spansEnded: 0,
+    spansDropped: 0,
+    errorsRecorded: 0,
+    averageLatency: 0,
+    p95Latency: 0,
+    p99Latency: 0,
+  };
+  private latencyMeasurements: number[] = [];
+  private isInitialized = false;
+
+  constructor(config: TracingConfig) {
+    this.config = config;
+  }
+
+  /**
+   * Initialize OpenTelemetry tracing
+   */
+  async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      logger.warn('OpenTelemetry tracer already initialized');
+      return;
+    }
+
+    try {
+      // Create resource with service information
+      const resource = new Resource({
+        [SemanticResourceAttributes.SERVICE_NAME]: this.config.serviceName,
+        [SemanticResourceAttributes.SERVICE_VERSION]: this.config.serviceVersion,
+        [SemanticResourceAttributes.SERVICE_NAMESPACE]:
+          this.config.serviceNamespace || 'mcp-cortex',
+        [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: this.config.environment,
+        ...this.config.attributes,
+      });
+
+      // Create trace exporter
+      const traceExporter = new OTLPTraceExporter({
+        url: this.config.exporter.endpoint,
+        headers: this.config.exporter.headers,
+        timeout: this.config.exporter.timeout || 30000,
+      });
+
+      // Create metric exporter
+      const metricExporter = new OTLPMetricExporter({
+        url: this.config.exporter.endpoint.replace('/v1/traces', '/v1/metrics'),
+        headers: this.config.exporter.headers,
+        timeout: this.config.exporter.timeout || 30000,
+      });
+
+      // Create metric reader
+      const metricReader = new PeriodicExportingMetricReader({
+        exporter: metricExporter,
+        exportIntervalMillis: 60000, // 1 minute
+      });
+
+      // Initialize SDK
+      this.sdk = new NodeSDK({
+        resource,
+        traceExporter,
+        metricReader,
+        instrumentations: [getNodeAutoInstrumentations()],
+        spanLimits: {
+          maxAttributes: this.config.spans.maxAttributes || 128,
+          maxEvents: this.config.spans.maxEvents || 128,
+          maxLinks: this.config.spans.maxLinks || 128,
+          maxAttributesPerEvent: this.config.spans.maxAttributesPerEvent || 128,
+        },
+      });
+
+      // Start SDK
+      await this.sdk.start();
+
+      // Update tracer instance
+      this.tracer = trace.getTracer(this.config.serviceName);
+      this.isInitialized = true;
+
+      logger.info(
+        {
+          serviceName: this.config.serviceName,
+          version: this.config.serviceVersion,
+          environment: this.config.environment,
+          endpoint: this.config.exporter.endpoint,
+        },
+        'OpenTelemetry tracing initialized'
+      );
+    } catch (error) {
+      logger.error(
+        { error: error instanceof Error ? error.message : 'Unknown error' },
+        'Failed to initialize OpenTelemetry tracing'
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Shutdown OpenTelemetry tracing
+   */
+  async shutdown(): Promise<void> {
+    if (this.sdk) {
+      await this.sdk.shutdown();
+      this.sdk = null;
+      this.isInitialized = false;
+      logger.info('OpenTelemetry tracing shutdown');
+    }
+  }
+
+  /**
+   * Create a span with automatic context management
+   */
+  createSpan<T = unknown>(
+    options: TraceOptions,
+    fn: (span: unknown) => Promise<T> | T
+  ): Promise<T> {
+    if (!this.isInitialized) {
+      logger.warn('Tracer not initialized, executing function without tracing');
+      return Promise.resolve(fn(null));
+    }
+
+    return this.tracer.startActiveSpan(
+      options.name, 
+      {
+        kind: options.kind || SpanKind.INTERNAL, 
+        _attributes: options.attributes, 
+        _links: options.links, 
+        _startTime: options.startTime, 
+      }, 
+      async (span: unknown) => {
+        const startTime = Date.now();
+        this.metrics.spansCreated++;
+
+        try {
+          // Add correlation ID if not present
+          this.addCorrelationId(span);
+
+          // Add standard attributes
+          this.addStandardAttributes(span, options);
+
+          // Execute the function
+          const result = await fn(span);
+
+          // Record success
+          span.setStatus({ code: SpanStatusCode.OK });
+          span.end();
+
+          // Update metrics
+          this.metrics.spansEnded++;
+          this.recordLatency(Date.now() - startTime);
+
+          return result;
+        } catch (error) {
+          // Record error
+          this.recordSpanError(span, error);
+          span.end();
+
+          // Update metrics
+          this.metrics.spansEnded++;
+          this.metrics.errorsRecorded++;
+          this.recordLatency(Date.now() - startTime);
+
+          throw error;
+        }
+      }
+    );
+  }
+
+  /**
+   * Trace adapter/service call
+   */
+  traceAdapterCall<T = unknown>(
+    adapterName: string,
+    methodName: string,
+    args: unknown[],
+    fn: () => Promise<T> | T
+  ): Promise<T> {
+    return this.createSpan(
+      {
+        name: `${adapterName}.${methodName}`,
+        kind: SpanKind.CLIENT,
+        attributes: {
+          'adapter.name': adapterName,
+          'adapter.method': methodName,
+          'adapter.args_count': args.length,
+          'adapter.args': this.sanitizeArgs(args),
+        },
+      },
+      async (_span) => {
+        // Add input tracking
+        span.addEvent('method_call', {
+          'adapter.name': adapterName,
+          'adapter.method': methodName,
+          input_size: this.calculateInputSize(args),
+        });
+
+        try {
+          const result = await fn();
+
+          // Add success tracking
+          span.addEvent('method_success', {
+            'adapter.name': adapterName,
+            'adapter.method': methodName,
+            output_size: this.calculateOutputSize(result),
+          });
+
+          span.setAttributes({
+            'adapter.success': true,
+            'adapter.output_type': typeof result,
+          });
+
+          return result;
+        } catch (error) {
+          // Add error tracking
+          span.addEvent('method_error', {
+            'adapter.name': adapterName,
+            'adapter.method': methodName,
+            'error.type': error instanceof Error ? error.constructor.name : 'Unknown',
+          });
+
+          span.setAttributes({
+            'adapter.success': false,
+            'adapter.error_type': error instanceof Error ? error.constructor.name : 'Unknown',
+          });
+
+          throw error;
+        }
+      }
+    );
+  }
+
+  /**
+   * Trace service boundary call
+   */
+  traceServiceCall<T = unknown>(
+    serviceName: string,
+    operationName: string,
+    targetService: string,
+    fn: () => Promise<T> | T
+  ): Promise<T> {
+    return this.createSpan(
+      {
+        name: `${serviceName}.${operationName}`, 
+        _kind: SpanKind.CLIENT, 
+        attributes: {
+          'service.name': serviceName, 
+          'service.operation': operationName, 
+          'service.target': targetService, 
+          'service.call_type': 'external', 
+        }, 
+      }, 
+      async (span) => {
+        // Inject context for propagation
+        const headers: Record<string, string> = {};
+        this.injectContext(headers);
+
+        span.setAttributes({
+          'service.context_injected': true,
+          'service.headers_count': Object.keys(headers).length,
+        });
+
+        try {
+          const result = await fn();
+
+          span.setAttributes({
+            'service.call_success': true,
+            'service.response_received': true,
+          });
+
+          return result;
+        } catch (error) {
+          span.setAttributes({
+            'service.call_success': false,
+            'service.error_received': true,
+          });
+
+          throw error;
+        }
+      }
+    );
+  }
+
+  /**
+   * Trace database operation
+   */
+  traceDatabaseOperation<T = unknown>(
+    operation: 'query' | 'insert' | 'update' | 'delete',
+    table: string,
+    query?: string,
+    fn: () => Promise<T> | T
+  ): Promise<T> {
+    return this.createSpan(
+      {
+        name: `db.${operation}`,
+        kind: SpanKind.CLIENT,
+        attributes: {
+          'db.system': 'postgresql',
+          'db.operation': operation,
+          'db.sql.table': table,
+          'db.statement': query ? this.sanitizeQuery(query) : undefined,
+        },
+      },
+      async (_span) => {
+        const startTime = Date.now();
+
+        try {
+          const result = await fn();
+          const duration = Date.now() - startTime;
+
+          span.setAttributes({
+            'db.success': true,
+            'db.duration_ms': duration,
+            'db.rows_affected': Array.isArray(result) ? result.length : 1,
+          });
+
+          // Track slow queries
+          if (
+            this.config.performance.trackSlowQueries &&
+            duration > this.config.performance.slowQueryThreshold
+          ) {
+            span.setAttributes({
+              'db.slow_query': true,
+              'db.slow_threshold_ms': this.config.performance.slowQueryThreshold,
+            });
+
+            logger.warn(
+              {
+                operation,
+                table,
+                duration,
+                threshold: this.config.performance.slowQueryThreshold,
+              },
+              'Slow database query detected'
+            );
+          }
+
+          return result;
+        } catch (error) {
+          span.setAttributes({
+            'db.success': false,
+            'db.error': error instanceof Error ? error.message : 'Unknown error',
+          });
+
+          throw error;
+        }
+      }
+    );
+  }
+
+  /**
+   * Trace HTTP request
+   */
+  traceHttpRequest<T = unknown>(
+    method: string,
+    url: string,
+    headers: Record<string, string>,
+    fn: () => Promise<T> | T
+  ): Promise<T> {
+    return this.createSpan(
+      {
+        name: `http.${method.toLowerCase()}`,
+        kind: SpanKind.CLIENT,
+        attributes: {
+          'http.method': method,
+          'http.url': this.sanitizeUrl(url),
+          'http.target': new URL(url).pathname,
+        },
+      },
+      async (_span) => {
+        const startTime = Date.now();
+
+        try {
+          // Inject trace context
+          this.injectContext(headers);
+
+          const result = await fn();
+          const duration = Date.now() - startTime;
+
+          span.setAttributes({
+            'http.status_code': 200, // Would be actual response status
+            'http.response_time_ms': duration,
+            'http.success': true,
+          });
+
+          return result;
+        } catch (error) {
+          span.setAttributes({
+            'http.status_code': 500, // Would be actual error status
+            'http.success': false,
+            'http.error': error instanceof Error ? error.message : 'Unknown error',
+          });
+
+          throw error;
+        }
+      }
+    );
+  }
+
+  /**
+   * Get current span context
+   */
+  getCurrentSpanContext(): SpanContext | null {
+    const currentSpan = trace.getActiveSpan();
+    if (!currentSpan) {
+      return null;
+    }
+
+    const spanContext = currentSpan.spanContext();
+    return {
+      traceId: spanContext.traceId,
+      spanId: spanContext.spanId,
+      traceFlags: spanContext.traceFlags,
+    };
+  }
+
+  /**
+   * Inject context into carrier (headers)
+   */
+  injectContext(_carrier: Record<string,  string>): void {
+    if (!this.isInitialized) return;
+
+    const propagator = trace.getPropagator();
+    if (_propagator) {
+      propagator.inject(context.active(), carrier);
+    }
+  }
+
+  /**
+   * Extract context from carrier (headers)
+   */
+  extractContext(_carrier: Record<string,  string>): SpanContext | null {
+    if (!this.isInitialized) return null;
+
+    const propagator = trace.getPropagator();
+    if (_propagator) {
+      const extractedContext = propagator.extract(context.active(), carrier);
+      const span = trace.getSpan(extractedContext);
+
+      if (_span) {
+        const spanContext = span.spanContext();
+        return {
+          traceId: spanContext.traceId,
+          spanId: spanContext.spanId,
+          traceFlags: spanContext.traceFlags,
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get tracing metrics
+   */
+  getMetrics(): TracingMetrics {
+    return {
+      ...this.metrics,
+      averageLatency: this.calculateAverageLatency(),
+      p95Latency: this.calculatePercentileLatency(95),
+      p99Latency: this.calculatePercentileLatency(99),
+    };
+  }
+
+  /**
+   * Add custom attributes to current span
+   */
+  addSpanAttributes(_attributes: Attributes): void {
+    const currentSpan = trace.getActiveSpan();
+    if (_currentSpan) {
+      currentSpan.setAttributes(attributes);
+    }
+  }
+
+  /**
+   * Add event to current span
+   */
+  addSpanEvent(_name: string,  attributes?: Attributes): void {
+    const currentSpan = trace.getActiveSpan();
+    if (_currentSpan) {
+      currentSpan.addEvent(name, attributes);
+    }
+  }
+
+  /**
+   * Record error in current span
+   */
+  recordError(error: Error): void {
+    const currentSpan = trace.getActiveSpan();
+    if (_currentSpan) {
+      this.recordSpanError(currentSpan, error);
+    }
+  }
+
+  // Private helper methods
+
+  private addCorrelationId(_span: unknown): void {
+    // Check if correlation ID exists in baggage or create new one
+    const correlationId = this.getOrCreateCorrelationId();
+    span.setAttribute('correlation.id', correlationId);
+  }
+
+  private addStandardAttributes(_span: unknown,  _options: TraceOptions): void {
+    span.setAttributes({
+      'service.name': this.config.serviceName,
+      'service.version': this.config.serviceVersion,
+      'service.namespace': this.config.serviceNamespace || 'mcp-cortex',
+      'service.environment': this.config.environment,
+      'span.kind': options.kind || SpanKind.INTERNAL,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Add performance metrics if enabled
+    if (this.config.performance.trackMemoryUsage) {
+      const memUsage = process.memoryUsage();
+      span.setAttributes({
+        'process.memory.heap_used': memUsage.heapUsed,
+        'process.memory.heap_total': memUsage.heapTotal,
+        'process.memory.external': memUsage.external,
+      });
+    }
+  }
+
+  private recordSpanError(_span: unknown,  error: unknown): void {
+    span.recordException(error instanceof Error ? error : new Error(String(error)));
+    span.setStatus({
+      code: SpanStatusCode.ERROR,
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+
+    if (this.config.errorTracking.includeStackTrace && error instanceof Error) {
+      span.setAttribute('error.stack', error.stack);
+    }
+
+    this.metrics.errorsRecorded++;
+  }
+
+  private recordLatency(_duration: number): void {
+    this.latencyMeasurements.push(duration);
+
+    // Keep only last 1000 measurements to prevent memory leaks
+    if (this.latencyMeasurements.length > 1000) {
+      this.latencyMeasurements = this.latencyMeasurements.slice(-1000);
+    }
+  }
+
+  private calculateAverageLatency(): number {
+    if (this.latencyMeasurements.length === 0) return 0;
+    return (
+      this.latencyMeasurements.reduce((sum,  _lat) => sum + lat, 0) / this.latencyMeasurements.length
+    );
+  }
+
+  private calculatePercentileLatency(_percentile: number): number {
+    if (this.latencyMeasurements.length === 0) return 0;
+
+    const sorted = [...this.latencyMeasurements].sort((a,  _b) => a - b);
+    const index = Math.ceil((percentile / 100) * sorted.length) - 1;
+    return sorted[Math.max(0, index)];
+  }
+
+  private getOrCreateCorrelationId(): string {
+    // Try to get from current context baggage
+    // For now, generate a simple UUID
+    return `corr_${Date.now()}_${String(Math.random().toString(36).substr(2, 9))}`;
+  }
+
+  private sanitizeArgs(_args: unknown[]): string {
+    return JSON.stringify(args).substring(0, 500); // Limit size
+  }
+
+  private sanitizeQuery(_query: string): string {
+    // Remove sensitive data from SQL queries
+    return query.replace(/('.*?'|".*?")/g, '?').substring(0, 500);
+  }
+
+  private sanitizeUrl(_url: string): string {
+    // Remove sensitive query parameters
+    const urlObj = new URL(url);
+    const sensitiveParams = ['token', 'password', 'key', 'secret'];
+
+    sensitiveParams.forEach((param) => {
+      urlObj.searchParams.delete(param);
+    });
+
+    return urlObj.toString();
+  }
+
+  private calculateInputSize(_args: unknown[]): number {
+    return JSON.stringify(args).length;
+  }
+
+  private calculateOutputSize(result: unknown): number {
+    return JSON.stringify(result).length;
+  }
+}
+
+/**
+ * Default tracer configuration
+ */
+export const defaultTracingConfig: TracingConfig = {
+  serviceName: 'mcp-cortex',
+  serviceVersion: process.env.npm_package_version || '2.0.0',
+  serviceNamespace: 'mcp-cortex',
+  environment: process.env.NODE_ENV || 'development',
+
+  exporter: {
+    endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
+    headers: process.env.OTEL_EXPORTER_OTLP_HEADERS
+      ? JSON.parse(process.env.OTEL_EXPORTER_OTLP_HEADERS)
+      : undefined,
+    timeout: 30000,
+  },
+
+  sampling: {
+    enabled: true,
+    ratio: process.env.NODE_ENV === 'production' ? 0.1 : 1.0, // 10% in production, 100% in dev
+    parentBased: true,
+  },
+
+  spans: {
+    maxAttributes: 128,
+    maxEvents: 128,
+    maxLinks: 128,
+    maxAttributesPerEvent: 32,
+  },
+
+  performance: {
+    trackSlowQueries: true,
+    slowQueryThreshold: 1000, // 1 second
+    trackMemoryUsage: true,
+    trackCpuUsage: false, // Requires additional dependencies
+  },
+
+  errorTracking: {
+    captureExceptions: true,
+    captureRejections: true,
+    includeStackTrace: true,
+  },
+
+  attributes: {
+    'service.language': 'typescript',
+    'service.runtime': 'nodejs',
+    'service.framework': 'express',
+  },
+};
+
+// Create and export default tracer instance
+export const openTelemetryTracer = new OpenTelemetryTracer(defaultTracingConfig);
+
+/**
+ * Decorator for tracing method calls
+ */
+export function traceable(
+  options: {
+    name?: string;
+    kind?: SpanKind;
+    attributes?: Attributes;
+  } = {}
+) {
+  return function (_target: unknown,  _propertyName: string,  _descriptor: PropertyDescriptor) {
+    const method = descriptor.value;
+
+    descriptor.value = function (...args: unknown[]) {
+      const spanName = options.name || `${target.constructor.name}.${propertyName}`;
+
+      return openTelemetryTracer.createSpan(
+        {
+          name: spanName, 
+          _kind: options.kind || SpanKind.INTERNAL, 
+          attributes: {
+            ...options.attributes, 
+            'class.name': target.constructor.name, 
+            'method.name': propertyName, 
+            'method.args_count': args.length, 
+          }, 
+        }, 
+ (span) => {
+          return method.apply(this, args);
+        }
+      );
+    };
+
+    return descriptor;
+  };
+}

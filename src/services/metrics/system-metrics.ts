@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical business service
 /**
  * P8-T8.3: System Metrics Service
  *

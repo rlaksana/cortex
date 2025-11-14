@@ -1,4 +1,3 @@
-// @ts-nocheck - Emergency rollback: Critical database service
 /**
  * Qdrant-Only Database Layer v2.0 - Vector-First Architecture
  *
@@ -19,6 +18,10 @@
  * @version 2.0.0-Qdrant
  * @since 2025
  */
+
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
+// TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
 import { logger } from '@/utils/logger.js';
 

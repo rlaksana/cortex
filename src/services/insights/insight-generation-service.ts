@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical business service
 import * as crypto from 'crypto';
 
 import { logger } from '@/utils/logger.js';

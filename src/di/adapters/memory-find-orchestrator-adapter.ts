@@ -1,4 +1,7 @@
-// @ts-nocheck - Emergency rollback: Critical memory service
+// @ts-nocheck
+// EMERGENCY ROLLBACK: DI container interface compatibility issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
+
 /**
  * Memory Find Orchestrator Adapter
  *

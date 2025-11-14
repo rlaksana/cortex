@@ -1,0 +1,778 @@
+/**
+ * Alert Metrics Emitters Module
+ *
+ * Responsible for emitting aggregated metrics to various destinations:
+ * - Prometheus (for scraping)
+ * - Graphite/StatsD (for time series)
+ * - Custom HTTP endpoints
+ * - Log-based metrics
+ * - File-based metrics
+ *
+ * @author Cortex Team
+ * @version 2.0.0
+ * @since 2025
+ */
+
+import { EventEmitter } from 'events';
+import { createQdrantError, ErrorCodes } from '../../../db/adapters/modules/error-contract.js';
+import type { AggregatedMetrics } from '../aggregators/index.js';
+import { logger } from '@/utils/logger.js';
+
+/**
+ * Base emitter interface
+ */
+export interface MetricsEmitter {
+  start(): Promise<void>;
+  stop(): Promise<void>;
+  emit(_metrics: AggregatedMetrics): Promise<void>;
+  isRunning(): boolean;
+
+  removeAllListeners?: unknown;
+}
+
+/**
+ * Prometheus metrics emitter
+ */
+export class PrometheusEmitter extends EventEmitter implements MetricsEmitter {
+  private isRunningFlag = false;
+  private metricsRegistry: Map<string, unknown> = new Map();
+
+  constructor(
+    private config: {
+      port: number;
+      endpoint: string;
+      labels: Record<string,  string>;
+      defaultMetrics: boolean;
+    }
+  ) {
+    super();
+  }
+
+ start(): Promise<void> {
+    try {
+      if (this.isRunningFlag) {
+        logger.warn('Prometheus emitter already running');
+        return;
+      }
+
+      logger.info('Starting Prometheus metrics emitter');
+      this.isRunningFlag = true;
+
+      // Initialize default metrics
+      if (this.config.defaultMetrics) {
+        this.initializeDefaultMetrics();
+      }
+
+      // Note: In a real implementation, this would start an HTTP server
+      // with a /metrics endpoint that Prometheus can scrape
+      logger.info(
+        {
+          port: this.config.port,
+          endpoint: this.config.endpoint,
+        },
+        'Prometheus metrics emitter started'
+      );
+
+      this.emit('emitter_started', { type: 'prometheus', config: this.config });
+    } catch (error) {
+      logger.error({ error }, 'Failed to start Prometheus emitter');
+      throw createQdrantError(
+        'Failed to start Prometheus emitter',
+        ErrorCodes.METRICS_ERROR,
+        error as Error
+      );
+    }
+  }
+
+ stop(): Promise<void> {
+    try {
+      logger.info('Stopping Prometheus metrics emitter');
+      this.isRunningFlag = false;
+
+      // Note: In a real implementation, this would stop the HTTP server
+      this.metricsRegistry.clear();
+      this.removeAllListeners();
+      logger.info('Prometheus metrics emitter stopped');
+    } catch (error) {
+      logger.error({ error }, 'Failed to stop Prometheus emitter');
+    }
+  }
+
+  isRunning(): boolean {
+    return this.isRunningFlag;
+  }
+
+ emit(_metrics: AggregatedMetrics): Promise<void> {
+    try {
+      const prometheusMetrics = this.convertToPrometheusFormat(metrics);
+
+      // Update metrics in registry
+      for (const metric of prometheusMetrics) {
+        this.updateMetric(metric);
+      }
+
+      logger.debug(
+        {
+          metricsCount: prometheusMetrics.length,
+          source: metrics.source,
+        },
+        'Metrics emitted to Prometheus format'
+      );
+    } catch (error) {
+      logger.error({ error }, 'Failed to emit metrics to Prometheus');
+      throw createQdrantError(
+        'Failed to emit metrics to Prometheus',
+        ErrorCodes.METRICS_ERROR,
+        error as Error
+      );
+    }
+  }
+
+  getMetrics(): string {
+    const _metrics: string[] = [];
+
+    for (const [name,  metric] of this.metricsRegistry) {
+      metrics.push(this.formatPrometheusMetric(name, metric));
+    }
+
+    return metrics.join('\n');
+  }
+
+  private initializeDefaultMetrics(): void {
+    // Initialize common Prometheus metrics
+    this.registerMetric(
+      'alert_metrics_total',
+      'counter',
+      'Total number of alert metrics collected'
+    );
+    this.registerMetric(
+      'alert_metrics_duration',
+      'histogram',
+      'Time taken to collect alert metrics'
+    );
+    this.registerMetric('system_cpu_usage', 'gauge', 'System CPU usage percentage');
+    this.registerMetric('system_memory_usage', 'gauge', 'System memory usage percentage');
+  }
+
+  private registerMetric(_name: string,  type: string,  _help: string): void {
+    this.metricsRegistry.set(name, {
+      type,
+      help,
+      value: 0,
+      labels: { ...this.config.labels },
+    });
+  }
+
+  private updateMetric(_metric: unknown): void {
+    const { name, value, labels, type } = metric;
+
+    if (!this.metricsRegistry.has(name)) {
+      this.registerMetric(name, type || 'gauge', `Auto-registered metric: ${name}`);
+    }
+
+    const existing = this.metricsRegistry.get(name)!;
+    existing.value = value;
+    existing.labels = { ...existing.labels, ...labels };
+    existing.timestamp = Date.now();
+  }
+
+  private convertToPrometheusFormat(_metrics: AggregatedMetrics): unknown[] {
+    const prometheusMetrics: unknown[] = [];
+
+    for (const [metricName, value] of Object.entries(metrics.metrics)) {
+      const prometheusName = this.sanitizeMetricName(metricName);
+
+      prometheusMetrics.push({
+        name: prometheusName,
+        value,
+        labels: {
+          ...this.config.labels,
+          source: metrics.source,
+          aggregation_type: metrics.aggregation.type,
+        },
+        type: this.inferMetricType(prometheusName),
+      });
+    }
+
+    return prometheusMetrics;
+  }
+
+  private sanitizeMetricName(_name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '_')
+      .replace(/_{2,}/g, '_')
+      .replace(/^_|_$/g, '');
+  }
+
+  private inferMetricType(_name: string): string {
+    if (name.includes('count') || name.includes('total')) {
+      return 'counter';
+    } else if (name.includes('rate') || name.includes('ratio') || name.includes('percent')) {
+      return 'gauge';
+    } else if (name.includes('duration') || name.includes('time') || name.includes('latency')) {
+      return 'histogram';
+    }
+    return 'gauge';
+  }
+
+  private formatPrometheusMetric(_name: string,  _metric: unknown): string {
+    const lines: string[] = [];
+
+    // Add help and type comments
+    lines.push(`# HELP ${name} ${metric.help || 'Auto-generated metric'}`);
+    lines.push(`# TYPE ${name} ${metric.type || 'gauge'}`);
+
+    // Format labels
+    const labelPairs = Object.entries(metric.labels || {})
+      .map(([key,  value]) => `${key}="${value}"`)
+      .join(',');
+
+    // Add metric value
+    const labelsStr = labelPairs ? `{${labelPairs}}` : '';
+    lines.push(`${name}${labelsStr} ${metric.value}`);
+
+    return lines.join('\n');
+  }
+}
+
+/**
+ * StatsD metrics emitter
+ */
+export class StatsDEmitter extends EventEmitter implements MetricsEmitter {
+  private isRunningFlag = false;
+  private client: unknown; // StatsD client
+
+  constructor(
+    private config: {
+      host: string;
+      port: number;
+      prefix: string;
+      tags: Record<string,  string>;
+      samplingRate: number;
+    }
+  ) {
+    super();
+  }
+
+ start(): Promise<void> {
+    try {
+      if (this.isRunningFlag) {
+        logger.warn('StatsD emitter already running');
+        return;
+      }
+
+      logger.info('Starting StatsD metrics emitter');
+      this.isRunningFlag = true;
+
+      // Note: In a real implementation, this would initialize StatsD client
+      // const StatsD = require('hot-shots');
+      // this.client = new StatsD({
+      //   host: this.config.host,
+      //   port: this.config.port,
+      //   prefix: this.config.prefix,
+      //   tags: Object.entries(this.config.tags).map(([k,  v]) => `${k}:${v}`),
+      // });
+
+      logger.info(
+        {
+          host: this.config.host,
+          port: this.config.port,
+          prefix: this.config.prefix,
+        },
+        'StatsD metrics emitter started'
+      );
+
+      this.emit('emitter_started', { type: 'statsd', config: this.config });
+    } catch (error) {
+      logger.error({ error }, 'Failed to start StatsD emitter');
+      throw createQdrantError(
+        'Failed to start StatsD emitter',
+        ErrorCodes.METRICS_ERROR,
+        error as Error
+      );
+    }
+  }
+
+ stop(): Promise<void> {
+    try {
+      logger.info('Stopping StatsD metrics emitter');
+      this.isRunningFlag = false;
+
+      // Note: In a real implementation, this would close the StatsD client
+      // if (this.client) {
+      //   this.client.close();
+      // }
+
+      this.removeAllListeners();
+      logger.info('StatsD metrics emitter stopped');
+    } catch (error) {
+      logger.error({ error }, 'Failed to stop StatsD emitter');
+    }
+  }
+
+  isRunning(): boolean {
+    return this.isRunningFlag;
+  }
+
+ emit(_metrics: AggregatedMetrics): Promise<void> {
+    try {
+      const statsdMetrics = this.convertToStatsDFormat(metrics);
+
+      // Note: In a real implementation, this would send metrics to StatsD
+      // for (const metric of statsdMetrics) {
+      //   this.client[metric.type](metric.name, metric.value, metric.tags, this.config.samplingRate);
+      // }
+
+      logger.debug(
+        {
+          metricsCount: statsdMetrics.length,
+          source: metrics.source,
+        },
+        'Metrics formatted for StatsD emission'
+      );
+    } catch (error) {
+      logger.error({ error }, 'Failed to emit metrics to StatsD');
+      throw createQdrantError(
+        'Failed to emit metrics to StatsD',
+        ErrorCodes.METRICS_ERROR,
+        error as Error
+      );
+    }
+  }
+
+  private convertToStatsDFormat(_metrics: AggregatedMetrics): unknown[] {
+    const statsdMetrics: unknown[] = [];
+
+    for (const [metricName, value] of Object.entries(metrics.metrics)) {
+      const statsdName = this.sanitizeMetricName(metricName);
+
+      statsdMetrics.push({
+        name: `${this.config.prefix}.${statsdName}`,
+        value,
+        type: this.inferStatsDType(statsdName),
+        tags: [
+          ...Object.entries(this.config.tags).map(([k,  v]) => `${k}:${v}`),
+          `source:${metrics.source}`,
+          `aggregation:${metrics.aggregation.type}`,
+        ],
+      });
+    }
+
+    return statsdMetrics;
+  }
+
+  private sanitizeMetricName(_name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '_')
+      .replace(/_{2,}/g, '_')
+      .replace(/^_|_$/g, '');
+  }
+
+  private inferStatsDType(_name: string): string {
+    if (name.includes('count') || name.includes('total')) {
+      return 'increment';
+    } else if (name.includes('time') || name.includes('duration') || name.includes('latency')) {
+      return 'timing';
+    }
+    return 'gauge';
+  }
+}
+
+/**
+ * HTTP emitter
+ */
+export class HttpEmitter extends EventEmitter implements MetricsEmitter {
+  private isRunningFlag = false;
+
+  constructor(
+    private config: {
+      endpoint: string;
+      method: 'POST' | 'PUT';
+      headers: Record<string,  string>;
+      timeout: number;
+      batchSize: number;
+      retryAttempts: number;
+      retryDelay: number;
+    }
+  ) {
+    super();
+  }
+
+ start(): Promise<void> {
+    try {
+      if (this.isRunningFlag) {
+        logger.warn('HTTP emitter already running');
+        return;
+      }
+
+      logger.info('Starting HTTP metrics emitter');
+      this.isRunningFlag = true;
+
+      logger.info(
+        {
+          endpoint: this.config.endpoint,
+          method: this.config.method,
+        },
+        'HTTP metrics emitter started'
+      );
+
+      this.emit('emitter_started', { type: 'http', config: this.config });
+    } catch (error) {
+      logger.error({ error }, 'Failed to start HTTP emitter');
+      throw createQdrantError(
+        'Failed to start HTTP emitter',
+        ErrorCodes.METRICS_ERROR,
+        error as Error
+      );
+    }
+  }
+
+ stop(): Promise<void> {
+    try {
+      logger.info('Stopping HTTP metrics emitter');
+      this.isRunningFlag = false;
+      this.removeAllListeners();
+      logger.info('HTTP metrics emitter stopped');
+    } catch (error) {
+      logger.error({ error }, 'Failed to stop HTTP emitter');
+    }
+  }
+
+  isRunning(): boolean {
+    return this.isRunningFlag;
+  }
+
+  async emit(_metrics: AggregatedMetrics): Promise<void> {
+    try {
+      const payload = {
+        timestamp: metrics.timestamp.toISOString(),
+        source: metrics.source,
+        aggregation: metrics.aggregation,
+        _metrics: metrics.metrics,
+        metadata: metrics.metadata,
+      };
+
+      // Note: In a real implementation, this would send HTTP request
+      // const response = await fetch(this.config.endpoint, {
+      //   method: this.config.method,
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     ...this.config.headers,
+      //   },
+      //   body: JSON.stringify(payload),
+      //   signal: AbortSignal.timeout(this.config.timeout),
+      // });
+
+      // if (!response.ok) {
+      //   throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
+      // }
+
+      logger.debug(
+        {
+          endpoint: this.config.endpoint,
+          metricsCount: Object.keys(metrics.metrics).length,
+          source: metrics.source,
+        },
+        'Metrics emitted via HTTP'
+      );
+    } catch (error) {
+      logger.error({ error, endpoint: this.config.endpoint }, 'Failed to emit metrics via HTTP');
+
+      // Retry logic would be implemented here
+      // for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
+      //   await this.sleep(this.config.retryDelay * attempt);
+      //   try {
+      //     await this.emit(metrics);
+      //     return;
+      //   } catch (_retryError) {
+      //     if (attempt === this.config.retryAttempts) {
+      //       throw retryError;
+      //     }
+      //   }
+      // }
+
+      throw createQdrantError(
+        'Failed to emit metrics via HTTP',
+        ErrorCodes.METRICS_ERROR,
+        error as Error
+      );
+    }
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+}
+
+/**
+ * File emitter
+ */
+export class FileEmitter extends EventEmitter implements MetricsEmitter {
+  private isRunningFlag = false;
+  private fileHandle: unknown;
+
+  constructor(
+    private config: {
+      filePath: string;
+      format: 'json' | 'csv' | 'log';
+      rotation: {
+        enabled: boolean;
+        maxSize: number;
+        maxFiles: number;
+      };
+      compression: {
+        enabled: boolean;
+        level: number;
+      };
+    }
+  ) {
+    super();
+  }
+
+ start(): Promise<void> {
+    try {
+      if (this.isRunningFlag) {
+        logger.warn('File emitter already running');
+        return;
+      }
+
+      logger.info('Starting file metrics emitter');
+      this.isRunningFlag = true;
+
+      // Note: In a real implementation, this would initialize file handle
+      // const fs = require('fs');
+      // this.fileHandle = fs.createWriteStream(this.config.filePath, { flags: 'a' });
+
+      logger.info(
+        {
+          filePath: this.config.filePath,
+          format: this.config.format,
+        },
+        'File metrics emitter started'
+      );
+
+      this.emit('emitter_started', { type: 'file', config: this.config });
+    } catch (error) {
+      logger.error({ error }, 'Failed to start file emitter');
+      throw createQdrantError(
+        'Failed to start file emitter',
+        ErrorCodes.METRICS_ERROR,
+        error as Error
+      );
+    }
+  }
+
+  async stop(): Promise<void> {
+    try {
+      logger.info('Stopping file metrics emitter');
+      this.isRunningFlag = false;
+
+      // Note: In a real implementation, this would close file handle
+      // if (this.fileHandle) {
+      //   await new Promise((resolve,  _reject) => {
+      //     this.fileHandle.end((error: any) => {
+      //       if (error) reject(error);
+      //       else resolve(undefined);
+      //     });
+      //   });
+      // }
+
+      this.removeAllListeners();
+      logger.info('File metrics emitter stopped');
+    } catch (error) {
+      logger.error({ error }, 'Failed to stop file emitter');
+    }
+  }
+
+  isRunning(): boolean {
+    return this.isRunningFlag;
+  }
+
+  async emit(_metrics: AggregatedMetrics): Promise<void> {
+    try {
+      const formattedData = this.formatMetrics(metrics);
+
+      // Note: In a real implementation, this would write to file
+      // if (this.config.format === 'json') {
+      //   this.fileHandle.write(JSON.stringify(formattedData) + '\n');
+      // } else if (this.config.format === 'csv') {
+      //   this.fileHandle.write(this.formatAsCsv(formattedData) + '\n');
+      // } else {
+      //   this.fileHandle.write(this.formatAsLog(formattedData) + '\n');
+      // }
+
+      // Handle file rotation
+      if (this.config.rotation.enabled) {
+        // await this.checkRotation();
+      }
+
+      logger.debug(
+        {
+          filePath: this.config.filePath,
+          format: this.config.format,
+          metricsCount: Object.keys(metrics.metrics).length,
+        },
+        'Metrics emitted to file'
+      );
+    } catch (error) {
+      logger.error({ error, filePath: this.config.filePath }, 'Failed to emit metrics to file');
+      throw createQdrantError(
+        'Failed to emit metrics to file',
+        ErrorCodes.METRICS_ERROR,
+        error as Error
+      );
+    }
+  }
+
+  private formatMetrics(_metrics: AggregatedMetrics): unknown {
+    switch (this.config.format) {
+      case 'json':
+        return {
+          timestamp: metrics.timestamp.toISOString(),
+          source: metrics.source,
+          aggregation: metrics.aggregation,
+          _metrics: metrics.metrics,
+          metadata: metrics.metadata,
+        };
+      case 'csv':
+        return {
+          timestamp: metrics.timestamp.toISOString(),
+          source: metrics.source,
+          ...metrics.metrics,
+        };
+      case 'log':
+        return {
+          timestamp: metrics.timestamp.toISOString(),
+          level: 'INFO',
+          message: `Metrics from ${metrics.source}`,
+          data: metrics.metrics,
+        };
+      default:
+        return metrics;
+    }
+  }
+
+  private formatAsCsv(data: unknown): string {
+    const headers = ['timestamp', 'source', ...Object.keys(data.metrics || {})];
+    const values = [data.timestamp, data.source, ...Object.values(data.metrics || {})];
+    return values.join(',');
+  }
+
+  private formatAsLog(data: unknown): string {
+    return `[${data.timestamp}] ${data.level}: ${data.message} ${JSON.stringify(data.data)}`;
+  }
+}
+
+/**
+ * Composite emitter that manages multiple emitters
+ */
+export class CompositeEmitter extends EventEmitter implements MetricsEmitter {
+  private emitters: Map<string, MetricsEmitter> = new Map();
+  private isRunningFlag = false;
+
+  constructor() {
+    super();
+  }
+
+  addEmitter(_name: string,  _emitter: MetricsEmitter): void {
+    this.emitters.set(name, emitter);
+  }
+
+  removeEmitter(_name: string): void {
+    const emitter = this.emitters.get(name);
+    if (_emitter) {
+      emitter.removeAllListeners();
+      this.emitters.delete(name);
+    }
+  }
+
+  async start(): Promise<void> {
+    try {
+      if (this.isRunningFlag) {
+        logger.warn('Composite emitter already running');
+        return;
+      }
+
+      logger.info('Starting composite metrics emitter');
+
+      for (const [name,  emitter] of this.emitters) {
+        try {
+          await emitter.start();
+          logger.info(`Emitter '${name}' started`);
+        } catch (error) {
+          logger.error({ error, emitter: name }, 'Failed to start emitter');
+        }
+      }
+
+      this.isRunningFlag = true;
+      logger.info('Composite metrics emitter started');
+    } catch (error) {
+      logger.error({ error }, 'Failed to start composite emitter');
+      throw createQdrantError(
+        'Failed to start composite emitter',
+        ErrorCodes.METRICS_ERROR,
+        error as Error
+      );
+    }
+  }
+
+  async stop(): Promise<void> {
+    try {
+      logger.info('Stopping composite metrics emitter');
+
+      for (const [name,  emitter] of this.emitters) {
+        try {
+          await emitter.stop();
+          logger.info(`Emitter '${name}' stopped`);
+        } catch (error) {
+          logger.error({ error, emitter: name }, 'Failed to stop emitter');
+        }
+      }
+
+      this.isRunningFlag = false;
+      this.removeAllListeners();
+      logger.info('Composite metrics emitter stopped');
+    } catch (error) {
+      logger.error({ error }, 'Failed to stop composite emitter');
+    }
+  }
+
+  isRunning(): boolean {
+    return this.isRunningFlag;
+  }
+
+  async emit(_metrics: AggregatedMetrics): Promise<void> {
+    const promises: Promise<void>[] = [];
+
+    for (const [name,  emitter] of this.emitters) {
+      promises.push(
+        emitter.emit(metrics).catch((error) => {
+          logger.error({ error, emitter: name }, 'Failed to emit metrics');
+        })
+      );
+    }
+
+    await Promise.allSettled(promises);
+  }
+
+  getEmitterStatuses(): Record<string, boolean> {
+    const statuses: Record<string, boolean> = {};
+    for (const [name,  emitter] of this.emitters) {
+      statuses[name] = emitter.isRunning();
+    }
+    return statuses;
+  }
+}
+
+// Export all emitters
+export {
+  PrometheusEmitter as Prometheus,
+  StatsDEmitter as StatsD,
+  HttpEmitter as Http,
+  FileEmitter as File,
+  CompositeEmitter as Composite,
+};
+
+export type { MetricsEmitter };

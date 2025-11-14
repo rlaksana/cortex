@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical business service
 /**
  * Entity storage service (10th knowledge type - flexible entity storage)
  *

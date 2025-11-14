@@ -1,0 +1,469 @@
+/**
+ * Memory Store Service - P0-CRITICAL Implementation
+ *
+ * Service layer implementation for memory storage operations.
+ * Provides business logic for storing knowledge items.
+ *
+ * @author Cortex Team
+ * @version 2.0.1
+ * @since 2025
+ */
+
+import { getQdrantRepository } from '../../db/qdrant-client.js';
+import type {
+  IQdrantTypedRepository,
+  KnowledgeEntity,
+  KnowledgeObservation,
+} from '../../types/cortex-repository-interfaces.js';
+import { asString, asNumber, isObject } from '../../types/type-guards.js';
+import { logger } from '../../utils/logger.js';
+import type { ServiceRequestContext, ServiceResponse } from '../core/service-layer-router.js';
+import { MemoryManager } from './memory-manager.js';
+
+/**
+ * Memory store service implementation
+ */
+export class MemoryStoreService {
+  private static instance: MemoryStoreService;
+  private memoryManager: MemoryManager;
+  private isInitialized = false;
+
+  private constructor() {
+    this.memoryManager = MemoryManager.getInstance();
+  }
+
+  public static getInstance(): MemoryStoreService {
+    if (!MemoryStoreService.instance) {
+      MemoryStoreService.instance = new MemoryStoreService();
+    }
+    return MemoryStoreService.instance;
+  }
+
+  /**
+   * Initialize memory store service
+   */
+  public async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
+
+    try {
+      logger.info('Initializing Memory Store Service...');
+
+      // Memory manager will be initialized when first accessed
+
+      this.isInitialized = true;
+      logger.info('Memory Store Service initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize Memory Store Service:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Store knowledge items
+   */
+  public async store(context: ServiceRequestContext): Promise<ServiceResponse> {
+    try {
+      const { items } = context.parameters;
+
+      if (!Array.isArray(items)) {
+        return {
+          success: false,
+          error: {
+            code: 'INVALID_PARAMETERS',
+            message: 'Items must be an array',
+          },
+        };
+      }
+
+      logger.info(`Storing ${String(items?.length ?? 0)} knowledge items`, {
+        requestId: context.id,
+        user: context.user?.id,
+      });
+
+      const results = {
+        stored: 0,
+        errors: [] as string[],
+        duplicates: 0,
+        items: [] as (KnowledgeEntity | KnowledgeObservation)[],
+      };
+
+      const repository: IQdrantTypedRepository = await getQdrantRepository();
+
+      for (const item of items) {
+        try {
+          // Validate item structure
+          if (!this.validateItem(item)) {
+            results.errors.push(`Invalid item structure: ${JSON.stringify(item)}`);
+            continue;
+          }
+
+          // Check for duplicates using repository
+          const existingItem = await this.findDuplicate(repository, item);
+          if (_existingItem) {
+            results.duplicates++;
+            results.items.push(existingItem);
+            continue;
+          }
+
+          // Store item through repository using appropriate method
+          let storedItem: KnowledgeEntity | KnowledgeObservation;
+          switch (item.kind) {
+            case 'entity':
+              const entityData = isObject(item.data) ? item.data : {};
+              storedItem = await repository.createEntity({
+                type: 'entity',
+                name: asString(entityData.name, 'Untitled Entity'),
+                description: asString(entityData.description, ''),
+                metadata: {
+                  ...entityData,
+                  timestamp: new Date().toISOString(),
+                  source: 'service-layer',
+                  user: context.user?.id,
+                  requestId: context.id,
+                },
+                scope: isObject(item.scope) ? item.scope : {},
+              });
+              break;
+            case 'observation':
+              const observationData = isObject(item.data) ? item.data : {};
+              storedItem = await repository.createObservation({
+                type: 'observation',
+                content: asString(observationData.content, JSON.stringify(observationData)),
+                entityType: asString(observationData.entityType, ''),
+                entityId: asString(observationData.entityId, ''),
+                confidence: asNumber(observationData.confidence, 0),
+                metadata: {
+                  ...observationData,
+                  timestamp: new Date().toISOString(),
+                  source: 'service-layer',
+                  user: context.user?.id,
+                  requestId: context.id,
+                },
+                scope: isObject(item.scope) ? item.scope : {},
+              });
+              break;
+            default:
+              // For other types, create as entity with type metadata
+              const defaultData = isObject(item.data) ? item.data : {};
+              const title = asString(defaultData.title, asString(defaultData.name, 'Untitled'));
+              storedItem = await repository.createEntity({
+                type: 'entity',
+                name: `${item.kind}: ${title}`,
+                description: asString(
+                  defaultData.description,
+                  JSON.stringify(defaultData).substring(0, 200)
+                ),
+                metadata: {
+                  kind: item.kind,
+                  ...defaultData,
+                  timestamp: new Date().toISOString(),
+                  source: 'service-layer',
+                  user: context.user?.id,
+                  requestId: context.id,
+                },
+                scope: isObject(item.scope) ? item.scope : {},
+              });
+          }
+
+          results.stored++;
+          results.items.push(storedItem);
+
+          // Memory manager will handle cleanup automatically
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          results.errors.push(`Failed to store item: ${errorMessage}`);
+          logger.error('Failed to store memory item:', error);
+        }
+      }
+
+      return {
+        success: results.stored > 0,
+        data: {
+          ...results,
+          summary: {
+            total: items.length,
+            stored: results.stored,
+            duplicates: results.duplicates,
+            errors: results.errors.length,
+            successRate: (results.stored + results.duplicates) / items.length,
+          },
+        },
+      };
+    } catch (error) {
+      logger.error('Memory store operation failed:', error);
+      return {
+        success: false,
+        error: {
+          code: 'STORE_OPERATION_FAILED',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+      };
+    }
+  }
+
+  /**
+   * Get service health status
+   */
+  public getHealthStatus(): Promise<{
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    details: unknown;
+  }> {
+    try {
+      const memoryStats = {
+        utilization: 0.5, // Mock value for now
+        used: 0,
+        available: 1024 * 1024 * 1024, // 1GB
+        poolStats: {},
+      };
+      const repository = await getQdrantRepository();
+
+      // Basic repository health check - try a simple search
+      let repositoryHealth = { success: true };
+      try {
+        await repository.searchEntities('health-check-test');
+      } catch (error) {
+        repositoryHealth = { success: false };
+      }
+
+      let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+
+      if (memoryStats.utilization > 0.9) {
+        status = 'unhealthy';
+      } else if (memoryStats.utilization > 0.7) {
+        status = 'degraded';
+      }
+
+      if (!repositoryHealth.success) {
+        status = 'unhealthy';
+      }
+
+      return {
+        status,
+        details: {
+          memory: memoryStats,
+          repository: repositoryHealth,
+          timestamp: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      return {
+        status: 'unhealthy',
+        details: {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  }
+
+  /**
+   * Shutdown service
+   */
+  public async shutdown(): Promise<void> {
+    try {
+      // Memory manager cleanup handled automatically
+      this.isInitialized = false;
+      logger.info('Memory Store Service shutdown completed');
+    } catch (error) {
+      logger.error('Error during Memory Store Service shutdown:', error);
+      throw error;
+    }
+  }
+
+  // Private methods
+
+  private validateItem(item: { kind?: string; data?: Record<string,  unknown> }): boolean {
+    if (!item || typeof item !== 'object') {
+      return false;
+    }
+
+    if (!item.kind || typeof item.kind !== 'string') {
+      return false;
+    }
+
+    if (!item.data || typeof item.data !== 'object') {
+      return false;
+    }
+
+    // Valid kinds from the repository interfaces
+    const validKinds = [
+      'entity',
+      'relation',
+      'observation',
+      'section',
+      'runbook',
+      'change',
+      'issue',
+      'decision',
+      'todo',
+      'release_note',
+      'ddl',
+      'pr_context',
+      'incident',
+      'release',
+      'risk',
+      'assumption',
+    ];
+
+    return validKinds.includes(item.kind);
+  }
+
+  private async findDuplicate(
+    repository: IQdrantTypedRepository,
+    item: { kind?: string; data?: Record<string, unknown>; scope?: Record<string, unknown> }
+  ): Promise<KnowledgeEntity | KnowledgeObservation | null> {
+    try {
+      // Create a search query for duplicate detection
+      const searchQuery = this.createDuplicateSearchQuery(item);
+
+      if (!searchQuery) {
+        return null; // Can't search for duplicates
+      }
+
+      // Search for existing items with similar content
+      let existingItems: (KnowledgeEntity | KnowledgeObservation)[] = [];
+      try {
+        if (item.kind === 'entity') {
+          const entities = await repository.searchEntities(searchQuery, {
+            scope: item.scope,
+            type: 'entity',
+          });
+          existingItems = entities;
+        } else if (item.kind === 'observation') {
+          const data = isObject(item.data) ? item.data : {};
+          const observations = await repository.findObservations(
+            asString(data.entityId, ''),
+            asString(data.entityType, '')
+          );
+          existingItems = observations;
+        }
+        // For other types, search as entities
+        else {
+          const entities = await repository.searchEntities(searchQuery, {
+            scope: item.scope,
+            type: 'entity',
+          });
+          existingItems = entities;
+        }
+      } catch (_searchError) {
+        logger.warn('Repository search failed, continuing without duplicate check:', searchError);
+      }
+
+      // Check if any existing item is a duplicate
+      for (const existing of existingItems) {
+        if (this.isDuplicate(item, existing)) {
+          return existing;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      logger.warn('Failed to check for duplicates:', error);
+      return null; // Continue with storage even if duplicate check fails
+    }
+  }
+
+  private createDuplicateSearchQuery(item: { data?: Record<string,  unknown> }): string | null {
+    if (!item.data) {
+      return null;
+    }
+
+    // Create a search query based on key fields
+    const searchTerms: string[] = [];
+
+    if (item.data.title && typeof item.data.title === 'string') {
+      searchTerms.push(item.data.title);
+    }
+
+    if (item.data.name && typeof item.data.name === 'string') {
+      searchTerms.push(item.data.name);
+    }
+
+    if (item.data.description && typeof item.data.description === 'string') {
+      searchTerms.push(item.data.description.substring(0, 100)); // Limit description
+    }
+
+    if (item.data.id && typeof item.data.id === 'string') {
+      searchTerms.push(item.data.id);
+    }
+
+    return searchTerms.length > 0 ? searchTerms.join(' ') : null;
+  }
+
+  private isDuplicate(
+    newItem: { data?: Record<string,  unknown> }, 
+    _existingItem: KnowledgeEntity | KnowledgeObservation
+  ): boolean {
+    // Handle both entity and observation types
+    const existing =
+      existingItem.type === 'entity'
+        ? {
+            name: existingItem.name,
+            description: existingItem.description,
+            id: existingItem.id,
+            metadata: existingItem.metadata,
+          }
+        : { content: existingItem.content, id: existingItem.id, metadata: existingItem.metadata };
+
+    // Check for exact title/name match
+    if (
+      newItem.data?.title &&
+      typeof newItem.data.title === 'string' &&
+      ((existing.name && existing.name === newItem.data.title) ||
+        existing.metadata?.title === newItem.data.title)
+    ) {
+      return true;
+    }
+
+    if (
+      newItem.data?.name &&
+      typeof newItem.data.name === 'string' &&
+      existing.name === newItem.data.name
+    ) {
+      return true;
+    }
+
+    // Check for exact ID match
+    if (
+      newItem.data?.id &&
+      typeof newItem.data.id === 'string' &&
+      existing.id === newItem.data.id
+    ) {
+      return true;
+    }
+
+    // Check for content similarity (simplified)
+    if (
+      newItem.data?.content &&
+      typeof newItem.data.content === 'string' &&
+      'content' in existing &&
+      existing.content &&
+      typeof existing.content === 'string'
+    ) {
+      const similarity = this.calculateContentSimilarity(newItem.data.content, existing.content);
+      if (similarity > 0.9) {
+        // 90% similarity threshold
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private calculateContentSimilarity(_content1: string,  _content2: string): number {
+    // Simple content similarity calculation
+    // In a real implementation, you might use more sophisticated algorithms
+    const words1 = new Set(content1.toLowerCase().split(/\s+/));
+    const words2 = new Set(content2.toLowerCase().split(/\s+/));
+
+    const intersection = new Set([...words1].filter((word) => words2.has(word)));
+    const union = new Set([...words1, ...words2]);
+
+    return intersection.size / union.size;
+  }
+}
+
+// Export singleton instance
+export const memoryStoreService = MemoryStoreService.getInstance();

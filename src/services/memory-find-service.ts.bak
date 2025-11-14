@@ -1,0 +1,177 @@
+/**
+ * Memory Find Service - Class Wrapper for Memory Find Functionality
+ *
+ * Provides a class-based interface for memory find operations to match
+ * test expectations while wrapping the existing functional implementation.
+ *
+ * This class acts as a wrapper around the memory find function, providing
+ * a more traditional object-oriented interface that tests can use.
+ *
+ * Features:
+ * - Class-based interface matching test expectations
+ * - Wraps existing memory find functionality
+ * - Database manager integration
+ * - Search query processing
+ * - Compatible with existing test patterns
+ *
+ * @author Cortex Team
+ * @version 2.0.0
+ * @since 2025
+ */
+
+import type { MemoryFindResponse, SearchQuery } from '../types/core-interfaces.js';
+import { memoryFind } from './memory-find.js';
+import { logger } from '@/utils/logger.js';
+
+/**
+ * Memory Find Service provides a class-based interface for memory search
+ *
+ * This class wraps the functional memory find implementation to provide
+ * the interface expected by tests.
+ */
+export class MemoryFindService {
+  private databaseManager: {
+    healthCheck?(): Promise<boolean>;
+    getMetrics?(): Promise<Record<string, unknown>>;
+  };
+
+  constructor(databaseManager: {
+    healthCheck?(): Promise<boolean>;
+    getMetrics?(): Promise<Record<string, unknown>>;
+  }) {
+    this.databaseManager = databaseManager;
+  }
+
+  /**
+   * Search for items in memory
+   */
+  async find(query: SearchQuery): Promise<MemoryFindResponse> {
+    try {
+      logger.info({ query: query.query }, 'MemoryFindService.find called');
+
+      // Delegate to the functional memory find implementation
+      const result = await memoryFind(query);
+
+      return result;
+    } catch (error) {
+      logger.error({ error, query: query.query }, 'MemoryFindService.find failed');
+      throw error;
+    }
+  }
+
+  /**
+   * Simple text search
+   */
+ searchText(text: string, options?: Partial<SearchQuery>): Promise<MemoryFindResponse> {
+    const query: SearchQuery = {
+      query: text,
+      ...options,
+    };
+
+    return this.find(query);
+  }
+
+  /**
+   * Search by knowledge types
+   */
+ findByTypes(
+    types: string[],
+    query: string,
+    options?: Partial<SearchQuery>
+  ): Promise<MemoryFindResponse> {
+    const searchQuery: SearchQuery = {
+      query,
+      types,
+      ...options,
+    };
+
+    return this.find(searchQuery);
+  }
+
+  /**
+   * Search within a specific scope
+   */
+ findByScope(
+    scope: Record<string, unknown>,
+    query: string,
+    options?: Partial<SearchQuery>
+  ): Promise<MemoryFindResponse> {
+    const searchQuery: SearchQuery = {
+      query,
+      scope,
+      ...options,
+    };
+
+    return this.find(searchQuery);
+  }
+
+  /**
+   * Get the database manager
+   */
+  getDatabaseManager(): {
+    healthCheck?(): Promise<boolean>;
+    getMetrics?(): Promise<Record<string, unknown>>;
+  } {
+    return this.databaseManager;
+  }
+
+  /**
+   * Health check for the service
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      if (this.databaseManager?.healthCheck) {
+        return await this.databaseManager.healthCheck();
+      }
+      return true;
+    } catch (error) {
+      logger.error({ error }, 'MemoryFindService health check failed');
+      return false;
+    }
+  }
+
+  /**
+   * Get service metrics
+   */
+  async getMetrics(): Promise<Record<string, unknown>> {
+    try {
+      if (this.databaseManager?.getMetrics) {
+        return await this.databaseManager.getMetrics();
+      }
+      return {};
+    } catch (error) {
+      logger.error({ error }, 'MemoryFindService getMetrics failed');
+      return {};
+    }
+  }
+
+  /**
+   * Search with specific limit
+   */
+ findWithLimit(
+    query: string,
+    limit: number,
+    options?: Partial<SearchQuery>
+  ): Promise<MemoryFindResponse> {
+    const searchQuery: SearchQuery = {
+      query,
+      limit,
+      ...options,
+    };
+
+    return this.find(searchQuery);
+  }
+
+  /**
+   * Semantic search
+   */
+ semanticSearch(query: string, options?: Partial<SearchQuery>): Promise<MemoryFindResponse> {
+    const searchQuery: SearchQuery = {
+      query,
+      mode: 'auto',
+      ...options,
+    };
+
+    return this.find(searchQuery);
+  }
+}

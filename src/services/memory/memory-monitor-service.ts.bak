@@ -1,0 +1,562 @@
+/**
+ * Memory Monitor Service - P0-CRITICAL Implementation
+ *
+ * Comprehensive memory monitoring with metrics collection, alerting,
+ * and performance optimization recommendations.
+ *
+ * @author Cortex Team
+ * @version 2.0.1
+ * @since 2025
+ */
+
+import { EventEmitter } from 'events';
+import { logger } from '../../utils/logger.js';
+import type { MemoryManagerMetrics } from './memory-manager.js';
+import { memoryManager } from './memory-manager.js';
+
+/**
+ * Memory alert levels
+ */
+export type MemoryAlertLevel = 'info' | 'warning' | 'critical' | 'emergency';
+
+/**
+ * Memory alert event
+ */
+export interface MemoryAlert {
+  level: MemoryAlertLevel;
+  message: string;
+  _metrics: MemoryManagerMetrics;
+  timestamp: Date;
+  recommendations: string[];
+  affectedPools: string[];
+}
+
+/**
+ * Memory performance metrics
+ */
+export interface MemoryPerformanceMetrics {
+  efficiency: number; // 0-100 score
+  averageHitRate: number;
+  evictionRate: number;
+  expirationRate: number;
+  memoryUtilization: number;
+  recommendations: string[];
+  issues: string[];
+}
+
+/**
+ * Memory monitoring configuration
+ */
+export interface MemoryMonitoringConfig {
+  enableAlerts: boolean;
+  enableMetricsCollection: boolean;
+  enablePerformanceAnalysis: boolean;
+  metricsRetentionHours: number;
+  alertCooldownMinutes: number;
+  performanceAnalysisIntervalMinutes: number;
+}
+
+/**
+ * Memory Monitor Service
+ */
+export class MemoryMonitorService extends EventEmitter {
+  private config: MemoryMonitoringConfig;
+  private metricsHistory: MemoryManagerMetrics[] = [];
+  private alertHistory: MemoryAlert[] = [];
+  private lastAlertTimes = new Map<string, Date>();
+  private performanceTimer: NodeJS.Timeout | null = null;
+  private cleanupTimer: NodeJS.Timeout | null = null;
+
+  constructor(config: Partial<MemoryMonitoringConfig> = {}) {
+    super();
+
+    this.config = {
+      enableAlerts: true,
+      enableMetricsCollection: true,
+      enablePerformanceAnalysis: true,
+      metricsRetentionHours: 24,
+      alertCooldownMinutes: 5,
+      performanceAnalysisIntervalMinutes: 10,
+      ...config,
+    };
+
+    this.startMonitoring();
+  }
+
+  /**
+   * Start memory monitoring services
+   */
+  private startMonitoring(): void {
+    if (this.config.enableMetricsCollection) {
+      this.startMetricsCollection();
+    }
+
+    if (this.config.enablePerformanceAnalysis) {
+      this.startPerformanceAnalysis();
+    }
+
+    this.startPeriodicCleanup();
+    logger.info('Memory Monitor Service started', this.config);
+  }
+
+  /**
+   * Start metrics collection
+   */
+  private startMetricsCollection(): void {
+    setInterval(() => {
+      this.collectMetrics();
+    }, 30000); // Collect every 30 seconds
+  }
+
+  /**
+   * Start performance analysis
+   */
+  private startPerformanceAnalysis(): void {
+    this.performanceTimer = setInterval(
+      () => {
+        this.analyzePerformance();
+      },
+      this.config.performanceAnalysisIntervalMinutes * 60 * 1000
+    );
+  }
+
+  /**
+   * Start periodic cleanup
+   */
+  private startPeriodicCleanup(): void {
+    this.cleanupTimer = setInterval(
+      () => {
+        this.cleanupOldData();
+      },
+      60 * 60 * 1000
+    ); // Cleanup every hour
+  }
+
+  /**
+   * Collect current memory metrics
+   */
+  collectMetrics(): MemoryManagerMetrics {
+    const metrics = memoryManager.getMetrics();
+
+    this.metricsHistory.push(metrics);
+
+    // Trim history based on retention policy
+    const maxAge = Date.now() - this.config.metricsRetentionHours * 60 * 60 * 1000;
+    this.metricsHistory = this.metricsHistory.filter(
+      (m) => this.getTimestampFromMetrics(m) > maxAge
+    );
+
+    // Check for alerts
+    if (this.config.enableAlerts) {
+      this.checkForAlerts(metrics);
+    }
+
+    // Emit metrics event
+    this.emit('metrics', metrics);
+
+    return metrics;
+  }
+
+  /**
+   * Check for memory alerts
+   */
+  private checkForAlerts(_metrics: MemoryManagerMetrics): void {
+    const alerts: MemoryAlert[] = [];
+
+    // Memory utilization alerts
+    if (metrics.globalUtilizationPercent >= 90) {
+      alerts.push(
+        this.createAlert(
+          'emergency',
+          `Memory usage at ${String(metrics.globalUtilizationPercent.toFixed(1))}% - Emergency level`,
+          metrics,
+          [
+            'Immediate emergency cleanup performed',
+            'Consider scaling up memory limits',
+            'Review memory-intensive operations',
+            'Kill non-essential processes if possible',
+          ]
+        )
+      );
+    } else if (metrics.globalUtilizationPercent >= 85) {
+      alerts.push(
+        this.createAlert(
+          'critical',
+          `Memory usage at ${String(metrics.globalUtilizationPercent.toFixed(1))}% - Critical level`,
+          metrics,
+          [
+            'Automatic cleanup triggered',
+            'Monitor for further increases',
+            'Review cache hit rates',
+            'Consider reducing pool sizes',
+          ]
+        )
+      );
+    } else if (metrics.globalUtilizationPercent >= 70) {
+      alerts.push(
+        this.createAlert(
+          'warning',
+          `Memory usage at ${String(metrics.globalUtilizationPercent.toFixed(1))}% - Warning level`,
+          metrics,
+          ['Monitor memory trends', 'Review cache efficiency', 'Consider proactive cleanup']
+        )
+      );
+    }
+
+    // Performance alerts
+    if (metrics.averageHitRate < 50) {
+      alerts.push(
+        this.createAlert(
+          'warning',
+          `Low cache hit rate: ${String(metrics.averageHitRate.toFixed(1))}%`,
+          metrics,
+          [
+            'Review cache TTL settings',
+            'Analyze access patterns',
+            'Consider cache warming strategies',
+            'Review pool sizes and priorities',
+          ]
+        )
+      );
+    }
+
+    // High eviction rate alerts
+    const totalEvictions = metrics.totalEvictions;
+    const totalItems = metrics.totalItems;
+    if (totalItems > 0 && totalEvictions / totalItems > 0.1) {
+      alerts.push(
+        this.createAlert(
+          'warning',
+          `High eviction rate detected: ${String(((totalEvictions / totalItems) * 100).toFixed(1))}%`,
+          metrics,
+          [
+            'Increase pool memory limits',
+            'Review cache access patterns',
+            'Consider increasing pool sizes',
+            'Optimize cache TTL settings',
+          ]
+        )
+      );
+    }
+
+    // Process alerts
+    for (const alert of alerts) {
+      this.processAlert(alert);
+    }
+  }
+
+  /**
+   * Create a memory alert
+   */
+  private createAlert(
+    _level: MemoryAlertLevel, 
+    message: string, 
+    _metrics: MemoryManagerMetrics, 
+    _recommendations: string[]
+  ): MemoryAlert {
+    const affectedPools = metrics.pools
+      .filter((pool) => pool.memoryUtilizationPercent > 70)
+      .map((pool) => pool.name);
+
+    return {
+      level,
+      message,
+      metrics,
+      timestamp: new Date(),
+      recommendations,
+      affectedPools,
+    };
+  }
+
+  /**
+   * Process and emit alerts
+   */
+  private processAlert(_alert: MemoryAlert): void {
+    const alertKey = `${alert.level}_${alert.message}`;
+    const now = new Date();
+    const lastAlert = this.lastAlertTimes.get(alertKey);
+
+    // Check cooldown period
+    if (
+      lastAlert &&
+      now.getTime() - lastAlert.getTime() < this.config.alertCooldownMinutes * 60 * 1000
+    ) {
+      return; // Skip due to cooldown
+    }
+
+    this.lastAlertTimes.set(alertKey, now);
+    this.alertHistory.push(alert);
+
+    // Log alert
+    const logMethod =
+      alert.level === 'emergency'
+        ? 'error'
+        : alert.level === 'critical'
+          ? 'error'
+          : alert.level === 'warning'
+            ? 'warn'
+            : 'info';
+
+    logger[logMethod]('Memory Alert', {
+      level: alert.level,
+      message: alert.message,
+      utilization: `${String(alert.metrics.globalUtilizationPercent.toFixed(1))}%`,
+      affectedPools: alert.affectedPools,
+      recommendations: alert.recommendations,
+    });
+
+    // Emit alert event
+    this.emit('alert', alert);
+
+    // Trigger automatic responses for critical alerts
+    if (alert.level === 'emergency' || alert.level === 'critical') {
+      this.handleCriticalAlert(alert);
+    }
+  }
+
+  /**
+   * Handle critical memory alerts
+   */
+  private handleCriticalAlert(_alert: MemoryAlert): void {
+    logger.warn('Handling critical memory alert', { alert: alert.message });
+
+    // Trigger emergency cleanup if not already done
+    if (alert.level === 'emergency') {
+      memoryManager.emergencyCleanup();
+    }
+
+    // Force cleanup in affected pools
+    for (const poolName of alert.affectedPools) {
+      const pool = memoryManager.getPool(poolName);
+      if (_pool) {
+        const cleaned = pool.cleanup();
+        logger.info(`Force cleanup in pool ${poolName}`, { cleanedItems: cleaned });
+      }
+    }
+
+    // Emit critical alert event for external handlers
+    this.emit('critical-alert', alert);
+  }
+
+  /**
+   * Analyze memory performance
+   */
+  analyzePerformance(): MemoryPerformanceMetrics {
+    const currentMetrics = memoryManager.getMetrics();
+    const recentMetrics = this.metricsHistory.slice(-10); // Last 10 data points
+
+    const averageHitRate = currentMetrics.averageHitRate;
+    const evictionRate =
+      currentMetrics.totalItems > 0
+        ? (currentMetrics.totalEvictions / currentMetrics.totalItems) * 100
+        : 0;
+    const expirationRate =
+      currentMetrics.totalItems > 0
+        ? (currentMetrics.totalExpirations / currentMetrics.totalItems) * 100
+        : 0;
+    const memoryUtilization = currentMetrics.globalUtilizationPercent;
+
+    // Calculate efficiency score (0-100)
+    let efficiency = 0;
+    efficiency += Math.min(averageHitRate, 100) * 0.4; // Hit rate weight 40%
+    efficiency += Math.max(0, 100 - evictionRate) * 0.3; // Low eviction rate weight 30%
+    efficiency += Math.max(0, 100 - memoryUtilization) * 0.2; // Memory utilization weight 20%
+    efficiency += Math.max(0, 100 - expirationRate) * 0.1; // Low expiration rate weight 10%
+
+    const recommendations: string[] = [];
+    const issues: string[] = [];
+
+    // Generate recommendations based on metrics
+    if (averageHitRate < 60) {
+      recommendations.push('Increase cache TTL to improve hit rate');
+      recommendations.push('Analyze access patterns for better cache warming');
+      issues.push('Low cache hit rate indicates ineffective caching');
+    }
+
+    if (evictionRate > 20) {
+      recommendations.push('Increase memory limits for frequently evicted pools');
+      recommendations.push('Review cache access patterns and pool priorities');
+      issues.push('High eviction rate indicates insufficient memory allocation');
+    }
+
+    if (memoryUtilization > 80) {
+      recommendations.push('Consider increasing global memory limits');
+      recommendations.push('Implement more aggressive cleanup policies');
+      issues.push('High memory utilization may cause performance degradation');
+    }
+
+    if (currentMetrics.poolCount > 10) {
+      recommendations.push('Consider consolidating similar memory pools');
+      issues.push('Too many memory pools may increase overhead');
+    }
+
+    const performanceMetrics: MemoryPerformanceMetrics = {
+      efficiency: Math.round(efficiency * 100) / 100,
+      averageHitRate: Math.round(averageHitRate * 100) / 100,
+      evictionRate: Math.round(evictionRate * 100) / 100,
+      expirationRate: Math.round(expirationRate * 100) / 100,
+      memoryUtilization: Math.round(memoryUtilization * 100) / 100,
+      recommendations,
+      issues,
+    };
+
+    // Emit performance metrics
+    this.emit('performance', performanceMetrics);
+
+    return performanceMetrics;
+  }
+
+  /**
+   * Get memory trend analysis
+   */
+  getTrendAnalysis(hours: number = 1): {
+    trend: 'increasing' | 'decreasing' | 'stable';
+    ratePerHour: number;
+    prediction: number;
+    confidence: 'high' | 'medium' | 'low';
+  } {
+    const cutoff = Date.now() - hours * 60 * 60 * 1000;
+    const relevantMetrics = this.metricsHistory.filter(
+      (m) => this.getTimestampFromMetrics(m) > cutoff
+    );
+
+    if (relevantMetrics.length < 2) {
+      return {
+        trend: 'stable',
+        ratePerHour: 0,
+        prediction: memoryManager.getMetrics().globalUtilizationPercent,
+        confidence: 'low',
+      };
+    }
+
+    const firstMetric = relevantMetrics[0];
+    const lastMetric = relevantMetrics[relevantMetrics.length - 1];
+    const utilizationChange =
+      lastMetric.globalUtilizationPercent - firstMetric.globalUtilizationPercent;
+    const ratePerHour = utilizationChange / hours;
+
+    let trend: 'increasing' | 'decreasing' | 'stable';
+    if (Math.abs(ratePerHour) < 1) {
+      trend = 'stable';
+    } else if (ratePerHour > 0) {
+      trend = 'increasing';
+    } else {
+      trend = 'decreasing';
+    }
+
+    // Simple linear prediction
+    const prediction = lastMetric.globalUtilizationPercent + ratePerHour;
+    const confidence =
+      relevantMetrics.length >= 5 ? 'high' : relevantMetrics.length >= 3 ? 'medium' : 'low';
+
+    return {
+      trend,
+      ratePerHour: Math.round(ratePerHour * 100) / 100,
+      prediction: Math.round(prediction * 100) / 100,
+      confidence,
+    };
+  }
+
+  /**
+   * Get detailed memory report
+   */
+  getMemoryReport(): {
+    summary: MemoryManagerMetrics;
+    performance: MemoryPerformanceMetrics;
+    trends: unknown;
+    recentAlerts: MemoryAlert[];
+    recommendations: string[];
+  } {
+    const summary = memoryManager.getMetrics();
+    const performance = this.analyzePerformance();
+    const trends = this.getTrendAnalysis();
+    const recentAlerts = this.alertHistory.slice(-10);
+
+    // Consolidate recommendations
+    const allRecommendations = [
+      ...performance.recommendations,
+      ...recentAlerts.flatMap((alert) => alert.recommendations),
+    ];
+
+    const uniqueRecommendations = [...new Set(allRecommendations)];
+
+    return {
+      summary,
+      performance,
+      trends,
+      recentAlerts,
+      recommendations: uniqueRecommendations,
+    };
+  }
+
+  /**
+   * Cleanup old data
+   */
+  private cleanupOldData(): void {
+    // Cleanup metrics history
+    const maxAge = Date.now() - this.config.metricsRetentionHours * 60 * 60 * 1000;
+    this.metricsHistory = this.metricsHistory.filter(
+      (m) => this.getTimestampFromMetrics(m) > maxAge
+    );
+
+    // Cleanup alert history (keep last 100)
+    if (this.alertHistory.length > 100) {
+      this.alertHistory = this.alertHistory.slice(-100);
+    }
+
+    // Cleanup alert cooldown times
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 hours
+    for (const [key] of this.lastAlertTimes) {
+      if (this.lastAlertTimes.get(key)!.getTime() < cutoff) {
+        this.lastAlertTimes.delete(key);
+      }
+    }
+
+    logger.debug('Memory Monitor Service cleanup completed');
+  }
+
+  /**
+   * Extract timestamp from metrics (approximation)
+   */
+  private getTimestampFromMetrics(_metrics: MemoryManagerMetrics): number {
+    return Date.now(); // In a real implementation, metrics would have timestamps
+  }
+
+  /**
+   * Get monitoring configuration
+   */
+  getConfig(): MemoryMonitoringConfig {
+    return { ...this.config };
+  }
+
+  /**
+   * Update monitoring configuration
+   */
+  updateConfig(config: Partial<MemoryMonitoringConfig>): void {
+    this.config = { ...this.config, ...config };
+    logger.info('Memory Monitor Service configuration updated', this.config);
+  }
+
+  /**
+   * Shutdown the memory monitor service
+   */
+  shutdown(): void {
+    if (this.performanceTimer) {
+      clearInterval(this.performanceTimer);
+      this.performanceTimer = null;
+    }
+
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+
+    this.removeAllListeners();
+    logger.info('Memory Monitor Service shutdown completed');
+  }
+}
+
+/**
+ * Global memory monitor service instance
+ */
+export const memoryMonitorService = new MemoryMonitorService();

@@ -1,4 +1,3 @@
-// @ts-nocheck - Emergency rollback: Critical chaos testing infrastructure
 /**
  * Chaos Injection Engine
  *

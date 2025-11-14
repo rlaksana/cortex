@@ -1,5 +1,7 @@
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Monitoring system type compatibility issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
 
-// @ts-nocheck - Emergency rollback: Critical monitoring service
 const asNum = (v: unknown, d = 0): number => Number(v ?? d);
 const asNumMap = (m: unknown): Record<string, number> =>
   m && typeof m === 'object'

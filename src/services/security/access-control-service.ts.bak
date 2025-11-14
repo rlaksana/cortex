@@ -1,0 +1,1034 @@
+/**
+ * Access Control Service
+ *
+ * Comprehensive runtime permission checking and access control system
+ * Supports Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC)
+ *
+ * @author Cortex Security Team
+ * @version 1.0.0
+ * @since 2025-11-08
+ */
+
+import { Injectable, Inject } from '../../di/decorators.js';
+import { ServiceLifetime, ServicePriority } from '../../di/enhanced-di-container.js';
+import type { ILoggerService } from '../../di/service-interfaces.js';
+import type { IAuthService } from '../../di/service-interfaces.js';
+import { AccessControlDecision, SecurityContext } from './security-types.js';
+
+/**
+ * Access control configuration
+ */
+export interface AccessControlConfig {
+  enabled: boolean;
+  rbac_enabled: boolean;
+  abac_enabled: boolean;
+  session_validation: boolean;
+  multi_factor_auth: boolean;
+  cache_permissions: boolean;
+  cache_ttl_seconds: number;
+  fail_closed: boolean;
+  audit_access: boolean;
+  ip_whitelist_enabled: boolean;
+  time_based_access: boolean;
+  geo_fencing_enabled: boolean;
+}
+
+/**
+ * Permission definition
+ */
+export interface Permission {
+  id: string;
+  name: string;
+  resource: string;
+  action: string;
+  conditions?: Record<string, unknown>;
+  description?: string;
+  category?: string;
+}
+
+/**
+ * Role definition
+ */
+export interface Role {
+  id: string;
+  name: string;
+  description?: string;
+  permissions: string[];
+  inherits?: string[];
+  constraints?: Record<string, unknown>;
+  system_role?: boolean;
+  enabled: boolean;
+}
+
+/**
+ * Access policy
+ */
+export interface AccessPolicy {
+  id: string;
+  name: string;
+  description?: string;
+  effect: 'allow' | 'deny';
+  principal: {
+    type: 'user' | 'role' | 'group' | 'anonymous';
+    value: string | string[];
+  };
+  resource: {
+    type: string;
+    value: string | string[];
+  };
+  action: {
+    type: string;
+    value: string | string[];
+  };
+  conditions?: {
+    ip?: string[];
+    time?: {
+      start?: string;
+      end?: string;
+      days?: string[];
+    };
+    geo?: string[];
+    session?: {
+      age_max?: number;
+      mfa_required?: boolean;
+    };
+    environment?: string[];
+  };
+  priority: number;
+  enabled: boolean;
+}
+
+/**
+ * Attribute constraint
+ */
+export interface AttributeConstraint {
+  attribute: string;
+  operator:
+    | 'eq'
+    | 'ne'
+    | 'gt'
+    | 'gte'
+    | 'lt'
+    | 'lte'
+    | 'in'
+    | 'not_in'
+    | 'contains'
+    | 'starts_with'
+    | 'ends_with';
+  value: unknown;
+  weight?: number;
+}
+
+/**
+ * Access evaluation context
+ */
+export interface AccessEvaluationContext {
+  principal: {
+    id: string;
+    type: 'user' | 'service' | 'anonymous';
+    roles: string[];
+    attributes: Record<string, unknown>;
+    session?: {
+      id: string;
+      age: number;
+      mfa_verified: boolean;
+      ip: string;
+      user_agent: string;
+    };
+  };
+  resource: {
+    type: string;
+    id: string;
+    attributes: Record<string, unknown>;
+    owner?: string;
+    tenant?: string;
+    sensitivity?: string;
+  };
+  action: string;
+  environment: {
+    ip: string;
+    timestamp: Date;
+    user_agent?: string;
+    geo?: {
+      country?: string;
+      region?: string;
+    };
+  };
+}
+
+/**
+ * Access Control Service
+ */
+@Injectable({
+  lifetime: ServiceLifetime.SINGLETON,
+  priority: ServicePriority.HIGH,
+  tags: ['security', 'access-control', 'rbac', 'abac'],
+})
+export class AccessControlService {
+  private readonly permissions: Map<string, Permission> = new Map();
+  private readonly roles: Map<string, Role> = new Map();
+  private readonly policies: Map<string, AccessPolicy> = new Map();
+  private readonly permissionCache: Map<
+    string,
+    { decision: AccessControlDecision; expires: number }
+  > = new Map();
+
+  constructor(
+    @Inject('LOGGER_SERVICE') private readonly logger: ILoggerService,
+    @Inject('AUTH_SERVICE') private readonly authService: IAuthService,
+    private readonly config: AccessControlConfig
+  ) {
+    this.initializeDefaultRoles();
+    this.initializeDefaultPermissions();
+    this.initializeDefaultPolicies();
+  }
+
+  /**
+   * Check if a principal has access to a resource with a specific action
+   */
+  async checkAccess(
+    principalId: string,
+    resourceType: string,
+    resourceId: string,
+    action: string,
+    context: Partial<AccessEvaluationContext> = {}
+  ): Promise<AccessControlDecision> {
+    if (!this.config.enabled) {
+      return {
+        allowed: true,
+        reason: 'Access control disabled',
+      };
+    }
+
+    const startTime = Date.now();
+    const cacheKey = this.getCacheKey(principalId, resourceType, resourceId, action);
+
+    try {
+      // Check cache first
+      if (this.config.cache_permissions) {
+        const cached = this.permissionCache.get(cacheKey);
+        if (cached && cached.expires > Date.now()) {
+          this.logger.debug('Access decision from cache', {
+            principalId,
+            resourceType,
+            action,
+            allowed: cached.decision.allowed,
+          });
+          return cached.decision;
+        }
+      }
+
+      // Build evaluation context
+      const evaluationContext = await this.buildEvaluationContext(
+        principalId,
+        resourceType,
+        resourceId,
+        action,
+        context
+      );
+
+      // Evaluate access
+      const decision = await this.evaluateAccess(evaluationContext);
+
+      // Cache the decision
+      if (this.config.cache_permissions) {
+        this.permissionCache.set(cacheKey, {
+          decision,
+          expires: Date.now() + this.config.cache_ttl_seconds * 1000,
+        });
+      }
+
+      // Log access decision
+      if (this.config.audit_access) {
+        await this.logAccessDecision(evaluationContext, decision, Date.now() - startTime);
+      }
+
+      return decision;
+    } catch (error) {
+      this.logger.error('Access control check failed', {
+        principalId,
+        resourceType,
+        action,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      return {
+        allowed: !this.config.fail_closed,
+        reason: this.config.fail_closed
+          ? 'Access control system error (blocked)'
+          : 'Access control system error (allowed)',
+        conditions: ['system_error'],
+      };
+    }
+  }
+
+  /**
+   * Validate session for access control
+   */
+  async validateSession(sessionId: string, context: SecurityContext): Promise<boolean> {
+    if (!this.config.session_validation) {
+      return true;
+    }
+
+    try {
+      const isSessionValid = await this.authService.validateSession(sessionId);
+      if (!isSessionValid) {
+        this.logger.warn('Invalid session attempted', {
+          sessionId,
+          userId: context.userId,
+          ip: context.ipAddress,
+        });
+        return false;
+      }
+
+      // Note: Since validateSession only returns boolean, we can't check session age or MFA status
+      // These checks would need additional methods in the auth service
+      // TODO: Add session details validation if needed in the future
+
+      return true;
+    } catch (error) {
+      this.logger.error('Session validation failed', {
+        sessionId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return !this.config.fail_closed;
+    }
+  }
+
+  /**
+   * Check IP whitelist
+   */
+  async checkIPWhitelist(ip: string, context: SecurityContext): Promise<boolean> {
+    if (!this.config.ip_whitelist_enabled) {
+      return true;
+    }
+
+    try {
+      // Get user's allowed IPs
+      if (!context.userId) return false;
+      const allowedIPs = await this.authService.getUserAllowedIPs(context.userId);
+      if (!allowedIPs || allowedIPs.length === 0) {
+        return true; // No restrictions if no IPs configured
+      }
+
+      const isAllowed = allowedIPs.some((allowedIP: string) => {
+        if (allowedIP.includes('/')) {
+          // CIDR notation
+          return this.isIPInCIDR(ip, allowedIP);
+        } else {
+          // Exact match or wildcard
+          return this.matchIPPattern(ip, allowedIP);
+        }
+      });
+
+      if (!isAllowed) {
+        this.logger.warn('IP not in whitelist', {
+          ip,
+          userId: context.userId,
+          allowedIPs,
+        });
+      }
+
+      return isAllowed;
+    } catch (error) {
+      this.logger.error('IP whitelist check failed', {
+        ip,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return !this.config.fail_closed;
+    }
+  }
+
+  /**
+   * Check time-based access restrictions
+   */
+  async checkTimeBasedAccess(context: SecurityContext): Promise<boolean> {
+    if (!this.config.time_based_access) {
+      return true;
+    }
+
+    try {
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const hour = now.getHours();
+
+      // Get user's time restrictions
+      if (!context.userId) return false;
+      const timeRestrictions = await this.authService.getUserTimeRestrictions(context.userId);
+      if (!timeRestrictions) {
+        return true; // No restrictions
+      }
+
+      // Check allowed days
+      if (timeRestrictions.allowedDays && !timeRestrictions.allowedDays.includes(dayOfWeek)) {
+        this.logger.warn('Access denied - day not allowed', {
+          userId: context.userId,
+          day: dayOfWeek,
+          allowedDays: timeRestrictions.allowedDays,
+        });
+        return false;
+      }
+
+      // Check allowed hours
+      if (timeRestrictions.allowedHours) {
+        const { start, end } = timeRestrictions.allowedHours;
+        if (hour < start || hour > end) {
+          this.logger.warn('Access denied - hour not allowed', {
+            userId: context.userId,
+            hour,
+            allowedHours: timeRestrictions.allowedHours,
+          });
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      this.logger.error('Time-based access check failed', {
+        userId: context.userId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return !this.config.fail_closed;
+    }
+  }
+
+  /**
+   * Register a new permission
+   */
+  registerPermission(_permission: Permission): void {
+    this.permissions.set(permission.id, permission);
+    this.clearCache();
+    this.logger.debug('Permission registered', { id: permission.id, name: permission.name });
+  }
+
+  /**
+   * Register a new role
+   */
+  registerRole(_role: Role): void {
+    this.roles.set(role.id, role);
+    this.clearCache();
+    this.logger.debug('Role registered', { id: role.id, name: role.name });
+  }
+
+  /**
+   * Register a new access policy
+   */
+  registerPolicy(_policy: AccessPolicy): void {
+    this.policies.set(policy.id, policy);
+    this.clearCache();
+    this.logger.debug('Policy registered', { id: policy.id, name: policy.name });
+  }
+
+  /**
+   * Get all permissions for a user
+   */
+  async getUserPermissions(userId: string): Promise<Permission[]> {
+    const userRoles = await this.authService.getUserRoles(userId);
+    const allPermissions: Set<string> = new Set();
+
+    // Collect permissions from all roles
+    for (const roleName of userRoles) {
+      const role = this.roles.get(roleName);
+      if (role && role.enabled) {
+        // Add direct permissions
+        role.permissions.forEach((perm) => allPermissions.add(perm));
+
+        // Add inherited permissions
+        if (role.inherits) {
+          for (const inheritedRoleName of role.inherits) {
+            const inheritedRole = this.roles.get(inheritedRoleName);
+            if (inheritedRole && inheritedRole.enabled) {
+              inheritedRole.permissions.forEach((perm) => allPermissions.add(perm));
+            }
+          }
+        }
+      }
+    }
+
+    return Array.from(allPermissions)
+      .map((permId) => this.permissions.get(permId))
+      .filter((perm) => perm !== undefined);
+  }
+
+  /**
+   * Evaluate access using RBAC and ABAC
+   */
+  private async evaluateAccess(context: AccessEvaluationContext): Promise<AccessControlDecision> {
+    // Step 1: Check explicit policies (highest priority)
+    const policyDecision = await this.evaluatePolicies(context);
+    if (policyDecision.explicit) {
+      return policyDecision;
+    }
+
+    // Step 2: Check RBAC permissions
+    if (this.config.rbac_enabled) {
+      const rbacDecision = await this.evaluateRBAC(context);
+      if (!rbacDecision.allowed) {
+        return rbacDecision;
+      }
+    }
+
+    // Step 3: Check ABAC constraints
+    if (this.config.abac_enabled) {
+      const abacDecision = await this.evaluateABAC(context);
+      if (!abacDecision.allowed) {
+        return abacDecision;
+      }
+    }
+
+    // Default: allow if no explicit denial
+    return {
+      allowed: true,
+      reason: 'No access restrictions found',
+    };
+  }
+
+  /**
+   * Evaluate access policies
+   */
+  private evaluatePolicies(
+    context: AccessEvaluationContext
+  ): Promise<AccessControlDecision & { explicit: boolean }> {
+    const applicablePolicies = Array.from(this.policies.values())
+      .filter((policy) => policy.enabled && this.isPolicyApplicable(policy, context))
+      .sort((a,  _b) => b.priority - a.priority);
+
+    for (const policy of applicablePolicies) {
+      const conditionsMet = await this.evaluatePolicyConditions(policy, context);
+      if (_conditionsMet) {
+        return {
+          allowed: policy.effect === 'allow',
+          reason: `Policy ${policy.name}: ${policy.effect}`,
+          conditions: policy.conditions ? Object.keys(policy.conditions) : undefined,
+          explicit: true,
+        };
+      }
+    }
+
+    return {
+      allowed: true,
+      reason: 'No applicable policies',
+      explicit: false,
+    };
+  }
+
+  /**
+   * Evaluate RBAC permissions
+   */
+  private async evaluateRBAC(context: AccessEvaluationContext): Promise<AccessControlDecision> {
+    const userPermissions = await this.getUserPermissions(context.principal.id);
+    const requiredPermission = this.findRequiredPermission(context.resource.type, context.action);
+
+    if (!requiredPermission) {
+      return {
+        allowed: true,
+        reason: 'No specific permission required',
+      };
+    }
+
+    const hasPermission = userPermissions.some(
+      (permission) =>
+        permission.resource === context.resource.type && permission.action === context.action
+    );
+
+    return {
+      allowed: hasPermission,
+      reason: hasPermission
+        ? 'RBAC permission granted'
+        : `Missing required permission: ${requiredPermission.name}`,
+      conditions: hasPermission ? ['rbac_permission'] : undefined,
+    };
+  }
+
+  /**
+   * Evaluate ABAC constraints
+   */
+  private async evaluateABAC(context: AccessEvaluationContext): Promise<AccessControlDecision> {
+    const constraints = this.getAttributeConstraints(context);
+    const _results: Array<{ constraint: string; satisfied: boolean }> = [];
+
+    for (const constraint of constraints) {
+      const satisfied = this.evaluateAttributeConstraint(constraint, context);
+      results.push({
+        constraint: `${constraint.attribute} ${constraint.operator} ${constraint.value}`,
+        satisfied,
+      });
+    }
+
+    const allSatisfied = results.every((result) => result.satisfied);
+
+    return {
+      allowed: allSatisfied,
+      reason: allSatisfied
+        ? 'All attribute constraints satisfied'
+        : 'Attribute constraints not met',
+      conditions: allSatisfied ? results.map((r) => r.constraint) : undefined,
+    };
+  }
+
+  /**
+   * Build evaluation context
+   */
+  private async buildEvaluationContext(
+    principalId: string,
+    resourceType: string,
+    resourceId: string,
+    action: string,
+    partialContext: Partial<AccessEvaluationContext>
+  ): Promise<AccessEvaluationContext> {
+    const user = await this.authService.getUser(principalId);
+    const userRoles = await this.authService.getUserRoles(principalId);
+    const userAttributes = await this.authService.getUserAttributes(principalId);
+
+    return {
+      principal: {
+        id: principalId,
+        type: user?.type || 'user',
+        roles: userRoles,
+        attributes: userAttributes || {},
+        session: partialContext.principal?.session,
+      },
+      resource: {
+        type: resourceType,
+        id: resourceId,
+        attributes: partialContext.resource?.attributes || {},
+        owner: partialContext.resource?.owner,
+        tenant: partialContext.resource?.tenant,
+        sensitivity: partialContext.resource?.sensitivity,
+      },
+      action,
+      environment: {
+        ip: partialContext.environment?.ip || 'unknown',
+        timestamp: partialContext.environment?.timestamp || new Date(),
+        user_agent: partialContext.environment?.user_agent,
+        geo: partialContext.environment?.geo,
+      },
+    };
+  }
+
+  /**
+   * Check if policy is applicable to context
+   */
+  private isPolicyApplicable(_policy: AccessPolicy,  context: AccessEvaluationContext): boolean {
+    // Check principal
+    const principalMatch =
+      this.matchesPattern(context.principal.id, policy.principal.value) ||
+      this.matchesPattern(context.principal.type, policy.principal.value) ||
+      context.principal.roles.some((role) => this.matchesPattern(role, policy.principal.value));
+
+    if (!principalMatch) return false;
+
+    // Check resource
+    const resourceMatch =
+      this.matchesPattern(context.resource.type, policy.resource.value) ||
+      this.matchesPattern(context.resource.id, policy.resource.value);
+
+    if (!resourceMatch) return false;
+
+    // Check action
+    const actionMatch = this.matchesPattern(context.action, policy.action.value);
+
+    return actionMatch;
+  }
+
+  /**
+   * Evaluate policy conditions
+   */
+  private async evaluatePolicyConditions(
+    policy: AccessPolicy,
+    context: AccessEvaluationContext
+  ): Promise<boolean> {
+    if (!policy.conditions) return true;
+
+    // IP conditions
+    if (policy.conditions.ip && policy.conditions.ip.length > 0) {
+      const ipAllowed = policy.conditions.ip.includes(context.environment.ip);
+      if (!ipAllowed) return false;
+    }
+
+    // Time conditions
+    if (policy.conditions.time) {
+      const time = policy.conditions.time;
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentDay = now.getDay();
+
+      if (time.start !== undefined && currentHour < parseInt(time.start, 10)) return false;
+      if (time.end !== undefined && currentHour > parseInt(time.end, 10)) return false;
+      if (time.days && !time.days.includes(currentDay.toString())) return false;
+    }
+
+    // Geo conditions
+    if (policy.conditions.geo && policy.conditions.geo.length > 0) {
+      const userGeo = context.environment.geo?.country;
+      if (!userGeo || !policy.conditions.geo.includes(userGeo)) return false;
+    }
+
+    // Session conditions
+    if (policy.conditions.session) {
+      const session = context.principal.session;
+      if (!session) return false;
+
+      if (policy.conditions.session.age_max) {
+        const maxAge = policy.conditions.session.age_max * 60 * 1000; // Convert minutes to ms
+        const sessionAge =
+          typeof session.age === 'string' ? parseInt(session.age, 10) : session.age;
+        if (sessionAge > maxAge) return false;
+      }
+
+      if (policy.conditions.session.mfa_required && !session.mfa_verified) {
+        return false;
+      }
+    }
+
+    // Environment conditions
+    if (policy.conditions.environment && policy.conditions.environment.length > 0) {
+      // This would check against current deployment environment
+      // For now, assume pass
+    }
+
+    return true;
+  }
+
+  /**
+   * Get attribute constraints for context
+   */
+  private getAttributeConstraints(context: AccessEvaluationContext): AttributeConstraint[] {
+    const constraints: AttributeConstraint[] = [];
+
+    // Resource ownership constraint
+    if (context.resource.owner) {
+      constraints.push({
+        attribute: 'resource.owner',
+        operator: 'eq',
+        value: context.principal.id,
+        weight: 10,
+      });
+    }
+
+    // Tenant isolation constraint
+    if (context.resource.tenant && context.principal.attributes.tenant) {
+      constraints.push({
+        attribute: 'resource.tenant',
+        operator: 'eq',
+        value: context.principal.attributes.tenant,
+        weight: 10,
+      });
+    }
+
+    // Sensitivity level constraint
+    if (context.resource.sensitivity) {
+      constraints.push({
+        attribute: 'user.clearance_level',
+        operator: 'gte',
+        value: context.resource.sensitivity,
+        weight: 8,
+      });
+    }
+
+    // Time-based constraint
+    const hour = context.environment.timestamp.getHours();
+    constraints.push({
+      attribute: 'access_hour',
+      operator: 'in',
+      value: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+      weight: 5,
+    });
+
+    return constraints;
+  }
+
+  /**
+   * Evaluate attribute constraint
+   */
+  private evaluateAttributeConstraint(
+    _constraint: AttributeConstraint, 
+    context: AccessEvaluationContext
+  ): boolean {
+    let actualValue: unknown;
+
+    // Get actual value based on attribute path
+    if (constraint.attribute.startsWith('resource.')) {
+      const path = constraint.attribute.substring(8);
+      actualValue = this.getNestedValue(context.resource, path);
+    } else if (constraint.attribute.startsWith('user.')) {
+      const path = constraint.attribute.substring(5);
+      actualValue = this.getNestedValue(context.principal.attributes, path);
+    } else if (constraint.attribute.startsWith('environment.')) {
+      const path = constraint.attribute.substring(12);
+      actualValue = this.getNestedValue(context.environment, path);
+    } else {
+      actualValue = this.getNestedValue(context.principal.attributes, constraint.attribute);
+    }
+
+    return this.compareValues(actualValue, constraint.operator, constraint.value);
+  }
+
+  /**
+   * Compare values using operator
+   */
+  private compareValues(_actual: unknown,  _operator: string,  _expected: unknown): boolean {
+    switch (_operator) {
+      case 'eq':
+        return actual === expected;
+      case 'ne':
+        return actual !== expected;
+      case 'gt':
+        return Number(actual) > Number(expected);
+      case 'gte':
+        return Number(actual) >= Number(expected);
+      case 'lt':
+        return Number(actual) < Number(expected);
+      case 'lte':
+        return Number(actual) <= Number(expected);
+      case 'in':
+        return Array.isArray(expected) && expected.includes(actual);
+      case 'not_in':
+        return Array.isArray(expected) && !expected.includes(actual);
+      case 'contains':
+        return String(actual).includes(String(expected));
+      case 'starts_with':
+        return String(actual).startsWith(String(expected));
+      case 'ends_with':
+        return String(actual).endsWith(String(expected));
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Get nested value from object
+   */
+  private getNestedValue(_obj: unknown,  _path: string): unknown {
+    return path.split('.').reduce((current,  _key) => current?.[key], obj);
+  }
+
+  /**
+   * Check if value matches pattern
+   */
+  private matchesPattern(_value: string,  _pattern: string | string[]): boolean {
+    if (Array.isArray(pattern)) {
+      return pattern.some((p) => this.matchesPattern(value, p));
+    }
+
+    if (pattern === '*') return true;
+    if (pattern.includes('*')) {
+      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+      return regex.test(value);
+    }
+
+    return value === pattern;
+  }
+
+  /**
+   * Find required permission for resource and action
+   */
+  private findRequiredPermission(_resourceType: string,  _action: string): Permission | null {
+    return (
+      Array.from(this.permissions.values()).find(
+        (permission) => permission.resource === resourceType && permission.action === action
+      ) || null
+    );
+  }
+
+  /**
+   * Check if IP is in CIDR range
+   */
+  private isIPInCIDR(_ip: string,  _cidr: string): boolean {
+    // Simplified CIDR check - in production, use a proper IP library
+    const [network, prefixLength] = cidr.split('/');
+    // This is a placeholder implementation
+    return ip.startsWith(network);
+  }
+
+  /**
+   * Match IP pattern with wildcards
+   */
+  private matchIPPattern(_ip: string,  _pattern: string): boolean {
+    if (pattern.includes('*')) {
+      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+      return regex.test(ip);
+    }
+    return ip === pattern;
+  }
+
+  /**
+   * Get cache key for permission decision
+   */
+  private getCacheKey(
+    _principalId: string, 
+    _resourceType: string, 
+    _resourceId: string, 
+    _action: string
+  ): string {
+    return `${principalId}:${resourceType}:${resourceId}:${action}`;
+  }
+
+  /**
+   * Clear permission cache
+   */
+  private clearCache(): void {
+    this.permissionCache.clear();
+  }
+
+  /**
+   * Log access decision
+   */
+  private async logAccessDecision(
+    context: AccessEvaluationContext,
+    decision: AccessControlDecision,
+    processingTime: number
+  ): Promise<void> {
+    this.logger.info('Access decision', {
+      principal: context.principal.id,
+      resource: `${context.resource.type}:${context.resource.id}`,
+      action: context.action,
+      allowed: decision.allowed,
+      reason: decision.reason,
+      processing_time_ms: processingTime,
+      ip: context.environment.ip,
+    });
+  }
+
+  /**
+   * Initialize default roles
+   */
+  private initializeDefaultRoles(): void {
+    // Admin role
+    this.roles.set('admin', {
+      id: 'admin',
+      name: 'Administrator',
+      description: 'Full system access',
+      permissions: ['*'],
+      system_role: true,
+      enabled: true,
+    });
+
+    // User role
+    this.roles.set('user', {
+      id: 'user',
+      name: 'User',
+      description: 'Standard user access',
+      permissions: ['memory:read', 'memory:write:own', 'search:execute'],
+      system_role: true,
+      enabled: true,
+    });
+
+    // Guest role
+    this.roles.set('guest', {
+      id: 'guest',
+      name: 'Guest',
+      description: 'Limited guest access',
+      permissions: ['memory:read:public', 'search:execute:public'],
+      system_role: true,
+      enabled: true,
+    });
+  }
+
+  /**
+   * Initialize default permissions
+   */
+  private initializeDefaultPermissions(): void {
+    // Memory permissions
+    this.permissions.set('memory:read', {
+      id: 'memory:read',
+      name: 'Read Memory',
+      resource: 'memory',
+      action: 'read',
+      description: 'Read memory entries',
+      category: 'data',
+    });
+
+    this.permissions.set('memory:write', {
+      id: 'memory:write',
+      name: 'Write Memory',
+      resource: 'memory',
+      action: 'write',
+      description: 'Write memory entries',
+      category: 'data',
+    });
+
+    this.permissions.set('memory:delete', {
+      id: 'memory:delete',
+      name: 'Delete Memory',
+      resource: 'memory',
+      action: 'delete',
+      description: 'Delete memory entries',
+      category: 'data',
+    });
+
+    // Search permissions
+    this.permissions.set('search:execute', {
+      id: 'search:execute',
+      name: 'Execute Search',
+      resource: 'search',
+      action: 'execute',
+      description: 'Execute search queries',
+      category: 'search',
+    });
+
+    // Admin permissions
+    this.permissions.set('admin:all', {
+      id: 'admin:all',
+      name: 'All Admin Access',
+      resource: '*',
+      action: '*',
+      description: 'Full administrative access',
+      category: 'admin',
+    });
+  }
+
+  /**
+   * Initialize default policies
+   */
+  private initializeDefaultPolicies(): void {
+    // Deny policy for unauthenticated access to sensitive resources
+    this.policies.set('deny_unauthenticated_sensitive', {
+      id: 'deny_unauthenticated_sensitive',
+      name: 'Deny Unauthenticated Access to Sensitive Resources',
+      description: 'Block unauthenticated users from accessing sensitive resources',
+      effect: 'deny',
+      principal: {
+        type: 'anonymous',
+        value: '*',
+      },
+      resource: {
+        type: 'sensitive',
+        value: '*',
+      },
+      action: {
+        type: '*',
+        value: '*',
+      },
+      priority: 100,
+      enabled: true,
+    });
+
+    // Allow policy for users to access their own resources
+    this.policies.set('allow_own_resources', {
+      id: 'allow_own_resources',
+      name: 'Allow Own Resource Access',
+      description: 'Users can access their own resources',
+      effect: 'allow',
+      principal: {
+        type: 'user',
+        value: '*',
+      },
+      resource: {
+        type: '*',
+        value: '*',
+      },
+      action: {
+        type: '*',
+        value: '*',
+      },
+      conditions: {
+        session: {
+          age_max: 480, // 8 hours
+        },
+      },
+      priority: 50,
+      enabled: true,
+    });
+  }
+}

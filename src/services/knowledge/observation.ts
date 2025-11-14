@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical business service
 /**
  * Observation storage service (12th knowledge type - fine-grained facts)
  *

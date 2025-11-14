@@ -1,0 +1,1144 @@
+/**
+ * SRE Dashboards and Alerting Rules
+ *
+ * Provides comprehensive monitoring, alerting, and dashboard capabilities
+ * for production operations including:
+ * - Service health monitoring dashboards
+ * - Performance metrics visualization
+ * - Alerting rules and escalation policies
+ * - SLO/SLA monitoring and reporting
+ * - Incident response automation
+ *
+ * @author Cortex Team
+ * @version 1.0.0
+ * @since 2025-11-10
+ */
+
+import { EventEmitter } from 'node:events';
+import { HealthStatus, AlertSeverity } from '../types/unified-health-interfaces.js';
+import { openTelemetryTracer } from './opentelemetry-tracer.js';
+import { systemStatusService } from './system-status-service.js';
+import { logger } from '@/utils/logger.js';
+
+/**
+ * Alert rule configuration
+ */
+export interface AlertRule {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  severity: AlertSeverity;
+  condition: {
+    metric: string;
+    operator: '>' | '<' | '>=' | '<=' | '==' | '!=';
+    threshold: number;
+    duration: number; // milliseconds
+    aggregation?: 'avg' | 'max' | 'min' | 'sum';
+  };
+  labels: Record<string, string>;
+  annotations: Record<string, string>;
+  cooldown: number; // milliseconds
+  escalation: {
+    delay: number;
+    severity: AlertSeverity;
+    channels: string[];
+  };
+}
+
+/**
+ * Dashboard configuration
+ */
+export interface DashboardConfig {
+  id: string;
+  name: string;
+  description: string;
+  panels: Array<{
+    id: string;
+    title: string;
+    type: 'metric' | 'chart' | 'table' | 'status' | 'alert';
+    position: { x: number; y: number; w: number; h: number };
+    queries: Array<{
+      metric: string;
+      labels?: Record<string, string>;
+      aggregation?: string;
+      timeRange?: string;
+    }>;
+    thresholds?: Array<{
+      value: number;
+      severity: AlertSeverity;
+      color: string;
+    }>;
+  }>;
+  variables?: Array<{
+    name: string;
+    label: string;
+    type: 'query' | 'constant' | 'interval';
+    values?: string[];
+    query?: string;
+  }>;
+  refreshInterval?: number;
+  timeRange?: {
+    from: string;
+    to: string;
+  };
+}
+
+/**
+ * Incident information
+ */
+export interface Incident {
+  id: string;
+  title: string;
+  description: string;
+  severity: AlertSeverity;
+  status: 'open' | 'acknowledged' | 'resolved' | 'closed';
+  createdAt: Date;
+  acknowledgedAt?: Date;
+  resolvedAt?: Date;
+  closedAt?: Date;
+  assignee?: string;
+  labels: Record<string, string>;
+  annotations: Record<string, string>;
+  alerts: string[]; // Alert IDs
+  timeline: Array<{
+    timestamp: Date;
+    type: 'created' | 'acknowledged' | 'escalated' | 'resolved' | 'closed' | 'updated';
+    message: string;
+    author?: string;
+  }>;
+  runbook?: string;
+  postmortem?: string;
+}
+
+/**
+ * SLO/SLA configuration
+ */
+export interface SLOConfig {
+  id: string;
+  name: string;
+  description: string;
+  service: string;
+  indicator: 'availability' | 'latency' | 'error_rate' | 'throughput';
+  target: number; // percentage or duration
+  timeWindow: {
+    type: 'rolling' | 'calendar';
+    period: string; // 7d, 30d, 90d
+  };
+  alerting: {
+    burnRateAlerts: boolean;
+    alertThresholds: Array<{
+      timeWindow: string;
+      threshold: number;
+      severity: AlertSeverity;
+    }>;
+  };
+  budget: {
+    method: 'occurrences' | 'timeslices';
+    period: string;
+    target: number;
+  };
+}
+
+/**
+ * SRE Dashboard Manager
+ */
+export class SREDashboardManager extends EventEmitter {
+  private alertRules = new Map<string, AlertRule>();
+  private dashboards = new Map<string, DashboardConfig>();
+  private incidents = new Map<string, Incident>();
+  private slos = new Map<string, SLOConfig>();
+  private metrics = new Map<string, unknown>();
+  private alertCooldowns = new Map<string, Date>();
+  private monitoringInterval: NodeJS.Timeout | null = null;
+  private isRunning = false;
+
+  constructor() {
+    super();
+    this.initializeDefaultConfigs();
+  }
+
+  /**
+   * Start monitoring and alerting
+   */
+  startMonitoring(): void {
+    if (this.isRunning) {
+      logger.warn('SRE monitoring already running');
+      return;
+    }
+
+    this.isRunning = true;
+    this.monitoringInterval = setInterval(() => {
+      this.performMonitoringCycle();
+    }, 30000); // 30 seconds
+
+    logger.info('SRE monitoring started');
+    this.emit('monitoring_started');
+  }
+
+  /**
+   * Stop monitoring and alerting
+   */
+  stopMonitoring(): void {
+    if (!this.isRunning) return;
+
+    this.isRunning = false;
+    if (this.monitoringInterval) {
+      clearInterval(this.monitoringInterval);
+      this.monitoringInterval = null;
+    }
+
+    logger.info('SRE monitoring stopped');
+    this.emit('monitoring_stopped');
+  }
+
+  /**
+   * Add or update alert rule
+   */
+  addAlertRule(_rule: AlertRule): void {
+    this.alertRules.set(rule.id, rule);
+    logger.debug('Alert rule added/updated', { ruleId: rule.id, name: rule.name });
+  }
+
+  /**
+   * Remove alert rule
+   */
+  removeAlertRule(_ruleId: string): void {
+    if (this.alertRules.delete(ruleId)) {
+      logger.debug('Alert rule removed', { ruleId });
+    }
+  }
+
+  /**
+   * Add dashboard configuration
+   */
+  addDashboard(_dashboard: DashboardConfig): void {
+    this.dashboards.set(dashboard.id, dashboard);
+    logger.debug('Dashboard added', { dashboardId: dashboard.id, name: dashboard.name });
+  }
+
+  /**
+   * Remove dashboard configuration
+   */
+  removeDashboard(_dashboardId: string): void {
+    if (this.dashboards.delete(dashboardId)) {
+      logger.debug('Dashboard removed', { dashboardId });
+    }
+  }
+
+  /**
+   * Add SLO configuration
+   */
+  addSLO(_slo: SLOConfig): void {
+    this.slos.set(slo.id, slo);
+    logger.debug('SLO added', { sloId: slo.id, name: slo.name });
+  }
+
+  /**
+   * Remove SLO configuration
+   */
+  removeSLO(_sloId: string): void {
+    if (this.slos.delete(sloId)) {
+      logger.debug('SLO removed', { sloId });
+    }
+  }
+
+  /**
+   * Create incident from alert
+   */
+  createIncident(
+    _alertId: string, 
+    _title: string, 
+    _description: string, 
+    severity: AlertSeverity
+  ): Incident {
+    const incident: Incident = {
+      id: this.generateIncidentId(),
+      title,
+      description,
+      severity,
+      status: 'open',
+      createdAt: new Date(),
+      labels: {
+        'alert.id': alertId,
+        severity: severity,
+        source: 'sre-dashboards',
+      },
+      annotations: {},
+      alerts: [alertId],
+      timeline: [
+        {
+          timestamp: new Date(),
+          type: 'created',
+          message: `Incident created from alert: ${title}`,
+        },
+      ],
+    };
+
+    this.incidents.set(incident.id, incident);
+    this.emit('incident_created', incident);
+
+    logger.warn('Incident created', {
+      incidentId: incident.id,
+      title,
+      severity,
+    });
+
+    return incident;
+  }
+
+  /**
+   * Acknowledge incident
+   */
+  acknowledgeIncident(_incidentId: string,  assignee?: string): void {
+    const incident = this.incidents.get(incidentId);
+    if (!incident) {
+      logger.warn('Incident not found for acknowledgment', { incidentId });
+      return;
+    }
+
+    incident.status = 'acknowledged';
+    incident.acknowledgedAt = new Date();
+    if (_assignee) {
+      incident.assignee = assignee;
+    }
+
+    incident.timeline.push({
+      timestamp: new Date(),
+      type: 'acknowledged',
+      message: `Incident acknowledged${assignee ? ` by ${assignee}` : ''}`,
+      author: assignee,
+    });
+
+    this.emit('incident_acknowledged', incident);
+    logger.info('Incident acknowledged', { incidentId, assignee });
+  }
+
+  /**
+   * Resolve incident
+   */
+  resolveIncident(_incidentId: string,  _resolution: string): void {
+    const incident = this.incidents.get(incidentId);
+    if (!incident) {
+      logger.warn('Incident not found for resolution', { incidentId });
+      return;
+    }
+
+    incident.status = 'resolved';
+    incident.resolvedAt = new Date();
+    incident.annotations.resolution = resolution;
+
+    incident.timeline.push({
+      timestamp: new Date(),
+      type: 'resolved',
+      message: `Incident resolved: ${resolution}`,
+    });
+
+    this.emit('incident_resolved', incident);
+    logger.info('Incident resolved', { incidentId, resolution });
+  }
+
+  /**
+   * Get dashboard data
+   */
+  getDashboardData(_dashboardId: string): unknown {
+    const dashboard = this.dashboards.get(dashboardId);
+    if (!dashboard) {
+      throw new Error(`Dashboard not found: ${dashboardId}`);
+    }
+
+    return {
+      dashboard,
+      data: this.collectMetricsForDashboard(dashboard),
+      timestamp: new Date(),
+    };
+  }
+
+  /**
+   * Get system overview dashboard
+   */
+  getSystemOverview(): unknown {
+    const systemStatus = systemStatusService.getSystemStatus();
+    const tracerMetrics = openTelemetryTracer.getMetrics();
+
+    return {
+      summary: {
+        status: systemStatus?.status || HealthStatus.UNKNOWN,
+        degraded: systemStatus?.degraded || false,
+        components: systemStatus?.components?.length || 0,
+        healthyComponents:
+          systemStatus?.components?.filter((c) => c.status === HealthStatus.HEALTHY).length || 0,
+        activeIncidents: Array.from(this.incidents.values()).filter(
+          (i) => i.status !== 'resolved' && i.status !== 'closed'
+        ).length,
+        activeAlerts: this.getActiveAlertsCount(),
+      },
+      metrics: {
+        uptime: systemStatus?.uptime_seconds || 0,
+        traces: tracerMetrics.spansCreated,
+        errors: tracerMetrics.errorsRecorded,
+        avgLatency: tracerMetrics.averageLatency,
+        memoryUsage: systemStatus?.system_metrics?.memory_usage_mb || 0,
+      },
+      incidents: Array.from(this.incidents.values())
+        .filter((i) => i.status !== 'resolved' && i.status !== 'closed')
+        .sort((a,  _b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, 10),
+      alerts: this.getActiveAlerts().slice(0, 10),
+      slos: this.getSLOStatus(),
+      lastUpdated: new Date(),
+    };
+  }
+
+  /**
+   * Get SRE metrics for monitoring
+   */
+  getSREMetrics(): unknown {
+    const now = Date.now();
+    const last24Hours = now - 24 * 60 * 60 * 1000;
+
+    return {
+      incidents: {
+        total: this.incidents.size,
+        open: Array.from(this.incidents.values()).filter((i) => i.status === 'open').length,
+        acknowledged: Array.from(this.incidents.values()).filter((i) => i.status === 'acknowledged')
+          .length,
+        resolved: Array.from(this.incidents.values()).filter((i) => i.status === 'resolved').length,
+        last24h: Array.from(this.incidents.values()).filter(
+          (i) => i.createdAt.getTime() > last24Hours
+        ).length,
+        mttr: this.calculateMTTR(),
+      },
+      alerts: {
+        total: this.alertRules.size,
+        active: this.getActiveAlertsCount(),
+        fired: this.metrics.get('alerts.fired') || 0,
+        suppressed: this.metrics.get('alerts.suppressed') || 0,
+      },
+      slos: {
+        total: this.slos.size,
+        compliant: Array.from(this.slos.values()).filter((slo) => this.isSLOCompliant(slo.id))
+          .length,
+        violations: Array.from(this.slos.values()).filter((slo) => !this.isSLOCompliant(slo.id))
+          .length,
+      },
+      dashboards: {
+        total: this.dashboards.size,
+        active: this.dashboards.size, // All dashboards are considered active
+      },
+      health: {
+        overall: systemStatusService.getSystemStatus()?.status || HealthStatus.UNKNOWN,
+        components: systemStatusService.getSystemStatus()?.components?.length || 0,
+        healthy:
+          systemStatusService
+            .getSystemStatus()
+            ?.components?.filter((c) => c.status === HealthStatus.HEALTHY).length || 0,
+        degraded:
+          systemStatusService
+            .getSystemStatus()
+            ?.components?.filter((c) => c.status === HealthStatus.DEGRADED).length || 0,
+      },
+    };
+  }
+
+  // Private methods
+
+  private initializeDefaultConfigs(): void {
+    // Initialize default alert rules
+    this.addAlertRule({
+      id: 'system-unhealthy',
+      name: 'System Unhealthy',
+      description: 'System health check failed',
+      enabled: true,
+      severity: AlertSeverity.CRITICAL,
+      condition: {
+        metric: 'system.health.status',
+        operator: '!=',
+        threshold: 1, // 1 = healthy
+        duration: 60000, // 1 minute
+      },
+      labels: {
+        service: 'system',
+        component: 'health',
+      },
+      annotations: {
+        description: 'System health check has failed. Immediate attention required.',
+        runbook: 'https://docs.cortex.ai/runbooks/system-health',
+      },
+      cooldown: 300000, // 5 minutes
+      escalation: {
+        delay: 600000, // 10 minutes
+        severity: AlertSeverity.EMERGENCY,
+        channels: ['pagerduty', 'slack', 'email'],
+      },
+    });
+
+    this.addAlertRule({
+      id: 'high-error-rate',
+      name: 'High Error Rate',
+      description: 'Error rate exceeds threshold',
+      enabled: true,
+      severity: AlertSeverity.WARNING,
+      condition: {
+        metric: 'system.error_rate',
+        operator: '>',
+        threshold: 5, // 5%
+        duration: 300000, // 5 minutes
+        aggregation: 'avg',
+      },
+      labels: {
+        service: 'system',
+        metric: 'error_rate',
+      },
+      annotations: {
+        description: 'System error rate is above acceptable threshold.',
+        runbook: 'https://docs.cortex.ai/runbooks/error-rate',
+      },
+      cooldown: 600000, // 10 minutes
+      escalation: {
+        delay: 1800000, // 30 minutes
+        severity: AlertSeverity.CRITICAL,
+        channels: ['slack', 'email'],
+      },
+    });
+
+    this.addAlertRule({
+      id: 'memory-usage-high',
+      name: 'High Memory Usage',
+      description: 'Memory usage exceeds threshold',
+      enabled: true,
+      severity: AlertSeverity.WARNING,
+      condition: {
+        metric: 'system.memory_usage_mb',
+        operator: '>',
+        threshold: 4096, // 4GB
+        duration: 300000, // 5 minutes
+        aggregation: 'avg',
+      },
+      labels: {
+        service: 'system',
+        metric: 'memory_usage',
+      },
+      annotations: {
+        description: 'Memory usage is above threshold. Monitor for memory leaks.',
+        runbook: 'https://docs.cortex.ai/runbooks/memory-usage',
+      },
+      cooldown: 600000, // 10 minutes
+      escalation: {
+        delay: 1800000, // 30 minutes
+        severity: AlertSeverity.CRITICAL,
+        channels: ['slack'],
+      },
+    });
+
+    // Initialize default dashboards
+    this.addDashboard({
+      id: 'system-overview',
+      name: 'System Overview',
+      description: 'High-level system health and performance metrics',
+      panels: [
+        {
+          id: 'system-status',
+          title: 'System Status',
+          type: 'status',
+          position: { x: 0, y: 0, w: 12, h: 6 },
+          queries: [
+            {
+              metric: 'system.health.status',
+              labels: { service: 'mcp-cortex' },
+            },
+          ],
+        },
+        {
+          id: 'component-health',
+          title: 'Component Health',
+          type: 'table',
+          position: { x: 12, y: 0, w: 12, h: 6 },
+          queries: [
+            {
+              metric: 'component.health.status',
+              labels: {},
+            },
+          ],
+        },
+        {
+          id: 'request-rate',
+          title: 'Request Rate',
+          type: 'chart',
+          position: { x: 0, y: 6, w: 8, h: 6 },
+          queries: [
+            {
+              metric: 'http.requests.rate',
+              labels: { service: 'mcp-cortex' },
+              timeRange: '1h',
+            },
+          ],
+          thresholds: [
+            { value: 100, severity: AlertSeverity.WARNING, color: 'yellow' },
+            { value: 500, severity: AlertSeverity.CRITICAL, color: 'red' },
+          ],
+        },
+        {
+          id: 'error-rate',
+          title: 'Error Rate',
+          type: 'chart',
+          position: { x: 8, y: 6, w: 8, h: 6 },
+          queries: [
+            {
+              metric: 'http.errors.rate',
+              labels: { service: 'mcp-cortex' },
+              timeRange: '1h',
+            },
+          ],
+          thresholds: [
+            { value: 5, severity: AlertSeverity.WARNING, color: 'yellow' },
+            { value: 10, severity: AlertSeverity.CRITICAL, color: 'red' },
+          ],
+        },
+        {
+          id: 'response-time',
+          title: 'Response Time',
+          type: 'chart',
+          position: { x: 16, y: 6, w: 8, h: 6 },
+          queries: [
+            {
+              metric: 'http.response.time',
+              labels: { service: 'mcp-cortex' },
+              aggregation: 'p95',
+              timeRange: '1h',
+            },
+          ],
+          thresholds: [
+            { value: 500, severity: AlertSeverity.WARNING, color: 'yellow' },
+            { value: 1000, severity: AlertSeverity.CRITICAL, color: 'red' },
+          ],
+        },
+        {
+          id: 'memory-usage',
+          title: 'Memory Usage',
+          type: 'chart',
+          position: { x: 0, y: 12, w: 12, h: 6 },
+          queries: [
+            {
+              metric: 'process.memory.heap_used',
+              labels: { service: 'mcp-cortex' },
+              timeRange: '1h',
+            },
+          ],
+          thresholds: [
+            { value: 2048, severity: AlertSeverity.WARNING, color: 'yellow' },
+            { value: 4096, severity: AlertSeverity.CRITICAL, color: 'red' },
+          ],
+        },
+        {
+          id: 'active-incidents',
+          title: 'Active Incidents',
+          type: 'alert',
+          position: { x: 12, y: 12, w: 12, h: 6 },
+          queries: [
+            {
+              metric: 'incidents.active',
+              labels: { status: 'open,acknowledged' },
+            },
+          ],
+        },
+      ],
+      refreshInterval: 30000, // 30 seconds
+      timeRange: {
+        from: 'now-1h',
+        to: 'now',
+      },
+    });
+
+    // Initialize default SLOs
+    this.addSLO({
+      id: 'api-availability',
+      name: 'API Availability',
+      description: 'API service availability SLO',
+      service: 'mcp-cortex-api',
+      indicator: 'availability',
+      target: 99.9, // 99.9%
+      timeWindow: {
+        type: 'rolling',
+        period: '30d',
+      },
+      alerting: {
+        burnRateAlerts: true,
+        alertThresholds: [
+          { timeWindow: '1h', threshold: 14.4, severity: AlertSeverity.CRITICAL }, // 5% of 30d budget in 1h
+          { timeWindow: '6h', threshold: 6, severity: AlertSeverity.WARNING }, // 5% of 30d budget in 6h
+          { timeWindow: '24h', threshold: 2.5, severity: AlertSeverity.WARNING }, // 5% of 30d budget in 24h
+        ],
+      },
+      budget: {
+        method: 'timeslices',
+        period: '30d',
+        target: 99.9,
+      },
+    });
+
+    this.addSLO({
+      id: 'api-latency',
+      name: 'API Latency',
+      description: 'API response time SLO',
+      service: 'mcp-cortex-api',
+      indicator: 'latency',
+      target: 500, // 500ms
+      timeWindow: {
+        type: 'rolling',
+        period: '30d',
+      },
+      alerting: {
+        burnRateAlerts: true,
+        alertThresholds: [
+          { timeWindow: '1h', threshold: 10, severity: AlertSeverity.WARNING },
+          { timeWindow: '6h', threshold: 5, severity: AlertSeverity.CRITICAL },
+        ],
+      },
+      budget: {
+        method: 'occurrences',
+        period: '30d',
+        target: 95, // 95% of requests under 500ms
+      },
+    });
+  }
+
+  private performMonitoringCycle(): void {
+    try {
+      this.collectMetrics();
+      this.evaluateAlertRules();
+      this.updateSLOStatus();
+    } catch (error) {
+      logger.error('Monitoring cycle failed', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  private collectMetrics(): void {
+    const systemStatus = systemStatusService.getSystemStatus();
+    const tracerMetrics = openTelemetryTracer.getMetrics();
+
+    // Store system metrics
+    this.metrics.set('system.health.status', systemStatus?.status === HealthStatus.HEALTHY ? 1 : 0);
+    this.metrics.set('system.uptime_seconds', systemStatus?.uptime_seconds || 0);
+    this.metrics.set('system.components.total', systemStatus?.components?.length || 0);
+    this.metrics.set(
+      'system.components.healthy', 
+      systemStatus?.components?.filter((c) => c.status === HealthStatus.HEALTHY).length || 0
+    );
+    this.metrics.set('system.memory_usage_mb', systemStatus?.system_metrics?.memory_usage_mb || 0);
+    this.metrics.set('system.error_rate', this.calculateOverallErrorRate());
+
+    // Store tracing metrics
+    this.metrics.set('traces.spans.created', tracerMetrics.spansCreated);
+    this.metrics.set('traces.spans.ended', tracerMetrics.spansEnded);
+    this.metrics.set('traces.errors.recorded', tracerMetrics.errorsRecorded);
+    this.metrics.set('traces.avg_latency', tracerMetrics.averageLatency);
+
+    // Store incident metrics
+    const activeIncidents = Array.from(this.incidents.values()).filter(
+      (i) => i.status !== 'resolved' && i.status !== 'closed'
+    );
+    this.metrics.set('incidents.active', activeIncidents.length);
+    this.metrics.set('incidents.open',  activeIncidents.filter((i) => i.status === 'open').length);
+    this.metrics.set(
+      'incidents.acknowledged', 
+      activeIncidents.filter((i) => i.status === 'acknowledged').length
+    );
+  }
+
+  private evaluateAlertRules(): void {
+    const now = Date.now();
+
+    for (const [ruleId,  rule] of this.alertRules) {
+      if (!rule.enabled) continue;
+
+      // Check cooldown
+      const lastAlert = this.alertCooldowns.get(ruleId);
+      if (lastAlert && now - lastAlert.getTime() < rule.cooldown) {
+        continue;
+      }
+
+      // Evaluate rule condition
+      const currentValue = this.getMetricValue(rule.condition.metric);
+      const threshold = rule.condition.threshold;
+      let triggered = false;
+
+      switch (rule.condition.operator) {
+        case '>':
+          triggered = currentValue > threshold;
+          break;
+        case '<':
+          triggered = currentValue < threshold;
+          break;
+        case '>=':
+          triggered = currentValue >= threshold;
+          break;
+        case '<=':
+          triggered = currentValue <= threshold;
+          break;
+        case '==':
+          triggered = currentValue === threshold;
+          break;
+        case '!=':
+          triggered = currentValue !== threshold;
+          break;
+      }
+
+      if (_triggered) {
+        this.fireAlert(rule, currentValue);
+        this.alertCooldowns.set(ruleId, new Date());
+      }
+    }
+  }
+
+  private fireAlert(_rule: AlertRule,  _currentValue: number): void {
+    const alertId = this.generateAlertId();
+
+    // Record metrics
+    this.metrics.set('alerts.fired', (this.metrics.get('alerts.fired') || 0) + 1);
+
+    // Create incident if severity is high enough
+    if (rule.severity === AlertSeverity.CRITICAL || rule.severity === AlertSeverity.EMERGENCY) {
+      this.createIncident(
+        alertId,
+        rule.name,
+        `${rule.description}. Current value: ${currentValue}, Threshold: ${rule.condition.threshold}`,
+        rule.severity
+      );
+    }
+
+    // Emit alert event
+    this.emit('alert_fired', {
+      id: alertId,
+      ruleId: rule.id,
+      rule: rule.name,
+      severity: rule.severity,
+      currentValue,
+      threshold: rule.condition.threshold,
+      labels: rule.labels,
+      annotations: rule.annotations,
+      timestamp: new Date(),
+    });
+
+    logger.warn('Alert fired', {
+      alertId,
+      ruleId: rule.id,
+      ruleName: rule.name,
+      severity: rule.severity,
+      currentValue,
+      threshold: rule.condition.threshold,
+    });
+
+    // Schedule escalation if configured
+    if (rule.escalation) {
+      setTimeout(() => {
+        this.escalateAlert(rule, alertId);
+      }, rule.escalation.delay);
+    }
+  }
+
+  private escalateAlert(_rule: AlertRule,  _alertId: string): void {
+    this.emit('alert_escalated', {
+      alertId,
+      ruleId: rule.id,
+      ruleName: rule.name,
+      escalation: rule.escalation,
+      timestamp: new Date(),
+    });
+
+    logger.warn('Alert escalated', {
+      alertId,
+      ruleId: rule.id,
+      ruleName: rule.name,
+      escalationSeverity: rule.escalation.severity,
+    });
+  }
+
+  private updateSLOStatus(): void {
+    for (const [sloId,  slo] of this.slos) {
+      const compliance = this.calculateSLOCompliance(slo);
+      this.metrics.set(`slo.${sloId}.compliance`, compliance);
+      this.metrics.set(`slo.${sloId}.status`, compliance >= slo.target ? 'compliant' : 'violating');
+
+      // Check burn rate alerts
+      if (slo.alerting.burnRateAlerts) {
+        this.checkBurnRateAlerts(slo, compliance);
+      }
+    }
+  }
+
+  private checkBurnRateAlerts(_slo: SLOConfig,  _compliance: number): void {
+    for (const threshold of slo.alerting.alertThresholds) {
+      const burnRate = this.calculateBurnRate(slo, threshold.timeWindow);
+
+      if (burnRate > threshold.threshold) {
+        this.emit('slo_burn_rate_alert', {
+          sloId: slo.id,
+          sloName: slo.name,
+          timeWindow: threshold.timeWindow,
+          burnRate,
+          threshold: threshold.threshold,
+          severity: threshold.severity,
+          compliance,
+          timestamp: new Date(),
+        });
+
+        logger.warn('SLO burn rate alert', {
+          sloId: slo.id,
+          sloName: slo.name,
+          burnRate,
+          threshold: threshold.threshold,
+        });
+      }
+    }
+  }
+
+  private getMetricValue(_metric: string): number {
+    return this.metrics.get(metric) || 0;
+  }
+
+  private calculateOverallErrorRate(): number {
+    const systemStatus = systemStatusService.getSystemStatus();
+    if (!systemStatus?.components) return 0;
+
+    const totalErrorRate = systemStatus.components.reduce(
+      (sum,  _component) => sum + component.error_rate,
+      0
+    );
+    return totalErrorRate / systemStatus.components.length;
+  }
+
+  private calculateMTTR(): number {
+    const resolvedIncidents = Array.from(this.incidents.values()).filter(
+      (i) => i.status === 'resolved'
+    );
+    if (resolvedIncidents.length === 0) return 0;
+
+    const totalResolutionTime = resolvedIncidents.reduce((sum,  _incident) => {
+      if (incident.createdAt && incident.resolvedAt) {
+        return sum + (incident.resolvedAt.getTime() - incident.createdAt.getTime());
+      }
+      return sum;
+    }, 0);
+
+    return totalResolutionTime / resolvedIncidents.length / (1000 * 60); // in minutes
+  }
+
+  private getActiveAlertsCount(): number {
+    return this.metrics.get('alerts.fired') || 0;
+  }
+
+  private getActiveAlerts(): Array<{
+    id: string;
+    rule: string;
+    severity: AlertSeverity;
+    message: string;
+    timestamp: Date;
+  }> {
+    // Return mock active alerts for now
+    return [];
+  }
+
+  private getSLOStatus(): Array<{
+    id: string;
+    name: string;
+    status: 'compliant' | 'violating';
+    compliance: number;
+    target: number;
+  }> {
+    return Array.from(this.slos.values()).map((slo) => ({
+      id: slo.id,
+      name: slo.name,
+      status: this.isSLOCompliant(slo.id) ? 'compliant' : 'violating',
+      compliance: this.calculateSLOCompliance(slo),
+      target: slo.target,
+    }));
+  }
+
+  private isSLOCompliant(_sloId: string): boolean {
+    const compliance = this.metrics.get(`slo.${sloId}.compliance`) || 0;
+    const slo = this.slos.get(sloId);
+    return compliance >= (slo?.target || 0);
+  }
+
+  private calculateSLOCompliance(_slo: SLOConfig): number {
+    // Mock calculation - would use actual metrics
+    switch (slo.indicator) {
+      case 'availability':
+        return 99.95; // Mock compliance
+      case 'latency':
+        return 480; // Mock latency in ms
+      case 'error_rate':
+        return 0.5; // Mock error rate %
+      case 'throughput':
+        return 95; // Mock throughput %
+      default:
+        return 0;
+    }
+  }
+
+  private calculateBurnRate(_slo: SLOConfig,  _timeWindow: string): number {
+    // Mock burn rate calculation
+    // Burn rate = (error budget consumed) / (time elapsed / total time window)
+    return Math.random() * 10; // Mock value
+  }
+
+  private collectMetricsForDashboard(_dashboard: DashboardConfig): unknown {
+    const panelData: unknown = {};
+
+    for (const panel of dashboard.panels) {
+      panelData[panel.id] = panel.queries.map((query) => ({
+        query,
+        value: this.getMetricValue(query.metric),
+        timestamp: new Date(),
+      }));
+    }
+
+    return panelData;
+  }
+
+  private generateIncidentId(): string {
+    return `inc_${Date.now()}_${String(Math.random().toString(36).substr(2, 9))}`;
+  }
+
+  private generateAlertId(): string {
+    return `alert_${Date.now()}_${String(Math.random().toString(36).substr(2, 9))}`;
+  }
+}
+
+/**
+ * Global SRE dashboard manager instance
+ */
+export const sreDashboardManager = new SREDashboardManager();
+
+/**
+ * Dashboard API endpoints for integration with monitoring systems
+ */
+export class DashboardAPI {
+  constructor(private manager: SREDashboardManager) {}
+
+  /**
+   * Get system overview
+   */
+  getSystemOverview(_req: unknown,  _res: unknown): void {
+    try {
+      const overview = this.manager.getSystemOverview();
+      res.json({
+        status: 'success',
+        data: overview,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * Get dashboard data
+   */
+  getDashboard(_req: unknown,  _res: unknown): void {
+    try {
+      const { dashboardId } = req.params;
+      const data = this.manager.getDashboardData(dashboardId);
+      res.json({
+        status: 'success',
+        data,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * Get SRE metrics
+   */
+  getSREMetrics(_req: unknown,  _res: unknown): void {
+    try {
+      const metrics = this.manager.getSREMetrics();
+      res.json({
+        status: 'success',
+        data: metrics,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * Create incident
+   */
+  createIncident(_req: unknown,  _res: unknown): void {
+    try {
+      const { title, description, severity, alertId } = req.body;
+      const incident = this.manager.createIncident(alertId, title, description, severity);
+      res.status(201).json({
+        status: 'success',
+        data: incident,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * Acknowledge incident
+   */
+  acknowledgeIncident(_req: unknown,  _res: unknown): void {
+    try {
+      const { incidentId } = req.params;
+      const { assignee } = req.body;
+      this.manager.acknowledgeIncident(incidentId, assignee);
+      res.json({
+        status: 'success',
+        message: 'Incident acknowledged',
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * Resolve incident
+   */
+  resolveIncident(_req: unknown,  _res: unknown): void {
+    try {
+      const { incidentId } = req.params;
+      const { resolution } = req.body;
+      this.manager.resolveIncident(incidentId, resolution);
+      res.json({
+        status: 'success',
+        message: 'Incident resolved',
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+}
+
+// Export API instance
+export const dashboardAPI = new DashboardAPI(sreDashboardManager);

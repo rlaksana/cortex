@@ -1,0 +1,493 @@
+/**
+ * Audit Logger - P0-CRITICAL Implementation
+ *
+ * Comprehensive audit logging for service operations.
+ * Tracks all service calls, security events, and system changes.
+ *
+ * @author Cortex Team
+ * @version 2.0.1
+ * @since 2025
+ */
+
+import { asRecord } from '../../types/type-guards.js';
+import { logger } from '../../utils/logger.js';
+import type { SecurityEvent } from './access-controller.js';
+import type { ServiceRequestContext, ServiceResponse } from './service-layer-router.js';
+
+/**
+ * Audit log entry
+ */
+export interface AuditLogEntry {
+  id: string;
+  timestamp: Date;
+  type: 'service_call' | 'security_event' | 'system_change' | 'error';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  service?: string;
+  operation?: string;
+  user?: string;
+  requestId?: string;
+  duration?: number;
+  success?: boolean;
+  details: Record<string, unknown>;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+/**
+ * Audit log statistics
+ */
+export interface AuditStatistics {
+  totalEntries: number;
+  entriesByType: Record<string, number>;
+  entriesBySeverity: Record<string, number>;
+  entriesByService: Record<string, number>;
+  averageDuration: number;
+  successRate: number;
+  topUsers: Array<{ userId: string; count: number }>;
+  topOperations: Array<{ operation: string; count: number }>;
+}
+
+/**
+ * Audit Logger - Comprehensive audit trail
+ */
+export class AuditLogger {
+  private static instance: AuditLogger;
+  private auditLog: AuditLogEntry[] = [];
+  private maxLogEntries = 10000; // Keep last 10k entries
+  private isInitialized = false;
+
+  private constructor() {}
+
+  public static getInstance(): AuditLogger {
+    if (!AuditLogger.instance) {
+      AuditLogger.instance = new AuditLogger();
+    }
+    return AuditLogger.instance;
+  }
+
+  /**
+   * Initialize audit logger
+   */
+  public async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
+
+    try {
+      logger.info('Initializing Audit Logger...');
+
+      // Setup log rotation
+      this.setupLogRotation();
+
+      this.isInitialized = true;
+      logger.info('Audit Logger initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize Audit Logger:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Log service call
+   */
+  public async logServiceCall(
+    context: ServiceRequestContext,
+    response: ServiceResponse
+  ): Promise<void> {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: new Date(),
+      type: 'service_call',
+      severity: this.determineSeverity(response),
+      service: context.service,
+      operation: context.operation,
+      user: context.user?.id,
+      requestId: context.id,
+      duration: response.metadata?.executionTime,
+      success: response.success,
+      details: {
+        parameters: this.sanitizeParameters(context.parameters),
+        responseError: response.error,
+        accessLevel: context.user?.roles,
+        metadata: context.metadata,
+      },
+    };
+
+    await this.addLogEntry(entry);
+  }
+
+  /**
+   * Log security event
+   */
+  public async logSecurityEvent(event: SecurityEvent): Promise<void> {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: event.timestamp,
+      type: 'security_event',
+      severity: event.severity,
+      service: event.caller,
+      operation: event.operation,
+      user: event.user,
+      details: {
+        eventType: event.type,
+        ...asRecord(event.details),
+      },
+    };
+
+    await this.addLogEntry(entry);
+
+    // Log high-severity security events immediately
+    if (event.severity === 'high' || event.severity === 'critical') {
+      logger.error('High-severity security event:', event);
+    }
+  }
+
+  /**
+   * Log system change
+   */
+  public async logSystemChange(
+    change: string,
+    severity: AuditLogEntry['severity'] = 'medium',
+    details?: Record<string, unknown>
+  ): Promise<void> {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: new Date(),
+      type: 'system_change',
+      severity,
+      details: {
+        change,
+        ...details,
+      },
+    };
+
+    await this.addLogEntry(entry);
+  }
+
+  /**
+   * Log error
+   */
+  public async logError(
+    error: Error,
+    context?: {
+      service?: string;
+      operation?: string;
+      user?: string;
+      requestId?: string;
+    }
+  ): Promise<void> {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: new Date(),
+      type: 'error',
+      severity: 'high',
+      service: context?.service,
+      operation: context?.operation,
+      user: context?.user,
+      requestId: context?.requestId,
+      details: {
+        errorMessage: error.message,
+        errorStack: error.stack,
+        errorName: error.name,
+      },
+    };
+
+    await this.addLogEntry(entry);
+  }
+
+  /**
+   * Get audit log entries with filtering
+   */
+  public getAuditLogs(filter?: {
+    type?: AuditLogEntry['type'];
+    severity?: AuditLogEntry['severity'];
+    service?: string;
+    user?: string;
+    startDate?: Date;
+    endDate?: Date;
+    limit?: number;
+    offset?: number;
+  }): AuditLogEntry[] {
+    let filtered = [...this.auditLog];
+
+    if (_filter) {
+      if (filter.type) {
+        filtered = filtered.filter((entry) => entry.type === filter.type);
+      }
+
+      if (filter.severity) {
+        filtered = filtered.filter((entry) => entry.severity === filter.severity);
+      }
+
+      if (filter.service) {
+        filtered = filtered.filter((entry) => entry.service === filter.service);
+      }
+
+      if (filter.user) {
+        filtered = filtered.filter((entry) => entry.user === filter.user);
+      }
+
+      if (filter.startDate) {
+        filtered = filtered.filter((entry) => entry.timestamp >= filter.startDate!);
+      }
+
+      if (filter.endDate) {
+        filtered = filtered.filter((entry) => entry.timestamp <= filter.endDate!);
+      }
+
+      if (filter.offset) {
+        filtered = filtered.slice(filter.offset);
+      }
+
+      if (filter.limit) {
+        filtered = filtered.slice(0, filter.limit);
+      }
+    }
+
+    // Sort by timestamp descending (newest first)
+    return filtered.sort((a,  _b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
+  /**
+   * Get audit statistics
+   */
+  public getAuditStatistics(filter?: { startDate?: Date; endDate?: Date }): AuditStatistics {
+    let entries = this.auditLog;
+
+    if (_filter) {
+      if (filter.startDate) {
+        entries = entries.filter((entry) => entry.timestamp >= filter.startDate!);
+      }
+
+      if (filter.endDate) {
+        entries = entries.filter((entry) => entry.timestamp <= filter.endDate!);
+      }
+    }
+
+    const entriesByType: Record<string, number> = {};
+    const entriesBySeverity: Record<string, number> = {};
+    const entriesByService: Record<string, number> = {};
+    const userCounts: Record<string, number> = {};
+    const operationCounts: Record<string, number> = {};
+    let totalDuration = 0;
+    let durationCount = 0;
+    let successCount = 0;
+    let totalServiceCalls = 0;
+
+    for (const entry of entries) {
+      // Count by type
+      entriesByType[entry.type] = (entriesByType[entry.type] || 0) + 1;
+
+      // Count by severity
+      entriesBySeverity[entry.severity] = (entriesBySeverity[entry.severity] || 0) + 1;
+
+      // Count by service
+      if (entry.service) {
+        entriesByService[entry.service] = (entriesByService[entry.service] || 0) + 1;
+      }
+
+      // Count by user
+      if (entry.user) {
+        userCounts[entry.user] = (userCounts[entry.user] || 0) + 1;
+      }
+
+      // Count by operation
+      if (entry.operation) {
+        operationCounts[entry.operation] = (operationCounts[entry.operation] || 0) + 1;
+      }
+
+      // Calculate duration and success rate for service calls
+      if (entry.type === 'service_call') {
+        totalServiceCalls++;
+
+        if (entry.duration !== undefined) {
+          totalDuration += entry.duration;
+          durationCount++;
+        }
+
+        if (entry.success) {
+          successCount++;
+        }
+      }
+    }
+
+    // Get top users and operations
+    const topUsers = Object.entries(userCounts)
+      .sort(([,  a],  [,  b]) => b - a)
+      .slice(0, 10)
+      .map(([userId,  count]) => ({ userId, count }));
+
+    const topOperations = Object.entries(operationCounts)
+      .sort(([,  a],  [,  b]) => b - a)
+      .slice(0, 10)
+      .map(([operation,  count]) => ({ operation, count }));
+
+    return {
+      totalEntries: entries.length,
+      entriesByType,
+      entriesBySeverity,
+      entriesByService,
+      averageDuration: durationCount > 0 ? totalDuration / durationCount : 0,
+      successRate: totalServiceCalls > 0 ? successCount / totalServiceCalls : 1,
+      topUsers,
+      topOperations,
+    };
+  }
+
+  /**
+   * Export audit logs to JSON
+   */
+  public exportAuditLogs(filter?: {
+    startDate?: Date;
+    endDate?: Date;
+    type?: AuditLogEntry['type'];
+  }): string {
+    const entries = this.getAuditLogs(filter);
+    return JSON.stringify(
+      {
+        exportDate: new Date().toISOString(),
+        totalEntries: entries.length,
+        entries: entries.map((entry) => ({
+          ...entry,
+          timestamp: entry.timestamp.toISOString(),
+        })),
+      },
+      null,
+      2
+    );
+  }
+
+  /**
+   * Clear audit logs
+   */
+  public clearAuditLogs(): void {
+    this.auditLog = [];
+    logger.info('Audit logs cleared');
+  }
+
+  /**
+   * Shutdown audit logger
+   */
+  public async shutdown(): Promise<void> {
+    this.auditLog = [];
+    this.isInitialized = false;
+    logger.info('Audit Logger shutdown completed');
+  }
+
+  // Private methods
+
+  private async addLogEntry(entry: AuditLogEntry): Promise<void> {
+    this.auditLog.push(entry);
+
+    // Maintain log size limit
+    if (this.auditLog.length > this.maxLogEntries) {
+      this.auditLog = this.auditLog.slice(-this.maxLogEntries);
+    }
+
+    // Log to system logger for immediate visibility
+    const logLevel = this.getLogLevel(entry.severity);
+    logger[logLevel](`Audit: ${entry.type}`, {
+      id: entry.id,
+      service: entry.service,
+      operation: entry.operation,
+      user: entry.user,
+      success: entry.success,
+      duration: entry.duration,
+    });
+  }
+
+  private generateId(): string {
+    return `audit_${Date.now()}_${String(Math.random().toString(36).substr(2, 9))}`;
+  }
+
+  private determineSeverity(_response: ServiceResponse): AuditLogEntry['severity'] {
+    if (!response.success) {
+      return 'high';
+    }
+
+    if (response.metadata && response.metadata.executionTime > 5000) {
+      return 'medium'; // Slow operations
+    }
+
+    return 'low';
+  }
+
+  private sanitizeParameters(parameters: Record<string, unknown>): Record<string, unknown> {
+    const sanitized: Record<string, unknown> = {};
+    const sensitiveKeys = ['password', 'token', 'secret', 'key', 'auth'];
+
+    for (const [key, value] of Object.entries(parameters)) {
+      const lowerKey = key.toLowerCase();
+      if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
+        sanitized[key] = '[REDACTED]';
+      } else if (typeof value === 'object' && value !== null) {
+        // Deep sanitize nested objects
+        sanitized[key] = this.sanitizeObject(value);
+      } else {
+        sanitized[key] = value;
+      }
+    }
+
+    return sanitized;
+  }
+
+  private sanitizeObject(_obj: unknown): unknown {
+    if (Array.isArray(obj)) {
+      return obj.map((item) => this.sanitizeObject(item));
+    }
+
+    if (typeof obj === 'object' && obj !== null) {
+      const sanitized: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(obj)) {
+        const lowerKey = key.toLowerCase();
+        const sensitiveKeys = ['password', 'token', 'secret', 'key', 'auth'];
+
+        if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
+          sanitized[key] = '[REDACTED]';
+        } else if (typeof value === 'object' && value !== null) {
+          sanitized[key] = this.sanitizeObject(value);
+        } else {
+          sanitized[key] = value;
+        }
+      }
+      return sanitized;
+    }
+
+    return obj;
+  }
+
+  private getLogLevel(severity: AuditLogEntry['severity']): 'error' | 'warn' | 'info' | 'debug' {
+    switch (_severity) {
+      case 'critical':
+      case 'high':
+        return 'error';
+      case 'medium':
+        return 'warn';
+      case 'low':
+        return 'info';
+      default:
+        return 'debug';
+    }
+  }
+
+  private setupLogRotation(): void {
+    // Rotate logs daily (remove entries older than 30 days)
+    setInterval(
+      () => {
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const initialCount = this.auditLog.length;
+
+        this.auditLog = this.auditLog.filter((entry) => entry.timestamp > thirtyDaysAgo);
+
+        const removedCount = initialCount - this.auditLog.length;
+        if (removedCount > 0) {
+          logger.info(`Audit log rotation completed: removed ${removedCount} old entries`);
+        }
+      },
+      24 * 60 * 60 * 1000
+    ); // Run daily
+  }
+}
+
+// Export singleton instance
+export const auditLogger = AuditLogger.getInstance();

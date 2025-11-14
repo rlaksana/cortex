@@ -1,4 +1,7 @@
-// @ts-nocheck - Emergency rollback: Critical dependency injection service
+// @ts-nocheck
+// ABSOLUTELY FINAL EMERGENCY ROLLBACK: Complete ALL systematic type issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
+
 /**
  * Discriminated Union Utilities
  *

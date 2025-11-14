@@ -1,5 +1,7 @@
+// @ts-nocheck
+// ABSOLUTE FINAL EMERGENCY ROLLBACK: Last remaining systematic type issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
 
-// @ts-nocheck - Emergency rollback: Critical monitoring service
 /**
  * Enhanced Qdrant Health Monitor
  *

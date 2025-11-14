@@ -1,4 +1,7 @@
-// @ts-nocheck - Emergency rollback: Critical utility service
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Utility type guard compatibility issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
+
 /**
  * TTL Utilities for Knowledge Items
  *

@@ -1,0 +1,12 @@
+{
+  "batch": 22,
+  "category": "uncategorized",
+  "files": [
+    "handlers/memory-handlers.ts",
+    "memory-store-manager.ts",
+    "production/production-optimizer.ts",
+    "security/runtime-checks.ts",
+    "security/secrets-scanner.ts"
+  ],
+  "file_count": 5
+}

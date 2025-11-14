@@ -1,0 +1,93 @@
+/**
+ * Memory DI Module
+ *
+ * Defines memory management and storage services.
+ * Handles Cortex memory operations and services.
+ *
+ * @author Cortex Team
+ * @version 3.0.0
+ * @since 2025
+ */
+
+import { MemoryFindService } from '../../services/memory/memory-find-service.js';
+import { MemoryManager } from '../../services/memory/memory-manager.js';
+import { MemoryStoreService } from '../../services/memory/memory-store-service.js';
+import { Module } from '../decorators.js';
+import { ServiceLifetime, ServicePriority } from '../enhanced-di-container.js';
+// TODO: MemoryInitializationService needs to be implemented as a class
+// import { MemoryInitializationService } from '../../services/memory/memory-initialization.js';
+
+/**
+ * Memory module providing Cortex memory services
+ */
+@Module({
+  name: 'MemoryModule', 
+  _imports: [],  // Dependencies on CoreModule and DatabaseModule are implicit
+  providers: [
+    {
+      token: 'MEMORY_MANAGER', 
+      _implementation: undefined as unknown, 
+      _factory: () => MemoryManager.getInstance(),
+      lifetime: ServiceLifetime.SINGLETON,
+      priority: ServicePriority.HIGH,
+      dependencies: ['LOGGER_SERVICE', 'CONFIG_SERVICE'],
+      tags: ['memory', 'management'],
+      metadata: {
+        description: 'Memory management and lifecycle',
+        version: '3.0.0',
+      },
+    },
+    // TODO: MemoryInitializationService needs to be implemented as a class
+    // {
+    //   token: 'MEMORY_INITIALIZATION_SERVICE',
+    //   implementation: MemoryInitializationService,
+    //   lifetime: ServiceLifetime.SINGLETON,
+    //   priority: ServicePriority.HIGH,
+    //   dependencies: ['MEMORY_MANAGER', 'REPOSITORY_FACTORY', 'LOGGER_SERVICE'],
+    //   tags: ['memory', 'initialization'],
+    //   metadata: {
+    //     description: 'Memory system initialization',
+    //     version: '3.0.0',
+    //   },
+    // },
+    {
+      token: 'MEMORY_STORE_SERVICE',
+      implementation: undefined as unknown,
+      factory: () => MemoryStoreService.getInstance(),
+      lifetime: ServiceLifetime.SINGLETON,
+      priority: ServicePriority.HIGH,
+      dependencies: [
+        'MEMORY_MANAGER',
+        'REPOSITORY_FACTORY',
+        'DEDUPLICATION_SERVICE',
+        'LOGGER_SERVICE',
+        // TODO: Add 'EVENT_SERVICE' when implemented
+      ],
+      tags: ['memory', 'storage'],
+      metadata: {
+        description: 'Memory storage operations',
+        version: '3.0.0',
+      },
+    },
+    {
+      token: 'MEMORY_FIND_SERVICE',
+      implementation: undefined as unknown,
+      factory: () => MemoryFindService.getInstance(),
+      lifetime: ServiceLifetime.SINGLETON,
+      priority: ServicePriority.HIGH,
+      dependencies: ['MEMORY_MANAGER', 'REPOSITORY_FACTORY', 'EMBEDDING_SERVICE', 'LOGGER_SERVICE'],
+      tags: ['memory', 'search'],
+      metadata: {
+        description: 'Memory search and retrieval',
+        version: '3.0.0',
+      },
+    },
+  ],
+  exports: [
+    'MEMORY_MANAGER',
+    'MEMORY_STORE_SERVICE',
+    'MEMORY_FIND_SERVICE',
+    // TODO: Add 'MEMORY_INITIALIZATION_SERVICE' when implemented as class
+  ],
+})
+export class MemoryModule {}

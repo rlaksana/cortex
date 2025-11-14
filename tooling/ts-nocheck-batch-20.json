@@ -1,0 +1,11 @@
+{
+  "batch": 20,
+  "category": "factories",
+  "files": [
+    "factories/enhanced-mcp-factory.ts",
+    "factories/factory-registry.ts",
+    "factories/factory-type-guards.ts",
+    "factories/factory-types.ts"
+  ],
+  "file_count": 4
+}

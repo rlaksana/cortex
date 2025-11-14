@@ -1,0 +1,441 @@
+/**
+ * Database Access Interceptor - P0-CRITICAL Implementation
+ *
+ * Intercepts and controls all database access attempts.
+ * Enforces service-layer routing and prevents unauthorized direct access.
+ *
+ * @author Cortex Team
+ * @version 2.0.1
+ * @since 2025
+ */
+
+import { logger } from '../../utils/logger.js';
+import { auditLogger } from './audit-logger.js';
+
+/**
+ * Database operation context
+ */
+export interface DatabaseOperationContext {
+  operation: string;
+  table?: string;
+  collection?: string;
+  parameters?: Record<string, unknown>;
+  caller: string;
+  stackTrace?: string;
+}
+
+/**
+ * Database access result
+ */
+export interface DatabaseAccessResult {
+  allowed: boolean;
+  reason?: string;
+  alternativeService?: string;
+  alternativeOperation?: string;
+}
+
+/**
+ * Access violation record
+ */
+export interface AccessViolation {
+  id: string;
+  timestamp: Date;
+  caller: string;
+  operation: string;
+  reason: string;
+  stackTrace: string;
+  blocked: boolean;
+}
+
+/**
+ * Database Access Interceptor - Enforces service-layer routing
+ */
+export class DatabaseAccessInterceptor {
+  private static instance: DatabaseAccessInterceptor;
+  private accessViolations: AccessViolation[] = [];
+  private allowedCallers: Set<string> = new Set();
+  private isInitialized = false;
+
+  private constructor() {}
+
+  public static getInstance(): DatabaseAccessInterceptor {
+    if (!DatabaseAccessInterceptor.instance) {
+      DatabaseAccessInterceptor.instance = new DatabaseAccessInterceptor();
+    }
+    return DatabaseAccessInterceptor.instance;
+  }
+
+  /**
+   * Initialize database access interceptor
+   */
+  public async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
+
+    try {
+      logger.info('Initializing Database Access Interceptor...');
+
+      // Register allowed system callers
+      this.registerAllowedCallers();
+
+      // Setup interception hooks
+      this.setupInterceptionHooks();
+
+      this.isInitialized = true;
+      logger.info('Database Access Interceptor initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize Database Access Interceptor:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check database access permission
+   */
+  public async checkDatabaseAccess(
+    context: DatabaseOperationContext
+  ): Promise<DatabaseAccessResult> {
+    try {
+      // Check if caller is explicitly allowed
+      if (this.isAllowedCaller(context.caller)) {
+        return { allowed: true };
+      }
+
+      // Check if access is through service layer router
+      if (this.isServiceLayerAccess(context)) {
+        return { allowed: true };
+      }
+
+      // Determine appropriate service route
+      const serviceRoute = this.determineServiceRoute(context);
+      if (_serviceRoute) {
+        return {
+          allowed: false,
+          reason: `Direct database access not allowed. Use service layer instead.`,
+          alternativeService: serviceRoute.service,
+          alternativeOperation: serviceRoute.operation,
+        };
+      }
+
+      // Block access
+      await this.recordAccessViolation(context, 'Unauthorized direct database access');
+
+      return {
+        allowed: false,
+        reason: 'Database access denied. This operation must go through the service layer.',
+      };
+    } catch (error) {
+      logger.error('Database access check failed:', error);
+      return {
+        allowed: false,
+        reason: 'Database access check failed. Contact system administrator.',
+      };
+    }
+  }
+
+  /**
+   * Intercept Qdrant client operations
+   */
+  public interceptQdrantOperation(
+    _operation: string, 
+    _args: unknown[], 
+    _caller: string
+  ): DatabaseAccessResult {
+    const context: DatabaseOperationContext = {
+      operation: `qdrant.${operation}`,
+      collection: this.extractCollectionFromArgs(args),
+      parameters: { args },
+      caller,
+      stackTrace: new Error().stack || '',
+    };
+
+    // Synchronous check for immediate blocking
+    if (!this.isAllowedCaller(caller) && !this.isServiceLayerAccess(context)) {
+      const serviceRoute = this.determineServiceRoute(context);
+
+      // Record violation asynchronously
+      this.recordAccessViolation(context, 'Qdrant direct access').catch((error) => {
+        logger.error('Failed to record access violation:', error);
+      });
+
+      return {
+        allowed: false,
+        reason: `Direct Qdrant access denied. Use ${serviceRoute?.service || 'memory'} service instead.`,
+        alternativeService: serviceRoute?.service,
+        alternativeOperation: serviceRoute?.operation,
+      };
+    }
+
+    return { allowed: true };
+  }
+
+  /**
+   * Register allowed caller
+   */
+  public registerAllowedCaller(_caller: string): void {
+    this.allowedCallers.add(caller);
+    logger.debug(`Registered allowed database caller: ${caller}`);
+  }
+
+  /**
+   * Remove allowed caller
+   */
+  public removeAllowedCaller(_caller: string): boolean {
+    const removed = this.allowedCallers.delete(caller);
+    if (_removed) {
+      logger.debug(`Removed allowed database caller: ${caller}`);
+    }
+    return removed;
+  }
+
+  /**
+   * Get access violations
+   */
+  public getAccessViolations(filter?: {
+    startDate?: Date;
+    endDate?: Date;
+    caller?: string;
+    blocked?: boolean;
+  }): AccessViolation[] {
+    let violations = [...this.accessViolations];
+
+    if (_filter) {
+      if (filter.startDate) {
+        violations = violations.filter((v) => v.timestamp >= filter.startDate!);
+      }
+
+      if (filter.endDate) {
+        violations = violations.filter((v) => v.timestamp <= filter.endDate!);
+      }
+
+      if (filter.caller) {
+        violations = violations.filter((v) => v.caller === filter.caller);
+      }
+
+      if (filter.blocked !== undefined) {
+        violations = violations.filter((v) => v.blocked === filter.blocked);
+      }
+    }
+
+    return violations.sort((a,  _b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
+  /**
+   * Clear access violations
+   */
+  public clearAccessViolations(): void {
+    this.accessViolations = [];
+    logger.info('Access violations cleared');
+  }
+
+  /**
+   * Get access statistics
+   */
+  public getAccessStatistics(): {
+    totalViolations: number;
+    blockedViolations: number;
+    topViolators: Array<{ caller: string; violations: number }>;
+    mostBlockedOperations: Array<{ operation: string; count: number }>;
+    allowedCallers: number;
+  } {
+    const totalViolations = this.accessViolations.length;
+    const blockedViolations = this.accessViolations.filter((v) => v.blocked).length;
+
+    const violatorCounts: Record<string, number> = {};
+    const operationCounts: Record<string, number> = {};
+
+    for (const violation of this.accessViolations) {
+      violatorCounts[violation.caller] = (violatorCounts[violation.caller] || 0) + 1;
+      operationCounts[violation.operation] = (operationCounts[violation.operation] || 0) + 1;
+    }
+
+    const topViolators = Object.entries(violatorCounts)
+      .sort(([,  a],  [,  b]) => b - a)
+      .slice(0, 10)
+      .map(([caller,  violations]) => ({ caller, violations }));
+
+    const mostBlockedOperations = Object.entries(operationCounts)
+      .sort(([,  a],  [,  b]) => b - a)
+      .slice(0, 10)
+      .map(([operation,  count]) => ({ operation, count }));
+
+    return {
+      totalViolations,
+      blockedViolations,
+      topViolators,
+      mostBlockedOperations,
+      allowedCallers: this.allowedCallers.size,
+    };
+  }
+
+  /**
+   * Shutdown database access interceptor
+   */
+  public async shutdown(): Promise<void> {
+    this.accessViolations = [];
+    this.allowedCallers.clear();
+    this.isInitialized = false;
+    logger.info('Database Access Interceptor shutdown completed');
+  }
+
+  // Private methods
+
+  private registerAllowedCallers(): void {
+    // Core system components that need direct database access
+    const systemCallers = [
+      'repository-factory',
+      'qdrant-provider',
+      'service-initializer',
+      'migration-service',
+      'database-manager',
+      'service-layer-router',
+      'health-check-service',
+      'bootstrap-service',
+    ];
+
+    for (const caller of systemCallers) {
+      this.registerAllowedCaller(caller);
+    }
+
+    logger.info(`Registered ${String(systemCallers?.length ?? 0)} allowed system callers`);
+  }
+
+  private setupInterceptionHooks(): void {
+    // This would typically involve monkey-patching or proxy patterns
+    // For now, we rely on manual interception through the API methods
+    logger.info('Database interception hooks configured');
+  }
+
+  private isAllowedCaller(_caller: string): boolean {
+    // Check exact matches
+    if (this.allowedCallers.has(caller)) {
+      return true;
+    }
+
+    // Check for pattern matches
+    for (const allowed of this.allowedCallers) {
+      if (allowed.endsWith('*') && caller.startsWith(allowed.slice(0, -1))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private isServiceLayerAccess(context: DatabaseOperationContext): boolean {
+    // Check if caller is a service going through the router
+    return context.caller.includes('service-') && context.caller.includes('router');
+  }
+
+  private determineServiceRoute(context: DatabaseOperationContext): {
+    service: string;
+    operation: string;
+  } | null {
+    const operation = context.operation.toLowerCase();
+
+    // Route memory operations
+    if (operation.includes('memory') || operation.includes('cortex')) {
+      if (
+        operation.includes('store') ||
+        operation.includes('upsert') ||
+        operation.includes('create')
+      ) {
+        return { service: 'memory-store', operation: 'store' };
+      }
+      if (
+        operation.includes('find') ||
+        operation.includes('search') ||
+        operation.includes('query')
+      ) {
+        return { service: 'memory-store', operation: 'find' };
+      }
+    }
+
+    // Route authentication operations
+    if (operation.includes('auth') || operation.includes('user') || operation.includes('token')) {
+      return { service: 'auth', operation: 'authenticate' };
+    }
+
+    // Route analytics operations
+    if (
+      operation.includes('metric') ||
+      operation.includes('analytics') ||
+      operation.includes('stats')
+    ) {
+      return { service: 'analytics', operation: 'getMetrics' };
+    }
+
+    // Default to memory service for unknown operations
+    return { service: 'memory-store', operation: 'find' };
+  }
+
+  private extractCollectionFromArgs(_args: unknown[]): string | undefined {
+    // Try to extract collection name from Qdrant operation arguments
+    for (const arg of args) {
+      if (typeof arg === 'string') {
+        return arg;
+      }
+      if (typeof arg === 'object' && arg !== null && 'collection_name' in arg) {
+        const obj = arg as Record<string, unknown>;
+        if (typeof obj.collection_name === 'string') {
+          return obj.collection_name;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  private async recordAccessViolation(
+    context: DatabaseOperationContext,
+    reason: string
+  ): Promise<void> {
+    const violation: AccessViolation = {
+      id: `violation_${Date.now()}_${String(Math.random().toString(36).substr(2, 9))}`,
+      timestamp: new Date(),
+      caller: context.caller,
+      operation: context.operation,
+      reason,
+      stackTrace: context.stackTrace || '',
+      blocked: true,
+    };
+
+    this.accessViolations.push(violation);
+
+    // Keep only last 1000 violations
+    if (this.accessViolations.length > 1000) {
+      this.accessViolations = this.accessViolations.slice(-1000);
+    }
+
+    // Log to audit logger
+    await auditLogger.logSecurityEvent({
+      type: 'UNAUTHORIZED_DB_ACCESS',
+      caller: context.caller,
+      operation: context.operation,
+      timestamp: violation.timestamp,
+      severity: 'high',
+      details: {
+        reason,
+        collection: context.collection,
+        stackTrace: context.stackTrace?.substring(0, 500), // Limit stack trace size
+      },
+    });
+
+    logger.warn('Database access violation recorded:', {
+      id: violation.id,
+      caller: context.caller,
+      operation: context.operation,
+      reason,
+    });
+  }
+}
+
+// Export singleton instance
+export const databaseAccessInterceptor = DatabaseAccessInterceptor.getInstance();
+
+// Export convenience functions
+export const checkDatabaseAccess = (context: DatabaseOperationContext) =>
+  databaseAccessInterceptor.checkDatabaseAccess(context);
+
+export const interceptQdrantOperation = (operation: string, args: unknown[], caller: string) =>
+  databaseAccessInterceptor.interceptQdrantOperation(operation, args, caller);

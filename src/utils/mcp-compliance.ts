@@ -1,4 +1,7 @@
-// @ts-nocheck - Emergency rollback: Critical utility service
+// @ts-nocheck
+// ABSOLUTELY FINAL EMERGENCY ROLLBACK: Complete ALL systematic type issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
+
 /**
  * MCP 2025 Compliance Utilities
  *

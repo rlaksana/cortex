@@ -1,5 +1,7 @@
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Enhanced monitoring type compatibility issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
 
-// @ts-nocheck - Emergency rollback: Critical monitoring service
 /**
  * Health Check Service for Cortex MCP
  *

@@ -1,0 +1,337 @@
+/**
+ * Enhanced Repository Factory with Constructor Injection
+ *
+ * Refactored to use dependency injection with constructor injection.
+ * Provides centralized repository management with proper DI.
+ *
+ * @author Cortex Team
+ * @version 3.0.0
+ * @since 2025
+ */
+
+import { QdrantTypedRepository } from '../../repositories/qdrant-typed-repository.js';
+import type {
+  IQdrantTypedRepository,
+  IAuthenticationRepository,
+} from '../../types/cortex-repository-interfaces.js';
+import { Injectable } from '../decorators.js';
+import { ServiceLifetime, ServicePriority } from '../enhanced-di-container.js';
+import type { ILoggerService } from '../service-interfaces.js';
+import type { IConfigService } from '../service-interfaces.js';
+import type { IDatabaseService } from '../service-interfaces.js';
+import type { IEventService } from '../service-interfaces.js';
+
+/**
+ * Enhanced repository factory configuration
+ */
+export interface EnhancedRepositoryFactoryConfig {
+  enableMetrics?: boolean;
+  enableCaching?: boolean;
+  cacheTTL?: number;
+  connectionTimeout?: number;
+  maxRetries?: number;
+}
+
+/**
+ * Repository health status
+ */
+export interface RepositoryHealthStatus {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  details: {
+    repositories: {
+      qdrant: boolean;
+      auth: boolean;
+    };
+    connectionPool?: {
+      active: number;
+      idle: number;
+      total: number;
+    };
+    errors?: string[];
+  };
+  lastCheck: Date;
+}
+
+/**
+ * Enhanced Repository Factory with dependency injection
+ */
+@Injectable({
+  lifetime: ServiceLifetime.SINGLETON,
+  priority: ServicePriority.HIGH,
+  tags: ['repository', 'database', 'factory'],
+})
+export class EnhancedRepositoryFactory {
+  private qdrantRepository: IQdrantTypedRepository & IAuthenticationRepository;
+  private isInitialized = false;
+  private config: EnhancedRepositoryFactoryConfig;
+  private healthCheckInterval?: NodeJS.Timeout;
+
+  constructor(
+    private logger: ILoggerService, 
+    private configService: IConfigService, 
+    private databaseService: IDatabaseService, 
+    private eventService: IEventService
+  ) {
+    this.config = {
+      enableMetrics: true,
+      enableCaching: true,
+      cacheTTL: 300000, // 5 minutes
+      connectionTimeout: 30000,
+      maxRetries: 3,
+      ...this.loadConfigFromEnvironment(),
+    };
+  }
+
+  /**
+   * Initialize repository factory
+   */
+  async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
+
+    try {
+      await this.logger.info('Initializing Enhanced Repository Factory...');
+
+      // Initialize repositories
+      await this.initializeRepositories();
+
+      // Setup health monitoring
+      this.setupHealthMonitoring();
+
+      // Setup event handlers
+      this.setupEventHandlers();
+
+      this.isInitialized = true;
+      await this.logger.info('Enhanced Repository Factory initialized successfully');
+    } catch (error) {
+      await this.logger.error('Failed to initialize Enhanced Repository Factory:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get Qdrant typed repository
+   */
+  getQdrantRepository(): IQdrantTypedRepository & IAuthenticationRepository {
+    this.ensureInitialized();
+    return this.qdrantRepository;
+  }
+
+  /**
+   * Get authentication repository
+   */
+  getAuthenticationRepository(): IAuthenticationRepository {
+    this.ensureInitialized();
+    return this.qdrantRepository;
+  }
+
+  /**
+   * Get repository by type
+   */
+  getRepository(type: 'qdrant'): IQdrantTypedRepository;
+  getRepository(type: 'auth'): IAuthenticationRepository;
+  getRepository(type: 'qdrant' | 'auth'): IQdrantTypedRepository | IAuthenticationRepository {
+    this.ensureInitialized();
+
+    switch (_type) {
+      case 'qdrant':
+        return this.qdrantRepository;
+      case 'auth':
+        return this.qdrantRepository;
+      default:
+        throw new Error(`Unknown repository type: ${type}`);
+    }
+  }
+
+  /**
+   * Check if factory is initialized
+   */
+  isReady(): boolean {
+    return this.isInitialized;
+  }
+
+  /**
+   * Get factory configuration
+   */
+  getConfig(): EnhancedRepositoryFactoryConfig {
+    return { ...this.config };
+  }
+
+  /**
+   * Get repository health status
+   */
+  async getHealthStatus(): Promise<RepositoryHealthStatus> {
+    const health: RepositoryHealthStatus = {
+      status: 'healthy',
+      details: {
+        repositories: {
+          qdrant: false,
+          auth: false,
+        },
+        errors: [],
+      },
+      lastCheck: new Date(),
+    };
+
+    try {
+      // Test Qdrant connection
+      await this.databaseService.getConnection();
+      health.details.repositories.qdrant = true;
+      health.details.repositories.auth = true; // Same underlying connection
+
+      // Test basic repository operations
+      await this.qdrantRepository.healthCheck();
+
+      health.status = 'healthy';
+    } catch (error) {
+      const errorMsg = `Repository health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      health.details.errors?.push(errorMsg);
+      health.status = 'unhealthy';
+
+      await this.logger.warn('Repository health check failed:', error);
+    }
+
+    // Emit health status event
+    if (this.eventService) {
+      this.eventService.emit('repository:health-status', health);
+    }
+
+    return health;
+  }
+
+  /**
+   * Create repository with specific configuration
+   */
+  async createRepository<T>(
+    type: 'qdrant' | 'auth',
+    config: Partial<EnhancedRepositoryFactoryConfig> = {}
+  ): Promise<T> {
+    this.ensureInitialized();
+
+    const mergedConfig = { ...this.config, ...config };
+
+    switch (_type) {
+      case 'qdrant':
+        return this.qdrantRepository as T;
+      case 'auth':
+        return this.qdrantRepository as T;
+      default:
+        throw new Error(`Unknown repository type: ${type}`);
+    }
+  }
+
+  /**
+   * Warm up repository connections
+   */
+  async warmUp(): Promise<void> {
+    this.ensureInitialized();
+
+    try {
+      await this.logger.info('Warming up repository connections...');
+
+      // Perform a lightweight operation to ensure connection is active
+      await this.qdrantRepository.healthCheck();
+
+      await this.logger.info('Repository connections warmed up successfully');
+    } catch (error) {
+      await this.logger.error('Failed to warm up repository connections:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Shutdown repository factory
+   */
+  async shutdown(): Promise<void> {
+    try {
+      await this.logger.info('Shutting down Enhanced Repository Factory...');
+
+      // Clear health check interval
+      if (this.healthCheckInterval) {
+        clearInterval(this.healthCheckInterval);
+        this.healthCheckInterval = undefined;
+      }
+
+      // Close repository connections
+      if (this.qdrantRepository && typeof this.qdrantRepository.close === 'function') {
+        await this.qdrantRepository.close();
+      }
+
+      this.isInitialized = false;
+
+      await this.logger.info('Enhanced Repository Factory shutdown completed');
+    } catch (error) {
+      await this.logger.error('Error during Enhanced Repository Factory shutdown:', error);
+      throw error;
+    }
+  }
+
+  // Private methods
+
+  private async initializeRepositories(): Promise<void> {
+    try {
+      // Get database connection
+      const dbConnection = await this.databaseService.getConnection();
+
+      // Create Qdrant typed repository
+      // Cast to IDatabaseAdapter to access getClient method
+      const dbAdapter = dbConnection as unknown;
+      const qdrantClient = dbAdapter.getClient ? dbAdapter.getClient() : dbConnection;
+      this.qdrantRepository = new QdrantTypedRepository(qdrantClient);
+
+      await this.logger.debug('Repository instances initialized successfully');
+    } catch (error) {
+      await this.logger.error('Failed to initialize repository instances:', error);
+      throw error;
+    }
+  }
+
+  private setupHealthMonitoring(): void {
+    // Set up periodic health checks
+    const healthCheckInterval = this.configService.get('REPOSITORY_HEALTH_CHECK_INTERVAL', 60000); // 1 minute
+
+    this.healthCheckInterval = setInterval(async () => {
+      try {
+        await this.getHealthStatus();
+      } catch (error) {
+        await this.logger.error('Health check failed:', error);
+      }
+    }, healthCheckInterval);
+
+    this.logger.debug(`Health monitoring set up with interval: ${healthCheckInterval}ms`);
+  }
+
+  private setupEventHandlers(): void {
+    if (!this.eventService) return;
+
+    // Handle database connection events
+    this.eventService.on('database:connected',  () => {
+      this.logger.info('Database connected, repository factory ready');
+    });
+
+    this.eventService.on('database:disconnected',  () => {
+      this.logger.warn('Database disconnected, repository factory unavailable');
+    });
+
+    this.eventService.on('database:error',  (error) => {
+      this.logger.error('Database error:', error);
+    });
+  }
+
+  private ensureInitialized(): void {
+    if (!this.isInitialized) {
+      throw new Error('Enhanced Repository Factory not properly initialized');
+    }
+  }
+
+  private loadConfigFromEnvironment(): Partial<EnhancedRepositoryFactoryConfig> {
+    return {
+      enableMetrics: this.configService.get('REPOSITORY_ENABLE_METRICS', true),
+      enableCaching: this.configService.get('REPOSITORY_ENABLE_CACHING', true),
+      cacheTTL: this.configService.get('REPOSITORY_CACHE_TTL', 300000),
+      connectionTimeout: this.configService.get('REPOSITORY_CONNECTION_TIMEOUT', 30000),
+      maxRetries: this.configService.get('REPOSITORY_MAX_RETRIES', 3),
+    };
+  }
+}

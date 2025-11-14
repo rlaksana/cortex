@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical business service
 /**
  * Enhanced Deduplication Service with Configurable Merge Strategies
  *

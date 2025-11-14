@@ -7,17 +7,20 @@
     "tooling": 13,
     "total_loc": 0,
     "generated_at": "2025-11-13T21:46:00.000Z",
-    "batch_02_status": "completed",
+    "batch_02_status": "partially_completed",
     "batch_02_focus": {
       "src/utils/type-guards.ts": {
         "category": "core-runtime",
         "status": "@ts-nocheck removed - fully type-safe",
-        "errors_fixed": 4
+        "errors_fixed": 4,
+        "completion": "100%"
       },
       "src/db/adapters/qdrant-adapter.ts": {
         "category": "core-runtime",
-        "status": "@ts-nocheck removed - strategic type fixes applied",
-        "approach": "minimal type assertions for complex Qdrant integration"
+        "status": "@ts-nocheck retained - requires dedicated batch",
+        "reason": "complex Qdrant client type integration needs focused effort",
+        "planned_for": "future_batch_dedicated_to_qdrant_adapter",
+        "completion": "0%"
       }
     }
   },
@@ -40,10 +43,10 @@
       "exists": true,
       "size_bytes": 0,
       "last_modified": "2025-11-13T21:46:00.000Z",
-      "ts_nocheck_removed": true,
-      "strategic_fixes_applied": true,
-      "status": "public_api_type_safe",
-      "remaining_internal_errors": "complex_qdrant_integration_types"
+      "ts_nocheck_removed": false,
+      "status": "requires_dedicated_batch",
+      "complexity": "high",
+      "estimated_effort": "2-4 hours focused effort"
     }
   ]
 }

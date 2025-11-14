@@ -1,0 +1,13 @@
+{
+  "batch": 12,
+  "category": "services-orchestrators",
+  "files": [
+    "services/orchestrators/idempotent-store-service.ts",
+    "services/orchestrators/memory-find-orchestrator.ts",
+    "services/orchestrators/memory-find-orchestrator-qdrant.ts",
+    "services/orchestrators/memory-store-orchestrator.ts",
+    "services/orchestrators/memory-store-orchestrator-qdrant.ts",
+    "services/orchestrators/optimized-memory-store-orchestrator.ts"
+  ],
+  "file_count": 6
+}

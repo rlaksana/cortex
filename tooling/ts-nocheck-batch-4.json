@@ -1,0 +1,19 @@
+{
+  "batch": 4,
+  "category": "dependency-injection",
+  "files": [
+    "di/adapters/audit-service-adapter.ts",
+    "di/adapters/auth-service-adapter.ts",
+    "di/adapters/memory-find-orchestrator-adapter.ts",
+    "di/adapters/metrics-service-adapter.ts",
+    "di/di-container.ts",
+    "di/enhanced-di-container.ts",
+    "di/event-bus.ts",
+    "di/runtime-validation.ts",
+    "di/service-registry.ts",
+    "di/services/config-service.ts",
+    "di/services/logger-service.ts",
+    "di/typed-di-container.ts"
+  ],
+  "file_count": 12
+}

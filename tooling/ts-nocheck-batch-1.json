@@ -1,0 +1,33 @@
+{
+  "batch": 1,
+  "category": "core-types",
+  "files": [
+    "types/api-types-enhanced.ts",
+    "types/audit-metrics-types.ts",
+    "types/audit-types.ts",
+    "types/base-types.ts",
+    "types/branded-types.ts",
+    "types/config-merge-utilities.ts",
+    "types/config-validation-decorators.ts",
+    "types/config-validation-schema.ts",
+    "types/database-types-enhanced.ts",
+    "types/discriminated-unions.ts",
+    "types/http-client-types.ts",
+    "types/index.ts",
+    "types/json-value-conversion.ts",
+    "types/mcp-response-data.types.ts",
+    "types/metrics-types.ts",
+    "types/migration.ts",
+    "types/monitoring-types.ts",
+    "types/monitoring-types-enhanced.ts",
+    "types/runtime-type-guard-framework.ts",
+    "types/safe-config-builders.ts",
+    "types/safe-property-access.ts",
+    "types/slo-interfaces.ts",
+    "types/type-debug-helpers.ts",
+    "types/type-guards-enhanced.ts",
+    "types/type-validation-error-handling.ts",
+    "types/unified-response.interface.ts"
+  ],
+  "file_count": 26
+}

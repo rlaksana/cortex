@@ -1,5 +1,7 @@
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Final batch of type compatibility issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
 
-// @ts-nocheck - Emergency rollback: Critical monitoring service
 /**
  * Performance Monitoring Middleware for Cortex MCP
  * Provides automatic performance tracking for HTTP requests and MCP operations

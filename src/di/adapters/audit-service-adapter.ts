@@ -1,4 +1,7 @@
-// @ts-nocheck - Emergency rollback: Critical dependency injection service
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Interface compatibility issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
+
 /**
  * Audit Service Adapter
  *

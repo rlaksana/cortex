@@ -1,0 +1,317 @@
+/**
+ * Change Logger Service
+ *
+ * Automatic logging service for structural changes to the Cortex Memory system.
+ * Captures architectural decisions, schema changes, and system modifications
+ * to maintain comprehensive audit trails and historical records.
+ *
+ * Features:
+ * - Automatic CHANGELOG generation for structural changes
+ * - DECISIONLOG capture for architectural decisions
+ * - Integration with memory system for persistence
+ * - Change categorization and impact assessment
+ * - Automatic metadata enrichment
+ */
+
+import { memoryStore } from '../memory-store.js';
+import { logger } from '@/utils/logger.js';
+
+export interface ChangeLogEntry {
+  id: string;
+  timestamp: string;
+  type: 'structural' | 'architectural' | 'schema' | 'configuration' | 'feature' | 'bugfix';
+  category: 'breaking' | 'feature' | 'improvement' | 'fix' | 'docs' | 'chore';
+  title: string;
+  description: string;
+  impact: 'high' | 'medium' | 'low';
+  scope: {
+    files?: string[];
+    components?: string[];
+    apis?: string[];
+    database?: boolean;
+  };
+  metadata: {
+    author: string;
+    version: string;
+    commit?: string;
+    pr?: string;
+    issue?: string;
+  };
+}
+
+export interface DecisionLogEntry {
+  id: string;
+  timestamp: string;
+  title: string;
+  context: string;
+  decision: string;
+  rationale: string;
+  alternatives: string[];
+  consequences: string[];
+  status: 'proposed' | 'accepted' | 'rejected' | 'superseded';
+  metadata: {
+    author: string;
+    stakeholders: string[];
+    reviewed?: string;
+    implemented?: string;
+  };
+}
+
+export class ChangeLoggerService {
+  private static instance: ChangeLoggerService;
+  private initialized = false;
+
+  private constructor() {}
+
+  static getInstance(): ChangeLoggerService {
+    if (!ChangeLoggerService.instance) {
+      ChangeLoggerService.instance = new ChangeLoggerService();
+    }
+    return ChangeLoggerService.instance;
+  }
+
+  async initialize(): Promise<void> {
+    if (this.initialized) return;
+
+    try {
+      logger.info('Initializing Change Logger Service...');
+
+      // Test memory system connectivity
+      await this.testMemoryConnectivity();
+
+      this.initialized = true;
+      logger.info('Change Logger Service initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize Change Logger Service:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Log a structural change to the system
+   */
+  async logChange(entry: Omit<ChangeLogEntry, 'id' | 'timestamp'>): Promise<string> {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    const changeEntry: ChangeLogEntry = {
+      ...entry,
+      id: this.generateId('change'),
+      timestamp: new Date().toISOString(),
+    };
+
+    try {
+      // Store in memory system
+      await memoryStore([
+        {
+          kind: 'change',
+          content: changeEntry.title,
+          scope: {
+            project: process.env.CORTEX_PROJECT || 'cortex-mcp',
+            branch: process.env.CORTEX_BRANCH || 'main',
+            org: process.env.CORTEX_ORG || 'cortex',
+          },
+          data: {
+            ...changeEntry,
+            type: 'structural_change',
+            category: entry.category,
+            impact: entry.impact,
+            scope: entry.scope,
+          },
+        },
+      ]);
+
+      logger.info(`Change logged: ${changeEntry.title}`, { id: changeEntry.id });
+      return changeEntry.id;
+    } catch (error) {
+      logger.error('Failed to log change:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Log an architectural decision
+   */
+  async logDecision(entry: Omit<DecisionLogEntry, 'id' | 'timestamp'>): Promise<string> {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    const decisionEntry: DecisionLogEntry = {
+      ...entry,
+      id: this.generateId('decision'),
+      timestamp: new Date().toISOString(),
+    };
+
+    try {
+      // Store in memory system
+      await memoryStore([
+        {
+          kind: 'decision',
+          content: decisionEntry.title,
+          scope: {
+            project: process.env.CORTEX_PROJECT || 'cortex-mcp',
+            branch: process.env.CORTEX_BRANCH || 'main',
+            org: process.env.CORTEX_ORG || 'cortex',
+          },
+          data: {
+            ...decisionEntry,
+            type: 'architectural_decision',
+            context: decisionEntry.context,
+            rationale: decisionEntry.rationale,
+            alternatives: decisionEntry.alternatives,
+            consequences: decisionEntry.consequences,
+          },
+        },
+      ]);
+
+      logger.info(`Decision logged: ${decisionEntry.title}`, { id: decisionEntry.id });
+      return decisionEntry.id;
+    } catch (error) {
+      logger.error('Failed to log decision:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Auto-detect and log structural changes from file modifications
+   */
+  async detectAndLogChanges(modifiedFiles: string[]): Promise<void> {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    for (const filePath of modifiedFiles) {
+      try {
+        const changeType = this.categorizeFileChange(filePath);
+        const impact = this.assessImpact(filePath, changeType);
+
+        await this.logChange({
+          type: changeType,
+          category: this.categorizeChange(changeType),
+          title: `Modified ${filePath}`,
+          description: `File ${filePath} was modified with ${changeType} changes`,
+          impact,
+          scope: {
+            files: [filePath],
+            components: this.extractComponents(filePath),
+            apis: changeType === 'architectural' ? this.extractAPIs(filePath) : [],
+            database: filePath.includes('database') || filePath.includes('db'),
+          },
+          metadata: {
+            author: this.getAuthor(),
+            version: this.getVersion(),
+            commit: this.getCommitHash(),
+          },
+        });
+      } catch (error) {
+        logger.warn(`Failed to log change for ${filePath}:`, error);
+      }
+    }
+  }
+
+  private categorizeFileChange(_filePath: string): ChangeLogEntry['type'] {
+    if (filePath.includes('types/') || filePath.includes('interfaces/')) {
+      return 'structural';
+    }
+    if (filePath.includes('config/') || filePath.includes('environment')) {
+      return 'configuration';
+    }
+    if (filePath.includes('schema') || filePath.includes('migration')) {
+      return 'schema';
+    }
+    if (filePath.includes('src/services/') || filePath.includes('src/core/')) {
+      return 'architectural';
+    }
+    if (filePath.includes('features/') || filePath.includes('new')) {
+      return 'feature';
+    }
+    return 'bugfix'; // default
+  }
+
+  private categorizeChange(type: ChangeLogEntry['type']): ChangeLogEntry['category'] {
+    const mapping = {
+      structural: 'breaking',
+      architectural: 'breaking',
+      schema: 'breaking',
+      configuration: 'chore',
+      feature: 'feature',
+      bugfix: 'fix',
+    };
+    return mapping[type] as ChangeLogEntry['category'];
+  }
+
+  private assessImpact(_filePath: string,  type: ChangeLogEntry['type']): ChangeLogEntry['impact'] {
+    if (type === 'structural' || type === 'architectural') {
+      return 'high';
+    }
+    if (type === 'schema') {
+      return 'medium';
+    }
+    return 'low';
+  }
+
+  private extractComponents(_filePath: string): string[] {
+    const parts = filePath.split('/');
+    return parts.filter((part) => part && !['src', 'tests', 'scripts', 'config'].includes(part));
+  }
+
+  private extractAPIs(_filePath: string): string[] {
+    // This would analyze the file content to extract API endpoints
+    // For now, return empty array
+    return [];
+  }
+
+  private getAuthor(): string {
+    return process.env.GIT_AUTHOR_NAME || process.env.USER || 'system';
+  }
+
+  private getVersion(): string {
+    try {
+      const packageJson = require('../../../package.json');
+      return packageJson.version;
+    } catch {
+      return 'unknown';
+    }
+  }
+
+  private getCommitHash(): string | undefined {
+    try {
+      return require('child_process').execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+    } catch {
+      return undefined;
+    }
+  }
+
+  private generateId(_prefix: string): string {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substr(2, 9);
+    return `${prefix}_${timestamp}_${random}`;
+  }
+
+  private async testMemoryConnectivity(): Promise<void> {
+    try {
+      await memoryStore([
+        {
+          kind: 'observation',
+          content: 'Change Logger connectivity test',
+          scope: {
+            project: 'cortex-mcp',
+            branch: 'main',
+            org: 'cortex',
+          },
+          data: {
+            type: 'system_test',
+            service: 'change-logger',
+            timestamp: new Date().toISOString(),
+          },
+        },
+      ]);
+    } catch (error) {
+      throw new Error(`Memory system connectivity test failed: ${error}`);
+    }
+  }
+}
+
+export const changeLoggerService = ChangeLoggerService.getInstance();

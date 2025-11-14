@@ -1,0 +1,22 @@
+{
+  "batch": 11,
+  "category": "services-knowledge",
+  "files": [
+    "services/knowledge/assumption.ts",
+    "services/knowledge/decision.ts",
+    "services/knowledge/entity.ts",
+    "services/knowledge/incident.ts",
+    "services/knowledge/issue.ts",
+    "services/knowledge/observation.ts",
+    "services/knowledge/pr_context.ts",
+    "services/knowledge/relation.ts",
+    "services/knowledge/release.ts",
+    "services/knowledge/release_note.ts",
+    "services/knowledge/risk.ts",
+    "services/knowledge/runbook.ts",
+    "services/knowledge/section.ts",
+    "services/knowledge/session-logs.ts",
+    "services/knowledge/todo.ts"
+  ],
+  "file_count": 15
+}

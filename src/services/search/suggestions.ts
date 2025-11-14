@@ -1,5 +1,7 @@
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
+// TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
-// @ts-nocheck - Emergency rollback: Critical business service
 import { qdrant } from '../../db/qdrant-client.js';
 
 export interface Suggestion {

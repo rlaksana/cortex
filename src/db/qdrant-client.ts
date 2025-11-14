@@ -1,10 +1,13 @@
-// @ts-nocheck - Emergency rollback: Critical Qdrant client service
 /**
  * Qdrant Client Export
  *
  * Provides a centralized Qdrant client instance for the application.
  * This file acts as a facade for Qdrant operations.
  */
+
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
+// TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
 import { QdrantClient } from '@qdrant/js-client-rest';
 

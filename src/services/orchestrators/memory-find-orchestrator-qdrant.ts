@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical memory service
 /**
  * Memory Find Orchestrator - Qdrant Implementation
  *

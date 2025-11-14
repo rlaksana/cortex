@@ -1,0 +1,623 @@
+/**
+ * Tracing Integration for Adapter/Service Boundaries
+ *
+ * Provides automatic tracing integration for MCP adapters and services
+ * with correlation ID propagation and performance monitoring.
+ *
+ * Features:
+ * - Automatic adapter tracing
+ * - Service boundary tracing
+ * - Correlation ID propagation
+ * - Performance metrics collection
+ * - Error tracking and exception handling
+ *
+ * @author Cortex Team
+ * @version 1.0.0
+ * @since 2025-11-10
+ */
+
+import { SpanKind } from '@opentelemetry/api';
+import { openTelemetryTracer } from './opentelemetry-tracer.js';
+import { logger } from '@/utils/logger.js';
+
+/**
+ * Adapter tracing configuration
+ */
+export interface AdapterTracingConfig {
+  adapterName: string;
+  version: string;
+  traceAllMethods: boolean;
+  excludeMethods?: string[];
+  includeInputOutput: boolean;
+  sanitizeInputOutput: boolean;
+  trackPerformance: boolean;
+  performanceThresholds: {
+    warning: number; // milliseconds
+    critical: number; // milliseconds
+  };
+}
+
+/**
+ * Service tracing configuration
+ */
+export interface ServiceTracingConfig {
+  serviceName: string;
+  version: string;
+  traceAllOperations: boolean;
+  excludeOperations?: string[];
+  propagateContext: boolean;
+  trackDependencies: boolean;
+  includeMetrics: boolean;
+}
+
+/**
+ * Tracing metrics collector
+ */
+export class TracingMetricsCollector {
+  private metrics = new Map<string, unknown>();
+
+  recordCall(
+    component: string, 
+    _operation: string, 
+    _duration: number, 
+    _success: boolean, 
+    errorType?: string
+  ): void {
+    const key = `${component}.${operation}`;
+
+    if (!this.metrics.has(key)) {
+      this.metrics.set(key, {
+        totalCalls: 0,
+        successfulCalls: 0,
+        failedCalls: 0,
+        totalDuration: 0,
+        minDuration: Infinity,
+        maxDuration: 0,
+        errors: new Map(),
+      });
+    }
+
+    const metric = this.metrics.get(key);
+    metric.totalCalls++;
+    metric.totalDuration += duration;
+    metric.minDuration = Math.min(metric.minDuration, duration);
+    metric.maxDuration = Math.max(metric.maxDuration, duration);
+
+    if (_success) {
+      metric.successfulCalls++;
+    } else {
+      metric.failedCalls++;
+      if (_errorType) {
+        const errorCount = metric.errors.get(errorType) || 0;
+        metric.errors.set(errorType, errorCount + 1);
+      }
+    }
+  }
+
+  getMetrics(component?: string): unknown {
+    if (_component) {
+      const result: unknown = {};
+      for (const [key,  metric] of this.metrics) {
+        if (key.startsWith(component + '.')) {
+          result[key] = {
+            ...metric,
+            averageDuration: metric.totalDuration / metric.totalCalls,
+            errorRate: (metric.failedCalls / metric.totalCalls) * 100,
+            errors: Object.fromEntries(metric.errors),
+          };
+        }
+      }
+      return result;
+    }
+
+    const result: unknown = {};
+    for (const [key,  metric] of this.metrics) {
+      result[key] = {
+        ...metric,
+        averageDuration: metric.totalDuration / metric.totalCalls,
+        errorRate: (metric.failedCalls / metric.totalCalls) * 100,
+        errors: Object.fromEntries(metric.errors),
+      };
+    }
+    return result;
+  }
+
+  clearMetrics(): void {
+    this.metrics.clear();
+  }
+}
+
+// Global metrics collector
+export const tracingMetrics = new TracingMetricsCollector();
+
+/**
+ * Base traced adapter class
+ */
+export abstract class TracedAdapter {
+  protected config: AdapterTracingConfig;
+  protected tracer = openTelemetryTracer;
+
+  constructor(config: AdapterTracingConfig) {
+    this.config = config;
+  }
+
+  /**
+   * Trace adapter method call
+   */
+  protected async traceMethod<T>(
+    methodName: string,
+    args: unknown[],
+    fn: () => Promise<T> | T
+  ): Promise<T> {
+    if (this.config.excludeMethods?.includes(methodName)) {
+      return fn();
+    }
+
+    const startTime = Date.now();
+
+    return this.tracer.traceAdapterCall(this.config.adapterName,  _methodName,  _args,  async () => {
+      try {
+        const result = await fn();
+        const duration = Date.now() - startTime;
+
+        // Record metrics
+        tracingMetrics.recordCall(this.config.adapterName, methodName, duration, true);
+
+        // Check performance thresholds
+        if (this.config.trackPerformance) {
+          if (duration > this.config.performanceThresholds.critical) {
+            logger.warn(
+              {
+                adapter: this.config.adapterName,
+                method: methodName,
+                duration,
+                threshold: this.config.performanceThresholds.critical,
+              },
+              'Critical performance threshold exceeded'
+            );
+          } else if (duration > this.config.performanceThresholds.warning) {
+            logger.info(
+              {
+                adapter: this.config.adapterName,
+                method: methodName,
+                duration,
+                threshold: this.config.performanceThresholds.warning,
+              },
+              'Warning performance threshold exceeded'
+            );
+          }
+        }
+
+        return result;
+      } catch (error) {
+        const duration = Date.now() - startTime;
+
+        // Record error metrics
+        tracingMetrics.recordCall(
+          this.config.adapterName,
+          methodName,
+          duration,
+          false,
+          error instanceof Error ? error.constructor.name : 'Unknown'
+        );
+
+        throw error;
+      }
+    });
+  }
+
+  /**
+   * Get adapter metrics
+   */
+  getMetrics(): unknown {
+    return tracingMetrics.getMetrics(this.config.adapterName);
+  }
+}
+
+/**
+ * Base traced service class
+ */
+export abstract class TracedService {
+  protected config: ServiceTracingConfig;
+  protected tracer = openTelemetryTracer;
+
+  constructor(config: ServiceTracingConfig) {
+    this.config = config;
+  }
+
+  /**
+   * Trace service operation
+   */
+  protected async traceOperation<T>(
+    operationName: string,
+    targetService?: string,
+    fn: () => Promise<T> | T
+  ): Promise<T> {
+    if (this.config.excludeOperations?.includes(operationName)) {
+      return fn();
+    }
+
+    return this.tracer.traceServiceCall(
+      this.config.serviceName,
+      operationName,
+      targetService || 'unknown',
+      fn
+    );
+  }
+
+  /**
+   * Trace dependency call
+   */
+  protected async traceDependency<T>(
+    dependencyName: string,
+    operationName: string,
+    fn: () => Promise<T> | T
+  ): Promise<T> {
+    return this.tracer.createSpan(
+      {
+        name: `${this.config.serviceName}.${dependencyName}.${operationName}`, 
+        _kind: SpanKind.CLIENT, 
+        attributes: {
+          'service.name': this.config.serviceName, 
+          'dependency.name': dependencyName, 
+          'dependency.operation': operationName, 
+        }, 
+      }, 
+      async (span) => {
+        try {
+          const result = await fn();
+
+          span.setAttributes({
+            'dependency.call_success': true,
+            'dependency.response_received': true,
+          });
+
+          return result;
+        } catch (error) {
+          span.setAttributes({
+            'dependency.call_success': false,
+            'dependency.error_received': true,
+          });
+
+          throw error;
+        }
+      }
+    );
+  }
+
+  /**
+   * Get service metrics
+   */
+  getMetrics(): unknown {
+    return tracingMetrics.getMetrics(this.config.serviceName);
+  }
+}
+
+/**
+ * Decorator for tracing adapter methods
+ */
+export function traceAdapterMethod(
+  config: {
+    name?: string;
+    includeInputOutput?: boolean;
+    sanitizeInputOutput?: boolean;
+  } = {}
+) {
+  return function (_target: unknown,  _propertyName: string,  _descriptor: PropertyDescriptor) {
+    const method = descriptor.value;
+
+    descriptor.value = async function (...args: unknown[]) {
+      const adapterName = target.constructor.name;
+      const methodName = config.name || propertyName;
+
+      return openTelemetryTracer.traceAdapterCall(_adapterName,  _methodName,  _args,  async () => {
+        if (config.includeInputOutput) {
+          openTelemetryTracer.addSpanAttributes({
+            'method.input_size': JSON.stringify(args).length,
+          });
+        }
+
+        try {
+          const result = await method.apply(this, args);
+
+          if (config.includeInputOutput) {
+            openTelemetryTracer.addSpanAttributes({
+              'method.output_size': JSON.stringify(result).length,
+              'method.output_type': typeof result,
+            });
+          }
+
+          return result;
+        } catch (error) {
+          openTelemetryTracer.addSpanAttributes({
+            'method.error_type': error instanceof Error ? error.constructor.name : 'Unknown',
+          });
+
+          throw error;
+        }
+      });
+    };
+
+    return descriptor;
+  };
+}
+
+/**
+ * Decorator for tracing service operations
+ */
+export function traceServiceOperation(
+  config: {
+    name?: string;
+    targetService?: string;
+    propagateContext?: boolean;
+  } = {}
+) {
+  return function (_target: unknown,  _propertyName: string,  _descriptor: PropertyDescriptor) {
+    const method = descriptor.value;
+
+    descriptor.value = async function (...args: unknown[]) {
+      const serviceName = target.constructor.name;
+      const operationName = config.name || propertyName;
+
+      return openTelemetryTracer.traceServiceCall(
+        serviceName, 
+        _operationName, 
+        config.targetService || 'unknown', 
+ () => {
+          return method.apply(this, args);
+        }
+      );
+    };
+
+    return descriptor;
+  };
+}
+
+/**
+ * Express middleware for tracing HTTP requests
+ */
+export function tracingMiddleware(
+  options: {
+    includeRequestBody?: boolean;
+    includeResponseBody?: boolean;
+    sanitizeRequest?: boolean;
+  } = {}
+) {
+  return (_req: unknown,  _res: unknown,  _next: unknown) => {
+    const startTime = Date.now();
+    const method = req.method;
+    const url = req.url;
+
+    // Extract incoming trace context
+    const incomingContext = openTelemetryTracer.extractContext(req.headers);
+
+    openTelemetryTracer.createSpan(
+      {
+        name: `http.${method.toLowerCase()}`,
+        kind: SpanKind.SERVER,
+        attributes: {
+          'http.method': method,
+          'http.url': url,
+          'http.target': req.path,
+          'http.user_agent': req.get('User-Agent'),
+          'http.remote_addr': req.ip || req.connection.remoteAddress,
+          'http.incoming_trace_id': incomingContext?.traceId,
+        },
+      },
+ (_span) => {
+        // Inject trace context for downstream calls
+        openTelemetryTracer.injectContext(req.headers);
+
+        // Track request start
+        span.addEvent('request_start', {
+          'http.method': method,
+          'http.url': url,
+        });
+
+        if (options.includeRequestBody && req.body) {
+          const bodySize = JSON.stringify(req.body).length;
+          span.setAttribute('http.request_body_size', bodySize);
+        }
+
+        // Override res.end to track response
+        const originalEnd = res.end;
+        res.end = function (...args: unknown[]) {
+          const duration = Date.now() - startTime;
+
+          span.setAttributes({
+            'http.status_code': res.statusCode,
+            'http.response_time_ms': duration,
+            'http.response_finished': true,
+          });
+
+          if (options.includeResponseBody && args[0]) {
+            const responseSize = args[0].length;
+            span.setAttribute('http.response_body_size', responseSize);
+          }
+
+          span.addEvent('request_end', {
+            'http.status_code': res.statusCode,
+            'http.duration_ms': duration,
+          });
+
+          // Record status
+          if (res.statusCode >= 400) {
+            span.setStatus({
+              code: 2, // ERROR
+              message: `HTTP ${res.statusCode}`,
+            });
+          } else {
+            span.setStatus({
+              code: 1, // OK
+              message: `HTTP ${res.statusCode}`,
+            });
+          }
+
+          originalEnd.apply(this, args);
+        };
+
+        next();
+      }
+    );
+  };
+}
+
+/**
+ * Database tracing helper
+ */
+export class DatabaseTracer {
+  constructor(private tracer = openTelemetryTracer) {}
+
+ traceQuery<T>(query: string, params: unknown[], fn: () => Promise<T> | T): Promise<T> {
+    // Extract table name from query (simplified)
+    const tableMatch = query.match(/(?:FROM|INTO|UPDATE)\s+(\w+)/i);
+    const table = tableMatch ? tableMatch[1] : 'unknown';
+
+    // Determine operation type
+    let operation: 'query' | 'insert' | 'update' | 'delete' = 'query';
+    if (query.trim().toLowerCase().startsWith('insert')) operation = 'insert';
+    else if (query.trim().toLowerCase().startsWith('update')) operation = 'update';
+    else if (query.trim().toLowerCase().startsWith('delete')) operation = 'delete';
+
+    return this.tracer.traceDatabaseOperation(operation, table, query, fn);
+  }
+
+  async traceTransaction<T>(
+    operations: Array<{ query: string; params: unknown[] }>,
+    fn: () => Promise<T> | T
+  ): Promise<T> {
+    return this.tracer.createSpan(
+      {
+        name: 'db.transaction', 
+        _kind: SpanKind.CLIENT, 
+        attributes: {
+          'db.system': 'postgresql', 
+          'db.operation': 'transaction', 
+          'db.transaction.operations': operations.length, 
+        }, 
+      }, 
+      async (span) => {
+        try {
+          const result = await fn();
+
+          span.setAttributes({
+            'db.transaction.success': true,
+            'db.transaction.operations_committed': operations.length,
+          });
+
+          return result;
+        } catch (error) {
+          span.setAttributes({
+            'db.transaction.success': false,
+            'db.transaction.error': error instanceof Error ? error.message : 'Unknown',
+          });
+
+          throw error;
+        }
+      }
+    );
+  }
+}
+
+// Export database tracer instance
+export const databaseTracer = new DatabaseTracer();
+
+/**
+ * HTTP client tracing helper
+ */
+export class HttpClientTracer {
+  constructor(private tracer = openTelemetryTracer) {}
+
+  async traceRequest<T>(
+    method: string,
+    url: string,
+    options: unknown = {},
+    fn: () => Promise<T> | T
+  ): Promise<T> {
+    const headers = { ...options.headers };
+
+    return this.tracer.traceHttpRequest(method, url, headers, fn);
+  }
+}
+
+// Export HTTP client tracer instance
+export const httpClientTracer = new HttpClientTracer();
+
+/**
+ * MCP server tracing helper
+ */
+export class McpServerTracer {
+  constructor(private tracer = openTelemetryTracer) {}
+
+  async traceToolCall<T>(
+    toolName: string,
+    arguments_: unknown,
+    fn: () => Promise<T> | T
+  ): Promise<T> {
+    return this.tracer.createSpan(
+      {
+        name: `mcp.tool.${toolName}`,
+        kind: SpanKind.SERVER,
+        attributes: {
+          'mcp.tool.name': toolName,
+          'mcp.tool.arguments_count': Object.keys(arguments_).length,
+          'mcp.tool.arguments_size': JSON.stringify(arguments_).length,
+        },
+      },
+      async (_span) => {
+        try {
+          const result = await fn();
+
+          span.setAttributes({
+            'mcp.tool.success': true,
+            'mcp.tool.result_type': typeof result,
+            'mcp.tool.result_size': JSON.stringify(result).length,
+          });
+
+          return result;
+        } catch (error) {
+          span.setAttributes({
+            'mcp.tool.success': false,
+            'mcp.tool.error_type': error instanceof Error ? error.constructor.name : 'Unknown',
+          });
+
+          throw error;
+        }
+      }
+    );
+  }
+
+  async traceResourceAccess<T>(resourceUri: string, fn: () => Promise<T> | T): Promise<T> {
+    return this.tracer.createSpan(
+      {
+        name: `mcp.resource.access`, 
+        _kind: SpanKind.SERVER, 
+        attributes: {
+          'mcp.resource.uri': resourceUri, 
+        }, 
+      }, 
+      async (span) => {
+        try {
+          const result = await fn();
+
+          span.setAttributes({
+            'mcp.resource.success': true,
+            'mcp.resource.result_type': typeof result,
+          });
+
+          return result;
+        } catch (error) {
+          span.setAttributes({
+            'mcp.resource.success': false,
+            'mcp.resource.error_type': error instanceof Error ? error.constructor.name : 'Unknown',
+          });
+
+          throw error;
+        }
+      }
+    );
+  }
+}
+
+// Export MCP server tracer instance
+export const mcpServerTracer = new McpServerTracer();

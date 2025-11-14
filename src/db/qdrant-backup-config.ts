@@ -1,4 +1,3 @@
-// @ts-nocheck - Emergency rollback: Critical database service
 /**
  * Qdrant Backup Configuration Manager
  *
@@ -13,6 +12,10 @@
  * @version 2.0.0
  * @since 2025
  */
+
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
+// TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';

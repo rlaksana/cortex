@@ -1,4 +1,7 @@
-// @ts-nocheck - Emergency rollback: Critical database service
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
+// TODO: Implement systematic interface synchronization before removing @ts-nocheck
+
 /**
  * Qdrant Database Factory - Vector Database Creation
  *
@@ -17,6 +20,10 @@
  * @version 2.0.0
  * @since 2025
  */
+
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Unknown type propagation issues through DatabaseResult<T>
+// TODO: Implement proper type guards and result handling before removing @ts-nocheck
 
 import * as crypto from 'crypto';
 

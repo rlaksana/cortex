@@ -1,0 +1,13 @@
+{
+  "batch": 21,
+  "category": "schemas",
+  "files": [
+    "schemas/knowledge-types.ts",
+    "schemas/mcp-validation-integration.ts",
+    "schemas/schema-validator.ts",
+    "schemas/type-guards.ts",
+    "schemas/unified-knowledge-validator.ts",
+    "schemas/validation-migration.ts"
+  ],
+  "file_count": 6
+}

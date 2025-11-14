@@ -1,0 +1,17 @@
+{
+  "batch": 9,
+  "category": "services-ai",
+  "files": [
+    "services/ai/ai-orchestrator.service.ts",
+    "services/ai/background-processor.service.ts",
+    "services/ai/background-processor.ts",
+    "services/ai/background-processor-simplified.ts",
+    "services/ai/index.ts",
+    "services/ai/index-simplified.ts",
+    "services/ai/provider-manager.ts",
+    "services/ai/utils/performance-monitor.ts",
+    "services/ai/zai-client.service.ts",
+    "services/ai/zai-optimized-client.ts"
+  ],
+  "file_count": 10
+}

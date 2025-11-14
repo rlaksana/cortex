@@ -1,0 +1,15 @@
+{
+  "batch": 6,
+  "category": "middleware",
+  "files": [
+    "middleware/enhanced-security-middleware.ts",
+    "middleware/error-middleware.ts",
+    "middleware/mcp-auth-wrapper.ts",
+    "middleware/production-security-middleware.ts",
+    "middleware/rate-limiter.ts",
+    "middleware/rate-limit-middleware.ts",
+    "middleware/scope-middleware.ts",
+    "middleware/security-middleware.ts"
+  ],
+  "file_count": 8
+}

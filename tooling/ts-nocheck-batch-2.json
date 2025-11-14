@@ -1,0 +1,12 @@
+{
+  "batch": 2,
+  "category": "core-runtime",
+  "files": [
+    "entry-point-factory.ts",
+    "index.ts",
+    "main-di.ts",
+    "minimal-mcp-server.ts",
+    "production-startup.ts"
+  ],
+  "file_count": 5
+}

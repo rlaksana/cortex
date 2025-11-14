@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical business service
 import { logger } from '@/utils/logger.js';
 
 import { qdrant } from '../../db/qdrant-client.js';

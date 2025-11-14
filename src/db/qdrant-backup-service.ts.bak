@@ -1,0 +1,1226 @@
+/**
+ * Qdrant Backup and Disaster Recovery Service
+ *
+ * Provides comprehensive data durability capabilities including:
+ * - Automated backup scheduling and management
+ * - Incremental backup strategies with point-in-time recovery
+ * - Automated restore testing and validation
+ * - Data consistency checks and integrity verification
+ * - RPO/RTO monitoring and compliance
+ * - Complete disaster recovery procedures
+ *
+ * @author Cortex Team
+ * @version 2.0.0
+ * @since 2025
+ */
+
+import { createHash } from 'crypto';
+import { join } from 'path';
+import type { QdrantClient } from '@qdrant/js-client-rest';
+import type { ScheduledTask } from 'node-cron';
+import { schedule } from 'node-cron';
+import { logger } from '@/utils/logger.js';
+
+/**
+ * Recurrence rule for scheduling backups using cron expressions
+ */
+export type RecurrenceRule = string;
+
+/**
+ * Backup configuration interface
+ */
+export interface BackupConfig {
+  // Scheduling configuration
+  schedule: {
+    fullBackup: RecurrenceRule; // Full backup cadence
+    incrementalBackup: RecurrenceRule; // Incremental backup cadence
+    restoreTest: RecurrenceRule; // Restore test cadence
+    consistencyCheck: RecurrenceRule; // Consistency check cadence
+  };
+
+  // Retention policies
+  retention: {
+    fullBackups: number; // Number of full backups to retain
+    incrementalBackups: number; // Number of incremental backups to retain
+    restoreTestResults: number; // Number of test results to retain
+    maxAgeDays: number; // Maximum age for any backup
+  };
+
+  // Storage configuration
+  storage: {
+    backupPath: string; // Local backup directory
+    remotePath?: string; // Remote storage path (S3, GCS, etc.)
+    compressionEnabled: boolean;
+    encryptionEnabled: boolean;
+    encryptionKey?: string;
+  };
+
+  // RPO/RTO targets
+  targets: {
+    rpoMinutes: number; // Recovery Point Objective in minutes
+    rtoMinutes: number; // Recovery Time Objective in minutes
+    maxDataLossMinutes: number; // Maximum acceptable data loss
+    maxDowntimeMinutes: number; // Maximum acceptable downtime
+  };
+
+  // Performance configuration
+  performance: {
+    maxConcurrentBackups: number;
+    bandwidthThrottleMBps?: number;
+    priority: 'low' | 'normal' | 'high' | 'critical';
+  };
+}
+
+/**
+ * Backup metadata interface
+ */
+export interface BackupMetadata {
+  id: string;
+  type: 'full' | 'incremental';
+  timestamp: string;
+  size: number;
+  checksum: string;
+  pointInTime: string;
+  previousBackupId?: string;
+  collections: string[];
+  vectorCounts: Record<string, number>;
+  configHash: string;
+  encryptionEnabled: boolean;
+  compressed: boolean;
+  storagePath: string;
+  retentionExpiry?: string;
+}
+
+/**
+ * Restore test result interface
+ */
+export interface RestoreTestResult {
+  id: string;
+  backupId: string;
+  timestamp: string;
+  success: boolean;
+  duration: number;
+  dataIntegrityValid: boolean;
+  consistencyChecks: {
+    passed: number;
+    failed: number;
+    details: string[];
+  };
+  performanceMetrics: {
+    restoreTime: number;
+    validationTime: number;
+    throughput: number; // Items per second
+  };
+  errors: string[];
+  rpoCompliance: boolean;
+  rtoCompliance: boolean;
+  recommendations: string[];
+}
+
+/**
+ * Data consistency validation result
+ */
+export interface ConsistencyValidationResult {
+  id: string;
+  timestamp: string;
+  valid: boolean;
+  checks: {
+    crossReplicaConsistency: {
+      passed: boolean;
+      mismatches: string[];
+    };
+    vectorEmbeddingIntegrity: {
+      passed: boolean;
+      corruptedVectors: number;
+      totalVectors: number;
+    };
+    metadataConsistency: {
+      passed: boolean;
+      inconsistencies: string[];
+    };
+    referentialIntegrity: {
+      passed: boolean;
+      brokenReferences: string[];
+    };
+  };
+  overallScore: number; // 0-100
+  recommendations: string[];
+}
+
+/**
+ * Disaster recovery status
+ */
+export interface DisasterRecoveryStatus {
+  lastFullBackup?: string;
+  lastIncrementalBackup?: string;
+  lastRestoreTest?: string;
+  lastConsistencyCheck?: string;
+  rpoStatus: {
+    current: number; // Current RPO in minutes
+    target: number;
+    compliant: boolean;
+  };
+  rtoStatus: {
+    current: number; // Current RTO in minutes
+    target: number;
+    compliant: boolean;
+  };
+  systemHealth: {
+    backupsHealthy: boolean;
+    storageHealthy: boolean;
+    restoreCapabilityValid: boolean;
+    overallStatus: 'healthy' | 'degraded' | 'critical';
+  };
+  upcomingMaintenances: Array<{
+    type: 'backup' | 'test' | 'maintenance';
+    scheduledTime: string;
+    duration: number;
+    description: string;
+  }>;
+}
+
+/**
+ * Qdrant Backup and Disaster Recovery Service
+ */
+export class QdrantBackupService {
+  private client: QdrantClient;
+  private config: BackupConfig;
+  private backupJobs: Map<string, ScheduledTask> = new Map();
+  private activeBackups: Map<string, Promise<unknown>> = new Map();
+  private backupRegistry: Map<string, BackupMetadata> = new Map();
+  private restoreTestResults: Map<string, RestoreTestResult> = new Map();
+  private consistencyResults: Map<string, ConsistencyValidationResult> = new Map();
+
+  constructor(_client: QdrantClient,  config: BackupConfig) {
+    this.client = client;
+    this.config = config;
+  }
+
+  /**
+   * Initialize backup service and start scheduled jobs
+   */
+  async initialize(): Promise<void> {
+    try {
+      logger.info('Initializing Qdrant backup service...');
+
+      // Ensure backup directory exists
+      await this.ensureBackupDirectory();
+
+      // Load existing backup registry
+      await this.loadBackupRegistry();
+
+      // Start scheduled jobs
+      await this.startScheduledJobs();
+
+      // Perform initial validation
+      await this.validateBackupConfiguration();
+
+      // Clean up expired backups
+      await this.cleanupExpiredBackups();
+
+      logger.info('Qdrant backup service initialized successfully');
+    } catch (error) {
+      logger.error({ error }, 'Failed to initialize Qdrant backup service');
+      throw error;
+    }
+  }
+
+  /**
+   * Create a full backup of all collections
+   */
+ createFullBackup(
+    options: {
+      description?: string;
+      priority?: 'low' | 'normal' | 'high';
+    } = {}
+  ): Promise<BackupMetadata> {
+    const backupId = this.generateBackupId('full');
+    const startTime = Date.now();
+
+    try {
+      logger.info({ backupId }, 'Starting full backup creation');
+
+      // Get all collections
+      const collections = await this.client.getCollections();
+
+      // Create backup metadata
+      const metadata: BackupMetadata = {
+        id: backupId,
+        type: 'full',
+        timestamp: new Date().toISOString(),
+        size: 0,
+        checksum: '',
+        pointInTime: new Date().toISOString(),
+        collections: collections.collections.map((c) => c.name),
+        vectorCounts: {},
+        configHash: this.generateConfigHash(),
+        encryptionEnabled: this.config.storage.encryptionEnabled,
+        compressed: this.config.storage.compressionEnabled,
+        storagePath: this.getBackupPath(backupId),
+      };
+
+      // Backup each collection
+      let totalSize = 0;
+      const backupPromises = collections.collections.map(async (collection) => {
+        const collectionBackup = await this.backupCollection(collection.name, backupId);
+        metadata.vectorCounts[collection.name] = collectionBackup.vectorCount;
+        totalSize += collectionBackup.size;
+        return collectionBackup;
+      });
+
+      await Promise.all(backupPromises);
+      metadata.size = totalSize;
+
+      // Generate checksum
+      metadata.checksum = await this.generateBackupChecksum(metadata);
+
+      // Save metadata
+      await this.saveBackupMetadata(metadata);
+
+      // Register backup
+      this.backupRegistry.set(backupId, metadata);
+
+      const duration = Date.now() - startTime;
+      logger.info(
+        {
+          backupId,
+          duration,
+          size: totalSize,
+          collections: collections.collections.length,
+        },
+        'Full backup created successfully'
+      );
+
+      return metadata;
+    } catch (error) {
+      logger.error({ backupId, error }, 'Failed to create full backup');
+      throw new Error(
+        `Full backup failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Create an incremental backup based on the last full backup
+   */
+ createIncrementalBackup(
+    options: {
+      baseBackupId?: string;
+      description?: string;
+    } = {}
+  ): Promise<BackupMetadata> {
+    const backupId = this.generateBackupId('incremental');
+    const startTime = Date.now();
+
+    try {
+      logger.info({ backupId }, 'Starting incremental backup creation');
+
+      // Find the latest full backup as base
+      const baseBackupId = options.baseBackupId || this.findLatestFullBackup();
+      if (!baseBackupId) {
+        throw new Error('No full backup found for incremental backup');
+      }
+
+      const baseBackup = this.backupRegistry.get(baseBackupId);
+      if (!baseBackup) {
+        throw new Error(`Base backup not found: ${baseBackupId}`);
+      }
+
+      // Get changes since base backup
+      const changes = await this.getCollectionChanges(baseBackup.timestamp);
+
+      // Create incremental backup metadata
+      const metadata: BackupMetadata = {
+        id: backupId,
+        type: 'incremental',
+        timestamp: new Date().toISOString(),
+        size: 0,
+        checksum: '',
+        pointInTime: new Date().toISOString(),
+        previousBackupId: baseBackupId,
+        collections: Object.keys(changes),
+        vectorCounts: {},
+        configHash: this.generateConfigHash(),
+        encryptionEnabled: this.config.storage.encryptionEnabled,
+        compressed: this.config.storage.compressionEnabled,
+        storagePath: this.getBackupPath(backupId),
+      };
+
+      // Backup only changed data
+      let totalSize = 0;
+      for (const [collectionName, changeData] of Object.entries(changes)) {
+        const collectionBackup = await this.backupCollectionChanges(
+          collectionName,
+          changeData,
+          backupId
+        );
+        metadata.vectorCounts[collectionName] = collectionBackup.vectorCount;
+        totalSize += collectionBackup.size;
+      }
+
+      metadata.size = totalSize;
+      metadata.checksum = await this.generateBackupChecksum(metadata);
+
+      // Save metadata
+      await this.saveBackupMetadata(metadata);
+
+      // Register backup
+      this.backupRegistry.set(backupId, metadata);
+
+      const duration = Date.now() - startTime;
+      logger.info(
+        {
+          backupId,
+          baseBackupId,
+          duration,
+          size: totalSize,
+          changedCollections: Object.keys(changes).length,
+        },
+        'Incremental backup created successfully'
+      );
+
+      return metadata;
+    } catch (error) {
+      logger.error({ backupId, error }, 'Failed to create incremental backup');
+      throw new Error(
+        `Incremental backup failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Perform automated restore test with validation
+   */
+  async performRestoreTest(backupId?: string): Promise<RestoreTestResult> {
+    const testId = this.generateTestId('restore');
+    const startTime = Date.now();
+
+    try {
+      // Select backup to test (latest if not specified)
+      const targetBackupId = backupId || this.findLatestBackup();
+      if (!targetBackupId) {
+        throw new Error('No backup available for restore test');
+      }
+
+      const backup = this.backupRegistry.get(targetBackupId);
+      if (!backup) {
+        throw new Error(`Backup not found: ${targetBackupId}`);
+      }
+
+      logger.info({ testId, backupId: targetBackupId }, 'Starting restore test');
+
+      // Initialize test result
+      const result: RestoreTestResult = {
+        id: testId,
+        backupId: targetBackupId,
+        timestamp: new Date().toISOString(),
+        success: false,
+        duration: 0,
+        dataIntegrityValid: false,
+        consistencyChecks: {
+          passed: 0,
+          failed: 0,
+          details: [],
+        },
+        performanceMetrics: {
+          restoreTime: 0,
+          validationTime: 0,
+          throughput: 0,
+        },
+        errors: [],
+        rpoCompliance: false,
+        rtoCompliance: false,
+        recommendations: [],
+      };
+
+      // Create test environment
+      const testCollectionName = `test_restore_${testId}`;
+      const restoreStartTime = Date.now();
+
+      try {
+        // Restore backup to test collection
+        if (backup.type === 'full') {
+          await this.restoreFullBackup(targetBackupId, testCollectionName);
+        } else {
+          await this.restoreIncrementalBackup(targetBackupId, testCollectionName);
+        }
+
+        result.performanceMetrics.restoreTime = Date.now() - restoreStartTime;
+
+        // Validate data integrity
+        const validationStartTime = Date.now();
+        const integrityResult = await this.validateRestoreIntegrity(testCollectionName, backup);
+
+        result.dataIntegrityValid = integrityResult.valid;
+        result.consistencyChecks = integrityResult.checks;
+        result.performanceMetrics.validationTime = Date.now() - validationStartTime;
+
+        // Calculate throughput
+        const totalItems = Object.values(backup.vectorCounts).reduce(
+          (sum,  _count) => sum + count,
+          0
+        );
+        result.performanceMetrics.throughput =
+          totalItems / (result.performanceMetrics.restoreTime / 1000);
+
+        // Check RPO/RTO compliance
+        result.rpoCompliance = this.checkRPOCompliance(backup);
+        result.rtoCompliance = this.checkRTOCompliance(result.performanceMetrics.restoreTime);
+
+        result.success =
+          result.dataIntegrityValid &&
+          result.consistencyChecks.failed === 0 &&
+          result.rpoCompliance &&
+          result.rtoCompliance;
+
+        // Generate recommendations
+        result.recommendations = this.generateRestoreRecommendations(result);
+      } finally {
+        // Cleanup test collection
+        await this.cleanupTestCollection(testCollectionName);
+      }
+
+      result.duration = Date.now() - startTime;
+
+      // Save test result
+      this.restoreTestResults.set(testId, result);
+      await this.saveRestoreTestResult(result);
+
+      logger.info(
+        {
+          testId,
+          backupId: targetBackupId,
+          success: result.success,
+          duration: result.duration,
+          rpoCompliant: result.rpoCompliance,
+          rtoCompliant: result.rtoCompliance,
+        },
+        'Restore test completed'
+      );
+
+      return result;
+    } catch (error) {
+      const result: RestoreTestResult = {
+        id: testId,
+        backupId: backupId || 'unknown',
+        timestamp: new Date().toISOString(),
+        success: false,
+        duration: Date.now() - startTime,
+        dataIntegrityValid: false,
+        consistencyChecks: {
+          passed: 0,
+          failed: 1,
+          details: [`Test failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
+        },
+        performanceMetrics: {
+          restoreTime: 0,
+          validationTime: 0,
+          throughput: 0,
+        },
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        rpoCompliance: false,
+        rtoCompliance: false,
+        recommendations: ['Investigate backup integrity and restore process'],
+      };
+
+      this.restoreTestResults.set(testId, result);
+      await this.saveRestoreTestResult(result);
+
+      logger.error({ testId, error }, 'Restore test failed');
+      return result;
+    }
+  }
+
+  /**
+   * Perform comprehensive data consistency validation
+   */
+  async performConsistencyValidation(): Promise<ConsistencyValidationResult> {
+    const validationId = this.generateTestId('consistency');
+    const startTime = Date.now();
+
+    try {
+      logger.info({ validationId }, 'Starting consistency validation');
+
+      const result: ConsistencyValidationResult = {
+        id: validationId,
+        timestamp: new Date().toISOString(),
+        valid: false,
+        checks: {
+          crossReplicaConsistency: {
+            passed: false,
+            mismatches: [],
+          },
+          vectorEmbeddingIntegrity: {
+            passed: false,
+            corruptedVectors: 0,
+            totalVectors: 0,
+          },
+          metadataConsistency: {
+            passed: false,
+            inconsistencies: [],
+          },
+          referentialIntegrity: {
+            passed: false,
+            brokenReferences: [],
+          },
+        },
+        overallScore: 0,
+        recommendations: [],
+      };
+
+      // Perform cross-replica consistency check
+      result.checks.crossReplicaConsistency = await this.checkCrossReplicaConsistency();
+
+      // Perform vector embedding integrity check
+      result.checks.vectorEmbeddingIntegrity = await this.checkVectorEmbeddingIntegrity();
+
+      // Perform metadata consistency check
+      result.checks.metadataConsistency = await this.checkMetadataConsistency();
+
+      // Perform referential integrity check
+      result.checks.referentialIntegrity = await this.checkReferentialIntegrity();
+
+      // Calculate overall score
+      const totalChecks = 4;
+      const passedChecks = [
+        result.checks.crossReplicaConsistency.passed,
+        result.checks.vectorEmbeddingIntegrity.passed,
+        result.checks.metadataConsistency.passed,
+        result.checks.referentialIntegrity.passed,
+      ].filter(Boolean).length;
+
+      result.overallScore = Math.round((passedChecks / totalChecks) * 100);
+      result.valid = result.overallScore >= 90;
+
+      // Generate recommendations
+      result.recommendations = this.generateConsistencyRecommendations(result);
+
+      // Save result
+      this.consistencyResults.set(validationId, result);
+      await this.saveConsistencyValidationResult(result);
+
+      const duration = Date.now() - startTime;
+      logger.info(
+        {
+          validationId,
+          valid: result.valid,
+          score: result.overallScore,
+          duration,
+        },
+        'Consistency validation completed'
+      );
+
+      return result;
+    } catch (error) {
+      logger.error({ validationId, error }, 'Consistency validation failed');
+      throw error;
+    }
+  }
+
+  /**
+   * Get current disaster recovery status
+   */
+  async getDisasterRecoveryStatus(): Promise<DisasterRecoveryStatus> {
+    try {
+      const latestFullBackup = this.findLatestFullBackup();
+      const latestIncrementalBackup = this.findLatestIncrementalBackup();
+      const latestRestoreTest = this.findLatestRestoreTest();
+      const latestConsistencyCheck = this.findLatestConsistencyCheck();
+
+      // Calculate RPO status
+      const rpoStatus = this.calculateRPOStatus();
+
+      // Calculate RTO status
+      const rtoStatus = this.calculateRTOStatus();
+
+      // Check system health
+      const systemHealth = await this.checkSystemHealth();
+
+      // Get upcoming maintenances
+      const upcomingMaintenances = this.getUpcomingMaintenances();
+
+      return {
+        lastFullBackup: latestFullBackup,
+        lastIncrementalBackup: latestIncrementalBackup,
+        lastRestoreTest: latestRestoreTest,
+        lastConsistencyCheck: latestConsistencyCheck,
+        rpoStatus,
+        rtoStatus,
+        systemHealth,
+        upcomingMaintenances,
+      };
+    } catch (error) {
+      logger.error({ error }, 'Failed to get disaster recovery status');
+      throw error;
+    }
+  }
+
+  /**
+   * Execute complete disaster recovery procedure
+   */
+  executeDisasterRecovery(
+    options: {
+      targetTime?: string;
+      backupId?: string;
+      skipValidation?: boolean;
+    } = {}
+  ): Promise<{
+    success: boolean;
+    recoveryPoint: string;
+    duration: number;
+    dataValidated: boolean;
+    errors: string[];
+    recommendations: string[];
+  }> {
+    const recoveryId = this.generateTestId('recovery');
+    const startTime = Date.now();
+
+    try {
+      logger.info({ recoveryId, options }, 'Starting disaster recovery procedure');
+
+      // Select appropriate backup
+      const backupId = options.backupId || this.selectBestBackup(options.targetTime);
+      if (!backupId) {
+        throw new Error('No suitable backup found for disaster recovery');
+      }
+
+      const backup = this.backupRegistry.get(backupId);
+      if (!backup) {
+        throw new Error(`Backup not found: ${backupId}`);
+      }
+
+      const result = {
+        success: false,
+        recoveryPoint: backup.pointInTime,
+        duration: 0,
+        dataValidated: false,
+        errors: [] as string[],
+        recommendations: [] as string[],
+      };
+
+      try {
+        // Pre-recovery checks
+        await this.performPreRecoveryChecks();
+
+        // Execute recovery
+        if (backup.type === 'full') {
+          await this.executeFullRecovery(backupId);
+        } else {
+          await this.executeIncrementalRecovery(backupId);
+        }
+
+        // Post-recovery validation (unless skipped)
+        if (!options.skipValidation) {
+          const validationResult = await this.performPostRecoveryValidation();
+          result.dataValidated = validationResult.valid;
+
+          if (!validationResult.valid) {
+            result.errors.push(...validationResult.issues);
+          }
+        } else {
+          result.dataValidated = true;
+          result.recommendations.push(
+            'Data validation was skipped - manual validation recommended'
+          );
+        }
+
+        result.success = true;
+
+        logger.info(
+          {
+            recoveryId,
+            backupId,
+            recoveryPoint: result.recoveryPoint,
+            success: result.success,
+          },
+          'Disaster recovery completed successfully'
+        );
+      } catch (error) {
+        result.errors.push(
+          `Recovery failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+        logger.error({ recoveryId, error }, 'Disaster recovery failed');
+      }
+
+      result.duration = Date.now() - startTime;
+      return result;
+    } catch (error) {
+      logger.error({ recoveryId, error }, 'Disaster recovery procedure failed');
+      return {
+        success: false,
+        recoveryPoint: new Date().toISOString(),
+        duration: Date.now() - startTime,
+        dataValidated: false,
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        recommendations: ['Investigate backup integrity and recovery procedures'],
+      };
+    }
+  }
+
+  /**
+   * Stop backup service and cleanup
+   */
+  async shutdown(): Promise<void> {
+    try {
+      logger.info('Shutting down Qdrant backup service...');
+
+      // Stop all scheduled jobs
+      for (const [name,  job] of this.backupJobs) {
+        job.stop();
+        logger.debug({ jobName: name }, 'Stopped backup job');
+      }
+      this.backupJobs.clear();
+
+      // Wait for active backups to complete (with timeout)
+      const timeout = 5 * 60 * 1000; // 5 minutes
+      const startTime = Date.now();
+
+      while (this.activeBackups.size > 0 && Date.now() - startTime < timeout) {
+        logger.info(
+          {
+            activeBackups: this.activeBackups.size,
+          },
+          'Waiting for active backups to complete...'
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
+      if (this.activeBackups.size > 0) {
+        logger.warn(
+          {
+            activeBackups: this.activeBackups.size,
+          },
+          'Some backups did not complete before shutdown'
+        );
+      }
+
+      // Save registry
+      await this.saveBackupRegistry();
+
+      logger.info('Qdrant backup service shutdown completed');
+    } catch (error) {
+      logger.error({ error }, 'Error during backup service shutdown');
+      throw error;
+    }
+  }
+
+  // === Private Helper Methods ===
+
+  private async ensureBackupDirectory(): Promise<void> {
+    // Implementation would create backup directories
+  }
+
+  private async loadBackupRegistry(): Promise<void> {
+    // Implementation would load existing backup registry
+  }
+
+  private async startScheduledJobs(): Promise<void> {
+    // Schedule full backups
+    const fullBackupJob = schedule(this.config.schedule.fullBackup,  async () => {
+      await this.createFullBackup().catch((error) => {
+        logger.error({ error }, 'Scheduled full backup failed');
+      });
+    });
+    this.backupJobs.set('fullBackup', fullBackupJob);
+
+    // Schedule incremental backups
+    const incrementalBackupJob = schedule(this.config.schedule.incrementalBackup,  async () => {
+      await this.createIncrementalBackup().catch((error) => {
+        logger.error({ error }, 'Scheduled incremental backup failed');
+      });
+    });
+    this.backupJobs.set('incrementalBackup', incrementalBackupJob);
+
+    // Schedule restore tests
+    const restoreTestJob = schedule(this.config.schedule.restoreTest,  async () => {
+      await this.performRestoreTest().catch((error) => {
+        logger.error({ error }, 'Scheduled restore test failed');
+      });
+    });
+    this.backupJobs.set('restoreTest', restoreTestJob);
+
+    // Schedule consistency checks
+    const consistencyCheckJob = schedule(this.config.schedule.consistencyCheck,  async () => {
+      await this.performConsistencyValidation().catch((error) => {
+        logger.error({ error }, 'Scheduled consistency check failed');
+      });
+    });
+    this.backupJobs.set('consistencyCheck', consistencyCheckJob);
+  }
+
+  private generateBackupId(type: string): string {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const random = Math.random().toString(36).substr(2, 8);
+    return `${type}_${timestamp}_${random}`;
+  }
+
+  private generateTestId(type: string): string {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const random = Math.random().toString(36).substr(2, 8);
+    return `${type}_test_${timestamp}_${random}`;
+  }
+
+  private getBackupPath(_backupId: string): string {
+    return join(this.config.storage.backupPath, backupId);
+  }
+
+  private generateConfigHash(): string {
+    const configStr = JSON.stringify(this.config);
+    return createHash('sha256').update(configStr).digest('hex');
+  }
+
+  private backupCollection(
+    _collectionName: string, 
+    _backupId: string
+  ): Promise<{
+    vectorCount: number;
+    size: number;
+  }> {
+    // Implementation would backup a specific collection
+    return { vectorCount: 0, size: 0 };
+  }
+
+  private backupCollectionChanges(
+    _collectionName: string, 
+    _changes: unknown, 
+    _backupId: string
+  ): Promise<{
+    vectorCount: number;
+    size: number;
+  }> {
+    // Implementation would backup only changes for a collection
+    return { vectorCount: 0, size: 0 };
+  }
+
+  private async getCollectionChanges(sinceTimestamp: string): Promise<Record<string, unknown>> {
+    // Implementation would detect changes since given timestamp
+    return {};
+  }
+
+  private async generateBackupChecksum(metadata: BackupMetadata): Promise<string> {
+    const metadataStr = JSON.stringify(metadata);
+    return createHash('sha256').update(metadataStr).digest('hex');
+  }
+
+  private async saveBackupMetadata(metadata: BackupMetadata): Promise<void> {
+    // Implementation would save backup metadata to disk
+  }
+
+  private findLatestFullBackup(): string | undefined {
+    // Implementation would find the latest full backup
+    return undefined;
+  }
+
+  private findLatestIncrementalBackup(): string | undefined {
+    // Implementation would find the latest incremental backup
+    return undefined;
+  }
+
+  private findLatestBackup(): string | undefined {
+    // Implementation would find the latest backup (full or incremental)
+    return undefined;
+  }
+
+  private findLatestRestoreTest(): string | undefined {
+    // Implementation would find the latest restore test
+    return undefined;
+  }
+
+  private findLatestConsistencyCheck(): string | undefined {
+    // Implementation would find the latest consistency check
+    return undefined;
+  }
+
+  private async validateBackupConfiguration(): Promise<void> {
+    // Implementation would validate backup configuration
+  }
+
+  private async cleanupExpiredBackups(): Promise<void> {
+    // Implementation would clean up expired backups based on retention policy
+  }
+
+  private async restoreFullBackup(backupId: string, targetCollection: string): Promise<void> {
+    // Implementation would restore from a full backup
+  }
+
+  private async restoreIncrementalBackup(
+    backupId: string,
+    targetCollection: string
+  ): Promise<void> {
+    // Implementation would restore from an incremental backup
+  }
+
+  private validateRestoreIntegrity(
+    _collectionName: string, 
+    _originalBackup: BackupMetadata
+  ): Promise<{
+    valid: boolean;
+    checks: {
+      passed: number;
+      failed: number;
+      details: string[];
+    };
+  }> {
+    // Implementation would validate restored data integrity
+    return {
+      valid: true,
+      checks: {
+        passed: 0,
+        failed: 0,
+        details: [],
+      },
+    };
+  }
+
+  private checkRPOCompliance(_backup: BackupMetadata): boolean {
+    const backupAge = Date.now() - new Date(backup.timestamp).getTime();
+    const rpoLimitMs = this.config.targets.rpoMinutes * 60 * 1000;
+    return backupAge <= rpoLimitMs;
+  }
+
+  private checkRTOCompliance(_restoreTimeMs: number): boolean {
+    const rtoLimitMs = this.config.targets.rtoMinutes * 60 * 1000;
+    return restoreTimeMs <= rtoLimitMs;
+  }
+
+  private generateRestoreRecommendations(result: RestoreTestResult): string[] {
+    const recommendations: string[] = [];
+
+    if (!result.success) {
+      recommendations.push('Investigate backup integrity and restore process');
+    }
+
+    if (!result.rpoCompliance) {
+      recommendations.push('Backup frequency does not meet RPO requirements');
+    }
+
+    if (!result.rtoCompliance) {
+      recommendations.push('Restore time exceeds RTO requirements');
+    }
+
+    if (result.performanceMetrics.throughput < 1000) {
+      recommendations.push('Consider optimizing restore performance');
+    }
+
+    return recommendations;
+  }
+
+  private async cleanupTestCollection(collectionName: string): Promise<void> {
+    // Implementation would cleanup test collection
+  }
+
+  private async saveRestoreTestResult(result: RestoreTestResult): Promise<void> {
+    // Implementation would save restore test result
+  }
+
+  private checkCrossReplicaConsistency(): Promise<{
+    passed: boolean;
+    mismatches: string[];
+  }> {
+    // Implementation would check consistency across replicas
+    return {
+      passed: true,
+      mismatches: [],
+    };
+  }
+
+  private checkVectorEmbeddingIntegrity(): Promise<{
+    passed: boolean;
+    corruptedVectors: number;
+    totalVectors: number;
+  }> {
+    // Implementation would check vector embedding integrity
+    return {
+      passed: true,
+      corruptedVectors: 0,
+      totalVectors: 0,
+    };
+  }
+
+  private checkMetadataConsistency(): Promise<{
+    passed: boolean;
+    inconsistencies: string[];
+  }> {
+    // Implementation would check metadata consistency
+    return {
+      passed: true,
+      inconsistencies: [],
+    };
+  }
+
+  private checkReferentialIntegrity(): Promise<{
+    passed: boolean;
+    brokenReferences: string[];
+  }> {
+    // Implementation would check referential integrity
+    return {
+      passed: true,
+      brokenReferences: [],
+    };
+  }
+
+  private generateConsistencyRecommendations(result: ConsistencyValidationResult): string[] {
+    const recommendations: string[] = [];
+
+    if (!result.checks.crossReplicaConsistency.passed) {
+      recommendations.push('Address cross-replica consistency issues');
+    }
+
+    if (!result.checks.vectorEmbeddingIntegrity.passed) {
+      recommendations.push('Investigate and repair corrupted vector embeddings');
+    }
+
+    if (!result.checks.metadataConsistency.passed) {
+      recommendations.push('Fix metadata inconsistencies');
+    }
+
+    if (!result.checks.referentialIntegrity.passed) {
+      recommendations.push('Repair broken references in the data');
+    }
+
+    if (result.overallScore < 100) {
+      recommendations.push('Schedule additional consistency checks');
+    }
+
+    return recommendations;
+  }
+
+  private async saveConsistencyValidationResult(
+    result: ConsistencyValidationResult
+  ): Promise<void> {
+    // Implementation would save consistency validation result
+  }
+
+  private calculateRPOStatus(): {
+    current: number;
+    target: number;
+    compliant: boolean;
+  } {
+    const latestBackup = this.findLatestBackup();
+    if (!latestBackup) {
+      return {
+        current: Infinity,
+        target: this.config.targets.rpoMinutes,
+        compliant: false,
+      };
+    }
+
+    const backup = this.backupRegistry.get(latestBackup);
+    if (!backup) {
+      return {
+        current: Infinity,
+        target: this.config.targets.rpoMinutes,
+        compliant: false,
+      };
+    }
+
+    const currentRPO = (Date.now() - new Date(backup.timestamp).getTime()) / (1000 * 60);
+    return {
+      current: Math.round(currentRPO),
+      target: this.config.targets.rpoMinutes,
+      compliant: currentRPO <= this.config.targets.rpoMinutes,
+    };
+  }
+
+  private calculateRTOStatus(): {
+    current: number;
+    target: number;
+    compliant: boolean;
+  } {
+    const latestTest = this.findLatestRestoreTest();
+    if (!latestTest) {
+      return {
+        current: 0,
+        target: this.config.targets.rtoMinutes,
+        compliant: false,
+      };
+    }
+
+    const testResult = this.restoreTestResults.get(latestTest);
+    if (!testResult) {
+      return {
+        current: 0,
+        target: this.config.targets.rtoMinutes,
+        compliant: false,
+      };
+    }
+
+    const currentRTO = testResult.performanceMetrics.restoreTime / (1000 * 60);
+    return {
+      current: Math.round(currentRTO),
+      target: this.config.targets.rtoMinutes,
+      compliant: currentRTO <= this.config.targets.rtoMinutes,
+    };
+  }
+
+  private checkSystemHealth(): Promise<{
+    backupsHealthy: boolean;
+    storageHealthy: boolean;
+    restoreCapabilityValid: boolean;
+    overallStatus: 'healthy' | 'degraded' | 'critical';
+  }> {
+    const backupsHealthy = this.backupRegistry.size > 0;
+    const storageHealthy = true; // Would check actual storage health
+    const restoreCapabilityValid =
+      this.restoreTestResults.size > 0 &&
+      Array.from(this.restoreTestResults.values()).some((test) => test.success);
+
+    let overallStatus: 'healthy' | 'degraded' | 'critical' = 'healthy';
+
+    if (!backupsHealthy || !restoreCapabilityValid) {
+      overallStatus = 'critical';
+    } else if (!storageHealthy) {
+      overallStatus = 'degraded';
+    }
+
+    return {
+      backupsHealthy,
+      storageHealthy,
+      restoreCapabilityValid,
+      overallStatus,
+    };
+  }
+
+  private getUpcomingMaintenances(): Array<{
+    type: 'backup' | 'test' | 'maintenance';
+    scheduledTime: string;
+    duration: number;
+    description: string;
+  }> {
+    // Implementation would return upcoming scheduled maintenance
+    return [];
+  }
+
+  private selectBestBackup(targetTime?: string): string | undefined {
+    // Implementation would select the best backup for recovery
+    return this.findLatestBackup();
+  }
+
+  private async performPreRecoveryChecks(): Promise<void> {
+    // Implementation would perform pre-recovery system checks
+  }
+
+  private async executeFullRecovery(backupId: string): Promise<void> {
+    // Implementation would execute full recovery procedure
+  }
+
+  private async executeIncrementalRecovery(backupId: string): Promise<void> {
+    // Implementation would execute incremental recovery procedure
+  }
+
+  private performPostRecoveryValidation(): Promise<{
+    valid: boolean;
+    issues: string[];
+  }> {
+    // Implementation would perform post-recovery validation
+    return {
+      valid: true,
+      issues: [],
+    };
+  }
+
+  private async saveBackupRegistry(): Promise<void> {
+    // Implementation would save backup registry to disk
+  }
+}

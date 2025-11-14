@@ -1,5 +1,7 @@
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Monitoring system type compatibility issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
 
-// @ts-nocheck - Emergency rollback: Critical monitoring service
 /* @file: src/monitoring/ai-health-monitor.ts
  * Clean scaffold after accidental regex corruption.
  * Keep minimal, deterministic shapes; no widening.

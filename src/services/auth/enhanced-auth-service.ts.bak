@@ -1,0 +1,726 @@
+/**
+ * Enhanced Authentication Service with Dependency Injection
+ *
+ * Refactored from auth-service.ts to remove tight coupling by:
+ * - Using @Injectable decorator for DI container management
+ * - Constructor injection instead of direct instantiation
+ * - Repository pattern instead of direct database access
+ * - Interface-based dependencies
+ * - Proper service lifetime management
+ */
+
+import { randomUUID } from 'crypto';
+import {
+  Injectable,
+  Inject,
+  ServiceLifetime,
+  COMMON_TOKENS,
+} from '../../di/enhanced-decorators.js';
+import {
+  User,
+  ApiKey,
+  AuthToken,
+  TokenPayload,
+  AuthSession,
+  AuthScope,
+  AuthContext,
+} from '../../types/auth-types.js';
+import {
+  ConfigurationError,
+  AuthenticationError,
+  ErrorCategory,
+} from '../../utils/error-handler.js';
+import { logger } from '../../utils/logger.js';
+
+// Database interfaces for dependency injection
+export interface IUserRepository {
+  findById(id: string): Promise<User | null>;
+  findByUsername(username: string): Promise<User | null>;
+  findByEmail(email: string): Promise<User | null>;
+  create(user: Omit<User, 'id' | 'created_at' | 'updated_at'>): Promise<User>;
+  update(id: string, updates: Partial<User>): Promise<User>;
+  delete(id: string): Promise<void>;
+  existsByUsername(username: string): Promise<boolean>;
+  existsByEmail(email: string): Promise<boolean>;
+}
+
+export interface IApiKeyRepository {
+  findById(id: string): Promise<ApiKey | null>;
+  findByKey(keyHash: string): Promise<ApiKey | null>;
+  create(apiKey: Omit<ApiKey, 'id' | 'created_at'>): Promise<ApiKey>;
+  revoke(id: string): Promise<void>;
+  findByUserId(userId: string): Promise<ApiKey[]>;
+  delete(id: string): Promise<void>;
+  update(id: string, updates: Partial<ApiKey>): Promise<ApiKey>;
+}
+
+export interface ISessionRepository {
+  findById(id: string): Promise<AuthSession | null>;
+  create(session: Omit<AuthSession, 'id' | 'created_at'>): Promise<AuthSession>;
+  update(id: string, updates: Partial<AuthSession>): Promise<AuthSession>;
+  delete(id: string): Promise<void>;
+  deleteByUserId(userId: string): Promise<void>;
+  deleteExpired(): Promise<void>;
+  findByUserId(userId: string): Promise<AuthSession[]>;
+}
+
+export interface ITokenBlacklistRepository {
+  add(jti: string, reason?: string): Promise<void>;
+  remove(jti: string): Promise<void>;
+  exists(jti: string): Promise<boolean>;
+  cleanup(): Promise<void>;
+}
+
+export interface ISecurityEventRepository {
+  log(event: SecurityEvent): Promise<void>;
+  findByUserId(userId: string, limit?: number): Promise<SecurityEvent[]>;
+  findByType(type: string, limit?: number): Promise<SecurityEvent[]>;
+  findRecent(hours: number, limit?: number): Promise<SecurityEvent[]>;
+}
+
+export interface ICryptoService {
+  hashPassword(password: string): Promise<string>;
+  comparePassword(password: string, hash: string): Promise<boolean>;
+  generateSecureRandom(length: number): string;
+  generateApiKey(): Promise<string>;
+  hashApiKey(apiKey: string): Promise<string>;
+}
+
+export interface ITokenService {
+  signToken(_payload: unknown,  _secret: string,  options?: unknown): string;
+  verifyToken(token: string, secret: string): unknown;
+  decodeToken(token: string): unknown;
+  generateJTI(): string;
+}
+
+export interface IRateLimitService {
+  checkLimit(identifier: string, limit: number, windowMs: number): Promise<boolean>;
+  getRemainingRequests(identifier: string): Promise<number>;
+  resetLimit(identifier: string): Promise<void>;
+}
+
+export interface IAuditService {
+  logEvent(event: AuditEvent): Promise<void>;
+  logSecurityEvent(event: SecurityEvent): Promise<void>;
+  logAuthEvent(event: AuthEvent): Promise<void>;
+}
+
+export interface AuthServiceConfig {
+  jwt_secret: string;
+  jwt_refresh_secret: string;
+  jwt_expires_in: string;
+  jwt_refresh_expires_in: string;
+  bcrypt_rounds: number;
+  api_key_length: number;
+  session_timeout_hours: number;
+  max_sessions_per_user: number;
+  rate_limit_enabled: boolean;
+  token_blacklist_backup_path?: string;
+}
+
+interface SecurityEvent {
+  type: string;
+  jti?: string;
+  userId?: string;
+  timestamp: Date;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  metadata?: Record<string, unknown>;
+}
+
+interface AuditEvent {
+  userId?: string;
+  action: string;
+  resource: string;
+  timestamp: Date;
+  outcome: 'success' | 'failure';
+  metadata?: Record<string, unknown>;
+}
+
+interface AuthEvent {
+  userId?: string;
+  type: 'login' | 'logout' | 'token_refresh' | 'api_key_created' | 'api_key_revoked';
+  timestamp: Date;
+  success: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Enhanced Authentication Service with dependency injection
+ */
+@Injectable({
+  token: COMMON_TOKENS.AUTH_SERVICE,
+  lifetime: ServiceLifetime.SINGLETON,
+  tags: ['auth', 'security', 'core'],
+})
+export class EnhancedAuthService {
+  private config: AuthServiceConfig;
+  private tokenBlacklist: Map<string, { revoked: boolean; timestamp: number }> = new Map();
+  private activeSessions: Map<string, AuthSession> = new Map();
+  private distributedSync: { lastSyncTime: number; syncInterval: number; instanceId: string } = {
+    lastSyncTime: 0,
+    syncInterval: 30000, // 30 seconds
+    instanceId: randomUUID(),
+  };
+
+  constructor(
+    @Inject(COMMON_TOKENS.CONFIG_SERVICE) configService: unknown,
+    @Inject('UserRepository') private userRepository: IUserRepository,
+    @Inject('ApiKeyRepository') private apiKeyRepository: IApiKeyRepository,
+    @Inject('SessionRepository') private sessionRepository: ISessionRepository,
+    @Inject('TokenBlacklistRepository') private tokenBlacklistRepository: ITokenBlacklistRepository,
+    @Inject('SecurityEventRepository') private securityEventRepository: ISecurityEventRepository,
+    @Inject('CryptoService') private cryptoService: ICryptoService,
+    @Inject('TokenService') private tokenService: ITokenService,
+    @Inject('RateLimitService') private rateLimitService: IRateLimitService,
+    @Inject('AuditService') private auditService: IAuditService
+  ) {
+    this.config = this.loadConfig(configService);
+    this.validateConfig();
+    this.loadTokenBlacklistFromBackup();
+    this.startSessionCleanup();
+    this.startDistributedSync();
+
+    logger.info('Enhanced Authentication Service initialized with dependency injection', {
+      dependencies: [
+        'UserRepository',
+        'ApiKeyRepository',
+        'SessionRepository',
+        'TokenBlacklistRepository',
+        'SecurityEventRepository',
+        'CryptoService',
+        'TokenService',
+        'RateLimitService',
+        'AuditService',
+      ],
+    });
+  }
+
+  private loadConfig(_configService: unknown): AuthServiceConfig {
+    return {
+      jwt_secret: configService.get('JWT_SECRET', ''),
+      jwt_refresh_secret: configService.get('JWT_REFRESH_SECRET', ''),
+      jwt_expires_in: configService.get('JWT_EXPIRES_IN', '1h'),
+      jwt_refresh_expires_in: configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
+      bcrypt_rounds: configService.get('BCRYPT_ROUNDS', 12),
+      api_key_length: configService.get('API_KEY_LENGTH', 32),
+      session_timeout_hours: configService.get('SESSION_TIMEOUT_HOURS', 24),
+      max_sessions_per_user: configService.get('MAX_SESSIONS_PER_USER', 5),
+      rate_limit_enabled: configService.get('RATE_LIMIT_ENABLED', true),
+      token_blacklist_backup_path: configService.get('TOKEN_BLACKLIST_BACKUP_PATH'),
+    };
+  }
+
+  private validateConfig(): void {
+    if (!this.config.jwt_secret || this.config.jwt_secret.length < 32) {
+      throw new ConfigurationError(
+        'JWT_SECRET must be at least 32 characters long',
+        'Invalid JWT secret configuration',
+        { category: ErrorCategory.CONFIGURATION }
+      );
+    }
+
+    if (!this.config.jwt_refresh_secret || this.config.jwt_refresh_secret.length < 32) {
+      throw new ConfigurationError(
+        'JWT_REFRESH_SECRET must be at least 32 characters long',
+        'Invalid JWT refresh secret configuration',
+        { category: ErrorCategory.CONFIGURATION }
+      );
+    }
+
+    if (this.config.bcrypt_rounds < 10) {
+      throw new ConfigurationError(
+        'BCRYPT_ROUNDS must be at least 10',
+        'Invalid bcrypt rounds configuration',
+        { category: ErrorCategory.CONFIGURATION }
+      );
+    }
+  }
+
+  /**
+   * Authenticate user with username and password
+   */
+  async authenticateUser(username: string, password: string): Promise<AuthContext> {
+    if (this.config.rate_limit_enabled) {
+      const limitKey = `auth_attempt:${username}`;
+      const withinLimit = await this.rateLimitService.checkLimit(limitKey, 5, 15 * 60 * 1000); // 5 attempts per 15 minutes
+
+      if (!withinLimit) {
+        await this.auditService.logAuthEvent({
+          type: 'login',
+          success: false,
+          timestamp: new Date(),
+          metadata: { username, reason: 'rate_limit_exceeded' },
+        });
+
+        throw new AuthenticationError('Too many authentication attempts', 'Rate limit exceeded');
+      }
+    }
+
+    const user = await this.userRepository.findByUsername(username);
+    if (!user) {
+      await this.auditService.logAuthEvent({
+        type: 'login',
+        success: false,
+        timestamp: new Date(),
+        metadata: { username, reason: 'user_not_found' },
+      });
+
+      throw new AuthenticationError('Invalid credentials', 'User not found');
+    }
+
+    if (!user.is_active) {
+      await this.auditService.logAuthEvent({
+        userId: user.id,
+        type: 'login',
+        success: false,
+        timestamp: new Date(),
+        metadata: { reason: 'user_inactive' },
+      });
+
+      throw new AuthenticationError('Account is disabled', 'User account is inactive');
+    }
+
+    const isValidPassword = await this.cryptoService.comparePassword(password, user.password_hash);
+    if (!isValidPassword) {
+      await this.auditService.logAuthEvent({
+        userId: user.id,
+        type: 'login',
+        success: false,
+        timestamp: new Date(),
+        metadata: { reason: 'invalid_password' },
+      });
+
+      throw new AuthenticationError('Invalid credentials', 'Invalid password');
+    }
+
+    // Create authentication context
+    const authContext: AuthContext = {
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+      },
+      session: {
+        id: randomUUID(),
+        ip_address: '0.0.0.0', // TODO: Get from request
+        user_agent: 'auth-service', // TODO: Get from request
+      },
+      scopes: [AuthScope._MEMORY_READ, AuthScope._MEMORY_WRITE],
+      token_jti: randomUUID(),
+    };
+
+    // Update last login
+    await this.userRepository.update(user.id, { last_login: new Date().toISOString() });
+
+    // Log successful authentication
+    await this.auditService.logAuthEvent({
+      userId: user.id,
+      type: 'login',
+      success: true,
+      timestamp: new Date(),
+    });
+
+    logger.info('User authenticated successfully', { userId: user.id, username: user.username });
+    return authContext;
+  }
+
+  /**
+   * Generate access token for authenticated user
+   */
+  async generateAccessToken(authContext: AuthContext): Promise<AuthToken> {
+    const jti = this.tokenService.generateJTI();
+    const now = Math.floor(Date.now() / 1000);
+    const exp = now + this.parseExpiration(this.config.jwt_expires_in);
+
+    const payload: TokenPayload = {
+      sub: authContext.user.id,
+      username: authContext.user.username,
+      role: authContext.user.role,
+      scopes: authContext.scopes.map((scope) => scope.toString()),
+      session_id: authContext.session.id,
+      iat: now,
+      exp,
+      jti,
+    };
+
+    const token = this.tokenService.signToken(payload, this.config.jwt_secret, {
+      algorithm: 'HS256',
+      issuer: 'cortex-mcp',
+      audience: 'cortex-mcp-clients',
+    });
+
+    const authToken: AuthToken = {
+      access_token: token,
+      refresh_token: await this.generateRefreshToken(authContext.user.id, jti),
+      token_type: 'Bearer',
+      expires_in: this.parseExpiration(this.config.jwt_expires_in),
+      scope: authContext.scopes.map((scope) => scope.toString()),
+    };
+
+    return authToken;
+  }
+
+  /**
+   * Validate access token
+   */
+  async validateAccessToken(token: string): Promise<AuthContext> {
+    try {
+      const payload = this.tokenService.verifyToken(token, this.config.jwt_secret) as TokenPayload;
+
+      // Check if token is blacklisted
+      if (payload.jti && (await this.isTokenBlacklisted(payload.jti))) {
+        throw new AuthenticationError('Token has been revoked', 'Token is blacklisted');
+      }
+
+      // Check if session is still valid
+      if (payload.session_id) {
+        const session = await this.sessionRepository.findById(payload.session_id);
+        if (!session || !session.is_active || new Date(session.expires_at) < new Date()) {
+          throw new AuthenticationError('Session has expired', 'Invalid session');
+        }
+      }
+
+      const user = await this.userRepository.findById(payload.sub);
+      if (!user || !user.is_active) {
+        throw new AuthenticationError('User account is not active', 'Invalid user');
+      }
+
+      const authContext: AuthContext = {
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+        },
+        session: {
+          id: payload.session_id || 'unknown',
+          ip_address: '0.0.0.0', // TODO: Get from request
+          user_agent: 'auth-service', // TODO: Get from request
+        },
+        scopes: payload.scopes.map((scope: string) => scope as AuthScope),
+        token_jti: payload.jti,
+      };
+
+      return authContext;
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        throw error;
+      }
+      throw new AuthenticationError('Invalid token', 'Token validation failed');
+    }
+  }
+
+  /**
+   * Refresh access token
+   */
+  async refreshAccessToken(refreshToken: string): Promise<AuthToken> {
+    try {
+      const payload = this.tokenService.verifyToken(refreshToken, this.config.jwt_refresh_secret);
+
+      if (payload.type !== 'refresh' || !payload.jti) {
+        throw new AuthenticationError('Invalid refresh token', 'Token is not a refresh token');
+      }
+
+      // Check if refresh token is blacklisted
+      if (await this.isTokenBlacklisted(payload.jti)) {
+        throw new AuthenticationError('Refresh token has been revoked', 'Token is blacklisted');
+      }
+
+      const user = await this.userRepository.findById(payload.sub);
+      if (!user || !user.is_active) {
+        throw new AuthenticationError('User account is not active', 'Invalid user');
+      }
+
+      // Create new authentication context
+      const authContext: AuthContext = {
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+        },
+        session: {
+          id: randomUUID(),
+          ip_address: '0.0.0.0', // TODO: Get from request
+          user_agent: 'auth-service', // TODO: Get from request
+        },
+        scopes: payload.scopes.map((scope: string) => scope as AuthScope),
+        token_jti: randomUUID(),
+      };
+
+      // Blacklist old refresh token
+      await this.blacklistToken(payload.jti, 'Token refresh');
+
+      // Generate new tokens
+      const authToken = await this.generateAccessToken(authContext);
+
+      // Log token refresh
+      await this.auditService.logAuthEvent({
+        userId: user.id,
+        type: 'token_refresh',
+        success: true,
+        timestamp: new Date(),
+      });
+
+      return authToken;
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        throw error;
+      }
+      throw new AuthenticationError('Invalid refresh token', 'Refresh token validation failed');
+    }
+  }
+
+  /**
+   * Logout user and invalidate tokens
+   */
+  async logout(accessToken: string): Promise<void> {
+    try {
+      const payload = this.tokenService.verifyToken(
+        accessToken,
+        this.config.jwt_secret
+      ) as TokenPayload;
+
+      // Blacklist access token
+      if (payload.jti) {
+        await this.blacklistToken(payload.jti, 'User logout');
+      }
+
+      // Invalidate session
+      if (payload.session_id) {
+        await this.sessionRepository.update(payload.session_id, {
+          is_active: false,
+          expires_at: new Date().toISOString(),
+        });
+      }
+
+      // Log logout
+      await this.auditService.logAuthEvent({
+        userId: payload.sub,
+        type: 'logout',
+        success: true,
+        timestamp: new Date(),
+      });
+
+      logger.info('User logged out successfully', { userId: payload.sub });
+    } catch (error) {
+      logger.warn('Failed to properly logout user', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      // Don't throw error for logout failures
+    }
+  }
+
+  /**
+   * Generate API key for user
+   */
+  async generateApiKey(userId: string, scopes: string[], name?: string): Promise<ApiKey> {
+    const user = await this.userRepository.findById(userId);
+    if (!user || !user.is_active) {
+      throw new AuthenticationError('User account is not active', 'Invalid user');
+    }
+
+    const apiKey = await this.cryptoService.generateApiKey();
+    const keyHash = await this.cryptoService.hashApiKey(apiKey);
+    const jti = this.tokenService.generateJTI();
+
+    const apiKeyRecord: Omit<ApiKey, 'id' | 'created_at'> = {
+      key_id: jti,
+      user_id: userId,
+      name: name || `API Key - ${new Date().toISOString()}`,
+      key_hash: keyHash,
+      scopes: scopes.map((scope: string) => scope as AuthScope),
+      is_active: true,
+      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      last_used: undefined,
+      updated_at: new Date().toISOString(),
+    };
+
+    const createdKey = await this.apiKeyRepository.create(apiKeyRecord);
+
+    // Log API key creation
+    await this.auditService.logAuthEvent({
+      userId,
+      type: 'api_key_created',
+      success: true,
+      timestamp: new Date(),
+      metadata: { keyId: createdKey.id, name: createdKey.name, scopes },
+    });
+
+    logger.info('API key generated successfully', { userId, keyId: createdKey.id });
+    return createdKey;
+  }
+
+  /**
+   * Validate API key
+   */
+  async validateApiKey(apiKey: string): Promise<AuthContext> {
+    const keyHash = await this.cryptoService.hashApiKey(apiKey);
+    const apiKeyRecord = await this.apiKeyRepository.findByKey(keyHash);
+
+    if (!apiKeyRecord || !apiKeyRecord.is_active) {
+      throw new AuthenticationError('Invalid API key', 'API key not found or inactive');
+    }
+
+    if (apiKeyRecord.expires_at && new Date(apiKeyRecord.expires_at) < new Date()) {
+      throw new AuthenticationError('API key expired', 'API key has expired');
+    }
+
+    const user = await this.userRepository.findById(apiKeyRecord.user_id);
+    if (!user || !user.is_active) {
+      throw new AuthenticationError('User account is not active', 'Invalid user');
+    }
+
+    // Update last used timestamp
+    await this.apiKeyRepository.update(apiKeyRecord.id, {
+      last_used: new Date().toISOString(),
+    });
+
+    const authContext: AuthContext = {
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+      },
+      session: {
+        id: `api-key:${apiKeyRecord.id}`,
+        ip_address: '0.0.0.0', // TODO: Get from request
+        user_agent: 'api-key-auth', // TODO: Get from request
+      },
+      scopes: apiKeyRecord.scopes,
+      token_jti: apiKeyRecord.key_id,
+      apiKeyId: apiKeyRecord.key_id,
+    };
+
+    return authContext;
+  }
+
+  /**
+   * Revoke API key
+   */
+  async revokeApiKey(userId: string, keyId: string): Promise<void> {
+    const apiKey = await this.apiKeyRepository.findById(keyId);
+    if (!apiKey || apiKey.user_id !== userId) {
+      throw new AuthenticationError('API key not found', 'Invalid API key');
+    }
+
+    await this.apiKeyRepository.revoke(keyId);
+
+    // Blacklist token if exists
+    if (apiKey.key_id) {
+      await this.blacklistToken(apiKey.key_id, 'API key revoked');
+    }
+
+    // Log API key revocation
+    await this.auditService.logAuthEvent({
+      userId,
+      type: 'api_key_revoked',
+      success: true,
+      timestamp: new Date(),
+      metadata: { keyId, name: apiKey.name },
+    });
+
+    logger.info('API key revoked successfully', { userId, keyId });
+  }
+
+  // Private helper methods
+
+  private async generateRefreshToken(userId: string, jti: string): Promise<string> {
+    const payload = {
+      sub: userId,
+      type: 'refresh',
+      jti,
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + this.parseExpiration(this.config.jwt_refresh_expires_in),
+    };
+
+    return this.tokenService.signToken(payload, this.config.jwt_refresh_secret, {
+      algorithm: 'HS256',
+      issuer: 'cortex-mcp',
+      audience: 'cortex-mcp-clients',
+    });
+  }
+
+  private async blacklistToken(jti: string, reason?: string): Promise<void> {
+    // Add to in-memory cache
+    this.tokenBlacklist.set(jti, {
+      revoked: true,
+      timestamp: Date.now(),
+    });
+
+    // Persist to repository
+    await this.tokenBlacklistRepository.add(jti, reason);
+
+    // Log security event
+    await this.auditService.logSecurityEvent({
+      type: 'token_blacklisted',
+      jti,
+      timestamp: new Date(),
+      severity: 'medium',
+      metadata: { reason },
+    });
+  }
+
+  private async isTokenBlacklisted(jti: string): Promise<boolean> {
+    // Check in-memory cache first
+    const cached = this.tokenBlacklist.get(jti);
+    if (_cached) {
+      return cached.revoked;
+    }
+
+    // Check repository
+    return await this.tokenBlacklistRepository.exists(jti);
+  }
+
+  private parseExpiration(_expiration: string): number {
+    const units: Record<string, number> = {
+      s: 1,
+      m: 60,
+      h: 3600,
+      d: 86400,
+      w: 604800,
+    };
+
+    const match = expiration.match(/^(\d+)([smhdw])$/);
+    if (!match) {
+      throw new ConfigurationError(
+        'Invalid expiration format',
+        'Expected format: number + unit (s,m,h,d,w)'
+      );
+    }
+
+    const [, value, unit] = match;
+    return parseInt(value) * (units[unit] || 1);
+  }
+
+  private loadTokenBlacklistFromBackup(): void {
+    // Implementation for loading token blacklist from backup file
+    // This would read from this.config.token_blacklist_backup_path if provided
+  }
+
+  private startSessionCleanup(): void {
+    setInterval(
+      async () => {
+        try {
+          await this.sessionRepository.deleteExpired();
+        } catch (error) {
+          logger.error('Failed to cleanup expired sessions', error);
+        }
+      },
+      60 * 60 * 1000
+    ); // Run every hour
+  }
+
+  private startDistributedSync(): void {
+    setInterval(async () => {
+      try {
+        await this.syncTokenBlacklist();
+      } catch (error) {
+        logger.error('Failed to sync token blacklist', error);
+      }
+    }, this.distributedSync.syncInterval);
+  }
+
+  private async syncTokenBlacklist(): Promise<void> {
+    // Implementation for distributed token blacklist synchronization
+    // This would sync with other instances in a distributed environment
+  }
+}

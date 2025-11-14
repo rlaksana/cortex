@@ -1,0 +1,9 @@
+{
+  "batch": 16,
+  "category": "chaos-testing",
+  "files": [
+    "chaos-testing/engine/chaos-injection-engine.ts",
+    "chaos-testing/index.ts"
+  ],
+  "file_count": 2
+}

@@ -1,0 +1,12 @@
+{
+  "batch": 14,
+  "category": "services-ttl",
+  "files": [
+    "services/ttl/index.ts",
+    "services/ttl/ttl-management-service.ts",
+    "services/ttl/ttl-policy-service.ts",
+    "services/ttl/ttl-safety-service.ts",
+    "services/ttl/ttl-validation-service.ts"
+  ],
+  "file_count": 5
+}

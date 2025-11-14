@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical business service
 /**
  * 8-LOG SYSTEM Service - Session Persistence
  *

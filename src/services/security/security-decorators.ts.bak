@@ -1,0 +1,840 @@
+/**
+ * Security Decorators
+ *
+ * Dependency injection decorators for automatic security enforcement
+ * Integrates with existing DI system to provide seamless security protection
+ *
+ * @author Cortex Security Team
+ * @version 1.0.0
+ * @since 2025-11-08
+ */
+
+import 'reflect-metadata';
+import { Injectable } from '../../di/decorators.js';
+import { ServiceLifetime, ServicePriority } from '../../di/enhanced-di-container.js';
+import type { SecurityContext, ValidationResult } from './security-types.js';
+import { SecurityLevel as SecurityLevelEnum } from './security-types.js';
+
+/**
+ * Security metadata keys
+ */
+const SECURITY_METADATA_KEYS = {
+  SECURE: 'secure',
+  PERMISSIONS_REQUIRED: 'permissions_required',
+  ROLES_REQUIRED: 'roles_required',
+  RATE_LIMIT: 'rate_limit',
+  INPUT_VALIDATION: 'input_validation',
+  OUTPUT_FILTERING: 'output_filtering',
+  AUDIT_REQUIRED: 'audit_required',
+  DATA_CLASSIFICATION: 'data_classification',
+  SECURITY_LEVEL: 'security_level',
+} as const;
+
+/**
+ * Security configuration for methods and classes
+ */
+export interface SecurityConfig {
+  enabled?: boolean;
+  permissions?: string[];
+  roles?: string[];
+  rateLimit?: {
+    requests: number;
+    window: number; // in seconds
+    perUser?: boolean;
+    perIP?: boolean;
+  };
+  inputValidation?: {
+    schema?: string;
+    strict?: boolean;
+    sanitize?: boolean;
+  };
+  outputFiltering?: {
+    pii?: boolean;
+    secrets?: boolean;
+    sensitive?: boolean;
+  };
+  audit?: boolean;
+  classification?: 'public' | 'internal' | 'confidential' | 'restricted';
+  level?: 'low' | 'medium' | 'high' | 'critical';
+  mfaRequired?: boolean;
+  allowedIPs?: string[];
+  timeRestrictions?: {
+    start?: string;
+    end?: string;
+    days?: string[];
+  };
+}
+
+/**
+ * Secure decorator for classes
+ *
+ * Applies comprehensive security controls to entire service classes
+ *
+ * @param config Security configuration
+ *
+ * @example
+ * ```typescript
+ * @Secure({
+ *   permissions: ['memory:read', 'memory:write'],
+ *   rateLimit: { requests: 100, window: 60 },
+ *   audit: true,
+ *   classification: 'confidential'
+ * })
+ * class MemoryService {
+ *   // All methods will have security applied
+ * }
+ * ```
+ */
+export function Secure(config: SecurityConfig = {}) {
+  return function <T extends new (...args: unknown[]) => unknown>(target: T) {
+    // Mark as secure
+    Reflect.defineMetadata(SECURITY_METADATA_KEYS.SECURE, true, target);
+
+    // Store security configuration
+    Reflect.defineMetadata(
+      SECURITY_METADATA_KEYS.PERMISSIONS_REQUIRED,
+      config.permissions || [],
+      target
+    );
+    Reflect.defineMetadata(SECURITY_METADATA_KEYS.ROLES_REQUIRED, config.roles || [], target);
+    Reflect.defineMetadata(SECURITY_METADATA_KEYS.RATE_LIMIT, config.rateLimit, target);
+    Reflect.defineMetadata(SECURITY_METADATA_KEYS.INPUT_VALIDATION, config.inputValidation, target);
+    Reflect.defineMetadata(SECURITY_METADATA_KEYS.OUTPUT_FILTERING, config.outputFiltering, target);
+    Reflect.defineMetadata(SECURITY_METADATA_KEYS.AUDIT_REQUIRED, config.audit || false, target);
+    Reflect.defineMetadata(
+      SECURITY_METADATA_KEYS.DATA_CLASSIFICATION,
+      config.classification || 'internal',
+      target
+    );
+    Reflect.defineMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, config.level || 'medium', target);
+
+    // Also register as injectable with high priority
+    Injectable({
+      lifetime: ServiceLifetime.SINGLETON,
+      priority: ServicePriority.HIGH,
+      tags: ['secure', 'protected'],
+    })(target);
+
+    return target;
+  };
+}
+
+/**
+ * RequirePermissions decorator for methods
+ *
+ * Enforces specific permissions for method access
+ *
+ * @param permissions Array of required permissions
+ *
+ * @example
+ * ```typescript
+ * class MemoryService {
+ *   @RequirePermissions(['memory:read'])
+ *   getMemory(_id: string) {
+ *     // Method implementation
+ *   }
+ * }
+ * ```
+ */
+export function RequirePermissions(_permissions: string[]) {
+  return function (_target: unknown,  _propertyKey: string | symbol,  _descriptor: PropertyDescriptor) {
+    const existingPermissions =
+      Reflect.getMetadata(SECURITY_METADATA_KEYS.PERMISSIONS_REQUIRED, target, propertyKey) || [];
+    const allPermissions = [...existingPermissions, ...permissions];
+
+    Reflect.defineMetadata(
+      SECURITY_METADATA_KEYS.PERMISSIONS_REQUIRED,
+      allPermissions,
+      target,
+      propertyKey
+    );
+  };
+}
+
+/**
+ * RequireRoles decorator for methods
+ *
+ * Enforces specific roles for method access
+ *
+ * @param roles Array of required roles
+ *
+ * @example
+ * ```typescript
+ * class AdminService {
+ *   @RequireRoles(['admin'])
+ *   deleteUser(_userId: string) {
+ *     // Method implementation
+ *   }
+ * }
+ * ```
+ */
+export function RequireRoles(_roles: string[]) {
+  return function (_target: unknown,  _propertyKey: string | symbol,  _descriptor: PropertyDescriptor) {
+    const existingRoles =
+      Reflect.getMetadata(SECURITY_METADATA_KEYS.ROLES_REQUIRED, target, propertyKey) || [];
+    const allRoles = [...existingRoles, ...roles];
+
+    Reflect.defineMetadata(SECURITY_METADATA_KEYS.ROLES_REQUIRED, allRoles, target, propertyKey);
+  };
+}
+
+/**
+ * RateLimit decorator for methods
+ *
+ * Applies rate limiting to method calls
+ *
+ * @param requests Maximum requests allowed
+ * @param window Time window in seconds
+ * @param options Additional options
+ *
+ * @example
+ * ```typescript
+ * class APIService {
+ *   @RateLimit(100, 60, { perUser: true })
+ *   expensiveOperation() {
+ *     // Method implementation
+ *   }
+ * }
+ * ```
+ */
+export function RateLimit(
+  _requests: number, 
+  _window: number, 
+  options: { perUser?: boolean; perIP?: boolean } = {}
+) {
+  return function (_target: unknown,  _propertyKey: string | symbol,  _descriptor: PropertyDescriptor) {
+    const config = {
+      requests,
+      window,
+      perUser: options.perUser || false,
+      perIP: options.perIP || false,
+    };
+
+    Reflect.defineMetadata(SECURITY_METADATA_KEYS.RATE_LIMIT, config, target, propertyKey);
+  };
+}
+
+/**
+ * ValidateInput decorator for methods
+ *
+ * Validates input parameters using JSON schema
+ *
+ * @param schemaName Name of the JSON schema to use
+ * @param options Validation options
+ *
+ * @example
+ * ```typescript
+ * class MemoryService {
+ *   @ValidateInput('memory_store', { strict: true, sanitize: true })
+ *   storeMemory(data: any) {
+ *     // Method implementation
+ *   }
+ * }
+ * ```
+ */
+export function ValidateInput(
+  _schemaName: string, 
+  options: { strict?: boolean; sanitize?: boolean } = {}
+) {
+  return function (_target: unknown,  _propertyKey: string | symbol,  _descriptor: PropertyDescriptor) {
+    const config = {
+      schema: schemaName,
+      strict: options.strict || false,
+      sanitize: options.sanitize || true,
+    };
+
+    Reflect.defineMetadata(SECURITY_METADATA_KEYS.INPUT_VALIDATION, config, target, propertyKey);
+  };
+}
+
+/**
+ * FilterOutput decorator for methods
+ *
+ * Filters output to remove sensitive information
+ *
+ * @param options Filtering options
+ *
+ * @example
+ * ```typescript
+ * class UserService {
+ *   @FilterOutput({ pii: true, secrets: true })
+ *   getUserProfile(_userId: string) {
+ *     // Method implementation
+ *   }
+ * }
+ * ```
+ */
+export function FilterOutput(options: { pii?: boolean; secrets?: boolean; sensitive?: boolean }) {
+  return function (_target: unknown,  _propertyKey: string | symbol,  _descriptor: PropertyDescriptor) {
+    Reflect.defineMetadata(SECURITY_METADATA_KEYS.OUTPUT_FILTERING, options, target, propertyKey);
+  };
+}
+
+/**
+ * Audit decorator for methods
+ *
+ * Enables audit logging for method calls
+ *
+ * @param details Additional audit details
+ *
+ * @example
+ * ```typescript
+ * class FinancialService {
+ *   @Audit({ category: 'financial', sensitivity: 'high' })
+ *   processPayment(data: any) {
+ *     // Method implementation
+ *   }
+ * }
+ * ```
+ */
+export function Audit(_details: Record<string,  unknown> = {}) {
+  return function (_target: unknown,  _propertyKey: string | symbol,  _descriptor: PropertyDescriptor) {
+    const existing =
+      Reflect.getMetadata(SECURITY_METADATA_KEYS.AUDIT_REQUIRED, target, propertyKey) || {};
+    const auditConfig = { ...existing, ...details };
+
+    Reflect.defineMetadata(SECURITY_METADATA_KEYS.AUDIT_REQUIRED, auditConfig, target, propertyKey);
+  };
+}
+
+/**
+ * DataClassification decorator for methods and classes
+ *
+ * Specifies data classification level for compliance
+ *
+ * @param classification Data classification level
+ *
+ * @example
+ * ```typescript
+ * @DataClassification('confidential')
+ * class MedicalService {
+ *   // All methods handle confidential data
+ * }
+ * ```
+ */
+export function DataClassification(
+  _classification: 'public' | 'internal' | 'confidential' | 'restricted'
+) {
+  return function (
+    _target: unknown, 
+    propertyKey?: string | symbol, 
+    descriptor?: PropertyDescriptor
+  ) {
+    if (propertyKey && descriptor) {
+      // Method decorator
+      Reflect.defineMetadata(
+        SECURITY_METADATA_KEYS.DATA_CLASSIFICATION,
+        classification,
+        target,
+        propertyKey
+      );
+    } else {
+      // Class decorator
+      Reflect.defineMetadata(SECURITY_METADATA_KEYS.DATA_CLASSIFICATION, classification, target);
+    }
+  };
+}
+
+/**
+ * SecurityLevel decorator for methods and classes
+ *
+ * Specifies security level for the method or class
+ *
+ * @param level Security level
+ *
+ * @example
+ * ```typescript
+ * @SecurityLevel('high')
+ * class CryptoService {
+ *   // High security operations
+ * }
+ * ```
+ */
+export function SecurityLevel(_level: 'low' | 'medium' | 'high' | 'critical') {
+  return function (
+    _target: unknown, 
+    propertyKey?: string | symbol, 
+    descriptor?: PropertyDescriptor
+  ) {
+    if (propertyKey && descriptor) {
+      // Method decorator
+      Reflect.defineMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, level, target, propertyKey);
+    } else {
+      // Class decorator
+      Reflect.defineMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, level, target);
+    }
+  };
+}
+
+/**
+ * RequireMFA decorator for methods
+ *
+ * Requires multi-factor authentication for method access
+ *
+ * @example
+ * ```typescript
+ * class AdminService {
+ *   @RequireMFA()
+ *   deleteAllData() {
+ *     // Highly sensitive operation
+ *   }
+ * }
+ * ```
+ */
+export function RequireMFA() {
+  return function (_target: unknown,  _propertyKey: string | symbol,  _descriptor: PropertyDescriptor) {
+    const existing =
+      Reflect.getMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, target, propertyKey) || 'medium';
+
+    // MFA requirement implies high security level
+    const level = existing === 'critical' ? 'critical' : 'high';
+    Reflect.defineMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, level, target, propertyKey);
+
+    // Store MFA requirement as part of security level metadata
+    const securityConfig =
+      Reflect.getMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, target, propertyKey) || {};
+    securityConfig.mfaRequired = true;
+    Reflect.defineMetadata(
+      SECURITY_METADATA_KEYS.SECURITY_LEVEL,
+      securityConfig,
+      target,
+      propertyKey
+    );
+  };
+}
+
+/**
+ * AllowedIPs decorator for methods and classes
+ *
+ * Restricts access to specific IP addresses
+ *
+ * @param ips Array of allowed IP addresses
+ *
+ * @example
+ * ```typescript
+ * @AllowedIPs(['192.168.1.0/24', '10.0.0.0/8'])
+ * class InternalService {
+ *   // Only accessible from internal networks
+ * }
+ * ```
+ */
+export function AllowedIPs(_ips: string[]) {
+  return function (
+    _target: unknown, 
+    propertyKey?: string | symbol, 
+    descriptor?: PropertyDescriptor
+  ) {
+    if (propertyKey && descriptor) {
+      // Method decorator
+      const existing =
+        Reflect.getMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, target, propertyKey) || {};
+      existing.allowedIPs = ips;
+      Reflect.defineMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, existing, target, propertyKey);
+    } else {
+      // Class decorator
+      const existing = Reflect.getMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, target) || {};
+      existing.allowedIPs = ips;
+      Reflect.defineMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, existing, target);
+    }
+  };
+}
+
+/**
+ * TimeRestrictions decorator for methods and classes
+ *
+ * Restricts access to specific time periods
+ *
+ * @param restrictions Time restrictions
+ *
+ * @example
+ * ```typescript
+ * @TimeRestrictions({
+ *   start: '09:00',
+ *   end: '17:00',
+ *   days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+ * })
+ * class BusinessHoursService {
+ *   // Only accessible during business hours
+ * }
+ * ```
+ */
+export function TimeRestrictions(restrictions: { start?: string; end?: string; days?: string[] }) {
+  return function (
+    _target: unknown, 
+    propertyKey?: string | symbol, 
+    descriptor?: PropertyDescriptor
+  ) {
+    if (propertyKey && descriptor) {
+      // Method decorator
+      const existing =
+        Reflect.getMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, target, propertyKey) || {};
+      existing.timeRestrictions = restrictions;
+      Reflect.defineMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, existing, target, propertyKey);
+    } else {
+      // Class decorator
+      const existing = Reflect.getMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, target) || {};
+      existing.timeRestrictions = restrictions;
+      Reflect.defineMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, existing, target);
+    }
+  };
+}
+
+/**
+ * Security interceptor that wraps methods with security checks
+ */
+export class SecurityInterceptor {
+  /**
+   * Apply security interceptor to a method
+   */
+  static intercept(
+    _target: unknown, 
+    _propertyKey: string, 
+    _originalMethod: Function, 
+    _securityServices: unknown
+  ): Function {
+    return async function (_this: unknown,  ...args: unknown[]) {
+      const securityContext = SecurityInterceptor.getSecurityContext?.() || {};
+
+      try {
+        // Perform security checks
+        const validationResult = await this.performSecurityChecks(
+          target,
+          propertyKey,
+          args,
+          securityContext,
+          securityServices
+        );
+
+        if (!validationResult.valid) {
+          throw new Error(
+            `Access denied: ${validationResult.violations.map((v: unknown) => v.description).join(', ')}`
+          );
+        }
+
+        // Execute original method
+        const result = await originalMethod.apply(this, args);
+
+        // Apply output filtering if configured
+        return await this.applyOutputFiltering(target, propertyKey, result, securityServices);
+      } catch (error) {
+        // Log security violations
+        await this.logSecurityViolation(
+          target,
+          propertyKey,
+          securityContext,
+          error,
+          securityServices
+        );
+        throw error;
+      }
+    };
+  }
+
+  /**
+   * Perform all security checks
+   */
+  private static async performSecurityChecks(
+    target: unknown,
+    propertyKey: string,
+    args: unknown[],
+    context: SecurityContext,
+    services: unknown
+  ): Promise<ValidationResult> {
+    // Get all security metadata
+    const permissions = this.getMetadataArray(
+      SECURITY_METADATA_KEYS.PERMISSIONS_REQUIRED,
+      target,
+      propertyKey
+    );
+    const roles = this.getMetadataArray(SECURITY_METADATA_KEYS.ROLES_REQUIRED, target, propertyKey);
+    const rateLimit = this.getMetadata(SECURITY_METADATA_KEYS.RATE_LIMIT, target, propertyKey);
+    const inputValidation = this.getMetadata(
+      SECURITY_METADATA_KEYS.INPUT_VALIDATION,
+      target,
+      propertyKey
+    );
+    const securityLevel = this.getMetadata(
+      SECURITY_METADATA_KEYS.SECURITY_LEVEL,
+      target,
+      propertyKey
+    );
+
+    const violations: unknown[] = [];
+
+    // Check permissions
+    if (permissions.length > 0 && services.accessControl) {
+      for (const permission of permissions) {
+        const hasPermission = await services.accessControl.checkPermission(
+          context.userId,
+          permission
+        );
+        if (!hasPermission) {
+          violations.push({
+            type: 'permission_denied',
+            severity: 'high',
+            description: `Missing required permission: ${permission}`,
+          });
+        }
+      }
+    }
+
+    // Check roles
+    if (roles.length > 0 && services.authService) {
+      const userRoles = await services.authService.getUserRoles(context.userId);
+      const hasRequiredRole = roles.some((role) => userRoles.includes(role));
+      if (!hasRequiredRole) {
+        violations.push({
+          type: 'role_required',
+          severity: 'high',
+          description: `Missing required role: ${roles.join(' or ')}`,
+        });
+      }
+    }
+
+    // Check rate limits
+    if (rateLimit && services.rateLimitService) {
+      const rateLimitResult = await services.rateLimitService.checkLimit(
+        context.userId || 'anonymous',
+        rateLimit.requests,
+        rateLimit.window,
+        { perUser: rateLimit.perUser, perIP: rateLimit.perIP }
+      );
+      if (!rateLimitResult.allowed) {
+        violations.push({
+          type: 'rate_limit_exceeded',
+          severity: 'medium',
+          description: rateLimitResult.reason || 'Rate limit exceeded',
+        });
+      }
+    }
+
+    // Input validation
+    if (inputValidation && services.jsonSchemaValidator) {
+      for (const arg of args) {
+        if (arg && typeof arg === 'object') {
+          const validationResult = await services.jsonSchemaValidator.validate(
+            arg,
+            inputValidation.schema,
+            { strict: inputValidation.strict }
+          );
+          if (!validationResult.valid) {
+            violations.push(
+              ...validationResult.errors.map((error: unknown) => ({
+                type: 'input_validation_failed',
+                severity: 'medium',
+                description: error.message,
+              }))
+            );
+          }
+        }
+      }
+    }
+
+    return {
+      valid: violations.length === 0,
+      level: SecurityLevelEnum.MEDIUM,
+      violations,
+      metadata: {
+        method: propertyKey,
+        permissions_checked: permissions,
+        roles_checked: roles,
+      },
+    };
+  }
+
+  /**
+   * Apply output filtering
+   */
+  private static async applyOutputFiltering(
+    target: unknown,
+    propertyKey: string,
+    result: unknown,
+    services: unknown
+  ): Promise<unknown> {
+    const outputFiltering = this.getMetadata(
+      SECURITY_METADATA_KEYS.OUTPUT_FILTERING,
+      target,
+      propertyKey
+    );
+
+    if (!outputFiltering || !services.dataSecurity) {
+      return result;
+    }
+
+    const securityContext = SecurityInterceptor.getSecurityContext?.() || {};
+    const scanResult = await services.dataSecurity.scanData(result, securityContext, {
+      enablePII: outputFiltering.pii,
+      enableSecrets: outputFiltering.secrets,
+    });
+
+    return scanResult.masked_data || result;
+  }
+
+  /**
+   * Log security violations
+   */
+  private static async logSecurityViolation(
+    target: unknown,
+    propertyKey: string,
+    context: SecurityContext,
+    error: Error,
+    services: unknown
+  ): Promise<void> {
+    if (services.auditService) {
+      await services.auditService.logSecurityEvent({
+        type: 'security_violation',
+        method: propertyKey,
+        error: error.message,
+        context,
+        timestamp: new Date(),
+      });
+    }
+  }
+
+  /**
+   * Get metadata array
+   */
+  private static getMetadataArray(_key: string,  _target: unknown,  propertyKey?: string): string[] {
+    const metadata = propertyKey
+      ? Reflect.getMetadata(key, target, propertyKey)
+      : Reflect.getMetadata(key, target);
+    return Array.isArray(metadata) ? metadata : metadata ? [metadata] : [];
+  }
+
+  /**
+   * Get metadata
+   */
+  private static getMetadata(_key: string,  _target: unknown,  propertyKey?: string): unknown {
+    return propertyKey
+      ? Reflect.getMetadata(key, target, propertyKey)
+      : Reflect.getMetadata(key, target);
+  }
+
+  /**
+   * Get security context from the current execution context
+   */
+  static getSecurityContext(): Partial<SecurityContext> {
+    // Try to get context from various sources
+    // This is a simplified implementation - in production, this would
+    // integrate with the actual request/response context system
+    try {
+      if (typeof globalThis !== 'undefined' && (globalThis as unknown).securityContext) {
+        return (globalThis as unknown).securityContext;
+      }
+
+      // Return minimal context if nothing available
+      return {
+        id: 'default-ctx',
+        timestamp: new Date(),
+        roles: [],
+        permissions: [],
+      };
+    } catch {
+      return {
+        id: 'fallback-ctx',
+        timestamp: new Date(),
+        roles: [],
+        permissions: [],
+      };
+    }
+  }
+}
+
+/**
+ * Utility functions for security decorators
+ */
+export class SecurityDecoratorUtils {
+  /**
+   * Get security configuration for a class or method
+   */
+  static getSecurityConfig(_target: unknown,  propertyKey?: string): SecurityConfig {
+    const permissions = this.getMetadataArray(
+      SECURITY_METADATA_KEYS.PERMISSIONS_REQUIRED,
+      target,
+      propertyKey
+    );
+    const roles = this.getMetadataArray(SECURITY_METADATA_KEYS.ROLES_REQUIRED, target, propertyKey);
+    const rateLimit = this.getMetadata(SECURITY_METADATA_KEYS.RATE_LIMIT, target, propertyKey);
+    const inputValidation = this.getMetadata(
+      SECURITY_METADATA_KEYS.INPUT_VALIDATION,
+      target,
+      propertyKey
+    );
+    const outputFiltering = this.getMetadata(
+      SECURITY_METADATA_KEYS.OUTPUT_FILTERING,
+      target,
+      propertyKey
+    );
+    const audit = this.getMetadata(SECURITY_METADATA_KEYS.AUDIT_REQUIRED, target, propertyKey);
+    const classification = this.getMetadata(
+      SECURITY_METADATA_KEYS.DATA_CLASSIFICATION,
+      target,
+      propertyKey
+    );
+    const level = this.getMetadata(SECURITY_METADATA_KEYS.SECURITY_LEVEL, target, propertyKey);
+
+    return {
+      enabled: true,
+      permissions,
+      roles,
+      rateLimit,
+      inputValidation,
+      outputFiltering,
+      audit: !!audit,
+      classification,
+      level,
+      mfaRequired: level?.mfaRequired,
+      allowedIPs: level?.allowedIPs,
+      timeRestrictions: level?.timeRestrictions,
+    };
+  }
+
+  /**
+   * Check if a class or method has security enabled
+   */
+  static isSecure(_target: unknown,  propertyKey?: string): boolean {
+    const hasSecurity = propertyKey
+      ? Reflect.getMetadata(SECURITY_METADATA_KEYS.SECURE, target, propertyKey)
+      : Reflect.getMetadata(SECURITY_METADATA_KEYS.SECURE, target);
+
+    if (hasSecurity !== undefined) {
+      return hasSecurity;
+    }
+
+    // Check if any security metadata exists
+    const keys = [
+      SECURITY_METADATA_KEYS.PERMISSIONS_REQUIRED,
+      SECURITY_METADATA_KEYS.ROLES_REQUIRED,
+      SECURITY_METADATA_KEYS.RATE_LIMIT,
+      SECURITY_METADATA_KEYS.INPUT_VALIDATION,
+      SECURITY_METADATA_KEYS.OUTPUT_FILTERING,
+      SECURITY_METADATA_KEYS.AUDIT_REQUIRED,
+    ];
+
+    return keys.some((key) => {
+      const metadata = propertyKey
+        ? Reflect.getMetadata(key, target, propertyKey)
+        : Reflect.getMetadata(key, target);
+      return metadata !== undefined;
+    });
+  }
+
+  /**
+   * Get metadata array helper
+   */
+  private static getMetadataArray(_key: string,  _target: unknown,  propertyKey?: string): string[] {
+    const metadata = propertyKey
+      ? Reflect.getMetadata(key, target, propertyKey)
+      : Reflect.getMetadata(key, target);
+    return Array.isArray(metadata) ? metadata : metadata ? [metadata] : [];
+  }
+
+  /**
+   * Get metadata helper
+   */
+  private static getMetadata(_key: string,  _target: unknown,  propertyKey?: string): unknown {
+    return propertyKey
+      ? Reflect.getMetadata(key, target, propertyKey)
+      : Reflect.getMetadata(key, target);
+  }
+}

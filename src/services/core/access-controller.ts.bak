@@ -1,0 +1,422 @@
+/**
+ * Access Controller - P0-CRITICAL Implementation
+ *
+ * Enforces access control for service operations.
+ * Handles authentication, authorization, and rate limiting.
+ *
+ * @author Cortex Team
+ * @version 2.0.1
+ * @since 2025
+ */
+
+import { logger } from '../../utils/logger.js';
+import type { ServiceRequestContext, ServiceOperation } from './service-layer-router.js';
+
+/**
+ * Rate limit entry
+ */
+interface RateLimitEntry {
+  count: number;
+  resetTime: number;
+  windowMs: number;
+  maxRequests: number;
+}
+
+/**
+ * Access control cache entry
+ */
+interface AccessCacheEntry {
+  allowed: boolean;
+  timestamp: number;
+  ttl: number;
+}
+
+/**
+ * Security event for audit logging
+ */
+export interface SecurityEvent {
+  type: string;
+  caller?: string;
+  operation?: string;
+  user?: string;
+  timestamp: Date;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  details?: unknown;
+}
+
+/**
+ * Access Controller - Enforces security policies
+ */
+export class AccessController {
+  private static instance: AccessController;
+  private rateLimitStore: Map<string, RateLimitEntry> = new Map();
+  private accessCache: Map<string, AccessCacheEntry> = new Map();
+  private securityEvents: SecurityEvent[] = [];
+  private isInitialized = false;
+
+  private constructor() {}
+
+  public static getInstance(): AccessController {
+    if (!AccessController.instance) {
+      AccessController.instance = new AccessController();
+    }
+    return AccessController.instance;
+  }
+
+  /**
+   * Initialize access controller
+   */
+  public async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
+
+    try {
+      logger.info('Initializing Access Controller...');
+
+      // Setup periodic cleanup
+      this.setupPeriodicCleanup();
+
+      this.isInitialized = true;
+      logger.info('Access Controller initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize Access Controller:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if user has access to service operation
+   */
+  public async checkAccess(
+    context: ServiceRequestContext,
+    operation: ServiceOperation
+  ): Promise<boolean> {
+    try {
+      // Generate cache key
+      const cacheKey = this.generateAccessCacheKey(context, operation);
+
+      // Check cache first
+      const cached = this.accessCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < cached.ttl) {
+        return cached.allowed;
+      }
+
+      let allowed = true;
+      const reasons: string[] = [];
+
+      // Check if operation requires authentication
+      if (operation.requiredPermissions && operation.requiredPermissions.length > 0) {
+        if (!context.user) {
+          allowed = false;
+          reasons.push('Authentication required but no user context provided');
+        } else {
+          // Check user permissions
+          const hasPermissions = await this.checkUserPermissions(
+            context.user,
+            operation.requiredPermissions
+          );
+
+          if (!hasPermissions) {
+            allowed = false;
+            reasons.push(
+              `Insufficient permissions. Required: ${operation.requiredPermissions.join(', ')}`
+            );
+          }
+        }
+      }
+
+      // Check service access level
+      const serviceAccessLevel = await this.getServiceAccessLevel(context.service);
+      if (serviceAccessLevel === 'restricted' && !this.isSystemUser(context.user)) {
+        allowed = false;
+        reasons.push('Access to restricted service denied');
+      }
+
+      // Cache result
+      this.accessCache.set(cacheKey, {
+        allowed,
+        timestamp: Date.now(),
+        ttl: 300000, // 5 minutes
+      });
+
+      if (!allowed) {
+        this.logSecurityEvent({
+          type: 'ACCESS_DENIED',
+          caller: context.service,
+          operation: context.operation,
+          user: context.user?.id,
+          timestamp: new Date(),
+          severity: 'medium',
+          details: { reasons },
+        });
+      }
+
+      return allowed;
+    } catch (error) {
+      logger.error('Access check failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check rate limits
+   */
+  public async checkRateLimit(
+    context: ServiceRequestContext,
+    operation: ServiceOperation
+  ): Promise<boolean> {
+    if (!operation.rateLimit) {
+      return true; // No rate limiting configured
+    }
+
+    try {
+      const clientId = this.getClientId(context);
+      const now = Date.now();
+      const { requests, window } = operation.rateLimit;
+      const windowMs = window * 1000;
+
+      let entry = this.rateLimitStore.get(clientId);
+
+      // Create or reset entry
+      if (!entry || now > entry.resetTime) {
+        entry = {
+          count: 1,
+          resetTime: now + windowMs,
+          windowMs,
+          maxRequests: requests,
+        };
+        this.rateLimitStore.set(clientId, entry);
+        return true;
+      }
+
+      // Check limit
+      if (entry.count >= entry.maxRequests) {
+        this.logSecurityEvent({
+          type: 'RATE_LIMIT_EXCEEDED',
+          caller: context.service,
+          operation: context.operation,
+          user: context.user?.id,
+          timestamp: new Date(),
+          severity: 'medium',
+          details: {
+            clientId,
+            currentCount: entry.count,
+            maxRequests: entry.maxRequests,
+            resetTime: new Date(entry.resetTime),
+          },
+        });
+
+        return false;
+      }
+
+      // Increment counter
+      entry.count++;
+      return true;
+    } catch (error) {
+      logger.error('Rate limit check failed:', error);
+      return true; // Fail open for rate limits
+    }
+  }
+
+  /**
+   * Get security events
+   */
+  public getSecurityEvents(severity?: SecurityEvent['severity']): SecurityEvent[] {
+    if (_severity) {
+      return this.securityEvents.filter((event) => event.severity === severity);
+    }
+    return [...this.securityEvents];
+  }
+
+  /**
+   * Clear security events
+   */
+  public clearSecurityEvents(): void {
+    this.securityEvents = [];
+    logger.info('Security events cleared');
+  }
+
+  /**
+   * Get rate limit status
+   */
+  public getRateLimitStatus(_clientId: string): {
+    currentCount: number;
+    maxRequests: number;
+    resetTime: Date;
+    remainingRequests: number;
+  } | null {
+    const entry = this.rateLimitStore.get(clientId);
+    if (!entry) {
+      return null;
+    }
+
+    return {
+      currentCount: entry.count,
+      maxRequests: entry.maxRequests,
+      resetTime: new Date(entry.resetTime),
+      remainingRequests: Math.max(0, entry.maxRequests - entry.count),
+    };
+  }
+
+  /**
+   * Clear rate limit for client
+   */
+  public clearRateLimit(_clientId: string): boolean {
+    const deleted = this.rateLimitStore.delete(clientId);
+    if (_deleted) {
+      logger.info(`Rate limit cleared for client: ${clientId}`);
+    }
+    return deleted;
+  }
+
+  /**
+   * Shutdown access controller
+   */
+  public async shutdown(): Promise<void> {
+    this.rateLimitStore.clear();
+    this.accessCache.clear();
+    this.securityEvents = [];
+    this.isInitialized = false;
+    logger.info('Access Controller shutdown completed');
+  }
+
+  // Private methods
+
+  private generateAccessCacheKey(
+    context: ServiceRequestContext, 
+    _operation: ServiceOperation
+  ): string {
+    const userId = context.user?.id || 'anonymous';
+    const permissions = operation.requiredPermissions?.join(',') || 'none';
+    return `${context.service}:${context.operation}:${userId}:${permissions}`;
+  }
+
+  private async checkUserPermissions(
+    user: ServiceRequestContext['user'],
+    requiredPermissions: string[]
+  ): Promise<boolean> {
+    if (!user || !user.permissions) {
+      return false;
+    }
+
+    // Check if user has all required permissions
+    for (const permission of requiredPermissions) {
+      if (!user.permissions.includes(permission)) {
+        // Check for wildcard permissions
+        const hasWildcard = user.permissions.some(
+          (p) => p.endsWith('*') && permission.startsWith(p.slice(0, -1))
+        );
+
+        if (!hasWildcard) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  private async getServiceAccessLevel(
+    serviceName: string
+  ): Promise<'public' | 'internal' | 'restricted'> {
+    // Define access levels for known services
+    const restrictedServices = ['admin', 'system', 'migration', 'database-admin'];
+
+    const internalServices = ['auth', 'monitoring', 'metrics', 'health-check'];
+
+    if (restrictedServices.some((s) => serviceName.includes(s))) {
+      return 'restricted';
+    }
+
+    if (internalServices.some((s) => serviceName.includes(s))) {
+      return 'internal';
+    }
+
+    return 'public';
+  }
+
+  private isSystemUser(user?: ServiceRequestContext['user']): boolean {
+    if (!user) {
+      return false;
+    }
+
+    return (
+      user.roles.includes('system') || user.roles.includes('admin') || user.id.startsWith('system_')
+    );
+  }
+
+  private getClientId(context: ServiceRequestContext): string {
+    // Use user ID if available, otherwise use service name
+    return context.user?.id || `service:${context.service}`;
+  }
+
+  private logSecurityEvent(_event: SecurityEvent): void {
+    this.securityEvents.push(event);
+
+    // Keep only last 1000 events to prevent memory leaks
+    if (this.securityEvents.length > 1000) {
+      this.securityEvents = this.securityEvents.slice(-1000);
+    }
+
+    logger.warn('Security event:', {
+      type: event.type,
+      severity: event.severity,
+      user: event.user,
+      operation: event.operation,
+      details: event.details,
+    });
+  }
+
+  private setupPeriodicCleanup(): void {
+    // Cleanup expired entries every 5 minutes
+    setInterval(
+      () => {
+        this.cleanupExpiredEntries();
+      },
+      5 * 60 * 1000
+    );
+  }
+
+  private cleanupExpiredEntries(): void {
+    const now = Date.now();
+
+    // Cleanup expired rate limit entries
+    let rateLimitCleanup = 0;
+    for (const [key, entry] of this.rateLimitStore.entries()) {
+      if (now > entry.resetTime) {
+        this.rateLimitStore.delete(key);
+        rateLimitCleanup++;
+      }
+    }
+
+    // Cleanup expired access cache entries
+    let accessCacheCleanup = 0;
+    for (const [key, entry] of this.accessCache.entries()) {
+      if (now - entry.timestamp > entry.ttl) {
+        this.accessCache.delete(key);
+        accessCacheCleanup++;
+      }
+    }
+
+    // Cleanup old security events (keep last 24 hours)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const initialEventCount = this.securityEvents.length;
+    this.securityEvents = this.securityEvents.filter((event) => event.timestamp > oneDayAgo);
+
+    if (
+      rateLimitCleanup > 0 ||
+      accessCacheCleanup > 0 ||
+      this.securityEvents.length < initialEventCount
+    ) {
+      logger.debug('Access controller cleanup completed', {
+        rateLimitEntries: rateLimitCleanup,
+        accessCacheEntries: accessCacheCleanup,
+        securityEventsRemoved: initialEventCount - this.securityEvents.length,
+      });
+    }
+  }
+}
+
+// Export singleton instance
+export const accessController = AccessController.getInstance();

@@ -1,0 +1,12 @@
+{
+  "batch": 8,
+  "category": "performance",
+  "files": [
+    "performance/artifact-storage.ts",
+    "performance/ci-regression-guard.ts",
+    "performance/performance-dashboard.ts",
+    "performance/performance-harness.ts",
+    "performance/performance-targets.ts"
+  ],
+  "file_count": 5
+}

@@ -1,0 +1,297 @@
+/**
+ * Memory System Initialization - P0-CRITICAL Implementation
+ *
+ * Initializes the centralized memory management system with all
+ * standard pools and monitoring. This should be called during application startup.
+ *
+ * @author Cortex Team
+ * @version 2.0.1
+ * @since 2025
+ */
+
+import { logger } from '../../utils/logger.js';
+import { memoryManager, MemoryManagerFactory } from './memory-manager.js';
+import { memoryMonitorService } from './memory-monitor-service.js';
+
+/**
+ * Memory system configuration
+ */
+export interface MemorySystemConfig {
+  enableStandardPools: boolean;
+  enableMonitoring: boolean;
+  globalMemoryLimitMB: number;
+  warningThresholdPercent: number;
+  criticalThresholdPercent: number;
+  emergencyThresholdPercent: number;
+  enablePerformanceOptimization: boolean;
+}
+
+/**
+ * Default memory system configuration
+ */
+const DEFAULT_CONFIG: MemorySystemConfig = {
+  enableStandardPools: true,
+  enableMonitoring: true,
+  globalMemoryLimitMB: parseInt(process.env.GLOBAL_MEMORY_LIMIT_MB || '512', 10),
+  warningThresholdPercent: parseInt(process.env.MEMORY_WARNING_PERCENT || '70', 10),
+  criticalThresholdPercent: parseInt(process.env.MEMORY_CRITICAL_PERCENT || '85', 10),
+  emergencyThresholdPercent: parseInt(process.env.MEMORY_EMERGENCY_PERCENT || '90', 10),
+  enablePerformanceOptimization: process.env.NODE_ENV !== 'test',
+};
+
+/**
+ * Initialize the memory management system
+ */
+export function initializeMemorySystem(config: Partial<MemorySystemConfig> = {}): {
+  success: boolean;
+  _metrics: unknown;
+  pools: string[];
+  warnings: string[];
+} {
+  const finalConfig = { ...DEFAULT_CONFIG, ...config };
+  const warnings: string[] = [];
+
+  try {
+    logger.info('Initializing Memory Management System', finalConfig);
+
+    // Update global memory limits
+    memoryManager.updateGlobalLimits({
+      maxTotalMemoryMB: finalConfig.globalMemoryLimitMB,
+      warningThresholdPercent: finalConfig.warningThresholdPercent,
+      criticalThresholdPercent: finalConfig.criticalThresholdPercent,
+      emergencyCleanupPercent: finalConfig.emergencyThresholdPercent,
+    });
+
+    // Create standard memory pools
+    const createdPools: string[] = [];
+    if (finalConfig.enableStandardPools) {
+      try {
+        MemoryManagerFactory.createStandardPools(memoryManager);
+        createdPools.push(
+          'search-results',
+          'embeddings',
+          'user-sessions',
+          'configuration',
+          'ai-responses',
+          'temporary'
+        );
+        logger.info('Standard memory pools created successfully', { pools: createdPools });
+      } catch (error) {
+        warnings.push(
+          `Failed to create standard pools: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+        logger.error('Error creating standard memory pools:', error);
+      }
+    }
+
+    // Enable monitoring
+    if (finalConfig.enableMonitoring) {
+      try {
+        // Monitor service is already instantiated, just ensure it's running
+        logger.info('Memory monitoring service enabled');
+      } catch (error) {
+        warnings.push(
+          `Failed to enable monitoring: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+        logger.error('Error enabling memory monitoring:', error);
+      }
+    }
+
+    // Set up memory pressure handlers
+    if (finalConfig.enablePerformanceOptimization) {
+      setupMemoryPressureHandlers();
+    }
+
+    // Get initial metrics
+    const initialMetrics = memoryManager.getMetrics();
+
+    logger.info('Memory Management System initialization completed', {
+      totalMemoryMB: initialMetrics.totalMemoryLimitMB,
+      poolsCreated: createdPools.length,
+      warnings: warnings.length,
+    });
+
+    return {
+      success: true,
+      _metrics: initialMetrics,
+      pools: createdPools,
+      warnings,
+    };
+  } catch (error) {
+    const errorMsg = `Memory system initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    logger.error(errorMsg, error);
+
+    return {
+      success: false,
+      _metrics: null,
+      pools: [],
+      warnings: [errorMsg, ...warnings],
+    };
+  }
+}
+
+/**
+ * Set up memory pressure event handlers
+ */
+function setupMemoryPressureHandlers(): void {
+  // Handle critical memory alerts
+  memoryMonitorService.on('critical-alert',  (alert) => {
+    logger.warn('Critical memory alert received', {
+      level: alert.level,
+      message: alert.message,
+      utilization: `${String(alert.metrics.globalUtilizationPercent.toFixed(1))}%`,
+    });
+
+    // Trigger automatic optimizations
+    performAutomaticOptimizations(alert);
+  });
+
+  // Handle performance degradation
+  memoryMonitorService.on('performance',  (performance) => {
+    if (performance.efficiency < 60) {
+      logger.warn('Memory performance degradation detected', {
+        efficiency: performance.efficiency,
+        hitRate: performance.averageHitRate,
+        issues: performance.issues,
+      });
+    }
+  });
+
+  // Handle emergency memory situations
+  memoryMonitorService.on('alert',  (alert) => {
+    if (alert.level === 'emergency') {
+      logger.error('EMERGENCY: Memory exhaustion imminent', alert);
+      // Could trigger additional emergency procedures here
+    }
+  });
+}
+
+/**
+ * Perform automatic optimizations based on memory pressure
+ */
+function performAutomaticOptimizations(_alert: unknown): void {
+  logger.info('Performing automatic memory optimizations', {
+    alertLevel: alert.level,
+    utilization: alert.metrics.globalUtilizationPercent,
+  });
+
+  try {
+    // Force cleanup in low-priority pools first
+    const lowPriorityPools = memoryManager.getPoolsByPriority('low');
+    for (const pool of lowPriorityPools) {
+      const metrics = pool.getMetrics();
+      if (metrics.memoryUtilizationPercent > 50) {
+        const evicted = pool.forceEvict(Math.floor(metrics.itemCount * 0.3)); // Evict 30%
+        logger.info(`Forced eviction in low-priority pool ${metrics.name}`, {
+          evictedItems: evicted,
+          freedMB: Math.round(metrics.currentMemoryMB * 0.3 * 100) / 100,
+        });
+      }
+    }
+
+    // Trigger global cleanup if still under pressure
+    if (alert.metrics.globalUtilizationPercent > 85) {
+      memoryManager.cleanupAllPools();
+    }
+  } catch (error) {
+    logger.error('Error performing automatic optimizations:', error);
+  }
+}
+
+/**
+ * Get memory system health status
+ */
+export function getMemorySystemHealth(): {
+  status: 'healthy' | 'warning' | 'critical' | 'emergency';
+  _metrics: unknown;
+  performance: unknown;
+  recommendations: string[];
+} {
+  const metrics = memoryManager.getMetrics();
+  const performance = memoryMonitorService.analyzePerformance();
+  const report = memoryMonitorService.getMemoryReport();
+
+  let status: 'healthy' | 'warning' | 'critical' | 'emergency' = 'healthy';
+
+  if (metrics.globalUtilizationPercent >= 90) {
+    status = 'emergency';
+  } else if (metrics.globalUtilizationPercent >= 85 || performance.efficiency < 40) {
+    status = 'critical';
+  } else if (metrics.globalUtilizationPercent >= 70 || performance.efficiency < 60) {
+    status = 'warning';
+  }
+
+  return {
+    status,
+    metrics,
+    performance,
+    recommendations: report.recommendations,
+  };
+}
+
+/**
+ * Gracefully shutdown memory system
+ */
+export function shutdownMemorySystem(): void {
+  logger.info('Shutting down Memory Management System');
+
+  try {
+    // Shutdown monitoring service
+    memoryMonitorService.shutdown();
+
+    // Shutdown memory manager
+    memoryManager.shutdown();
+
+    logger.info('Memory Management System shutdown completed');
+  } catch (error) {
+    logger.error('Error during memory system shutdown:', error);
+  }
+}
+
+/**
+ * Memory system health check for monitoring systems
+ */
+export async function memoryHealthCheck(): Promise<{
+  healthy: boolean;
+  status: string;
+  details: unknown;
+  timestamp: Date;
+}> {
+  try {
+    const health = getMemorySystemHealth();
+
+    return {
+      healthy: health.status === 'healthy',
+      status: health.status,
+      details: {
+        utilization: health.metrics.globalUtilizationPercent,
+        efficiency: health.performance.efficiency,
+        poolCount: health.metrics.poolCount,
+        totalItems: health.metrics.totalItems,
+      },
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    return {
+      healthy: false,
+      status: 'error',
+      details: { error: error instanceof Error ? error.message : 'Unknown error' },
+      timestamp: new Date(),
+    };
+  }
+}
+
+// Auto-initialize if this module is loaded and not in test environment
+if (process.env.NODE_ENV !== 'test' && typeof process !== 'undefined') {
+  // Initialize with default configuration
+  const initResult = initializeMemorySystem();
+
+  if (!initResult.success) {
+    logger.error('Memory system auto-initialization failed', initResult.warnings);
+  } else {
+    logger.info('Memory system auto-initialization successful', {
+      pools: initResult.pools,
+      memoryLimitMB: initResult.metrics?.totalMemoryLimitMB,
+    });
+  }
+}

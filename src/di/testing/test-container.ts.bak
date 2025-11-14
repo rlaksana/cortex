@@ -1,0 +1,529 @@
+/**
+ * Test Container for Dependency Injection
+ *
+ * Provides enhanced testing capabilities with mock services, spies, and
+ * verification utilities for unit and integration testing.
+ *
+ * @author Cortex Team
+ * @version 3.0.0
+ * @since 2025
+ */
+
+import { EnhancedDIContainer } from '../enhanced-di-container.js';
+import type { ILoggerService } from '../service-interfaces.js';
+
+/**
+ * Mock configuration
+ */
+export interface MockConfiguration {
+  autoMock?: boolean;
+  mockBehavior?: 'stub' | 'spy' | 'fake';
+  logMocks?: boolean;
+  verifyMocksOnDestroy?: boolean;
+}
+
+/**
+ * Service mock definition
+ */
+export interface ServiceMock<T = unknown> {
+  token: string | symbol | (new (...args: unknown[]) => unknown);
+  implementation?: new (...args: unknown[]) => T | (() => T);
+  methods?: Record<string, unknown>;
+  properties?: Record<string, unknown>;
+  factory?: (container: TestContainer) => T;
+}
+
+/**
+ * Test verification result
+ */
+export interface TestVerificationResult {
+  success: boolean;
+  failures: Array<{
+    service: string;
+    method: string;
+    expected: string;
+    actual: string;
+  }>;
+  warnings: string[];
+}
+
+/**
+ * Test Container with enhanced mocking capabilities
+ */
+export class TestContainer {
+  private container: EnhancedDIContainer;
+  private mocks = new Map<string | symbol, unknown>();
+  private spies = new Map<string | symbol, Map<string, unknown>>();
+  private mockConfig: MockConfiguration;
+  private verificationResults: TestVerificationResult[] = [];
+
+  constructor(config: MockConfiguration = {}) {
+    this.mockConfig = {
+      autoMock: true,
+      mockBehavior: 'stub',
+      logMocks: false,
+      verifyMocksOnDestroy: true,
+      ...config,
+    };
+
+    // Create test-specific container
+    this.container = new EnhancedDIContainer({
+      enableAutoRegistration: false,
+      enablePerformanceMonitoring: false,
+      enableHealthChecks: false,
+      strictMode: false,
+      circularDependencyResolution: 'warn',
+    });
+  }
+
+  /**
+   * Get the underlying container
+   */
+  getContainer(): EnhancedDIContainer {
+    return this.container;
+  }
+
+  /**
+   * Register a mock service
+   */
+  registerMock<T>(mock: ServiceMock<T>): void {
+    const key = this.getServiceKey(mock.token);
+
+    if (this.mockConfig.logMocks) {
+      console.log(`[TestContainer] Registering mock: ${String(key)}`);
+    }
+
+    let mockInstance: T;
+
+    if (mock.factory) {
+      mockInstance = mock.factory(this);
+    } else if (mock.implementation) {
+      if (typeof mock.implementation === 'function') {
+        const factoryFn = mock.implementation as unknown as () => T;
+        mockInstance = factoryFn();
+      } else {
+        const constructorFn = mock.implementation as new (...args: unknown[]) => T;
+        mockInstance = new constructorFn();
+      }
+    } else {
+      // Create auto-mock
+      mockInstance = this.createAutoMock(mock.token);
+    }
+
+    // Apply method mocks
+    if (mock.methods) {
+      for (const [methodName, methodMock] of Object.entries(mock.methods)) {
+        if (typeof mockInstance === 'object' && mockInstance !== null) {
+          (mockInstance as unknown)[methodName] = methodMock;
+        }
+      }
+    }
+
+    // Apply property mocks
+    if (mock.properties) {
+      for (const [propertyName, propertyValue] of Object.entries(mock.properties)) {
+        if (typeof mockInstance === 'object' && mockInstance !== null) {
+          (mockInstance as unknown)[propertyName] = propertyValue;
+        }
+      }
+    }
+
+    // Store mock and register with container
+    this.mocks.set(key, mockInstance);
+    this.container.registerInstance(mock.token, mockInstance);
+
+    // Setup spies if needed
+    if (this.mockConfig.mockBehavior === 'spy') {
+      this.setupSpies(key, mockInstance);
+    }
+  }
+
+  /**
+   * Register multiple mocks
+   */
+  registerMocks(_mocks: ServiceMock[]): void {
+    for (const mock of mocks) {
+      this.registerMock(mock);
+    }
+  }
+
+  /**
+   * Auto-mock a service
+   */
+  autoMock<T>(token: string | symbol | (new (...args: unknown[]) => T)): T {
+    const key = this.getServiceKey(token);
+
+    if (this.mocks.has(key)) {
+      return this.mocks.get(key);
+    }
+
+    const mockInstance = this.createAutoMock(token);
+    this.mocks.set(key, mockInstance);
+    this.container.registerInstance(token, mockInstance);
+
+    return mockInstance;
+  }
+
+  /**
+   * Get a mock instance
+   */
+  getMock<T>(token: string | symbol | (new (...args: unknown[]) => T)): T {
+    const key = this.getServiceKey(token);
+    return this.mocks.get(key);
+  }
+
+  /**
+   * Create a spy on a service method
+   */
+  spyOn<T>(token: string | symbol | (new (...args: unknown[]) => T), methodName: string): unknown {
+    const instance = this.resolve<T>(token);
+    const key = this.getServiceKey(token);
+
+    if (!instance || typeof instance !== 'object') {
+      throw new Error(`Cannot spy on ${String(key)}.${methodName} - service is not an object`);
+    }
+
+    if (!(instance as unknown)[methodName]) {
+      throw new Error(`Method ${methodName} not found on service ${String(key)}`);
+    }
+
+    let spy: unknown;
+
+    // Simple spy implementation
+    const originalMethod = (instance as unknown)[methodName];
+    const calls: unknown[][] = [];
+
+    spy = (...args: unknown[]) => {
+      calls.push(args);
+      return originalMethod.apply(instance, args);
+    };
+
+    spy.calls = calls;
+    spy.wasCalled = () => calls.length > 0;
+    spy.wasCalledWith = (...args: unknown[]) =>
+      calls.some((call) => call.length === args.length && call.every((arg,  _i) => arg === args[i]));
+    spy.mockReset = () => {
+      calls.length = 0;
+    };
+
+    (instance as unknown)[methodName] = spy;
+
+    // Store spy for verification
+    if (!this.spies.has(key)) {
+      this.spies.set(key, new Map());
+    }
+    this.spies.get(key)!.set(methodName, spy);
+
+    return spy;
+  }
+
+  /**
+   * Resolve a service (mock if available, otherwise real)
+   */
+  resolve<T>(token: string | symbol | (new (...args: unknown[]) => T)): T {
+    const key = this.getServiceKey(token);
+
+    if (this.mocks.has(key)) {
+      return this.mocks.get(key);
+    }
+
+    if (this.mockConfig.autoMock && !this.container.isRegistered(token)) {
+      return this.autoMock(token);
+    }
+
+    return this.container.resolve<T>(token);
+  }
+
+  /**
+   * Verify all mocks/spies
+   */
+  verify(): TestVerificationResult {
+    const result: TestVerificationResult = {
+      success: true,
+      failures: [],
+      warnings: [],
+    };
+
+    for (const [serviceKey, methodSpies] of Array.from(this.spies.entries())) {
+      for (const [methodName, spy] of Array.from(methodSpies.entries())) {
+        try {
+          // Verify spy
+          if ('wasCalled' in spy && !spy.wasCalled()) {
+            result.warnings.push(`Method ${String(serviceKey)}.${methodName} was not called`);
+          } else if ('calls' in spy && spy.calls.length === 0) {
+            result.warnings.push(`Method ${String(serviceKey)}.${methodName} was not called`);
+          }
+        } catch (error) {
+          result.failures.push({
+            service: String(serviceKey),
+            method: methodName,
+            expected: 'Successful verification',
+            actual: error instanceof Error ? error.message : 'Unknown error',
+          });
+          result.success = false;
+        }
+      }
+    }
+
+    this.verificationResults.push(result);
+    return result;
+  }
+
+  /**
+   * Reset all mocks and spies
+   */
+  reset(): void {
+    // Reset spies
+    for (const [serviceKey, methodSpies] of Array.from(this.spies.entries())) {
+      for (const [methodName, spy] of Array.from(methodSpies.entries())) {
+        if ('mockReset' in spy) {
+          spy.mockReset();
+        } else if ('calls' in spy) {
+          spy.calls.length = 0;
+        }
+      }
+    }
+
+    // Clear verification results
+    this.verificationResults = [];
+
+    if (this.mockConfig.logMocks) {
+      console.log('[TestContainer] All mocks and spies reset');
+    }
+  }
+
+  /**
+   * Clear all mocks and container
+   */
+  clear(): void {
+    if (this.mockConfig.verifyMocksOnDestroy) {
+      const verification = this.verify();
+      if (!verification.success || verification.warnings.length > 0) {
+        console.warn('[TestContainer] Verification issues found:', verification);
+      }
+    }
+
+    this.mocks.clear();
+    this.spies.clear();
+    this.container.clear();
+    this.verificationResults = [];
+
+    if (this.mockConfig.logMocks) {
+      console.log('[TestContainer] Container cleared');
+    }
+  }
+
+  /**
+   * Get verification results
+   */
+  getVerificationResults(): TestVerificationResult[] {
+    return [...this.verificationResults];
+  }
+
+  /**
+   * Create a test-specific logger mock
+   */
+  createMockLogger(): ILoggerService {
+    const logs: { level: string; message: string; meta?: unknown }[] = [];
+
+    // Simple mock implementation
+    const createMockFunction = (level: string) => {
+      const fn = (message: string, meta?: unknown) => {
+        logs.push({ level, message, meta });
+      };
+      (fn as unknown).calls = [];
+      (fn as unknown).wasCalled = () => (fn as unknown).calls.length > 0;
+      return fn;
+    };
+
+    return {
+      error: createMockFunction('error'),
+      warn: createMockFunction('warn'),
+      info: createMockFunction('info'),
+      debug: createMockFunction('debug'),
+      child: () => this.createMockLogger(),
+    } as unknown;
+  }
+
+  /**
+   * Create a test-specific config service mock
+   */
+  createMockConfigService(config: Record<string,  unknown> = {}) {
+    const createMockFunction = (fn: Function) => {
+      const mockFn = (...args: unknown[]) => fn(...args);
+      (mockFn as unknown).calls = [];
+      (mockFn as unknown).wasCalled = () => (mockFn as unknown).calls.length > 0;
+      (mockFn as unknown).wasCalledWith = (...args: unknown[]) =>
+        (mockFn as unknown).calls.some(
+          (call: unknown[]) =>
+            call.length === args.length && call.every((arg: unknown,  _i: number) => arg === args[i])
+        );
+      return mockFn;
+    };
+
+    return {
+      get: createMockFunction((key: string,  defaultValue?: unknown) => {
+        return config[key] !== undefined ? config[key] : defaultValue;
+      }),
+      set: createMockFunction((key: string,  _value: unknown) => {
+        config[key] = value;
+      }),
+      has: createMockFunction((key: string) => {
+        return Object.hasOwn(config, key);
+      }),
+      reload: createMockFunction(async () => {
+        // Mock implementation
+      }),
+      getAll: createMockFunction(() => ({ ...config })),
+      clear: createMockFunction(() => {
+        Object.keys(config).forEach((key) => delete config[key]);
+      }),
+    };
+  }
+
+  // Private methods
+
+  private createMockFunction(): unknown {
+    const mockFn: unknown = (...args: unknown[]) => {
+      mockFn.calls.push(args);
+      if (mockFn.returnValue !== undefined) {
+        return mockFn.returnValue;
+      }
+      if (mockFn.resolvedValue !== undefined) {
+        return mockFn.resolvedValue;
+      }
+      return undefined;
+    };
+    mockFn.calls = [] as unknown[][];
+    mockFn.wasCalled = () => mockFn.calls.length > 0;
+    mockFn.wasCalledWith = (...args: unknown[]) =>
+      mockFn.calls.some(
+        (call: unknown[]) =>
+          call.length === args.length && call.every((arg: unknown,  _i: number) => arg === args[i])
+      );
+    mockFn.mockReturnValue = (value: unknown) => {
+      mockFn.returnValue = value;
+      return mockFn;
+    };
+    mockFn.mockResolvedValue = (value: unknown) => {
+      mockFn.resolvedValue = value;
+      return mockFn;
+    };
+    return mockFn;
+  }
+
+  private createAutoMock<T>(token: string | symbol | (new (...args: unknown[]) => T)): T {
+    const key = this.getServiceKey(token);
+
+    // Try to get class information for better mocking
+    const mockMethods: Record<string, unknown> = {};
+
+    if (typeof token === 'function') {
+      try {
+        // Get method names from prototype
+        const prototype = token.prototype;
+        const methodNames = Object.getOwnPropertyNames(prototype).filter(
+          (name) => name !== 'constructor' && typeof prototype[name] === 'function'
+        );
+
+        for (const methodName of methodNames) {
+          mockMethods[methodName] = this.createMockFunction();
+        }
+      } catch (error) {
+        // Fallback to empty mock
+      }
+    }
+
+    // Create mock with methods
+    const mockInstance: unknown = mockMethods;
+
+    // Add common mock methods
+    if (!mockInstance.dispose) {
+      mockInstance.dispose = this.createMockFunction().mockResolvedValue(undefined);
+    }
+    if (!mockInstance.initialize) {
+      mockInstance.initialize = this.createMockFunction().mockResolvedValue(undefined);
+    }
+    if (!mockInstance.isHealthy) {
+      mockInstance.isHealthy = this.createMockFunction().mockResolvedValue(true);
+    }
+
+    return mockInstance as T;
+  }
+
+  private setupSpies<T>(key: string | symbol, instance: T): void {
+    if (typeof instance !== 'object' || instance === null) {
+      return;
+    }
+
+    const spies = new Map<string, unknown>();
+
+    for (const methodName of Object.getOwnPropertyNames(Object.getPrototypeOf(instance))) {
+      if (methodName !== 'constructor' && typeof (instance as unknown)[methodName] === 'function') {
+        let spy: unknown;
+
+        // Simple spy implementation
+        const originalMethod = (instance as unknown)[methodName];
+        const calls: unknown[][] = [];
+
+        spy = (...args: unknown[]) => {
+          calls.push(args);
+          return originalMethod.apply(instance, args);
+        };
+
+        spy.calls = calls;
+        spy.wasCalled = () => calls.length > 0;
+        spy.mockReset = () => {
+          calls.length = 0;
+        };
+        (instance as unknown)[methodName] = spy;
+
+        spies.set(methodName, spy);
+      }
+    }
+
+    this.spies.set(key, spies);
+  }
+
+  private getServiceKey(
+    token: string | symbol | (new (...args: unknown[]) => unknown)
+  ): string | symbol {
+    if (typeof token === 'string' || typeof token === 'symbol') {
+      return token;
+    }
+    return token.name;
+  }
+}
+
+/**
+ * Factory function to create test container
+ */
+export function createTestContainer(config?: MockConfiguration): TestContainer {
+  return new TestContainer(config);
+}
+
+/**
+ * Utility function for quick mock creation
+ */
+export function mock<T>(
+  token: string | symbol | (new (...args: unknown[]) => T),
+  methods?: Record<string, unknown>
+): ServiceMock<T> {
+  return {
+    token,
+    methods,
+  };
+}
+
+/**
+ * Utility function for creating service mock
+ */
+export function mockService<T>(
+  token: string | symbol | (new (...args: unknown[]) => T),
+  implementation?: new (...args: unknown[]) => T
+): ServiceMock<T> {
+  return {
+    token,
+    implementation,
+  };
+}

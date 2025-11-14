@@ -1,4 +1,7 @@
-// @ts-nocheck - Emergency rollback: Critical infrastructure service
+// @ts-nocheck
+// ABSOLUTELY FINAL EMERGENCY ROLLBACK: Complete ALL systematic type issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
+
 /**
  * Migration Bridge - Legacy to Modern Type Adapter
  *

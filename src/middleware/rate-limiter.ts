@@ -1,4 +1,7 @@
-// @ts-nocheck - Emergency rollback: Critical middleware service
+// @ts-nocheck
+// COMPREHENSIVE EMERGENCY ROLLBACK: Final systematic type issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
+
 /**
  * Rate Limiting Service for Cortex MCP
  *

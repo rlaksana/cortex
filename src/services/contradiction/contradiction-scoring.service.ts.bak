@@ -1,0 +1,993 @@
+/**
+ * Contradiction Scoring and Prioritization Service
+ *
+ * Advanced scoring system for contradictions using multiple factors:
+ * confidence, severity, impact, urgency, and business value.
+ * Provides intelligent prioritization for contradiction resolution.
+ *
+ * @author Cortex Team
+ * @version 3.0.0
+ * @since 2025
+ */
+
+import type {
+  ContradictionResult,
+  KnowledgeItem,
+} from '../../types/contradiction-detector.interface.js';
+import { zaiClientService } from '../ai/zai-client.service.js';
+import { logger } from '@/utils/logger.js';
+
+/**
+ * Scoring factors
+ */
+interface ScoringFactors {
+  confidence: number;
+  severity: number;
+  impact: number;
+  urgency: number;
+  business_value: number;
+  dependency_count: number;
+  stakeholder_impact: number;
+  resolution_complexity: number;
+  risk_exposure: number;
+}
+
+/**
+ * Priority levels
+ */
+export type PriorityLevel = 'critical' | 'high' | 'medium' | 'low';
+
+/**
+ * Score breakdown
+ */
+interface ScoreBreakdown {
+  total_score: number;
+  priority: PriorityLevel;
+  factors: ScoringFactors;
+  weighted_scores: {
+    confidence: number;
+    severity: number;
+    impact: number;
+    urgency: number;
+    business_value: number;
+    dependency_count: number;
+    stakeholder_impact: number;
+    resolution_complexity: number;
+    risk_exposure: number;
+  };
+  explanation: string;
+  recommendations: string[];
+
+  items?: unknown;
+}
+
+/**
+ * Batch scoring result
+ */
+interface BatchScoringResult {
+  scored_contradictions: Array<{
+    contradiction: ContradictionResult;
+    score: ScoreBreakdown;
+    items: KnowledgeItem[];
+  }>;
+  prioritized_order: string[];
+  summary: {
+    total_contradictions: number;
+    critical_count: number;
+    high_count: number;
+    medium_count: number;
+    low_count: number;
+    average_score: number;
+    highest_score: number;
+    lowest_score: number;
+  };
+  insights: Array<{
+    type: string;
+    description: string;
+    affected_contradictions: string[];
+    recommendation: string;
+  }>;
+}
+
+/**
+ * Scoring configuration
+ */
+interface ScoringConfig {
+  weights: {
+    confidence: number;
+    severity: number;
+    impact: number;
+    urgency: number;
+    business_value: number;
+    dependency_count: number;
+    stakeholder_impact: number;
+    resolution_complexity: number;
+    risk_exposure: number;
+  };
+  thresholds: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  enable_ai_analysis: boolean;
+  enable_dependency_analysis: boolean;
+  enable_business_impact_analysis: boolean;
+}
+
+/**
+ * Default configuration
+ */
+const DEFAULT_CONFIG: ScoringConfig = {
+  weights: {
+    confidence: 0.15,
+    severity: 0.25,
+    impact: 0.2,
+    urgency: 0.15,
+    business_value: 0.1,
+    dependency_count: 0.05,
+    stakeholder_impact: 0.05,
+    resolution_complexity: 0.03,
+    risk_exposure: 0.02,
+  },
+  thresholds: {
+    critical: 0.8,
+    high: 0.6,
+    medium: 0.4,
+    low: 0.0,
+  },
+  enable_ai_analysis: true,
+  enable_dependency_analysis: true,
+  enable_business_impact_analysis: true,
+};
+
+/**
+ * Contradiction Scoring and Prioritization Service
+ *
+ * Provides intelligent scoring and prioritization of contradictions
+ * using multiple factors and AI-enhanced analysis.
+ */
+export class ContradictionScoringService {
+  private config: ScoringConfig;
+  private cache: Map<string, { score: ScoreBreakdown; timestamp: number }> = new Map();
+
+  constructor(config: Partial<ScoringConfig> = {}) {
+    this.config = {
+      weights: { ...DEFAULT_CONFIG.weights, ...config.weights },
+      thresholds: { ...DEFAULT_CONFIG.thresholds, ...config.thresholds },
+      enable_ai_analysis: config.enable_ai_analysis ?? DEFAULT_CONFIG.enable_ai_analysis,
+      enable_dependency_analysis:
+        config.enable_dependency_analysis ?? DEFAULT_CONFIG.enable_dependency_analysis,
+      enable_business_impact_analysis:
+        config.enable_business_impact_analysis ?? DEFAULT_CONFIG.enable_business_impact_analysis,
+    };
+    logger.info('Contradiction Scoring Service initialized', { config: this.config });
+  }
+
+  /**
+   * Score a single contradiction
+   */
+  async scoreContradiction(
+    contradiction: ContradictionResult,
+    items: KnowledgeItem[]
+  ): Promise<ScoreBreakdown> {
+    const cacheKey = `score:${contradiction.id}`;
+    const cached = this.getFromCache(cacheKey);
+
+    if (_cached) {
+      return cached.score;
+    }
+
+    try {
+      const factors = await this.extractScoringFactors(contradiction, items);
+      const weightedScores = this.calculateWeightedScores(factors);
+      const totalScore = this.calculateTotalScore(weightedScores);
+      const priority = this.determinePriority(totalScore);
+
+      const score: ScoreBreakdown = {
+        total_score: totalScore,
+        priority,
+        factors,
+        weighted_scores: weightedScores,
+        explanation: this.generateScoreExplanation(factors, weightedScores, totalScore),
+        recommendations: this.generateRecommendations(factors, priority, contradiction),
+      };
+
+      this.setToCache(cacheKey, score);
+
+      logger.debug('Scored contradiction', {
+        contradictionId: contradiction.id,
+        score: totalScore,
+        priority,
+      });
+
+      return score;
+    } catch (error) {
+      logger.error({ error, contradictionId: contradiction.id }, 'Failed to score contradiction');
+      throw error;
+    }
+  }
+
+  /**
+   * Score multiple contradictions with batch analysis
+   */
+  async scoreBatchContradictions(
+    contradictions: ContradictionResult[],
+    items: KnowledgeItem[]
+  ): Promise<BatchScoringResult> {
+    const scoredContradictions = [];
+
+    // Score each contradiction
+    for (const contradiction of contradictions) {
+      try {
+        const score = await this.scoreContradiction(contradiction, items);
+        const relatedItems = this.findRelatedItems(contradiction, items);
+        scoredContradictions.push({ contradiction, score, items: relatedItems });
+      } catch (error) {
+        logger.warn(
+          { error, contradictionId: contradiction.id },
+          'Failed to score contradiction in batch'
+        );
+      }
+    }
+
+    // Sort by priority and score
+    const prioritizedOrder = scoredContradictions
+      .sort((a,  _b) => {
+        // First sort by priority level
+        const priorityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+        const priorityDiff = priorityOrder[b.score.priority] - priorityOrder[a.score.priority];
+        if (priorityDiff !== 0) return priorityDiff;
+
+        // Then sort by score
+        return b.score.total_score - a.score.total_score;
+      })
+      .map((item) => item.contradiction.id);
+
+    // Generate summary
+    const summary = this.generateBatchSummary(scoredContradictions);
+
+    // Generate insights
+    const insights = await this.generateBatchInsights(scoredContradictions, items);
+
+    return {
+      scored_contradictions: scoredContradictions,
+      prioritized_order: prioritizedOrder,
+      summary,
+      insights,
+    };
+  }
+
+  /**
+   * Extract scoring factors for a contradiction
+   */
+  private async extractScoringFactors(
+    contradiction: ContradictionResult,
+    items: KnowledgeItem[]
+  ): Promise<ScoringFactors> {
+    // Base factors from contradiction data
+    const factors: ScoringFactors = {
+      confidence: contradiction.confidence_score,
+      severity: this.getSeverityScore(contradiction.severity),
+      impact: await this.assessImpact(contradiction, items),
+      urgency: this.assessUrgency(contradiction, items),
+      business_value: await this.assessBusinessValue(contradiction, items),
+      dependency_count: this.countDependencies(contradiction, items),
+      stakeholder_impact: this.assessStakeholderImpact(contradiction, items),
+      resolution_complexity: this.assessResolutionComplexity(contradiction, items),
+      risk_exposure: this.assessRiskExposure(contradiction, items),
+    };
+
+    // Enhance with AI analysis if enabled
+    if (this.config.enable_ai_analysis) {
+      try {
+        const aiEnhancedFactors = await this.enhanceWithAI(contradiction, items, factors);
+        Object.assign(factors, aiEnhancedFactors);
+      } catch (error) {
+        logger.warn(
+          { error, contradictionId: contradiction.id },
+          'AI enhancement failed, using base factors'
+        );
+      }
+    }
+
+    return factors;
+  }
+
+  /**
+   * Get severity score
+   */
+  private getSeverityScore(severity: string): number {
+    const severityScores = {
+      critical: 1.0,
+      high: 0.8,
+      medium: 0.6,
+      low: 0.4,
+    };
+    return severityScores[severity as keyof typeof severityScores] || 0.5;
+  }
+
+  /**
+   * Assess impact of contradiction
+   */
+  private async assessImpact(
+    contradiction: ContradictionResult,
+    items: KnowledgeItem[]
+  ): Promise<number> {
+    let impact = 0.5; // Default medium impact
+
+    // Factor in item types
+    const primaryItem = items.find((item) => item.id === contradiction.primary_item_id);
+    const conflictingItems = contradiction.conflicting_item_ids
+      .map((id) => items.find((item) => item.id === id))
+      .filter((item) => item !== undefined);
+
+    const allItems = [primaryItem, ...conflictingItems].filter((item) => item !== undefined);
+
+    // High impact items increase score
+    const highImpactKinds = ['decision', 'policy', 'runbook', 'release'];
+    const mediumImpactKinds = ['entity', 'issue', 'risk', 'observation'];
+
+    if (allItems.some((item) => highImpactKinds.includes(item.kind))) {
+      impact = Math.max(impact, 0.8);
+    } else if (allItems.some((item) => mediumImpactKinds.includes(item.kind))) {
+      impact = Math.max(impact, 0.6);
+    }
+
+    // Consider contradiction type
+    const criticalTypes = ['logical', 'factual', 'semantic'];
+    if (criticalTypes.includes(contradiction.contradiction_type)) {
+      impact = Math.min(1.0, impact + 0.2);
+    }
+
+    return impact;
+  }
+
+  /**
+   * Assess urgency of contradiction
+   */
+  private assessUrgency(_contradiction: ContradictionResult,  _items: KnowledgeItem[]): number {
+    let urgency = 0.3; // Default low urgency
+
+    // Temporal contradictions are more urgent
+    if (contradiction.contradiction_type === 'temporal') {
+      urgency = 0.8;
+    }
+
+    // Logical and factual contradictions require immediate attention
+    if (['logical', 'factual'].includes(contradiction.contradiction_type)) {
+      urgency = Math.max(urgency, 0.7);
+    }
+
+    // High confidence increases urgency
+    if (contradiction.confidence_score > 0.8) {
+      urgency = Math.min(1.0, urgency + 0.2);
+    }
+
+    return urgency;
+  }
+
+  /**
+   * Assess business value impact
+   */
+  private async assessBusinessValue(
+    contradiction: ContradictionResult,
+    items: KnowledgeItem[]
+  ): Promise<number> {
+    if (!this.config.enable_business_impact_analysis) {
+      return 0.5; // Default
+    }
+
+    // Check for business-critical items
+    const primaryItem = items.find((item) => item.id === contradiction.primary_item_id);
+    if (!primaryItem) return 0.5;
+
+    const content = (primaryItem.content || JSON.stringify(primaryItem.data) || '').toLowerCase();
+
+    const businessIndicators = [
+      'revenue',
+      'profit',
+      'customer',
+      'user',
+      'sla',
+      'compliance',
+      'security',
+      'performance',
+      'availability',
+      'cost',
+      'budget',
+      'deadline',
+      'contract',
+    ];
+
+    const indicatorCount = businessIndicators.reduce((count,  _indicator) => {
+      return count + (content.includes(indicator) ? 1 : 0);
+    }, 0);
+
+    return Math.min(1.0, 0.3 + indicatorCount * 0.1);
+  }
+
+  /**
+   * Count dependencies
+   */
+  private countDependencies(_contradiction: ContradictionResult,  _items: KnowledgeItem[]): number {
+    if (!this.config.enable_dependency_analysis) {
+      return 0.1; // Default
+    }
+
+    // Simple dependency count based on item references
+    let dependencyCount = 0;
+
+    const primaryItem = items.find((item) => item.id === contradiction.primary_item_id);
+    const conflictingItems = contradiction.conflicting_item_ids
+      .map((id) => items.find((item) => item.id === id))
+      .filter((item) => item !== undefined);
+
+    const allItems = [primaryItem, ...conflictingItems].filter((item) => item !== undefined);
+
+    allItems.forEach((item) => {
+      const content = item.content || JSON.stringify(item.data) || '';
+
+      // Count references to other items, URLs, and identifiers
+      const references = content.match(/(ref|id|url|link|reference)[s]*[:#]?\s*([^\s\n,;]+)/gi);
+      if (_references) {
+        dependencyCount += references.length;
+      }
+
+      // Count mentioned IDs or identifiers
+      const ids = content.match(/[A-Z]{2,}-\d+/g);
+      if (_ids) {
+        dependencyCount += ids.length;
+      }
+    });
+
+    // Normalize to 0-1 scale
+    return Math.min(1.0, dependencyCount * 0.1);
+  }
+
+  /**
+   * Assess stakeholder impact
+   */
+  private assessStakeholderImpact(
+    _contradiction: ContradictionResult, 
+    _items: KnowledgeItem[]
+  ): number {
+    // Check for stakeholder-related content
+    const primaryItem = items.find((item) => item.id === contradiction.primary_item_id);
+    if (!primaryItem) return 0.5;
+
+    const content = (primaryItem.content || JSON.stringify(primaryItem.data) || '').toLowerCase();
+
+    const stakeholderIndicators = [
+      'user',
+      'customer',
+      'client',
+      'stakeholder',
+      'team',
+      'department',
+      'management',
+      'leadership',
+      'board',
+      'regulator',
+      'auditor',
+    ];
+
+    const indicatorCount = stakeholderIndicators.reduce((count,  _indicator) => {
+      return count + (content.includes(indicator) ? 1 : 0);
+    }, 0);
+
+    return Math.min(1.0, 0.3 + indicatorCount * 0.15);
+  }
+
+  /**
+   * Assess resolution complexity
+   */
+  private assessResolutionComplexity(
+    _contradiction: ContradictionResult, 
+    _items: KnowledgeItem[]
+  ): number {
+    let complexity = 0.3; // Default medium complexity
+
+    // Procedural contradictions are more complex to resolve
+    if (contradiction.contradiction_type === 'procedural') {
+      complexity = 0.8;
+    }
+
+    // Contradictions with many conflicting items are more complex
+    if (contradiction.conflicting_item_ids.length > 2) {
+      complexity = Math.min(1.0, complexity + 0.2);
+    }
+
+    // Logical contradictions might require careful analysis
+    if (contradiction.contradiction_type === 'logical') {
+      complexity = Math.max(complexity, 0.7);
+    }
+
+    return complexity;
+  }
+
+  /**
+   * Assess risk exposure
+   */
+  private assessRiskExposure(_contradiction: ContradictionResult,  _items: KnowledgeItem[]): number {
+    let riskExposure = 0.2; // Default low risk
+
+    // Critical severity increases risk exposure
+    if (contradiction.severity === 'critical') {
+      riskExposure = 0.9;
+    } else if (contradiction.severity === 'high') {
+      riskExposure = 0.7;
+    }
+
+    // High confidence in contradiction increases risk
+    if (contradiction.confidence_score > 0.9) {
+      riskExposure = Math.min(1.0, riskExposure + 0.1);
+    }
+
+    return riskExposure;
+  }
+
+  /**
+   * Enhance scoring factors with AI analysis
+   */
+  private async enhanceWithAI(
+    contradiction: ContradictionResult,
+    items: KnowledgeItem[],
+    baseFactors: ScoringFactors
+  ): Promise<Partial<ScoringFactors>> {
+    const prompt = this.buildAIEnhancementPrompt(contradiction, items, baseFactors);
+
+    try {
+      const response = await zaiClientService.generateCompletion({
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are an expert at analyzing contradictions and assessing their business impact, urgency, and complexity. Provide nuanced scoring adjustments based on deep contextual understanding.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.1,
+        maxTokens: 1000,
+      });
+
+      const analysis = JSON.parse(response.choices[0].message.content);
+
+      return {
+        impact: analysis.adjusted_impact || baseFactors.impact,
+        urgency: analysis.adjusted_urgency || baseFactors.urgency,
+        business_value: analysis.adjusted_business_value || baseFactors.business_value,
+        stakeholder_impact: analysis.adjusted_stakeholder_impact || baseFactors.stakeholder_impact,
+        resolution_complexity:
+          analysis.adjusted_resolution_complexity || baseFactors.resolution_complexity,
+        risk_exposure: analysis.adjusted_risk_exposure || baseFactors.risk_exposure,
+      };
+    } catch (error) {
+      logger.warn(
+        { error, contradictionId: contradiction.id },
+        'AI enhancement failed, returning base factors'
+      );
+      return {};
+    }
+  }
+
+  /**
+   * Build AI enhancement prompt
+   */
+  private buildAIEnhancementPrompt(
+    _contradiction: ContradictionResult, 
+    _items: KnowledgeItem[], 
+    _baseFactors: ScoringFactors
+  ): string {
+    const primaryItem = items.find((item) => item.id === contradiction.primary_item_id);
+    const conflictingItems = contradiction.conflicting_item_ids
+      .map((id) => items.find((item) => item.id === id))
+      .filter((item) => item !== undefined);
+
+    const primaryContent = primaryItem ? this.extractContent(primaryItem) : 'Unknown';
+    const conflictingContents = conflictingItems
+      .map((item) => this.extractContent(item))
+      .join('\n\n');
+
+    return `Analyze this contradiction and provide scoring adjustments for business impact, urgency, and complexity:
+
+CONTRADICTION:
+- Type: ${contradiction.contradiction_type}
+- Severity: ${contradiction.severity}
+- Confidence: ${contradiction.confidence_score}
+- Description: ${contradiction.description}
+
+CURRENT SCORING FACTORS:
+${String(JSON.stringify(baseFactors, null, 2))}
+
+PRIMARY ITEM CONTENT:
+${primaryContent}
+
+CONFLICTING ITEMS CONTENT:
+${conflictingContents}
+
+Please analyze the contextual factors and provide adjusted scores (0-1) for:
+- adjusted_impact: Real-world impact considering business context
+- adjusted_urgency: How quickly this needs to be resolved
+- adjusted_business_value: Effect on business operations and value
+- adjusted_stakeholder_impact: Impact on stakeholders and users
+- adjusted_resolution_complexity: Difficulty of implementing a resolution
+- adjusted_risk_exposure: Potential risks if left unresolved
+
+Respond with a JSON object containing these adjusted scores and your reasoning:
+{
+  "reasoning": "Explanation of your analysis",
+  "adjusted_impact": number,
+  "adjusted_urgency": number,
+  "adjusted_business_value": number,
+  "adjusted_stakeholder_impact": number,
+  "adjusted_resolution_complexity": number,
+  "adjusted_risk_exposure": number
+}`;
+  }
+
+  /**
+   * Calculate weighted scores
+   */
+  private calculateWeightedScores(_factors: ScoringFactors): ScoringFactors['weighted_scores'] {
+    const weights = this.config.weights;
+
+    return {
+      confidence: factors.confidence * weights.confidence,
+      severity: factors.severity * weights.severity,
+      impact: factors.impact * weights.impact,
+      urgency: factors.urgency * weights.urgency,
+      business_value: factors.business_value * weights.business_value,
+      dependency_count: factors.dependency_count * weights.dependency_count,
+      stakeholder_impact: factors.stakeholder_impact * weights.stakeholder_impact,
+      resolution_complexity: factors.resolution_complexity * weights.resolution_complexity,
+      risk_exposure: factors.risk_exposure * weights.risk_exposure,
+    };
+  }
+
+  /**
+   * Calculate total score
+   */
+  private calculateTotalScore(_weightedScores: ScoringFactors['weighted_scores']): number {
+    return Object.values(weightedScores).reduce((sum,  _score) => sum + score, 0);
+  }
+
+  /**
+   * Determine priority level
+   */
+  private determinePriority(_score: number): PriorityLevel {
+    const thresholds = this.config.thresholds;
+
+    if (score >= thresholds.critical) return 'critical';
+    if (score >= thresholds.high) return 'high';
+    if (score >= thresholds.medium) return 'medium';
+    return 'low';
+  }
+
+  /**
+   * Generate score explanation
+   */
+  private generateScoreExplanation(
+    _factors: ScoringFactors, 
+    _weightedScores: ScoringFactors['weighted_scores'], 
+    _totalScore: number
+  ): string {
+    const explanations: string[] = [];
+
+    // Add explanations for significant factors
+    if (weightedScores.severity > 0.15) {
+      explanations.push(
+        `High severity (${String(factors.severity.toFixed(2))}) significantly impacts priority`
+      );
+    }
+    if (weightedScores.confidence > 0.1) {
+      explanations.push(`High confidence (${String(factors.confidence.toFixed(2))}) increases urgency`);
+    }
+    if (weightedScores.impact > 0.15) {
+      explanations.push(`Significant impact (${String(factors.impact.toFixed(2))}) on operations`);
+    }
+    if (weightedScores.urgency > 0.1) {
+      explanations.push(`High urgency (${String(factors.urgency.toFixed(2))}) requires prompt attention`);
+    }
+
+    return (
+      explanations.join('. ') ||
+      `Score of ${String(totalScore.toFixed(3))} based on weighted factor analysis`
+    );
+  }
+
+  /**
+   * Generate recommendations
+   */
+  private generateRecommendations(
+    _factors: ScoringFactors, 
+    _priority: PriorityLevel, 
+    _contradiction: ContradictionResult
+  ): string[] {
+    const recommendations: string[] = [];
+
+    // Priority-based recommendations
+    if (priority === 'critical') {
+      recommendations.push('Address immediately - critical impact on operations');
+      recommendations.push('Consider immediate rollback or containment measures');
+    } else if (priority === 'high') {
+      recommendations.push('Resolve within 24-48 hours');
+      recommendations.push('Monitor for escalation indicators');
+    }
+
+    // Factor-based recommendations
+    if (factors.resolution_complexity > 0.7) {
+      recommendations.push('Allocate dedicated team for resolution');
+      recommendations.push('Break down into smaller, manageable tasks');
+    }
+
+    if (factors.stakeholder_impact > 0.7) {
+      recommendations.push('Communicate with affected stakeholders');
+      recommendations.push('Prepare mitigation strategies');
+    }
+
+    if (factors.dependency_count > 0.5) {
+      recommendations.push('Review and update dependent items');
+      recommendations.push('Consider cascading effects');
+    }
+
+    // Type-specific recommendations
+    switch (contradiction.contradiction_type) {
+      case 'temporal':
+        recommendations.push('Verify timeline accuracy and update schedules');
+        break;
+      case 'logical':
+        recommendations.push('Review logical consistency of statements');
+        break;
+      case 'factual':
+        recommendations.push('Verify facts with external sources');
+        break;
+      case 'semantic':
+        recommendations.push('Clarify meaning and context of statements');
+        break;
+      case 'procedural':
+        recommendations.push('Review and harmonize procedures and workflows');
+        break;
+    }
+
+    return recommendations;
+  }
+
+  /**
+   * Find items related to contradiction
+   */
+  private findRelatedItems(
+    _contradiction: ContradictionResult, 
+    _items: KnowledgeItem[]
+  ): KnowledgeItem[] {
+    const relatedItems: KnowledgeItem[] = [];
+
+    // Primary item
+    const primaryItem = items.find((item) => item.id === contradiction.primary_item_id);
+    if (_primaryItem) {
+      relatedItems.push(primaryItem);
+    }
+
+    // Conflicting items
+    contradiction.conflicting_item_ids.forEach((id) => {
+      const item = items.find((item) => item.id === id);
+      if (_item) {
+        relatedItems.push(item);
+      }
+    });
+
+    return relatedItems;
+  }
+
+  /**
+   * Generate batch summary
+   */
+  private generateBatchSummary(
+    scoredContradictions: Array<{
+      contradiction: ContradictionResult;
+      score: ScoreBreakdown;
+      items: KnowledgeItem[];
+    }>
+  ) {
+    const total = scoredContradictions.length;
+    const criticalCount = scoredContradictions.filter(
+      (s) => s.score.priority === 'critical'
+    ).length;
+    const highCount = scoredContradictions.filter((s) => s.score.priority === 'high').length;
+    const mediumCount = scoredContradictions.filter((s) => s.score.priority === 'medium').length;
+    const lowCount = scoredContradictions.filter((s) => s.score.priority === 'low').length;
+
+    const scores = scoredContradictions.map((s) => s.score.total_score);
+    const averageScore = scores.reduce((sum,  _score) => sum + score, 0) / total;
+    const highestScore = Math.max(...scores);
+    const lowestScore = Math.min(...scores);
+
+    return {
+      total_contradictions: total,
+      critical_count: criticalCount,
+      high_count: highCount,
+      medium_count: mediumCount,
+      low_count: lowCount,
+      average_score: averageScore,
+      highest_score: highestScore,
+      lowest_score: lowestScore,
+    };
+  }
+
+  /**
+   * Generate batch insights
+   */
+  private generateBatchInsights(
+    scoredContradictions: Array<{
+      contradiction: ContradictionResult;
+      score: ScoreBreakdown;
+      items: KnowledgeItem[];
+    }>, 
+    _items: KnowledgeItem[]
+  ): Promise<
+    Array<{
+      type: string;
+      description: string;
+      affected_contradictions: string[];
+      recommendation: string;
+    }>
+  > {
+    const insights = [];
+
+    // Analyze patterns
+    const typeDistribution = this.analyzeTypeDistribution(scoredContradictions);
+    const severityDistribution = this.analyzeSeverityDistribution(scoredContradictions);
+    const itemKindDistribution = this.analyzeItemKindDistribution(scoredContradictions);
+
+    // Type pattern insights
+    if (typeDistribution.semantic > typeDistribution.logical * 2) {
+      insights.push({
+        type: 'pattern_analysis', 
+        _description: 'High number of semantic contradictions detected', 
+        _affected_contradictions: scoredContradictions
+          .filter((s) => s.contradiction.contradiction_type === 'semantic')
+          .map((s) => s.contradiction.id),
+        recommendation: 'Consider improving communication clarity and terminology standardization',
+      });
+    }
+
+    // Severity insights
+    if (severityDistribution.critical > 0) {
+      insights.push({
+        type: 'severity_alert', 
+        _description: 'Critical contradictions require immediate attention', 
+        _affected_contradictions: scoredContradictions
+          .filter((s) => s.score.priority === 'critical')
+          .map((s) => s.contradiction.id),
+        recommendation: 'Form dedicated team to address critical issues immediately',
+      });
+    }
+
+    // Item kind insights
+    if (itemKindDistribution.decision > itemKindDistribution.entity * 2) {
+      insights.push({
+        type: 'decision_contradiction_pattern', 
+        _description: 'High concentration of decision contradictions', 
+        _affected_contradictions: scoredContradictions
+          .filter((s) => s.score.items.some((item) => item.kind === 'decision'))
+          .map((s) => s.contradiction.id),
+        recommendation: 'Review decision-making processes and ensure proper documentation',
+      });
+    }
+
+    return insights;
+  }
+
+  /**
+   * Analyze type distribution
+   */
+  private analyzeTypeDistribution(
+    scoredContradictions: Array<{ contradiction: ContradictionResult; score: ScoreBreakdown }>
+  ) {
+    const distribution = { semantic: 0, temporal: 0, logical: 0, factual: 0, procedural: 0 };
+
+    scoredContradictions.forEach(({ contradiction }) => {
+      distribution[contradiction.contradiction_type as keyof typeof distribution]++;
+    });
+
+    return distribution;
+  }
+
+  /**
+   * Analyze severity distribution
+   */
+  private analyzeSeverityDistribution(
+    scoredContradictions: Array<{ contradiction: ContradictionResult; score: ScoreBreakdown }>
+  ) {
+    const distribution = { critical: 0, high: 0, medium: 0, low: 0 };
+
+    scoredContradictions.forEach(({ score }) => {
+      distribution[score.priority]++;
+    });
+
+    return distribution;
+  }
+
+  /**
+   * Analyze item kind distribution
+   */
+  private analyzeItemKindDistribution(
+    scoredContradictions: Array<{ contradiction: ContradictionResult; score: ScoreBreakdown }>
+  ) {
+    const distribution: Record<string, number> = {};
+
+    scoredContradictions.forEach(({ score }) => {
+      score.items.forEach((item) => {
+        distribution[item.kind] = (distribution[item.kind] || 0) + 1;
+      });
+    });
+
+    return distribution;
+  }
+
+  /**
+   * Extract content from item
+   */
+  private extractContent(_item: KnowledgeItem): string {
+    return item.content || JSON.stringify(item.data) || '';
+  }
+
+  /**
+   * Get scoring statistics
+   */
+  getStatistics(): {
+    cacheSize: number;
+    config: ScoringConfig;
+  } {
+    return {
+      cacheSize: this.cache.size,
+      config: this.config,
+    };
+  }
+
+  /**
+   * Clear cache
+   */
+  clearCache(): void {
+    this.cache.clear();
+  }
+
+  /**
+   * Get item from cache
+   */
+  private getFromCache(_key: string): { score: ScoreBreakdown; timestamp: number } | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+
+    // Check if cache entry is expired (30 minutes)
+    if (Date.now() - entry.timestamp > 1800000) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return entry;
+  }
+
+  /**
+   * Set item in cache
+   */
+  private setToCache(_key: string,  _score: ScoreBreakdown): void {
+    this.cache.set(key, {
+      score,
+      timestamp: Date.now(),
+    });
+  }
+}
+
+/**
+ * Export singleton instance
+ */
+export const contradictionScoringService = new ContradictionScoringService();
+
+/**
+ * Export class for testing
+ */
+export { ContradictionScoringService };

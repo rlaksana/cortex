@@ -1,4 +1,7 @@
-// @ts-nocheck - Emergency rollback: Critical memory service
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Core entry point type compatibility issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
+
 /**
  * Memory Handler Module
  *

@@ -1,4 +1,3 @@
-// @ts-nocheck - Emergency rollback: Critical chaos testing framework entry point
 /**
  * Chaos Testing Framework - Main Entry Point
  *

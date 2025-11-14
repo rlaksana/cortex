@@ -1,0 +1,29 @@
+{
+  "batch": 15,
+  "category": "utilities",
+  "files": [
+    "utils/config-tester.ts",
+    "utils/configuration-validators.ts",
+    "utils/correlation-id.ts",
+    "utils/database-type-guards.ts",
+    "utils/db-error-handler.ts",
+    "utils/enhanced-expiry-utils.ts",
+    "utils/expiry-utils.ts",
+    "utils/idempotency-manager.ts",
+    "utils/index.ts",
+    "utils/logger.ts",
+    "utils/logger-wrapper.ts",
+    "utils/logging-patterns.ts",
+    "utils/lru-cache.ts",
+    "utils/mcp-compliance.ts",
+    "utils/mcp-logger.ts",
+    "utils/mcp-response-guards.ts",
+    "utils/mcp-transform.ts",
+    "utils/monitoring-type-guards.ts",
+    "utils/response-builder.ts",
+    "utils/retry-policy.ts",
+    "utils/tl-utils.ts",
+    "utils/type-safety-layer.ts"
+  ],
+  "file_count": 22
+}

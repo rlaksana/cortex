@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical business service
 import type { RiskData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeRisk(data: RiskData, scope: ScopeFilter): Promise<string> {

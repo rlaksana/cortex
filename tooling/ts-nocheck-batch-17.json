@@ -1,0 +1,9 @@
+{
+  "batch": 17,
+  "category": "pool",
+  "files": [
+    "pool/database-pool.ts",
+    "pool/generic-resource-pool.ts"
+  ],
+  "file_count": 2
+}

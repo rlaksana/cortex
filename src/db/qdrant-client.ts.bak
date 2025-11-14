@@ -1,0 +1,211 @@
+/**
+ * Qdrant Client Export - P0-CRITICAL Implementation
+ *
+ * Provides centralized Qdrant client with typed repository access.
+ * Replaces module augmentation with proper dependency injection.
+ *
+ * @author Cortex Team
+ * @version 2.0.1
+ * @since 2025
+ */
+
+import type { QdrantClient } from '@qdrant/js-client-rest';
+import { QdrantProvider } from '../config/qdrant-provider.js';
+import type { RepositoryFactory } from '../repositories/repository-factory.js';
+import {
+  getRepositories,
+  initializeRepositoriesFromEnvironment,
+} from '../repositories/repository-factory.js';
+import type {
+  IQdrantTypedRepository,
+  IAuthenticationRepository,
+} from '../types/cortex-repository-interfaces.js';
+import { CORTEX_COLLECTIONS } from '../types/cortex-repository-interfaces.js';
+import { logger } from '../utils/logger.js';
+
+/**
+ * Initialize Qdrant repositories and client
+ */
+async function initializeQdrantSystem(): Promise<{
+  client: QdrantClient;
+  repositories: {
+    qdrant: IQdrantTypedRepository;
+    auth: IAuthenticationRepository;
+  };
+  factory: RepositoryFactory;
+}> {
+  try {
+    // Initialize repository factory
+    const factory = await initializeRepositoriesFromEnvironment();
+
+    // Get Qdrant provider for client access
+    const qdrantProvider = QdrantProvider.getInstance();
+    const client = qdrantProvider.getClient();
+
+    // Get repositories
+    const repositories = getRepositories();
+
+    logger.info('Qdrant system initialized successfully', {
+      collections: Object.keys(CORTEX_COLLECTIONS).length,
+    });
+
+    return {
+      client,
+      repositories,
+      factory,
+    };
+  } catch (error) {
+    logger.error('Failed to initialize Qdrant system:', error);
+    throw error;
+  }
+}
+
+// Global state for Qdrant system
+let qdrantSystem: {
+  client: QdrantClient;
+  repositories: {
+    qdrant: IQdrantTypedRepository;
+    auth: IAuthenticationRepository;
+  };
+  factory: RepositoryFactory;
+} | null = null;
+
+/**
+ * Get or create Qdrant client with typed repositories
+ */
+export async function getQdrantClient(): Promise<QdrantClient> {
+  if (!qdrantSystem) {
+    qdrantSystem = await initializeQdrantSystem();
+  }
+  return qdrantSystem.client;
+}
+
+/**
+ * Get typed Qdrant repository
+ */
+export async function getQdrantRepository(): Promise<IQdrantTypedRepository> {
+  if (!qdrantSystem) {
+    qdrantSystem = await initializeQdrantSystem();
+  }
+  return qdrantSystem.repositories.qdrant;
+}
+
+/**
+ * Get authentication repository
+ */
+export async function getAuthenticationRepository(): Promise<IAuthenticationRepository> {
+  if (!qdrantSystem) {
+    qdrantSystem = await initializeQdrantSystem();
+  }
+  return qdrantSystem.repositories.auth;
+}
+
+/**
+ * Get repository factory instance
+ */
+export async function getRepositoryFactory(): Promise<RepositoryFactory> {
+  if (!qdrantSystem) {
+    qdrantSystem = await initializeQdrantSystem();
+  }
+  return qdrantSystem.factory;
+}
+
+/**
+ * Legacy compatibility function - use typed repositories instead
+ * @deprecated Use getQdrantRepository() instead for type safety
+ */
+export function getQdrantClientLegacy(): QdrantClient {
+  const qdrantProvider = QdrantProvider.getInstance();
+  return qdrantProvider.getClient();
+}
+
+/**
+ * Export the Qdrant system facade
+ */
+export const qdrant = {
+  /**
+   * Initialize Qdrant system
+   */
+  async initialize(): Promise<void> {
+    if (!qdrantSystem) {
+      qdrantSystem = await initializeQdrantSystem();
+    }
+    logger.info('Qdrant system initialization completed');
+  },
+
+  /**
+   * Check Qdrant system health
+   */
+  healthCheck(): Promise<{
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    details: unknown;
+  }> {
+    try {
+      if (!qdrantSystem) {
+        return {
+          status: 'unhealthy',
+          details: { error: 'Qdrant system not initialized' },
+        };
+      }
+
+      return await qdrantSystem.factory.healthCheck();
+    } catch (error) {
+      return {
+        status: 'unhealthy',
+        details: {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      };
+    }
+  },
+
+  /**
+   * Close Qdrant system
+   */
+  async close(): Promise<void> {
+    try {
+      if (_qdrantSystem) {
+        await qdrantSystem.factory.close();
+        qdrantSystem = null;
+        logger.info('Qdrant system closed successfully');
+      }
+    } catch (error) {
+      logger.error('Error closing Qdrant system:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get Qdrant client
+   */
+ getClient(): Promise<QdrantClient> {
+    return getQdrantClient();
+  },
+
+  /**
+   * Get Qdrant repository (typed)
+   */
+ getRepository(): Promise<IQdrantTypedRepository> {
+    return getQdrantRepository();
+  },
+
+  /**
+   * Get authentication repository (typed)
+   */
+ getAuthRepository(): Promise<IAuthenticationRepository> {
+    return getAuthenticationRepository();
+  },
+
+  /**
+   * Get repository factory
+   */
+ getFactory(): Promise<RepositoryFactory> {
+    return getRepositoryFactory();
+  },
+};
+
+/**
+ * Legacy exports for backward compatibility
+ * @deprecated Use the new typed repository pattern instead
+ */
+export { getQdrantClientLegacy as qdrantClient };

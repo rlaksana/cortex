@@ -1,0 +1,21 @@
+{
+  "batch": 3,
+  "category": "database",
+  "files": [
+    "db/adapters/qdrant-adapter.ts",
+    "db/audit.ts",
+    "db/database-factory.ts",
+    "db/database-manager.ts",
+    "db/factory/database-factory.ts",
+    "db/qdrant-backup-config.ts",
+    "db/qdrant-backup-integration.ts",
+    "db/qdrant-bootstrap.ts",
+    "db/qdrant-client.ts",
+    "db/qdrant-consistency-validator.ts",
+    "db/qdrant-pooled-client.ts",
+    "db/qdrant-restore-testing.ts",
+    "db/schema.ts",
+    "db/unified-database-layer-v2.ts"
+  ],
+  "file_count": 14
+}

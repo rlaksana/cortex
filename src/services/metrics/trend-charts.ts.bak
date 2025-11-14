@@ -1,0 +1,1528 @@
+/**
+ * P2-P3: Performance Trend Charts and Visualization Service
+ *
+ * Provides comprehensive trend chart generation and visualization capabilities
+ * for performance monitoring with support for multiple chart types, time ranges,
+ * and aggregation levels. Integrates with existing metrics collection systems.
+ *
+ * Features:
+ * - Multiple chart types: line, bar, area, heatmap, scatter plots
+ * - Configurable time ranges and aggregation levels
+ * - Real-time chart updates and streaming data
+ * - Performance trend analysis and anomaly detection
+ * - Export capabilities for external dashboards
+ * - Integration with SLI/SLO and performance metrics
+ *
+ * @module services/metrics/trend-charts
+ */
+
+import { performanceBenchmarkService } from './performance-benchmark.js';
+import { performanceTrendingService } from './performance-trending.js';
+import { sliSloMonitorService } from './sli-slo-monitor.js';
+import { systemMetricsService } from './system-metrics.js';
+import { logger } from '@/utils/logger.js';
+
+// === Type Definitions ===
+
+export interface ChartConfig {
+  /** Chart identifier */
+  id: string;
+  /** Chart title */
+  title: string;
+  /** Chart type */
+  type: ChartType;
+  /** Data source configuration */
+  data_source: DataSourceConfig;
+  /** Chart appearance */
+  appearance: ChartAppearance;
+  /** Axes configuration */
+  axes: AxesConfig;
+  /** Time range */
+  time_range: TimeRange;
+  /** Aggregation settings */
+  aggregation: AggregationConfig;
+  /** Alerts and thresholds */
+  alerts: ChartAlertConfig[];
+  /** Refresh settings */
+  refresh: RefreshConfig;
+}
+
+export type ChartType =
+  | 'line'
+  | 'bar'
+  | 'area'
+  | 'scatter'
+  | 'heatmap'
+  | 'gauge'
+  | 'pie'
+  | 'histogram'
+  | 'box_plot'
+  | 'candlestick';
+
+export interface DataSourceConfig {
+  /** Data source type */
+  type: 'system_metrics' | 'sli_slo' | 'performance_trends' | 'benchmarks' | 'custom';
+  /** Specific metrics to include */
+  metrics: string[];
+  /** Filters to apply */
+  filters: Record<string, unknown>;
+  /** Custom data provider */
+  custom_provider?: () => Promise<unknown>;
+}
+
+/** Data point interface for time series data */
+export interface DataPoint {
+  timestamp: number;
+  [key: string]: number | unknown;
+}
+
+/** Alert interface */
+export interface Alert {
+  id: string;
+  threshold: number;
+  operator: '>' | '<' | '>=' | '<=' | '==' | '!=';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  message: string;
+}
+
+export interface ChartAppearance {
+  /** Color scheme */
+  color_scheme: 'default' | 'dark' | 'vibrant' | 'pastel' | 'monochrome';
+  /** Chart dimensions */
+  width: number;
+  height: number;
+  /** Show legend */
+  show_legend: boolean;
+  /** Show grid lines */
+  show_grid: boolean;
+  /** Show tooltips */
+  show_tooltips: boolean;
+  /** Animation settings */
+  animation: {
+    enabled: boolean;
+    duration_ms: number;
+    easing: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
+  };
+}
+
+export interface AxesConfig {
+  /** X-axis configuration */
+  x_axis: {
+    label: string;
+    type: 'time' | 'category' | 'value';
+    format?: string;
+    min_value?: number;
+    max_value?: number;
+  };
+  /** Y-axis configuration */
+  y_axis: {
+    label: string;
+    type: 'value' | 'log' | 'percentage';
+    format?: string;
+    min_value?: number;
+    max_value?: number;
+  };
+  /** Secondary Y-axis (optional) */
+  y2_axis?: {
+    label: string;
+    type: 'value' | 'log' | 'percentage';
+    format?: string;
+    min_value?: number;
+    max_value?: number;
+  };
+}
+
+export interface TimeRange {
+  /** Start time (timestamp or relative) */
+  start: number | string;
+  /** End time (timestamp or relative) */
+  end: number | string;
+  /** Time granularity */
+  granularity: 'minute' | 'hour' | 'day' | 'week' | 'month';
+}
+
+export interface AggregationConfig {
+  /** Aggregation function */
+  function: 'avg' | 'sum' | 'min' | 'max' | 'count' | 'p50' | 'p90' | 'p95' | 'p99';
+  /** Grouping interval */
+  interval: number; // in minutes
+  /** Fill missing data */
+  fill_missing: boolean;
+  /** Fill value for missing data */
+  fill_value: number | null;
+}
+
+export interface ChartAlertConfig {
+  /** Alert type */
+  type: 'threshold' | 'trend' | 'anomaly';
+  /** Alert condition */
+  condition: {
+    metric: string;
+    operator: 'gt' | 'lt' | 'eq' | 'gte' | 'lte';
+    value: number;
+  };
+  /** Alert appearance */
+  appearance: {
+    color: string;
+    line_style: 'solid' | 'dashed' | 'dotted';
+    line_width: number;
+    label: string;
+  };
+  /** Notification settings */
+  notification: {
+    enabled: boolean;
+    channels: ('email' | 'slack' | 'webhook')[];
+  };
+}
+
+export interface RefreshConfig {
+  /** Auto-refresh enabled */
+  enabled: boolean;
+  /** Refresh interval in seconds */
+  interval_seconds: number;
+  /** Real-time updates */
+  real_time: boolean;
+  /** Data buffering */
+  buffer_size: number;
+}
+
+export interface ChartData {
+  /** Chart metadata */
+  chart_id: string;
+  timestamp: number;
+  time_range: TimeRange;
+
+  /** Data points */
+  data_points: Array<{
+    timestamp: number;
+    x_value: unknown;
+    y_values: Record<string, number>;
+    metadata?: Record<string, unknown>;
+  }>;
+
+  /** Series information */
+  series: Array<{
+    name: string;
+    data: number[];
+    color: string;
+    y_axis: 'primary' | 'secondary';
+  }>;
+
+  /** Annotations */
+  annotations: Array<{
+    type: 'line' | 'region' | 'point';
+    x_value?: number;
+    y_value?: number;
+    x_start?: number;
+    x_end?: number;
+    y_start?: number;
+    y_end?: number;
+    label: string;
+    color: string;
+  }>;
+
+  /** Statistical information */
+  statistics: {
+    min: number;
+    max: number;
+    avg: number;
+    median: number;
+    std_dev: number;
+    trend: 'up' | 'down' | 'stable';
+    trend_percentage: number;
+  };
+}
+
+export interface TrendAnalysisResult {
+  /** Analysis timestamp */
+  timestamp: number;
+  /** Trend direction */
+  trend_direction: 'improving' | 'degrading' | 'stable';
+  /** Trend strength (0-1) */
+  trend_strength: number;
+  /** Change percentage */
+  change_percentage: number;
+  /** Statistical significance */
+  significance: number;
+  /** Detected anomalies */
+  anomalies: Array<{
+    timestamp: number;
+    value: number;
+    severity: 'low' | 'medium' | 'high';
+    description: string;
+  }>;
+  /** Forecast data */
+  forecast?: Array<{
+    timestamp: number;
+    value: number;
+    confidence_interval: [number, number];
+  }>;
+}
+
+/**
+ * Trend Charts Service
+ */
+export class TrendChartsService {
+  private charts: Map<string, ChartConfig> = new Map();
+  private chartDataCache: Map<string, ChartData> = new Map();
+  private refreshIntervals: Map<string, NodeJS.Timeout> = new Map();
+  private trendAnalysisCache: Map<string, TrendAnalysisResult> = new Map();
+
+  private readonly DEFAULT_CHARTS: Partial<ChartConfig>[] = [
+    {
+      id: 'availability_trend',
+      title: 'Service Availability Trend',
+      type: 'line',
+      data_source: {
+        type: 'sli_slo',
+        metrics: ['availability_percentage'],
+        filters: {},
+      },
+      appearance: {
+        color_scheme: 'default',
+        width: 800,
+        height: 400,
+        show_legend: true,
+        show_grid: true,
+        show_tooltips: true,
+        animation: { enabled: true, duration_ms: 300, easing: 'ease-in-out' },
+      },
+      time_range: {
+        start: '24h', // Last 24 hours
+        end: 'now',
+        granularity: 'hour',
+      },
+      aggregation: {
+        function: 'avg',
+        interval: 60, // 1 hour
+        fill_missing: true,
+        fill_value: null,
+      },
+      refresh: {
+        enabled: true,
+        interval_seconds: 300, // 5 minutes
+        real_time: false,
+        buffer_size: 100,
+      },
+    },
+    {
+      id: 'response_time_distribution',
+      title: 'Response Time Distribution',
+      type: 'histogram',
+      data_source: {
+        type: 'sli_slo',
+        metrics: ['p50_ms', 'p95_ms', 'p99_ms'],
+        filters: {},
+      },
+      appearance: {
+        color_scheme: 'vibrant',
+        width: 800,
+        height: 400,
+        show_legend: true,
+        show_grid: true,
+        show_tooltips: true,
+        animation: { enabled: true, duration_ms: 300, easing: 'ease-in-out' },
+      },
+      time_range: {
+        start: '1h',
+        end: 'now',
+        granularity: 'minute',
+      },
+      aggregation: {
+        function: 'avg',
+        interval: 5, // 5 minutes
+        fill_missing: false,
+        fill_value: null,
+      },
+      refresh: {
+        enabled: true,
+        interval_seconds: 60, // 1 minute
+        real_time: true,
+        buffer_size: 50,
+      },
+    },
+    {
+      id: 'error_rate_heatmap',
+      title: 'Error Rate Heatmap',
+      type: 'heatmap',
+      data_source: {
+        type: 'system_metrics',
+        metrics: ['error_rate'],
+        filters: {},
+      },
+      appearance: {
+        color_scheme: 'default',
+        width: 600,
+        height: 400,
+        show_legend: true,
+        show_grid: false,
+        show_tooltips: true,
+        animation: { enabled: false, duration_ms: 0, easing: 'linear' },
+      },
+      time_range: {
+        start: '7d', // Last 7 days
+        end: 'now',
+        granularity: 'hour',
+      },
+      aggregation: {
+        function: 'avg',
+        interval: 60, // 1 hour
+        fill_missing: true,
+        fill_value: 0,
+      },
+      refresh: {
+        enabled: true,
+        interval_seconds: 900, // 15 minutes
+        real_time: false,
+        buffer_size: 200,
+      },
+    },
+    {
+      id: 'resource_utilization_gauge',
+      title: 'Current Resource Utilization',
+      type: 'gauge',
+      data_source: {
+        type: 'system_metrics',
+        metrics: ['cpu_percentage', 'memory_percentage', 'disk_percentage'],
+        filters: {},
+      },
+      appearance: {
+        color_scheme: 'default',
+        width: 300,
+        height: 300,
+        show_legend: true,
+        show_grid: false,
+        show_tooltips: true,
+        animation: { enabled: true, duration_ms: 500, easing: 'ease-out' },
+      },
+      time_range: {
+        start: '5m',
+        end: 'now',
+        granularity: 'minute',
+      },
+      aggregation: {
+        function: 'avg',
+        interval: 1,
+        fill_missing: false,
+        fill_value: 0,
+      },
+      refresh: {
+        enabled: true,
+        interval_seconds: 30, // 30 seconds
+        real_time: true,
+        buffer_size: 10,
+      },
+    },
+    {
+      id: 'benchmark_comparison',
+      title: 'Performance Benchmark Comparison',
+      type: 'bar',
+      data_source: {
+        type: 'benchmarks',
+        metrics: ['throughput', 'efficiency_score'],
+        filters: {},
+      },
+      appearance: {
+        color_scheme: 'pastel',
+        width: 800,
+        height: 400,
+        show_legend: true,
+        show_grid: true,
+        show_tooltips: true,
+        animation: { enabled: true, duration_ms: 400, easing: 'ease-in-out' },
+      },
+      time_range: {
+        start: '30d', // Last 30 days
+        end: 'now',
+        granularity: 'day',
+      },
+      aggregation: {
+        function: 'avg',
+        interval: 1440, // 1 day
+        fill_missing: false,
+        fill_value: null,
+      },
+      refresh: {
+        enabled: true,
+        interval_seconds: 3600, // 1 hour
+        real_time: false,
+        buffer_size: 30,
+      },
+    },
+  ];
+
+  constructor() {
+    this.initializeDefaultCharts();
+    logger.info('TrendChartsService initialized', {
+      defaultChartsCount: this.DEFAULT_CHARTS.length,
+    });
+  }
+
+  /**
+   * Initialize default charts
+   */
+  private initializeDefaultCharts(): void {
+    this.DEFAULT_CHARTS.forEach((chartConfig) => {
+      const fullConfig: ChartConfig = {
+        id: chartConfig.id!,
+        title: chartConfig.title!,
+        type: chartConfig.type!,
+        data_source: chartConfig.data_source!,
+        appearance: chartConfig.appearance!,
+        axes: {
+          x_axis: {
+            label: 'Time',
+            type: 'time',
+            format: 'HH:mm',
+          },
+          y_axis: {
+            label: 'Value',
+            type: 'value',
+            format: '0.00',
+          },
+        },
+        time_range: chartConfig.time_range!,
+        aggregation: chartConfig.aggregation!,
+        alerts: [],
+        refresh: chartConfig.refresh!,
+      };
+
+      this.charts.set(fullConfig.id, fullConfig);
+    });
+  }
+
+  /**
+   * Create or update chart
+   */
+  createChart(config: ChartConfig): void {
+    // Validate chart configuration
+    this.validateChartConfig(config);
+
+    // Stop existing refresh interval if present
+    const existingInterval = this.refreshIntervals.get(config.id);
+    if (_existingInterval) {
+      clearInterval(existingInterval);
+      this.refreshIntervals.delete(config.id);
+    }
+
+    // Store chart configuration
+    this.charts.set(config.id, config);
+
+    // Start refresh interval if enabled
+    if (config.refresh.enabled) {
+      this.startChartRefresh(config);
+    }
+
+    logger.info('Chart created/updated', {
+      chartId: config.id,
+      type: config.type,
+      dataSource: config.data_source.type,
+      refreshEnabled: config.refresh.enabled,
+    });
+  }
+
+  /**
+   * Validate chart configuration
+   */
+  private validateChartConfig(config: ChartConfig): void {
+    if (!config.id || !config.title) {
+      throw new Error('Chart ID and title are required');
+    }
+
+    if (!Object.values(this.getChartTypes()).includes(config.type)) {
+      throw new Error(`Invalid chart type: ${config.type}`);
+    }
+
+    if (!config.data_source || !config.data_source.type) {
+      throw new Error('Data source configuration is required');
+    }
+
+    if (!config.time_range || !config.time_range.start || !config.time_range.end) {
+      throw new Error('Time range configuration is required');
+    }
+  }
+
+  /**
+   * Get supported chart types
+   */
+  private getChartTypes(): Record<string, ChartType> {
+    return {
+      line: 'line',
+      bar: 'bar',
+      area: 'area',
+      scatter: 'scatter',
+      heatmap: 'heatmap',
+      gauge: 'gauge',
+      pie: 'pie',
+      histogram: 'histogram',
+      box_plot: 'box_plot',
+      candlestick: 'candlestick',
+    };
+  }
+
+  /**
+   * Start chart refresh
+   */
+  private startChartRefresh(config: ChartConfig): void {
+    const interval = setInterval(async () => {
+      try {
+        await this.refreshChartData(config.id);
+      } catch (error) {
+        logger.error('Failed to refresh chart data', {
+          chartId: config.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }, config.refresh.interval_seconds * 1000);
+
+    this.refreshIntervals.set(config.id, interval);
+  }
+
+  /**
+   * Generate chart data
+   */
+  async generateChartData(chartId: string): Promise<ChartData> {
+    const config = this.charts.get(chartId);
+    if (!config) {
+      throw new Error(`Chart ${chartId} not found`);
+    }
+
+    logger.debug('Generating chart data', {
+      chartId,
+      type: config.type,
+      dataSource: config.data_source.type,
+    });
+
+    // Parse time range
+    const timeRange = this.parseTimeRange(config.time_range);
+
+    // Fetch data based on data source type
+    const rawData = await this.fetchChartData(config, timeRange);
+
+    // Process and aggregate data
+    const processedData = this.processChartData(config, rawData, timeRange);
+
+    // Generate series information
+    const series = this.generateSeries(config, processedData);
+
+    // Add annotations
+    const annotations = this.generateAnnotations(config, processedData);
+
+    // Calculate statistics
+    const statistics = this.calculateStatistics(processedData);
+
+    const chartData: ChartData = {
+      chart_id: chartId,
+      timestamp: Date.now(),
+      time_range: timeRange,
+      data_points: processedData,
+      series,
+      annotations,
+      statistics,
+    };
+
+    // Cache the data
+    this.chartDataCache.set(chartId, chartData);
+
+    return chartData;
+  }
+
+  /**
+   * Parse time range
+   */
+  private parseTimeRange(_timeRange: TimeRange): TimeRange {
+    const now = Date.now();
+
+    const parseTime = (time: number | string): number => {
+      if (typeof time === 'number') {
+        return time;
+      }
+
+      if (time === 'now') {
+        return now;
+      }
+
+      // Parse relative time strings (e.g., "24h", "7d", "30m")
+      const match = time.match(/^(\d+)([hdm])$/);
+      if (_match) {
+        const value = parseInt(match[1]);
+        const unit = match[2];
+
+        switch (_unit) {
+          case 'h':
+            return now - value * 60 * 60 * 1000;
+          case 'd':
+            return now - value * 24 * 60 * 60 * 1000;
+          case 'm':
+            return now - value * 60 * 1000;
+        }
+      }
+
+      throw new Error(`Invalid time format: ${time}`);
+    };
+
+    return {
+      start: parseTime(timeRange.start),
+      end: parseTime(timeRange.end),
+      granularity: timeRange.granularity,
+    };
+  }
+
+  /**
+   * Fetch chart data
+   */
+  private async fetchChartData(config: ChartConfig, timeRange: TimeRange): Promise<unknown[]> {
+    switch (config.data_source.type) {
+      case 'system_metrics':
+        return await this.fetchSystemMetricsData(config, timeRange);
+      case 'sli_slo':
+        return await this.fetchSLISLOData(config, timeRange);
+      case 'performance_trends':
+        return await this.fetchPerformanceTrendsData(config, timeRange);
+      case 'benchmarks':
+        return await this.fetchBenchmarksData(config, timeRange);
+      case 'custom':
+        if (config.data_source.custom_provider) {
+          return await config.data_source.custom_provider();
+        }
+        throw new Error('Custom data provider not specified');
+      default:
+        throw new Error(`Unknown data source type: ${config.data_source.type}`);
+    }
+  }
+
+  /**
+   * Fetch system metrics data
+   */
+  private async fetchSystemMetricsData(
+    config: ChartConfig,
+    timeRange: TimeRange
+  ): Promise<DataPoint[]> {
+    const metrics = systemMetricsService.getMetrics();
+
+    // Generate time series data for the specified time range
+    const dataPoints: DataPoint[] = [];
+    const intervalMs = config.aggregation.interval * 60 * 1000; // Convert minutes to milliseconds
+
+    for (let time = Number(timeRange.start); time <= Number(timeRange.end); time += intervalMs) {
+      const dataPoint: DataPoint = {
+        timestamp: time,
+      };
+
+      // Add requested metrics with simulated values
+      config.data_source.metrics.forEach((metric: string) => {
+        switch (metric) {
+          case 'cpu_percentage':
+            (dataPoint as Record<string, number>)[metric] = 20 + Math.random() * 30 + Math.sin(Number(time) / 1000000) * 10;
+            break;
+          case 'memory_percentage':
+            (dataPoint as Record<string, number>)[metric] = 40 + Math.random() * 20 + Math.cos(Number(time) / 2000000) * 5;
+            break;
+          case 'error_rate':
+            (dataPoint as Record<string, number>)[metric] = Math.random() * 2;
+            break;
+          case 'disk_percentage':
+            (dataPoint as Record<string, number>)[metric] = 30 + Math.random() * 10;
+            break;
+          default:
+            (dataPoint as Record<string, number>)[metric] = Math.random() * 100;
+        }
+      });
+
+      dataPoints.push(dataPoint);
+    }
+
+    return dataPoints;
+  }
+
+  /**
+   * Fetch SLI/SLO data
+   */
+  private async fetchSLISLOData(config: ChartConfig, timeRange: TimeRange): Promise<DataPoint[]> {
+    const sliMetrics = sliSloMonitorService.getSLIMetrics();
+    const ragStatus = sliSloMonitorService.getRAGStatus();
+
+    const dataPoints: DataPoint[] = [];
+    const intervalMs = config.aggregation.interval * 60 * 1000;
+
+    for (let time = Number(timeRange.start); time <= Number(timeRange.end); time += intervalMs) {
+      const dataPoint: DataPoint = {
+        timestamp: time,
+      };
+
+      config.data_source.metrics.forEach((metric: string) => {
+        switch (metric) {
+          case 'availability_percentage':
+            (dataPoint as Record<string, number>)[metric] =
+              sliMetrics.availability.availability_percentage + (Math.random() - 0.5) * 2;
+            break;
+          case 'p50_ms':
+            (dataPoint as Record<string, number>)[metric] = sliMetrics.latency.p50_ms + (Math.random() - 0.5) * 20;
+            break;
+          case 'p95_ms':
+            (dataPoint as Record<string, number>)[metric] = sliMetrics.latency.p95_ms + (Math.random() - 0.5) * 50;
+            break;
+          case 'p99_ms':
+            (dataPoint as Record<string, number>)[metric] = sliMetrics.latency.p99_ms + (Math.random() - 0.5) * 100;
+            break;
+          case 'error_rate':
+            (dataPoint as Record<string, number>)[metric] = sliMetrics.error_rate.error_rate_percentage + Math.random() * 0.5;
+            break;
+          default:
+            (dataPoint as Record<string, number>)[metric] = Math.random() * 100;
+        }
+      });
+
+      dataPoints.push(dataPoint);
+    }
+
+    return dataPoints;
+  }
+
+  /**
+   * Fetch performance trends data
+   */
+  private async fetchPerformanceTrendsData(
+    config: ChartConfig,
+    timeRange: TimeRange
+  ): Promise<unknown[]> {
+    const trendAnalysis = performanceTrendingService.getTrendAnalysis(
+      Math.floor((Number(timeRange.end) - Number(timeRange.start)) / (1000 * 60 * 60)) // hours
+    );
+
+    // Generate synthetic time series data based on trend analysis
+    const dataPoints: unknown[] = [];
+    const intervalMs = config.aggregation.interval * 60 * 1000;
+
+    for (let time = Number(timeRange.start); time <= Number(timeRange.end); time += intervalMs) {
+      const dataPoint: unknown = {
+        timestamp: time,
+      };
+
+      config.data_source.metrics.forEach((metric) => {
+        // Simulate data based on trend analysis
+        const baseValue = Math.random() * 100;
+        const trend = Math.sin(Number(time) / 1000000) * 10;
+        dataPoint[metric] = baseValue + trend;
+      });
+
+      dataPoints.push(dataPoint);
+    }
+
+    return dataPoints;
+  }
+
+  /**
+   * Fetch benchmarks data
+   */
+  private async fetchBenchmarksData(config: ChartConfig, timeRange: TimeRange): Promise<unknown[]> {
+    const benchmarkResults = performanceBenchmarkService.getBenchmarkResults(50); // Last 50 results
+
+    return benchmarkResults.map((result) => ({
+      timestamp: result.timestamp,
+      throughput: result.workload_execution.throughput_ops_per_second,
+      efficiency_score: result.performance_analysis.efficiency_score,
+      name: result.config.name,
+      operation_type: result.config.workload.operation_type,
+    }));
+  }
+
+  /**
+   * Process chart data
+   */
+  private processChartData(
+    config: ChartConfig,
+    rawData: DataPoint[],
+    _timeRange: TimeRange
+  ): ChartData['data_points'] {
+    const dataPoints: ChartData['data_points'] = [];
+
+    rawData.forEach((rawPoint: DataPoint) => {
+      const dataPoint: ChartData['data_points'][0] = {
+        timestamp: rawPoint.timestamp,
+        x_value: this.formatXValue(rawPoint.timestamp, config.axes.x_axis),
+        y_values: {},
+        metadata: {},
+      };
+
+      config.data_source.metrics.forEach((metric: string) => {
+        dataPoint.y_values[metric] = (rawPoint as Record<string, number>)[metric] || 0;
+      });
+
+      dataPoints.push(dataPoint);
+    });
+
+    // Apply aggregation if needed
+    if (config.aggregation.interval > 1) {
+      return this.aggregateData(dataPoints, config);
+    }
+
+    return dataPoints;
+  }
+
+  /**
+   * Format X-axis value
+   */
+  private formatXValue(_timestamp: number,  _xAxisConfig: ChartConfig['axes']['x_axis']): unknown {
+    switch (xAxisConfig.type) {
+      case 'time':
+        if (xAxisConfig.format) {
+          return new Date(timestamp).toLocaleString();
+        }
+        return timestamp;
+      case 'category':
+        return new Date(timestamp).toISOString().split('T')[0]; // Date string
+      case 'value':
+        return timestamp;
+      default:
+        return timestamp;
+    }
+  }
+
+  /**
+   * Aggregate data
+   */
+  private aggregateData(
+    dataPoints: ChartData['data_points'],
+    config: ChartConfig
+  ): ChartData['data_points'] {
+    const aggregated: ChartData['data_points'] = [];
+    const intervalMs = config.aggregation.interval * 60 * 1000;
+
+    // Group data points by time intervals
+    const groups = new Map<number, ChartData['data_points']>();
+
+    dataPoints.forEach((point: ChartData['data_points'][0]) => {
+      const intervalStart = Math.floor(point.timestamp / intervalMs) * intervalMs;
+      if (!groups.has(intervalStart)) {
+        groups.set(intervalStart, []);
+      }
+      groups.get(intervalStart)!.push(point);
+    });
+
+    // Apply aggregation function to each group
+    for (const [intervalStart, points] of groups.entries()) {
+      const aggregatedPoint: ChartData['data_points'][0] = {
+        timestamp: intervalStart,
+        x_value: this.formatXValue(intervalStart, config.axes.x_axis),
+        y_values: {},
+        metadata: { aggregated_points: points.length },
+      };
+
+      config.data_source.metrics.forEach((metric: string) => {
+        const values = points
+          .map((p) => p.y_values[metric])
+          .filter((v) => v !== undefined && v !== null);
+
+        if (values.length > 0) {
+          switch (config.aggregation.function) {
+            case 'avg':
+              aggregatedPoint.y_values[metric] =
+                values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
+              break;
+            case 'sum':
+              aggregatedPoint.y_values[metric] = values.reduce((sum: number, val: number) => sum + val, 0);
+              break;
+            case 'min':
+              aggregatedPoint.y_values[metric] = Math.min(...values);
+              break;
+            case 'max':
+              aggregatedPoint.y_values[metric] = Math.max(...values);
+              break;
+            case 'count':
+              aggregatedPoint.y_values[metric] = values.length;
+              break;
+            case 'p50':
+              aggregatedPoint.y_values[metric] = this.calculatePercentile(values, 0.5);
+              break;
+            case 'p90':
+              aggregatedPoint.y_values[metric] = this.calculatePercentile(values, 0.9);
+              break;
+            case 'p95':
+              aggregatedPoint.y_values[metric] = this.calculatePercentile(values, 0.95);
+              break;
+            case 'p99':
+              aggregatedPoint.y_values[metric] = this.calculatePercentile(values, 0.99);
+              break;
+            default:
+              aggregatedPoint.y_values[metric] =
+                values.reduce((sum,  _val) => sum + val, 0) / values.length;
+          }
+        } else if (config.aggregation.fill_missing) {
+          aggregatedPoint.y_values[metric] = config.aggregation.fill_value || 0;
+        }
+      });
+
+      aggregated.push(aggregatedPoint);
+    }
+
+    // Sort by timestamp
+    aggregated.sort((a,  _b) => a.timestamp - b.timestamp);
+
+    return aggregated;
+  }
+
+  /**
+   * Calculate percentile
+   */
+  private calculatePercentile(_values: number[],  _percentile: number): number {
+    const sorted = [...values].sort((a,  _b) => a - b);
+    const index = Math.ceil(sorted.length * percentile) - 1;
+    return sorted[Math.max(0, index)];
+  }
+
+  /**
+   * Generate series information
+   */
+  private generateSeries(
+    config: ChartConfig, 
+    _dataPoints: ChartData['data_points']
+  ): ChartData['series'] {
+    const series: ChartData['series'] = [];
+    const colorScheme = this.getColorScheme(config.appearance.color_scheme);
+
+    config.data_source.metrics.forEach((metric: string, index: number) => {
+      series.push({
+        name: metric,
+        data: dataPoints.map((point: ChartData['data_points'][0]) => point.y_values[metric] || 0),
+        color: colorScheme[index % colorScheme.length],
+        y_axis: 'primary',
+      });
+    });
+
+    return series;
+  }
+
+  /**
+   * Get color scheme
+   */
+  private getColorScheme(_scheme: string): string[] {
+    const schemes: Record<string, string[]> = {
+      default: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'],
+      dark: ['#1e40af', '#991b1b', '#065f46', '#92400e', '#581c87', '#9f1239'],
+      vibrant: ['#0ea5e9', '#f43f5e', '#14b8a6', '#f97316', '#a855f7', '#f472b6'],
+      pastel: ['#93c5fd', '#fca5a5', '#86efac', '#fcd34d', '#c4b5fd', '#f9a8d4'],
+      monochrome: ['#1f2937', '#4b5563', '#6b7280', '#9ca3af', '#d1d5db', '#e5e7eb'],
+    };
+
+    return schemes[scheme] || schemes.default;
+  }
+
+  /**
+   * Generate annotations
+   */
+  private generateAnnotations(
+    config: ChartConfig,
+    _dataPoints: ChartData['data_points']
+  ): ChartData['annotations'] {
+    const annotations: ChartData['annotations'] = [];
+
+    // Add alert thresholds
+    config.alerts.forEach((alert: ChartAlertConfig) => {
+      if (alert.type === 'threshold') {
+        annotations.push({
+          type: 'line',
+          y_value: alert.condition.value,
+          label: alert.appearance.label,
+          color: alert.appearance.color,
+        });
+      }
+    });
+
+    // Add significant events (this could be populated from external event sources)
+    // For now, just add a placeholder
+    if (dataPoints.length > 0) {
+      const midPoint = Math.floor(dataPoints.length / 2);
+      annotations.push({
+        type: 'point',
+        x_value: dataPoints[midPoint].timestamp,
+        label: 'Sample Event',
+        color: '#fbbf24',
+      });
+    }
+
+    return annotations;
+  }
+
+  /**
+   * Calculate statistics
+   */
+  private calculateStatistics(_dataPoints: ChartData['data_points']): ChartData['statistics'] {
+    if (dataPoints.length === 0) {
+      return {
+        min: 0,
+        max: 0,
+        avg: 0,
+        median: 0,
+        std_dev: 0,
+        trend: 'stable',
+        trend_percentage: 0,
+      };
+    }
+
+    // Flatten all Y values for statistics
+    const allValues = dataPoints.flatMap((point: ChartData['data_points'][0]) => Object.values(point.y_values));
+    const numericValues = allValues.filter((val: unknown) => typeof val === 'number' && !isNaN(val));
+
+    if (numericValues.length === 0) {
+      return {
+        min: 0,
+        max: 0,
+        avg: 0,
+        median: 0,
+        std_dev: 0,
+        trend: 'stable',
+        trend_percentage: 0,
+      };
+    }
+
+    const min = Math.min(...numericValues);
+    const max = Math.max(...numericValues);
+    const avg = numericValues.reduce((sum: number, val: number) => sum + val, 0) / numericValues.length;
+    const median = this.calculatePercentile(numericValues, 0.5);
+
+    // Calculate standard deviation
+    const variance =
+      numericValues.reduce((sum: number, val: number) => sum + Math.pow(val - avg, 2), 0) / numericValues.length;
+    const std_dev = Math.sqrt(variance);
+
+    // Calculate trend
+    const trend = this.calculateTrend(dataPoints);
+
+    // Calculate trend percentage
+    const trendPercentage = this.calculateTrendPercentage(dataPoints);
+
+    return {
+      min,
+      max,
+      avg,
+      median,
+      std_dev,
+      trend,
+      trend_percentage: trendPercentage,
+    };
+  }
+
+  /**
+   * Calculate trend
+   */
+  private calculateTrend(_dataPoints: ChartData['data_points']): 'up' | 'down' | 'stable' {
+    if (dataPoints.length < 2) return 'stable';
+
+    // Use first and last points to determine trend
+    const firstValues = Object.values(dataPoints[0].y_values).filter(
+      (val) => typeof val === 'number'
+    );
+    const lastValues = Object.values(dataPoints[dataPoints.length - 1].y_values).filter(
+      (val) => typeof val === 'number'
+    );
+
+    if (firstValues.length === 0 || lastValues.length === 0) return 'stable';
+
+    const firstAvg = firstValues.reduce((sum,  _val) => sum + val, 0) / firstValues.length;
+    const lastAvg = lastValues.reduce((sum,  _val) => sum + val, 0) / lastValues.length;
+
+    const changePercent = firstAvg !== 0 ? ((lastAvg - firstAvg) / firstAvg) * 100 : 0;
+
+    if (Math.abs(changePercent) < 2) return 'stable';
+    return changePercent > 0 ? 'up' : 'down';
+  }
+
+  /**
+   * Calculate trend percentage
+   */
+  private calculateTrendPercentage(_dataPoints: ChartData['data_points']): number {
+    if (dataPoints.length < 2) return 0;
+
+    const firstValues = Object.values(dataPoints[0].y_values).filter(
+      (val) => typeof val === 'number'
+    );
+    const lastValues = Object.values(dataPoints[dataPoints.length - 1].y_values).filter(
+      (val) => typeof val === 'number'
+    );
+
+    if (firstValues.length === 0 || lastValues.length === 0) return 0;
+
+    const firstAvg = firstValues.reduce((sum,  _val) => sum + val, 0) / firstValues.length;
+    const lastAvg = lastValues.reduce((sum,  _val) => sum + val, 0) / lastValues.length;
+
+    return firstAvg !== 0 ? ((lastAvg - firstAvg) / firstAvg) * 100 : 0;
+  }
+
+  /**
+   * Refresh chart data
+   */
+  async refreshChartData(chartId: string): Promise<void> {
+    await this.generateChartData(chartId);
+  }
+
+  /**
+   * Analyze trends
+   */
+  async analyzeTrends(chartId: string, forecastHours: number = 24): Promise<TrendAnalysisResult> {
+    const config = this.charts.get(chartId);
+    if (!config) {
+      throw new Error(`Chart ${chartId} not found`);
+    }
+
+    // Check cache first
+    const cacheKey = `${chartId}_${forecastHours}`;
+    const cached = this.trendAnalysisCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < 300000) {
+      // 5 minutes cache
+      return cached;
+    }
+
+    const chartData = await this.generateChartData(chartId);
+
+    // Perform trend analysis
+    const result = await this.performTrendAnalysis(chartData, forecastHours);
+
+    // Cache the result
+    this.trendAnalysisCache.set(cacheKey, result);
+
+    return result;
+  }
+
+  /**
+   * Perform trend analysis
+   */
+  private async performTrendAnalysis(
+    chartData: ChartData,
+    forecastHours: number
+  ): Promise<TrendAnalysisResult> {
+    const dataPoints = chartData.data_points;
+    if (dataPoints.length < 2) {
+      return {
+        timestamp: Date.now(),
+        trend_direction: 'stable',
+        trend_strength: 0,
+        change_percentage: 0,
+        significance: 0,
+        anomalies: [],
+      };
+    }
+
+    // Calculate trend direction and strength
+    const trend = this.calculateAdvancedTrend(dataPoints);
+
+    // Detect anomalies
+    const anomalies = this.detectAnomalies(dataPoints);
+
+    // Generate simple forecast
+    const forecast = this.generateForecast(dataPoints, forecastHours);
+
+    return {
+      timestamp: Date.now(),
+      trend_direction: trend.direction,
+      trend_strength: trend.strength,
+      change_percentage: trend.changePercentage,
+      significance: trend.significance,
+      anomalies,
+      forecast,
+    };
+  }
+
+  /**
+   * Calculate advanced trend
+   */
+  private calculateAdvancedTrend(_dataPoints: ChartData['data_points']): {
+    direction: 'improving' | 'degrading' | 'stable';
+    strength: number;
+    changePercentage: number;
+    significance: number;
+  } {
+    // Simple linear regression to determine trend
+    const n = dataPoints.length;
+    const xValues = dataPoints.map((_: ChartData['data_points'][0], i: number) => i);
+    const yValues = dataPoints.map((point: ChartData['data_points'][0]) => {
+      const values = Object.values(point.y_values).filter((val: unknown) => typeof val === 'number') as number[];
+      return values.length > 0 ? values.reduce((sum: number, val: number) => sum + val, 0) / values.length : 0;
+    });
+
+    const sumX = xValues.reduce((sum: number, x: number) => sum + x, 0);
+    const sumY = yValues.reduce((sum: number, y: number) => sum + y, 0);
+    const sumXY = xValues.reduce((sum: number, x: number, i: number) => sum + x * yValues[i], 0);
+    const sumX2 = xValues.reduce((sum: number, x: number) => sum + x * x, 0);
+
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+
+    // Calculate trend strength (R-squared)
+    const yMean = sumY / n;
+    const totalSumSquares = yValues.reduce((sum: number, y: number) => sum + Math.pow(y - yMean, 2), 0);
+    const residualSumSquares = yValues.reduce((sum: number, y: number, i: number) => {
+      const predicted = slope * i + intercept;
+      return sum + Math.pow(y - predicted, 2);
+    }, 0);
+
+    const rSquared = 1 - residualSumSquares / totalSumSquares;
+    const trendStrength = Math.max(0, rSquared);
+
+    // Determine direction
+    const firstValue = yValues[0];
+    const lastValue = yValues[yValues.length - 1];
+    const changePercentage = firstValue !== 0 ? ((lastValue - firstValue) / firstValue) * 100 : 0;
+
+    let direction: 'improving' | 'degrading' | 'stable';
+    if (Math.abs(changePercentage) < 2) {
+      direction = 'stable';
+    } else if (changePercentage > 0) {
+      direction = 'improving';
+    } else {
+      direction = 'degrading';
+    }
+
+    return {
+      direction,
+      strength: trendStrength,
+      changePercentage,
+      significance: Math.min(1, Math.abs(slope) / 10), // Normalize slope to 0-1
+    };
+  }
+
+  /**
+   * Detect anomalies
+   */
+  private detectAnomalies(dataPoints: ChartData['data_points']): TrendAnalysisResult['anomalies'] {
+    const anomalies: TrendAnalysisResult['anomalies'] = [];
+
+    // Simple anomaly detection based on standard deviation
+    const values = dataPoints.map((point: ChartData['data_points'][0]) => {
+      const pointValues = Object.values(point.y_values).filter((val: unknown) => typeof val === 'number') as number[];
+      return pointValues.length > 0
+        ? pointValues.reduce((sum: number, val: number) => sum + val, 0) / pointValues.length
+        : 0;
+    });
+
+    const mean = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
+    const stdDev = Math.sqrt(
+      values.reduce((sum: number, val: number) => sum + Math.pow(val - mean, 2), 0) / values.length
+    );
+
+    dataPoints.forEach((point: ChartData['data_points'][0], index: number) => {
+      const pointValue = values[index];
+      const zScore = Math.abs((pointValue - mean) / stdDev);
+
+      if (zScore > 2.5) {
+        // Significant anomaly
+        anomalies.push({
+          timestamp: point.timestamp,
+          value: pointValue,
+          severity: zScore > 3.5 ? 'high' : zScore > 3 ? 'medium' : 'low',
+          description: `Value ${String(pointValue.toFixed(2))} is ${String(zScore.toFixed(2))} standard deviations from mean`,
+        });
+      }
+    });
+
+    return anomalies;
+  }
+
+  /**
+   * Generate forecast
+   */
+  private generateForecast(
+    _dataPoints: ChartData['data_points'], 
+    _hours: number
+  ): TrendAnalysisResult['forecast'] {
+    const n = dataPoints.length;
+    if (n < 2) return [];
+
+    // Simple linear extrapolation
+    const xValues = dataPoints.map((_: ChartData['data_points'][0], i: number) => i);
+    const yValues = dataPoints.map((point: ChartData['data_points'][0]) => {
+      const values = Object.values(point.y_values).filter((val: unknown) => typeof val === 'number') as number[];
+      return values.length > 0 ? values.reduce((sum: number, val: number) => sum + val, 0) / values.length : 0;
+    });
+
+    // Calculate linear regression
+    const sumX = xValues.reduce((sum: number, x: number) => sum + x, 0);
+    const sumY = yValues.reduce((sum: number, y: number) => sum + y, 0);
+    const sumXY = xValues.reduce((sum: number, x: number, i: number) => sum + x * yValues[i], 0);
+    const sumX2 = xValues.reduce((sum: number, x: number) => sum + x * x, 0);
+
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+
+    // Generate forecast points
+    const forecast: TrendAnalysisResult['forecast'] = [];
+    const intervalMs = dataPoints[1].timestamp - dataPoints[0].timestamp;
+    const forecastPoints = Math.floor((hours * 60 * 60 * 1000) / intervalMs);
+
+    for (let i = 1; i <= forecastPoints; i++) {
+      const futureX = n + i;
+      const predictedValue = slope * futureX + intercept;
+      const confidence = Math.max(0.5, 1 - (i / forecastPoints) * 0.5); // Decreasing confidence
+
+      forecast.push({
+        timestamp: dataPoints[n - 1].timestamp + i * intervalMs,
+        value: predictedValue,
+        confidence_interval: [predictedValue * (1 - confidence), predictedValue * (1 + confidence)],
+      });
+    }
+
+    return forecast;
+  }
+
+  // === Public API Methods ===
+
+  /**
+   * Get chart configuration
+   */
+  getChart(_chartId: string): ChartConfig | null {
+    const config = this.charts.get(chartId);
+    return config ? { ...config } : null;
+  }
+
+  /**
+   * Get all chart configurations
+   */
+  getAllCharts(): ChartConfig[] {
+    return Array.from(this.charts.values()).map((config) => ({ ...config }));
+  }
+
+  /**
+   * Get default charts
+   */
+  getDefaultCharts(): Partial<ChartConfig>[] {
+    return this.DEFAULT_CHARTS.map((config) => ({ ...config }));
+  }
+
+  /**
+   * Delete chart
+   */
+  deleteChart(_chartId: string): boolean {
+    // Stop refresh interval
+    const interval = this.refreshIntervals.get(chartId);
+    if (_interval) {
+      clearInterval(interval);
+      this.refreshIntervals.delete(chartId);
+    }
+
+    // Remove chart
+    const deleted = this.charts.delete(chartId);
+    if (_deleted) {
+      // Clean up cache
+      this.chartDataCache.delete(chartId);
+
+      // Clean up trend analysis cache
+      const keysToDelete = Array.from(this.trendAnalysisCache.keys()).filter((key) =>
+        key.startsWith(chartId)
+      );
+      keysToDelete.forEach((key) => this.trendAnalysisCache.delete(key));
+
+      logger.info('Chart deleted', { chartId });
+    }
+
+    return deleted;
+  }
+
+  /**
+   * Get chart data
+   */
+  async getChartData(chartId: string, useCache: boolean = true): Promise<ChartData> {
+    if (_useCache) {
+      const cached = this.chartDataCache.get(chartId);
+      if (cached && Date.now() - cached.timestamp < 60000) {
+        // 1 minute cache
+        return cached;
+      }
+    }
+
+    return await this.generateChartData(chartId);
+  }
+
+  /**
+   * Export chart data
+   */
+  exportChartData(_chartId: string,  format: 'json' | 'csv' = 'json'): string {
+    const chartData = this.chartDataCache.get(chartId);
+    if (!chartData) {
+      throw new Error(`No data available for chart ${chartId}`);
+    }
+
+    if (format === 'csv') {
+      return this.formatChartDataAsCSV(chartData);
+    }
+
+    return JSON.stringify(chartData, null, 2);
+  }
+
+  /**
+   * Format chart data as CSV
+   */
+  private formatChartDataAsCSV(chartData: ChartData): string {
+    const headers = ['timestamp', ...Object.keys(chartData.data_points[0]?.y_values || {})];
+    const rows = [headers.join(',')];
+
+    chartData.data_points.forEach((point: ChartData['data_points'][0]) => {
+      const row = [new Date(point.timestamp).toISOString()];
+      headers.slice(1).forEach((metric) => {
+        row.push(String(point.y_values[metric] || ''));
+      });
+      rows.push(row.join(','));
+    });
+
+    return rows.join('\n');
+  }
+
+  /**
+   * Get system status
+   */
+  getSystemStatus(): {
+    active_charts: number;
+    cached_data_points: number;
+    refresh_intervals_active: number;
+    trend_analysis_cache_size: number;
+    memory_usage_estimate_bytes: number;
+  } {
+    let totalDataPoints = 0;
+    this.chartDataCache.forEach((data) => {
+      totalDataPoints += data.data_points.length;
+    });
+
+    // Estimate memory usage
+    const memoryUsage =
+      this.chartDataCache.size * 1024 + // Chart data cache
+      this.trendAnalysisCache.size * 512 + // Trend analysis cache
+      this.charts.size * 256; // Chart configurations
+
+    return {
+      active_charts: this.charts.size,
+      cached_data_points: totalDataPoints,
+      refresh_intervals_active: this.refreshIntervals.size,
+      trend_analysis_cache_size: this.trendAnalysisCache.size,
+      memory_usage_estimate_bytes: memoryUsage,
+    };
+  }
+
+  /**
+   * Clear caches
+   */
+  clearCaches(): void {
+    this.chartDataCache.clear();
+    this.trendAnalysisCache.clear();
+
+    logger.info('All caches cleared');
+  }
+
+  /**
+   * Graceful shutdown
+   */
+  destroy(): void {
+    // Stop all refresh intervals
+    for (const [chartId, interval] of this.refreshIntervals.entries()) {
+      clearInterval(interval);
+      logger.debug('Stopped refresh interval', { chartId });
+    }
+    this.refreshIntervals.clear();
+
+    // Clear all caches
+    this.clearCaches();
+
+    logger.info('TrendChartsService destroyed');
+  }
+}
+
+// Singleton instance
+export const trendChartsService = new TrendChartsService();

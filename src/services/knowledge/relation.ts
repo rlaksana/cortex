@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical business service
 /**
  * Relation storage service (11th knowledge type - entity relationships)
  *

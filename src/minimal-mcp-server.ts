@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
-// @ts-nocheck - Emergency rollback: Critical infrastructure service
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Core entry point type compatibility issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
+
+
 /**
  * Minimal MCP Server Implementation
  *

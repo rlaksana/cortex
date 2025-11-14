@@ -1,5 +1,11 @@
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
+// TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
-// @ts-nocheck - Emergency rollback: Critical business service
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
+// TODO: Implement systematic interface synchronization before removing @ts-nocheck
+
 /**
  * Optimized ZAI Client with Advanced Caching and Performance Features
  *

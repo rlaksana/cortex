@@ -1,0 +1,10 @@
+{
+  "batch": 13,
+  "category": "services-security",
+  "files": [
+    "services/pii/pii-redaction.service.ts",
+    "services/security/key-vault-service.ts",
+    "services/tenant/tenant-purge.service.ts"
+  ],
+  "file_count": 3
+}

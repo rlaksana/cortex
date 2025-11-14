@@ -1,0 +1,81 @@
+/**
+ * Core DI Module
+ *
+ * Defines core services and their dependencies.
+ * Provides foundation for all other modules.
+ *
+ * @author Cortex Team
+ * @version 3.0.0
+ * @since 2025
+ */
+
+import { environment } from '../../config/environment.js';
+import { PerformanceMonitor } from '../../services/core/performance-monitor.js';
+import { logger } from '../../utils/logger.js';
+import { Module } from '../decorators.js';
+import { ServiceLifetime, ServicePriority } from '../enhanced-di-container.js';
+// TODO: EventService needs to be implemented
+// import { EventService } from '../../services/events/event-service.js';
+
+/**
+ * Core module providing fundamental services
+ */
+@Module({
+  name: 'CoreModule', 
+  providers: [
+    {
+      token: 'CONFIG_SERVICE', 
+      _implementation: undefined as unknown, 
+      _factory: () => environment,
+      lifetime: ServiceLifetime.SINGLETON,
+      priority: ServicePriority.CRITICAL,
+      tags: ['core', 'configuration'],
+      metadata: {
+        description: 'Centralized configuration management',
+        version: '3.0.0',
+      },
+    },
+    {
+      token: 'LOGGER_SERVICE',
+      implementation: undefined as unknown,
+      factory: () => logger,
+      lifetime: ServiceLifetime.SINGLETON,
+      priority: ServicePriority.CRITICAL,
+      dependencies: ['CONFIG_SERVICE'],
+      tags: ['core', 'logging'],
+      metadata: {
+        description: 'Structured logging service',
+        version: '3.0.0',
+      },
+    },
+    {
+      token: 'PERFORMANCE_MONITOR',
+      implementation: undefined as unknown,
+      factory: () => PerformanceMonitor.getInstance(),
+      lifetime: ServiceLifetime.SINGLETON,
+      priority: ServicePriority.HIGH,
+      dependencies: ['LOGGER_SERVICE', 'CONFIG_SERVICE'],
+      tags: ['core', 'monitoring'],
+      metadata: {
+        description: 'Performance monitoring and metrics',
+        version: '3.0.0',
+      },
+    },
+    // TODO: EventService needs to be implemented
+    // {
+    //   token: 'EVENT_SERVICE',
+    //   implementation: EventService,
+    //   lifetime: ServiceLifetime.SINGLETON,
+    //   priority: ServicePriority.NORMAL,
+    //   dependencies: ['LOGGER_SERVICE'],
+    //   tags: ['core', 'events'],
+    //   metadata: {
+    //     description: 'Event bus and pub/sub system',
+    //     version: '3.0.0',
+    //   },
+    // },
+  ],
+  exports: ['CONFIG_SERVICE', 'LOGGER_SERVICE', 'PERFORMANCE_MONITOR'], // TODO: Add 'EVENT_SERVICE' when implemented
+  global: true,
+})
+export class CoreModule {}

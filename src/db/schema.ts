@@ -1,4 +1,3 @@
-// @ts-nocheck - Emergency rollback: Critical database service
 /**
  * Cortex Memory MCP - Qdrant Collection Schema Manager
  *
@@ -9,6 +8,10 @@
  * - Collection lifecycle management
  * - Semantic search capabilities
  */
+
+// @ts-nocheck
+// EMERGENCY ROLLBACK: Unknown type propagation through schema definitions
+// TODO: Fix type safety in schema definitions before removing @ts-nocheck
 
 import { QdrantClient } from '@qdrant/js-client-rest';
 

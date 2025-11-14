@@ -1,0 +1,276 @@
+/**
+ * Repository Factory - P0-CRITICAL Implementation
+ *
+ * Provides centralized repository management with dependency injection.
+ * Replaces global module augmentation with proper service architecture.
+ *
+ * @author Cortex Team
+ * @version 2.0.1
+ * @since 2025
+ */
+
+import type { QdrantClient } from '@qdrant/js-client-rest';
+import type {
+  IQdrantTypedRepository,
+  IAuthenticationRepository,
+} from '../types/cortex-repository-interfaces.js';
+import { logger } from '../utils/logger.js';
+import { QdrantTypedRepository } from './qdrant-typed-repository.js';
+
+/**
+ * Repository Factory Configuration
+ */
+export interface RepositoryFactoryConfig {
+  qdrantClient: QdrantClient;
+  enableMetrics?: boolean;
+  enableCaching?: boolean;
+  cacheTTL?: number;
+}
+
+/**
+ * Repository Factory
+ * Manages repository instances with proper dependency injection
+ */
+export class RepositoryFactory {
+  private static instance: RepositoryFactory | null;
+  private config: RepositoryFactoryConfig;
+  private qdrantRepository: IQdrantTypedRepository & IAuthenticationRepository;
+  private isInitialized = false;
+
+  private constructor(config: RepositoryFactoryConfig) {
+    this.config = {
+      enableMetrics: true,
+      enableCaching: true,
+      cacheTTL: 300000, // 5 minutes
+      ...config,
+    };
+
+    this.initializeRepositories();
+  }
+
+  /**
+   * Initialize repository factory with configuration
+   */
+  static initialize(config: RepositoryFactoryConfig): RepositoryFactory {
+    if (RepositoryFactory.instance) {
+      logger.warn('RepositoryFactory already initialized, returning existing instance');
+      return RepositoryFactory.instance;
+    }
+
+    RepositoryFactory.instance = new RepositoryFactory(config);
+    logger.info('RepositoryFactory initialized successfully');
+    return RepositoryFactory.instance;
+  }
+
+  /**
+   * Get repository factory instance
+   */
+  static getInstance(): RepositoryFactory {
+    if (!RepositoryFactory.instance) {
+      throw new Error(
+        'RepositoryFactory not initialized. Call RepositoryFactory.initialize() first.'
+      );
+    }
+    return RepositoryFactory.instance;
+  }
+
+  /**
+   * Initialize repository instances
+   */
+  private initializeRepositories(): void {
+    try {
+      this.qdrantRepository = new QdrantTypedRepository(this.config.qdrantClient);
+      this.isInitialized = true;
+      logger.info('Repository instances initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize repository instances:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get Qdrant typed repository
+   */
+  getQdrantRepository(): IQdrantTypedRepository & IAuthenticationRepository {
+    this.ensureInitialized();
+    return this.qdrantRepository;
+  }
+
+  /**
+   * Get authentication repository
+   */
+  getAuthenticationRepository(): IAuthenticationRepository {
+    this.ensureInitialized();
+    return this.qdrantRepository;
+  }
+
+  /**
+   * Get repository by type
+   */
+  getRepository(type: 'qdrant'): IQdrantTypedRepository;
+  getRepository(type: 'auth'): IAuthenticationRepository;
+  getRepository(type: 'qdrant' | 'auth'): IQdrantTypedRepository | IAuthenticationRepository {
+    this.ensureInitialized();
+
+    switch (_type) {
+      case 'qdrant':
+        return this.qdrantRepository;
+      case 'auth':
+        return this.qdrantRepository;
+      default:
+        throw new Error(`Unknown repository type: ${type}`);
+    }
+  }
+
+  /**
+   * Check if factory is initialized
+   */
+  isReady(): boolean {
+    return this.isInitialized;
+  }
+
+  /**
+   * Get factory configuration
+   */
+  getConfig(): RepositoryFactoryConfig {
+    return { ...this.config };
+  }
+
+  /**
+   * Ensure factory is initialized
+   */
+  private ensureInitialized(): void {
+    if (!this.isInitialized) {
+      throw new Error('RepositoryFactory not properly initialized');
+    }
+  }
+
+  /**
+   * Reset factory (mainly for testing)
+   */
+  static reset(): void {
+    RepositoryFactory.instance = null;
+  }
+
+  /**
+   * Health check for all repositories
+   */
+  healthCheck(): Promise<{
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    details: {
+      repositories: {
+        qdrant: boolean;
+        auth: boolean;
+      };
+      errors?: string[];
+    };
+  }> {
+    const health: {
+      status: 'healthy' | 'degraded' | 'unhealthy';
+      details: {
+        repositories: {
+          qdrant: boolean;
+          auth: boolean;
+        };
+        errors?: string[];
+      };
+    } = {
+      status: 'healthy',
+      details: {
+        repositories: {
+          qdrant: false,
+          auth: false,
+        },
+        errors: [] as string[],
+      },
+    };
+
+    try {
+      // Test Qdrant connection
+      await this.config.qdrantClient.getCollections();
+      health.details.repositories.qdrant = true;
+      health.details.repositories.auth = true; // Same underlying client
+    } catch (error) {
+      const errorMsg = `Qdrant health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      health.details.errors?.push(errorMsg);
+      health.status = 'unhealthy';
+    }
+
+    if (!health.details.errors || health.details.errors.length === 0) {
+      health.status = 'healthy';
+    } else if (health.details.repositories.qdrant) {
+      health.status = 'degraded';
+    }
+
+    return health;
+  }
+
+  /**
+   * Close repository connections and cleanup
+   */
+ close(): Promise<void> {
+    try {
+      // Qdrant client doesn't have explicit close method in JS client
+      this.isInitialized = false;
+      logger.info('RepositoryFactory closed successfully');
+    } catch (error) {
+      logger.error('Error closing RepositoryFactory:', error);
+      throw error;
+    }
+  }
+}
+
+/**
+ * Global repository accessor (to be used instead of global augmentation)
+ */
+export function getRepositories(): {
+  qdrant: IQdrantTypedRepository;
+  auth: IAuthenticationRepository;
+} {
+  const factory = RepositoryFactory.getInstance();
+  return {
+    qdrant: factory.getQdrantRepository(),
+    auth: factory.getAuthenticationRepository(),
+  };
+}
+
+/**
+ * Initialize repositories from environment configuration
+ */
+export async function initializeRepositoriesFromEnvironment(): Promise<RepositoryFactory> {
+  const { QdrantProvider } = await import('../config/qdrant-provider.js');
+  const qdrantProvider = QdrantProvider.getInstance();
+
+  const client = qdrantProvider.getClient();
+
+  return RepositoryFactory.initialize({
+    qdrantClient: client,
+    enableMetrics: process.env.METRICS_ENABLED === 'true',
+    enableCaching: process.env.ENABLE_CACHING === 'true',
+    cacheTTL: parseInt(process.env.CACHE_TTL || '300000', 10),
+  });
+}
+
+/**
+ * Repository health check utility
+ */
+export async function checkRepositoryHealth(): Promise<{
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  details: unknown;
+}> {
+  try {
+    const factory = RepositoryFactory.getInstance();
+    return await factory.healthCheck();
+  } catch (error) {
+    return {
+      status: 'unhealthy',
+      details: {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        repositories: {
+          qdrant: false,
+          auth: false,
+        },
+      },
+    };
+  }
+}

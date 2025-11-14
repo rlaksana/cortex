@@ -1,0 +1,207 @@
+/**
+ * MCP Cortex Monitoring Module - Complete Alerting System
+ *
+ * This module provides comprehensive monitoring and alerting capabilities for the MCP Cortex system.
+ * It includes:
+ * - Health monitoring and checks
+ * - Alert management and routing
+ * - Multi-channel notifications
+ * - On-call management and escalation
+ * - Runbook integration and execution
+ * - Alert testing and validation
+ * - Metrics collection and dashboards
+ * - End-to-end alerting system integration
+ *
+ * @author Cortex Team
+ * @version 2.0.0
+ * @since 2025
+ */
+
+// Core health monitoring
+export { HealthCheckService, monitoringHealthCheckService } from './health-check-service.js';
+export { ProductionHealthChecker as productionHealthChecker } from './production-health-checker.js';
+export { HealthEndpointManager as healthEndpoint } from './health-endpoint.js';
+
+// Alert management system
+export {
+  AlertManagementService,
+  alertManagementService,
+  type Alert,
+  type AlertRule,
+  type AlertAction,
+  type EscalationPolicy,
+  type EscalationRule,
+  type AlertTestScenario,
+  type AlertTestResult,
+  type NotificationAttempt,
+  type Runbook,
+  type RunbookStep,
+  type AlertMetrics,
+} from './alert-management-service.js';
+
+// Notification channels
+export {
+  EmailNotificationChannel,
+  SlackNotificationChannel,
+  PagerDutyNotificationChannel,
+  TeamsNotificationChannel,
+  WebhookNotificationChannel,
+  SNSNotificationChannel,
+  notificationChannelRegistry,
+  type NotificationChannel,
+  type NotificationResult,
+  type EmailConfig,
+  type SlackConfig,
+  type PagerDutyConfig,
+  type TeamsConfig,
+  type WebhookConfig,
+  type SNSConfig,
+} from './notification-channels.js';
+
+// On-call management
+export {
+  OnCallManagementService,
+  onCallManagementService,
+  type OnCallUser,
+  type OnCallSchedule,
+  type OnCallRotation,
+  // type OnCallAssignment, // exported from oncall-management-service
+  type OnCallHandoff,
+  type EscalationPath,
+  type EscalationLevel,
+  type OnCallMetrics,
+  type UserWorkload,
+  type AlertAssignmentOptions,
+  type EscalationResult,
+} from './oncall-management-service.js';
+
+// Runbook integration
+export {
+  RunbookIntegrationService,
+  runbookIntegrationService,
+  type Runbook as RunbookDefinition,
+  type RunbookStep as RunbookStepDefinition,
+  type RunbookExecution,
+  type StepExecution,
+  type ExecutionResult,
+  type RunbookRecommendation,
+  type RunbookTemplate,
+} from './runbook-integration-service.js';
+
+// Alert testing and validation
+export {
+  AlertTestingService,
+  alertTestingService,
+  type AlertTestSuite,
+  type AlertTestExecution,
+  type FaultInjection,
+  type LoadTestConfig,
+  type LoadTestResult,
+  type TestEnvironment,
+  type TestStep,
+} from './alert-testing-service.js';
+
+// Metrics and dashboard integration
+export {
+  AlertMetricsService,
+  alertMetricsService,
+  type DashboardMetrics,
+  type AlertMetrics as AlertMetricsDefinition,
+  type DashboardConfig,
+  type DashboardPanel,
+  type PanelData,
+  type MetricSeries,
+  type TimeRange,
+  type TrendMetrics,
+  type PredictionMetrics,
+} from './alert-metrics-service.js';
+
+// System integration
+export {
+  AlertSystemIntegrationService,
+  alertSystemIntegrationService,
+  type AlertSystemConfig,
+  type AlertSystemStatus,
+  type SystemHealthStatus,
+  type ComponentStatus,
+  type AlertSystemIntegrations,
+  type SystemTestResults,
+  type FaultScenario,
+  type FaultScenarioTestResult,
+} from './alert-system-integration.js';
+
+// Existing monitoring components
+// (Removed duplicate exports and non-existent healthStructuredLogger)
+
+// Core monitoring components
+export {
+  mcpServerHealthMonitor,
+  type MCPServerHealthMetrics,
+  type MCPServerHealthConfig,
+  type HealthHistoryEntry,
+} from './mcp-server-health-monitor.js';
+
+export {
+  QdrantHealthMonitor,
+  QdrantConnectionStatus,
+  type QdrantHealthCheckResult,
+  type QdrantPerformanceMetrics,
+  type QdrantHealthMonitorConfig,
+} from './qdrant-health-monitor.js';
+
+export {
+  circuitBreakerMonitor,
+  type CircuitBreakerHealthStatus,
+  type CircuitBreakerEvent,
+  type CircuitBreakerEventType,
+  type CircuitBreakerMonitorConfig,
+} from './circuit-breaker-monitor.js';
+
+export {
+  enhancedPerformanceCollector,
+  MetricType,
+  type SystemPerformanceMetrics,
+  type MCPOperationMetrics,
+  type MetricData,
+  type HistogramData,
+  type EnhancedPerformanceCollectorConfig,
+} from './enhanced-performance-collector.js';
+
+export {
+  containerProbesHandler,
+  type ContainerProbeConfig,
+  type ProbeResult,
+  type ContainerHealthState,
+} from './container-probes.js';
+
+// dropped non-existent logger named exports
+
+export {
+  healthDashboardAPIHandler,
+  type HealthDashboardAPIConfig,
+  type APIResponse,
+  type DashboardSummary,
+  type RealTimeHealthData,
+  type HistoricalHealthData,
+  type HealthAlert,
+} from './health-dashboard-api.js';
+
+// Re-export existing monitoring components
+// export { monitoringHealthCheckService } from './health-check-service.js';
+// export { monitoringServer } from './monitoring-server.js';
+// export { performanceCollector } from './performance-collector.js';
+// export { metricsService } from './metrics-service.js';
+
+// Utility functions
+export {
+  HealthStatus,
+  DependencyType,
+  DependencyStatus,
+  type SystemHealthResult,
+  type ComponentHealth,
+  type ProductionHealthResult,
+} from '../types/unified-health-interfaces.js';
+
+// Health monitoring manager class
+
+// HealthMonitoringManager removed to avoid unresolved cross-module references in aggregator.

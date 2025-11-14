@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical memory service
 import { logger } from '@/utils/logger.js';
 
 import { type CoreFindParams,coreMemoryFind } from './core-memory-find.js';

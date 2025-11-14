@@ -1,0 +1,10 @@
+{
+  "batch": 5,
+  "category": "http-clients",
+  "files": [
+    "http-client/http-error-handler.ts",
+    "http-client/http-validation.ts",
+    "http-client/typed-http-client.ts"
+  ],
+  "file_count": 3
+}

@@ -1,0 +1,627 @@
+/**
+ * Performance Monitor - P0-CRITICAL Implementation
+ *
+ * Monitors service performance and provides metrics collection.
+ * Tracks response times, error rates, and performance thresholds.
+ *
+ * @author Cortex Team
+ * @version 2.0.1
+ * @since 2025
+ */
+
+import { logger } from '../../utils/logger.js';
+
+/**
+ * Performance metrics
+ */
+export interface PerformanceMetrics {
+  timestamp: Date;
+  service: string;
+  operation: string;
+  duration: number;
+  success: boolean;
+  memoryUsage?: NodeJS.MemoryUsage;
+  cpuUsage?: NodeJS.CpuUsage;
+}
+
+/**
+ * Aggregated performance data
+ */
+export interface AggregatedMetrics {
+  totalCalls: number;
+  successfulCalls: number;
+  failedCalls: number;
+  averageResponseTime: number;
+  minResponseTime: number;
+  maxResponseTime: number;
+  p95ResponseTime: number;
+  p99ResponseTime: number;
+  errorRate: number;
+  requestsPerSecond: number;
+  averageMemoryUsage: number;
+  peakMemoryUsage: number;
+}
+
+/**
+ * Performance threshold
+ */
+export interface PerformanceThreshold {
+  metric: 'response_time' | 'error_rate' | 'memory_usage';
+  operator: '>' | '>=' | '<' | '<=';
+  value: number;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+}
+
+/**
+ * Threshold breach event
+ */
+export interface ThresholdBreach {
+  id: string;
+  timestamp: Date;
+  service: string;
+  operation: string;
+  threshold: PerformanceThreshold;
+  actualValue: number;
+  severity: PerformanceThreshold['severity'];
+}
+
+/**
+ * Performance Monitor - Service performance tracking
+ */
+export class PerformanceMonitor {
+  private static instance: PerformanceMonitor;
+  private _metrics: PerformanceMetrics[] = [];
+  private aggregatedMetrics: Map<string, AggregatedMetrics> = new Map();
+  private thresholds: PerformanceThreshold[] = [];
+  private thresholdBreaches: ThresholdBreach[] = [];
+  private thresholdCallbacks: Array<(breach: ThresholdBreach) => void> = [];
+  private maxMetricsEntries = 10000;
+  private isInitialized = false;
+
+  private constructor() {}
+
+  public static getInstance(): PerformanceMonitor {
+    if (!PerformanceMonitor.instance) {
+      PerformanceMonitor.instance = new PerformanceMonitor();
+    }
+    return PerformanceMonitor.instance;
+  }
+
+  /**
+   * Initialize performance monitor
+   */
+  public async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
+
+    try {
+      logger.info('Initializing Performance Monitor...');
+
+      // Setup default thresholds
+      this.setupDefaultThresholds();
+
+      // Setup periodic aggregation
+      this.setupPeriodicAggregation();
+
+      this.isInitialized = true;
+      logger.info('Performance Monitor initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize Performance Monitor:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Record service call performance
+   */
+  public recordServiceCall(
+    _service: string, 
+    _operation: string, 
+    _duration: number, 
+    _success: boolean
+  ): void {
+    const _metrics: PerformanceMetrics = {
+      timestamp: new Date(),
+      service,
+      operation,
+      duration,
+      success,
+      memoryUsage: process.memoryUsage(),
+      cpuUsage: process.cpuUsage(),
+    };
+
+    this.addMetrics(metrics);
+  }
+
+  /**
+   * Record custom metrics
+   */
+  public recordMetrics(_metrics: PerformanceMetrics): void {
+    this.addMetrics(metrics);
+  }
+
+  /**
+   * Get metrics for service/operation
+   */
+  public getMetrics(
+    service?: string, 
+    operation?: string, 
+    timeRange?: { start: Date; end: Date }
+  ): PerformanceMetrics[] {
+    let filtered = [...this.metrics];
+
+    if (_service) {
+      filtered = filtered.filter((m) => m.service === service);
+    }
+
+    if (_operation) {
+      filtered = filtered.filter((m) => m.operation === operation);
+    }
+
+    if (_timeRange) {
+      filtered = filtered.filter(
+        (m) => m.timestamp >= timeRange.start && m.timestamp <= timeRange.end
+      );
+    }
+
+    return filtered.sort((a,  _b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
+  /**
+   * Get aggregated metrics
+   */
+  public getAggregatedMetrics(service?: string,  operation?: string): AggregatedMetrics | null {
+    const key = `${service || 'all'}:${operation || 'all'}`;
+    return this.aggregatedMetrics.get(key) || null;
+  }
+
+  /**
+   * Get average metrics across all services
+   */
+  public getAverageMetrics(): {
+    averageResponseTime: number;
+    requestsPerSecond: number;
+    errorRate: number;
+  } {
+    if (this.metrics.length === 0) {
+      return {
+        averageResponseTime: 0,
+        requestsPerSecond: 0,
+        errorRate: 0,
+      };
+    }
+
+    const recentMetrics = this.getRecentMetrics(60000); // Last minute
+    const totalCalls = recentMetrics.length;
+    const successfulCalls = recentMetrics.filter((m) => m.success).length;
+    const averageResponseTime = recentMetrics.reduce((sum,  _m) => sum + m.duration, 0) / totalCalls;
+
+    return {
+      averageResponseTime,
+      requestsPerSecond: totalCalls / 60, // Per second over last minute
+      errorRate: (totalCalls - successfulCalls) / totalCalls,
+    };
+  }
+
+  /**
+   * Add performance threshold
+   */
+  public addThreshold(_threshold: PerformanceThreshold): void {
+    this.thresholds.push(threshold);
+    logger.debug(`Performance threshold added: ${threshold.description}`);
+  }
+
+  /**
+   * Get performance thresholds
+   */
+  public getThresholds(): PerformanceThreshold[] {
+    return [...this.thresholds];
+  }
+
+  /**
+   * Get threshold breaches
+   */
+  public getThresholdBreaches(filter?: {
+    service?: string;
+    operation?: string;
+    severity?: PerformanceThreshold['severity'];
+    startDate?: Date;
+    endDate?: Date;
+  }): ThresholdBreach[] {
+    let breaches = [...this.thresholdBreaches];
+
+    if (_filter) {
+      if (filter.service) {
+        breaches = breaches.filter((b) => b.service === filter.service);
+      }
+
+      if (filter.operation) {
+        breaches = breaches.filter((b) => b.operation === filter.operation);
+      }
+
+      if (filter.severity) {
+        breaches = breaches.filter((b) => b.severity === filter.severity);
+      }
+
+      if (filter.startDate) {
+        breaches = breaches.filter((b) => b.timestamp >= filter.startDate!);
+      }
+
+      if (filter.endDate) {
+        breaches = breaches.filter((b) => b.timestamp <= filter.endDate!);
+      }
+    }
+
+    return breaches.sort((a,  _b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
+  /**
+   * Register threshold breach callback
+   */
+  public onThresholdExceeded(_callback: (breach: ThresholdBreach) => void): void {
+    this.thresholdCallbacks.push(callback);
+  }
+
+  /**
+   * Clear metrics
+   */
+  public clearMetrics(): void {
+    this.metrics = [];
+    this.aggregatedMetrics.clear();
+    logger.info('Performance metrics cleared');
+  }
+
+  /**
+   * Clear threshold breaches
+   */
+  public clearThresholdBreaches(): void {
+    this.thresholdBreaches = [];
+    logger.info('Threshold breaches cleared');
+  }
+
+  /**
+   * Get performance summary
+   */
+  public getPerformanceSummary(): {
+    totalMetrics: number;
+    totalThresholds: number;
+    totalBreaches: number;
+    topServices: Array<{ service: string; calls: number; avgResponseTime: number }>;
+    slowestOperations: Array<{ operation: string; avgResponseTime: number }>;
+    highestErrorRates: Array<{ operation: string; errorRate: number }>;
+  } {
+    const serviceStats: Record<string, { calls: number; totalTime: number }> = {};
+    const operationStats: Record<string, { calls: number; totalTime: number; errors: number }> = {};
+
+    for (const metric of this.metrics) {
+      // Service statistics
+      if (!serviceStats[metric.service]) {
+        serviceStats[metric.service] = { calls: 0, totalTime: 0 };
+      }
+      serviceStats[metric.service].calls++;
+      serviceStats[metric.service].totalTime += metric.duration;
+
+      // Operation statistics
+      const opKey = `${metric.service}:${metric.operation}`;
+      if (!operationStats[opKey]) {
+        operationStats[opKey] = { calls: 0, totalTime: 0, errors: 0 };
+      }
+      operationStats[opKey].calls++;
+      operationStats[opKey].totalTime += metric.duration;
+      if (!metric.success) {
+        operationStats[opKey].errors++;
+      }
+    }
+
+    const topServices = Object.entries(serviceStats)
+      .map(([service,  stats]) => ({
+        service,
+        calls: stats.calls,
+        avgResponseTime: stats.totalTime / stats.calls,
+      }))
+      .sort((a,  _b) => b.calls - a.calls)
+      .slice(0, 10);
+
+    const slowestOperations = Object.entries(operationStats)
+      .map(([operation,  stats]) => ({
+        operation,
+        avgResponseTime: stats.totalTime / stats.calls,
+      }))
+      .sort((a,  _b) => b.avgResponseTime - a.avgResponseTime)
+      .slice(0, 10);
+
+    const highestErrorRates = Object.entries(operationStats)
+      .filter(([,  stats]) => stats.calls > 10) // Only operations with sufficient calls
+      .map(([operation,  stats]) => ({
+        operation,
+        errorRate: stats.errors / stats.calls,
+      }))
+      .sort((a,  _b) => b.errorRate - a.errorRate)
+      .slice(0, 10);
+
+    return {
+      totalMetrics: this.metrics.length,
+      totalThresholds: this.thresholds.length,
+      totalBreaches: this.thresholdBreaches.length,
+      topServices,
+      slowestOperations,
+      highestErrorRates,
+    };
+  }
+
+  /**
+   * Shutdown performance monitor
+   */
+  public async shutdown(): Promise<void> {
+    this.metrics = [];
+    this.aggregatedMetrics.clear();
+    this.thresholds = [];
+    this.thresholdBreaches = [];
+    this.thresholdCallbacks = [];
+    this.isInitialized = false;
+    logger.info('Performance Monitor shutdown completed');
+  }
+
+  // Private methods
+
+  private addMetrics(_metrics: PerformanceMetrics): void {
+    this.metrics.push(metrics);
+
+    // Maintain metrics size limit
+    if (this.metrics.length > this.maxMetricsEntries) {
+      this.metrics = this.metrics.slice(-this.maxMetricsEntries);
+    }
+
+    // Check thresholds
+    this.checkThresholds(metrics);
+
+    // Update aggregation
+    this.updateAggregation(metrics);
+  }
+
+  private checkThresholds(_metrics: PerformanceMetrics): void {
+    for (const threshold of this.thresholds) {
+      const actualValue = this.getMetricValue(metrics, threshold.metric);
+
+      if (this.isThresholdBreached(threshold, actualValue)) {
+        const breach: ThresholdBreach = {
+          id: `breach_${Date.now()}_${String(Math.random().toString(36).substr(2, 9))}`,
+          timestamp: new Date(),
+          service: metrics.service,
+          operation: metrics.operation,
+          threshold,
+          actualValue,
+          severity: threshold.severity,
+        };
+
+        this.thresholdBreaches.push(breach);
+
+        // Keep only last 1000 breaches
+        if (this.thresholdBreaches.length > 1000) {
+          this.thresholdBreaches = this.thresholdBreaches.slice(-1000);
+        }
+
+        // Notify callbacks
+        for (const callback of this.thresholdCallbacks) {
+          try {
+            callback(breach);
+          } catch (error) {
+            logger.error('Threshold callback error:', error);
+          }
+        }
+
+        logger.warn('Performance threshold breached:', {
+          service: metrics.service,
+          operation: metrics.operation,
+          threshold: threshold.description,
+          actualValue,
+          severity: threshold.severity,
+        });
+      }
+    }
+  }
+
+  private getMetricValue(
+    _metrics: PerformanceMetrics, 
+    _metric: PerformanceThreshold['metric']
+  ): number {
+    switch (_metric) {
+      case 'response_time':
+        return metrics.duration;
+      case 'error_rate':
+        return metrics.success ? 0 : 1; // Binary for individual metrics
+      case 'memory_usage':
+        return metrics.memoryUsage?.heapUsed || 0;
+      default:
+        return 0;
+    }
+  }
+
+  private isThresholdBreached(_threshold: PerformanceThreshold,  _actualValue: number): boolean {
+    switch (threshold.operator) {
+      case '>':
+        return actualValue > threshold.value;
+      case '>=':
+        return actualValue >= threshold.value;
+      case '<':
+        return actualValue < threshold.value;
+      case '<=':
+        return actualValue <= threshold.value;
+      default:
+        return false;
+    }
+  }
+
+  private updateAggregation(_metrics: PerformanceMetrics): void {
+    const key = `${metrics.service}:${metrics.operation}`;
+
+    let aggregated = this.aggregatedMetrics.get(key);
+    if (!aggregated) {
+      aggregated = {
+        totalCalls: 0,
+        successfulCalls: 0,
+        failedCalls: 0,
+        averageResponseTime: 0,
+        minResponseTime: Infinity,
+        maxResponseTime: 0,
+        p95ResponseTime: 0,
+        p99ResponseTime: 0,
+        errorRate: 0,
+        requestsPerSecond: 0,
+        averageMemoryUsage: 0,
+        peakMemoryUsage: 0,
+      };
+      this.aggregatedMetrics.set(key, aggregated);
+    }
+
+    // Update basic metrics
+    aggregated.totalCalls++;
+    if (metrics.success) {
+      aggregated.successfulCalls++;
+    } else {
+      aggregated.failedCalls++;
+    }
+
+    // Update response time metrics
+    const totalCalls = aggregated.totalCalls;
+    aggregated.averageResponseTime =
+      (aggregated.averageResponseTime * (totalCalls - 1) + metrics.duration) / totalCalls;
+    aggregated.minResponseTime = Math.min(aggregated.minResponseTime, metrics.duration);
+    aggregated.maxResponseTime = Math.max(aggregated.maxResponseTime, metrics.duration);
+
+    // Update memory metrics
+    if (metrics.memoryUsage) {
+      const currentMemory = metrics.memoryUsage.heapUsed;
+      aggregated.averageMemoryUsage =
+        (aggregated.averageMemoryUsage * (totalCalls - 1) + currentMemory) / totalCalls;
+      aggregated.peakMemoryUsage = Math.max(aggregated.peakMemoryUsage, currentMemory);
+    }
+
+    // Update error rate
+    aggregated.errorRate = aggregated.failedCalls / totalCalls;
+
+    // Calculate percentile metrics periodically
+    if (totalCalls % 100 === 0) {
+      this.calculatePercentiles(key);
+    }
+  }
+
+  private calculatePercentiles(_key: string): void {
+    const keyMetrics = this.metrics.filter((m) => `${m.service}:${m.operation}` === key);
+    if (keyMetrics.length < 10) return; // Need sufficient data
+
+    const durations = keyMetrics.map((m) => m.duration).sort((a,  _b) => a - b);
+    const aggregated = this.aggregatedMetrics.get(key);
+
+    if (aggregated && durations.length > 0) {
+      const p95Index = Math.floor(durations.length * 0.95);
+      const p99Index = Math.floor(durations.length * 0.99);
+
+      aggregated.p95ResponseTime = durations[p95Index] || 0;
+      aggregated.p99ResponseTime = durations[p99Index] || 0;
+    }
+  }
+
+  private getRecentMetrics(_timeWindowMs: number): PerformanceMetrics[] {
+    const cutoff = new Date(Date.now() - timeWindowMs);
+    return this.metrics.filter((m) => m.timestamp >= cutoff);
+  }
+
+  private setupDefaultThresholds(): void {
+    const defaultThresholds: PerformanceThreshold[] = [
+      {
+        metric: 'response_time',
+        operator: '>',
+        value: 5000,
+        severity: 'high',
+        description: 'Response time exceeds 5 seconds',
+      },
+      {
+        metric: 'response_time',
+        operator: '>',
+        value: 10000,
+        severity: 'critical',
+        description: 'Response time exceeds 10 seconds',
+      },
+      {
+        metric: 'error_rate',
+        operator: '>',
+        value: 0.1,
+        severity: 'high',
+        description: 'Error rate exceeds 10%',
+      },
+      {
+        metric: 'error_rate',
+        operator: '>',
+        value: 0.2,
+        severity: 'critical',
+        description: 'Error rate exceeds 20%',
+      },
+      {
+        metric: 'memory_usage',
+        operator: '>',
+        value: 1024 * 1024 * 1024, // 1GB
+        severity: 'medium',
+        description: 'Memory usage exceeds 1GB',
+      },
+      {
+        metric: 'memory_usage',
+        operator: '>',
+        value: 2 * 1024 * 1024 * 1024, // 2GB
+        severity: 'high',
+        description: 'Memory usage exceeds 2GB',
+      },
+    ];
+
+    for (const threshold of defaultThresholds) {
+      this.addThreshold(threshold);
+    }
+  }
+
+  private setupPeriodicAggregation(): void {
+    // Update RPS calculations every minute
+    setInterval(() => {
+      this.updateRequestsPerSecond();
+    }, 60000);
+  }
+
+  /**
+   * Notify threshold breach callbacks
+   */
+  public notifyThresholdBreach(_breach: ThresholdBreach): void {
+    for (const callback of this.thresholdCallbacks) {
+      try {
+        callback(breach);
+      } catch (error) {
+        logger.error('Threshold callback error:', error);
+      }
+    }
+  }
+
+  private updateRequestsPerSecond(): void {
+    const recentMetrics = this.getRecentMetrics(60000); // Last minute
+
+    // Group by service:operation
+    const recentCalls: Map<string, number> = new Map();
+
+    for (const metric of recentMetrics) {
+      const key = `${metric.service}:${metric.operation}`;
+      recentCalls.set(key, (recentCalls.get(key) || 0) + 1);
+    }
+
+    // Update RPS in aggregated metrics
+    for (const [key, calls] of recentCalls.entries()) {
+      const aggregated = this.aggregatedMetrics.get(key);
+      if (_aggregated) {
+        aggregated.requestsPerSecond = calls / 60; // Convert to per second
+      }
+    }
+  }
+
+  recordOperation?: unknown;
+}
+
+// Export singleton instance
+export const performanceMonitor = PerformanceMonitor.getInstance();

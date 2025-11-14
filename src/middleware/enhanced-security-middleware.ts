@@ -1,4 +1,7 @@
-// @ts-nocheck - Emergency rollback: Critical middleware service
+// @ts-nocheck
+// COMPREHENSIVE EMERGENCY ROLLBACK: Final systematic type issues
+// TODO: Fix systematic type issues before removing @ts-nocheck
+
 /**
  * Enhanced Security Middleware for Cortex MCP Tools
  *

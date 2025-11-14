@@ -1,0 +1,653 @@
+/**
+ * Tool Response Format Tests - T22 Implementation
+ *
+ * Comprehensive testing of MCP tool response formats including:
+ * - Standard response structure validation
+ * - Error response format compliance
+ * - Response metadata verification
+ * - Batch operation response handling
+ * - Performance and rate limiting response formats
+ *
+ * @version 2.0.1
+ */
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { z } from 'zod';
+
+// Response format schemas
+import {
+  UnifiedToolResponse,
+  createResponseMeta,
+} from '../../src/types/unified-response.interface';
+import { SearchResult } from '../../src/types/core-interfaces';
+
+// Test response factories
+import {
+  createValidToolResponse,
+  createErrorResponse,
+  createBatchResponse,
+  createPerformanceResponse,
+  createResponseWithMetadata,
+} from '../fixtures/response-fixtures';
+
+describe('Tool Response Format Tests - T22', () => {
+  // ============================================================================
+  // Response Structure Validation
+  // ============================================================================
+
+  describe('Standard Response Structure', () => {
+    it('should follow standard MCP response format', () => {
+      const validResponse = createValidToolResponse();
+
+      // Verify basic response structure
+      expect(validResponse).toHaveProperty('content');
+      expect(validResponse).toHaveProperty('_meta');
+      expect(validResponse).toHaveProperty('isError');
+
+      expect(validResponse.content).toBeInstanceOf(Array);
+      expect(validResponse.content.length).toBeGreaterThan(0);
+
+      // Verify content items
+      validResponse.content.forEach((contentItem) => {
+        expect(contentItem).toHaveProperty('type');
+        expect(contentItem).toHaveProperty('text');
+        expect(typeof contentItem.type).toBe('string');
+        expect(typeof contentItem.text).toBe('string');
+      });
+
+      // Verify metadata
+      expect(validResponse._meta).toHaveProperty('requestId');
+      expect(validResponse._meta).toHaveProperty('timestamp');
+      expect(validResponse._meta).toHaveProperty('operation');
+      expect(validResponse._meta).toHaveProperty('duration');
+      expect(validResponse._meta).toHaveProperty('version');
+
+      // Verify error flag
+      expect(typeof validResponse.isError).toBe('boolean');
+      expect(validResponse.isError).toBe(false); // Success response
+    });
+
+    it('should contain valid response metadata', () => {
+      const response = createResponseWithMetadata();
+
+      const meta = response._meta;
+
+      // Verify required metadata fields
+      expect(meta).toHaveProperty('requestId');
+      expect(meta).toHaveProperty('timestamp');
+      expect(meta).toHaveProperty('operation');
+      expect(meta).toHaveProperty('duration');
+      expect(meta).toHaveProperty('version');
+
+      // Verify field types and formats
+      expect(typeof meta.requestId).toBe('string');
+      expect(meta.requestId).toMatch(/^[a-f0-9-]{36}$/); // UUID format
+
+      expect(typeof meta.timestamp).toBe('string');
+      expect(new Date(meta.timestamp).toISOString()).toBe(meta.timestamp); // Valid ISO date
+
+      expect(typeof meta.operation).toBe('string');
+      expect(meta.operation).toMatch(/^(memory_store|memory_find)$/);
+
+      expect(typeof meta.duration).toBe('number');
+      expect(meta.duration).toBeGreaterThan(0);
+      expect(meta.duration).toBeLessThan(60000); // Less than 60 seconds
+
+      expect(typeof meta.version).toBe('string');
+      expect(meta.version).toMatch(/^\d+\.\d+\.\d+$/); // Semantic version
+    });
+
+    it('should include operation-specific metadata', () => {
+      // Test memory_store response metadata
+      const storeResponse = createValidToolResponse('memory_store');
+      expect(storeResponse._meta.operation).toBe('memory_store');
+
+      // Test memory_find response metadata
+      const findResponse = createValidToolResponse('memory_find');
+      expect(findResponse._meta.operation).toBe('memory_find');
+
+      // Verify additional metadata for different operations
+      if (storeResponse._meta.itemsProcessed) {
+        expect(typeof storeResponse._meta.itemsProcessed).toBe('number');
+        expect(storeResponse._meta.itemsProcessed).toBeGreaterThan(0);
+      }
+
+      if (findResponse._meta.resultCount) {
+        expect(typeof findResponse._meta.resultCount).toBe('number');
+        expect(findResponse._meta.resultCount).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it('should handle content formatting correctly', () => {
+      const response = createValidToolResponse();
+
+      response.content.forEach((contentItem) => {
+        // Verify content type
+        expect(['text', 'json', 'markdown']).toContain(contentItem.type);
+
+        // Verify text content
+        if (contentItem.type === 'text') {
+          expect(contentItem.text.length).toBeGreaterThan(0);
+          expect(contentItem.text).toBeTypeOf('string');
+        }
+
+        // Verify JSON content
+        if (contentItem.type === 'json') {
+          expect(() => JSON.parse(contentItem.text)).not.toThrow();
+        }
+
+        // Verify markdown content
+        if (contentItem.type === 'markdown') {
+          expect(contentItem.text).toMatch(/^#{1,6}\s/); // Starts with heading
+        }
+      });
+    });
+  });
+
+  // ============================================================================
+  // Error Response Formats
+  // ============================================================================
+
+  describe('Error Response Formats', () => {
+    it('should follow standard error response structure', () => {
+      const errorResponse = createErrorResponse();
+
+      // Verify error response structure
+      expect(errorResponse).toHaveProperty('content');
+      expect(errorResponse).toHaveProperty('_meta');
+      expect(errorResponse).toHaveProperty('isError');
+
+      expect(errorResponse.isError).toBe(true);
+
+      // Verify error content
+      expect(errorResponse.content.length).toBeGreaterThan(0);
+      errorResponse.content.forEach((contentItem) => {
+        expect(contentItem.type).toBe('text');
+        expect(contentItem.text).toMatch(/^(Error:|Validation error:|Internal error:)/);
+      });
+
+      // Verify error metadata
+      expect(errorResponse._meta).toHaveProperty('error');
+      expect(errorResponse._meta.error).toHaveProperty('code');
+      expect(errorResponse._meta.error).toHaveProperty('message');
+      expect(errorResponse._meta.error).toHaveProperty('type');
+      expect(errorResponse._meta.error).toHaveProperty('details');
+    });
+
+    it('should include comprehensive error information', () => {
+      const errorResponse = createErrorResponse();
+
+      const error = errorResponse._meta.error;
+
+      // Verify error code
+      expect(typeof error.code).toBe('string');
+      expect(error.code.length).toBeGreaterThan(0);
+      expect(error.code).toMatch(/^[A-Z_]+$/);
+
+      // Verify error message
+      expect(typeof error.message).toBe('string');
+      expect(error.message.length).toBeGreaterThan(0);
+      expect(error.message.length).toBeLessThan(1000); // Reasonable length
+
+      // Verify error type
+      expect(['validation', 'operational', 'system']).toContain(error.type);
+
+      // Verify error details
+      expect(typeof error.details).toBe('object');
+      expect(error.details).not.toBeNull();
+
+      // Verify field information for validation errors
+      if (error.type === 'validation' && error.field) {
+        expect(typeof error.field).toBe('string');
+        expect(error.field).toMatch(/^([a-z_]+\.)*[a-z_]+$/);
+      }
+    });
+
+    it('should handle different error types correctly', () => {
+      const errorTypes = [
+        { type: 'validation', code: 'VALIDATION_ERROR', message: 'Invalid input' },
+        { type: 'operational', code: 'TIMEOUT', message: 'Operation timed out' },
+        { type: 'system', code: 'DATABASE_ERROR', message: 'Database connection failed' },
+      ];
+
+      errorTypes.forEach((errorType) => {
+        const errorResponse = createErrorResponse({
+          code: errorType.code,
+          message: errorType.message,
+          type: errorType.type as any,
+        });
+
+        expect(errorResponse._meta.error.type).toBe(errorType.type);
+        expect(errorResponse._meta.error.code).toBe(errorType.code);
+        expect(errorResponse._meta.error.message).toContain(errorType.message);
+      });
+    });
+
+    it('should include retry information for operational errors', () => {
+      const operationalError = createErrorResponse({
+        code: 'TIMEOUT',
+        message: 'Operation timed out',
+        type: 'operational',
+        details: {
+          retryable: true,
+          retryAfter: 5,
+          maxRetries: 3,
+        },
+      });
+
+      expect(operationalError._meta.error.details.retryable).toBe(true);
+      expect(operationalError._meta.error.details.retryAfter).toBe(5);
+      expect(operationalError._meta.error.details.maxRetries).toBe(3);
+    });
+
+    it('should include field-specific information for validation errors', () => {
+      const validationError = createErrorResponse({
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid field value',
+        type: 'validation',
+        field: 'items.0.kind',
+        details: {
+          expectedValue: 'entity|relation|observation|...',
+          actualValue: 'invalid_kind',
+          allowedValues: ['entity', 'relation', 'observation', 'section', 'runbook'],
+        },
+      });
+
+      expect(validationError._meta.error.field).toBe('items.0.kind');
+      expect(validationError._meta.error.details.expectedValue).toBeDefined();
+      expect(validationError._meta.error.details.actualValue).toBeDefined();
+      expect(Array.isArray(validationError._meta.error.details.allowedValues)).toBe(true);
+    });
+  });
+
+  // ============================================================================
+  // Batch Operation Responses
+  // ============================================================================
+
+  describe('Batch Operation Responses', () => {
+    it('should handle batch memory_store responses correctly', () => {
+      const batchResponse = createBatchResponse('memory_store', 10);
+
+      // Verify batch metadata
+      expect(batchResponse._meta).toHaveProperty('batchId');
+      expect(batchResponse._meta).toHaveProperty('itemCount');
+      expect(batchResponse._meta).toHaveProperty('processedItems');
+      expect(batchResponse._meta).toHaveProperty('failedItems');
+
+      expect(typeof batchResponse._meta.batchId).toBe('string');
+      expect(batchResponse._meta.batchId).toMatch(/^[a-f0-9-]{36}$/);
+
+      expect(batchResponse._meta.itemCount).toBe(10);
+      expect(batchResponse._meta.processedItems).toBeGreaterThanOrEqual(0);
+      expect(batchResponse._meta.processedItems).toBeLessThanOrEqual(10);
+      expect(batchResponse._meta.failedItems).toBeGreaterThanOrEqual(0);
+      expect(batchResponse._meta.failedItems).toBeLessThanOrEqual(10);
+
+      // Verify batch statistics
+      const totalItems = batchResponse._meta.processedItems + batchResponse._meta.failedItems;
+      expect(totalItems).toBe(batchResponse._meta.itemCount);
+
+      // Verify batch results content
+      expect(batchResponse.content.length).toBeGreaterThan(0);
+      const hasResults = batchResponse.content.some(
+        (item) => item.text.includes('Processed') || item.text.includes('Failed')
+      );
+      expect(hasResults).toBe(true);
+    });
+
+    it('should include detailed batch operation results', () => {
+      const batchResponse = createBatchResponse('memory_store', 5, {
+        includeDetails: true,
+        successes: 3,
+        failures: 2,
+      });
+
+      // Should include detailed results if requested
+      if (batchResponse._meta.results) {
+        expect(Array.isArray(batchResponse._meta.results)).toBe(true);
+        expect(batchResponse._meta.results.length).toBe(5);
+
+        batchResponse._meta.results.forEach((result, index) => {
+          expect(result).toHaveProperty('index');
+          expect(result).toHaveProperty('success');
+          expect(result).toHaveProperty('itemId');
+
+          if (result.success) {
+            expect(result).toHaveProperty('storedId');
+            expect(result).toHaveProperty('similarityScore');
+          } else {
+            expect(result).toHaveProperty('error');
+            expect(result.error).toHaveProperty('code');
+            expect(result.error).toHaveProperty('message');
+          }
+        });
+      }
+    });
+
+    it('should handle partial batch failures gracefully', () => {
+      const partialFailureResponse = createBatchResponse('memory_store', 10, {
+        successes: 7,
+        failures: 3,
+      });
+
+      expect(partialFailureResponse._meta.processedItems).toBe(7);
+      expect(partialFailureResponse._meta.failedItems).toBe(3);
+      expect(partialFailureResponse.isError).toBe(false); // Partial success is not an error
+
+      // Should include information about failed items
+      expect(
+        partialFailureResponse.content.some(
+          (item) => item.text.includes('7 succeeded') && item.text.includes('3 failed')
+        )
+      ).toBe(true);
+    });
+
+    it('should handle complete batch failures', () => {
+      const completeFailureResponse = createBatchResponse('memory_store', 5, {
+        successes: 0,
+        failures: 5,
+      });
+
+      expect(completeFailureResponse._meta.processedItems).toBe(0);
+      expect(completeFailureResponse._meta.failedItems).toBe(5);
+
+      // Complete batch failure should be marked as error
+      expect(completeFailureResponse.isError).toBe(true);
+      expect(completeFailureResponse._meta.error).toBeDefined();
+    });
+  });
+
+  // ============================================================================
+  // Search Response Formats
+  // ============================================================================
+
+  describe('Search Response Formats', () => {
+    it('should format search results correctly', () => {
+      const searchResponse = createValidToolResponse('memory_find');
+
+      // Verify search-specific metadata
+      if (searchResponse['_']meta.resultCount) {
+        expect(typeof searchResponse['_']meta.resultCount).toBe('number');
+        expect(searchResponse['_']meta.resultCount).toBeGreaterThanOrEqual(0);
+      }
+
+      if (searchResponse['_']meta.queryInfo) {
+        expect(searchResponse['_']meta.queryInfo).toHaveProperty('originalQuery');
+        expect(searchResponse['_']meta.queryInfo).toHaveProperty('searchStrategy');
+        expect(searchResponse['_']meta.queryInfo).toHaveProperty('processedQuery');
+
+        expect(typeof searchResponse['_']meta.queryInfo.originalQuery).toBe('string');
+        expect(searchResponse['_']meta.queryInfo.originalQuery.length).toBeGreaterThan(0);
+        expect(['fast', 'auto', 'deep']).toContain(searchResponse['_']meta.queryInfo.searchStrategy);
+      }
+
+      // Verify search results content
+      expect(searchResponse.content.length).toBeGreaterThan(0);
+      const hasSearchResults = searchResponse.content.some(
+        (item) => item.text.includes('results found') || item.text.includes('search completed')
+      );
+      expect(hasSearchResults).toBe(true);
+    });
+
+    it('should include search analytics information', () => {
+      const searchResponse = createValidToolResponse('memory_find', {
+        includeAnalytics: true,
+      });
+
+      if (searchResponse['_']meta.analytics) {
+        expect(searchResponse['_']meta.analytics).toHaveProperty('searchDuration');
+        expect(searchResponse['_']meta.analytics).toHaveProperty('totalScanned');
+        expect(searchResponse['_']meta.analytics).toHaveProperty('similarityThreshold');
+        expect(searchResponse['_']meta.analytics).toHaveProperty('expansionCount');
+
+        expect(typeof searchResponse['_']meta.analytics.searchDuration).toBe('number');
+        expect(searchResponse['_']meta.analytics.searchDuration).toBeGreaterThan(0);
+
+        expect(typeof searchResponse['_']meta.analytics.totalScanned).toBe('number');
+        expect(searchResponse['_']meta.analytics.totalScanned).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it('should handle empty search results gracefully', () => {
+      const emptySearchResponse = createValidToolResponse('memory_find', {
+        resultCount: 0,
+      });
+
+      expect(emptySearchResponse['_']meta.resultCount).toBe(0);
+      expect(emptySearchResponse.isError).toBe(false); // Empty results are not an error
+
+      // Should indicate no results found
+      expect(
+        emptySearchResponse.content.some(
+          (item) => item.text.includes('No results found') || item.text.includes('0 results')
+        )
+      ).toBe(true);
+    });
+
+    it('should format search results based on requested format', () => {
+      const resultFormats = ['detailed', 'summary', 'compact'];
+
+      resultFormats.forEach((format) => {
+        const response = createValidToolResponse('memory_find', {
+          resultFormat: format,
+        });
+
+        expect(response['_']meta.resultFormat).toBe(format);
+
+        // Content should be formatted according to the requested format
+        if (format === 'detailed') {
+          expect(response.content.some((item) => item.text.includes('Detailed results'))).toBe(
+            true
+          );
+        } else if (format === 'summary') {
+          expect(response.content.some((item) => item.text.includes('Summary'))).toBe(true);
+        } else if (format === 'compact') {
+          expect(
+            response.content.some(
+              (item) => item.text.length < 1000 // Compact format should be shorter
+            )
+          ).toBe(true);
+        }
+      });
+    });
+  });
+
+  // ============================================================================
+  // Performance Response Formats
+  // ============================================================================
+
+  describe('Performance Response Formats', () => {
+    it('should include performance metrics in responses', () => {
+      const performanceResponse = createPerformanceResponse();
+
+      // Verify performance metadata
+      expect(performanceResponse['_']meta).toHaveProperty('performance');
+      expect(performanceResponse['_']meta.performance).toHaveProperty('duration');
+      expect(performanceResponse['_']meta.performance).toHaveProperty('memoryUsage');
+      expect(performanceResponse['_']meta.performance).toHaveProperty('cpuUsage');
+
+      expect(typeof performanceResponse['_']meta.performance.duration).toBe('number');
+      expect(performanceResponse['_']meta.performance.duration).toBeGreaterThan(0);
+
+      expect(typeof performanceResponse['_']meta.performance.memoryUsage).toBe('object');
+      expect(performanceResponse['_']meta.performance.memoryUsage).toHaveProperty('used');
+      expect(performanceResponse['_']meta.performance.memoryUsage).toHaveProperty('peak');
+
+      if (performanceResponse['_']meta.performance.cpuUsage !== undefined) {
+        expect(typeof performanceResponse['_']meta.performance.cpuUsage).toBe('number');
+        expect(performanceResponse['_']meta.performance.cpuUsage).toBeGreaterThanOrEqual(0);
+        expect(performanceResponse['_']meta.performance.cpuUsage).toBeLessThanOrEqual(100);
+      }
+    });
+
+    it('should handle rate limiting responses', () => {
+      const rateLimitResponse = createErrorResponse({
+        code: 'RATE_LIMITED',
+        message: 'Rate limit exceeded',
+        type: 'operational',
+        details: {
+          limit: 100,
+          current: 101,
+          resetTime: new Date(Date.now() + 60000).toISOString(),
+          retryAfter: 60,
+        },
+      });
+
+      expect(rateLimitResponse['_']meta.error.code).toBe('RATE_LIMITED');
+      expect(rateLimitResponse['_']meta.error.details.limit).toBe(100);
+      expect(rateLimitResponse['_']meta.error.details.current).toBe(101);
+      expect(rateLimitResponse['_']meta.error.details.retryAfter).toBe(60);
+
+      // Verify reset time format
+      const resetTime = new Date(rateLimitResponse['_']meta.error.details.resetTime);
+      expect(resetTime.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it('should include timeout information', () => {
+      const timeoutResponse = createErrorResponse({
+        code: 'TIMEOUT',
+        message: 'Operation timed out after 30 seconds',
+        type: 'operational',
+        details: {
+          timeout: 30000,
+          operation: 'memory_find',
+          partialResults: true,
+        },
+      });
+
+      expect(timeoutResponse['_']meta.error.code).toBe('TIMEOUT');
+      expect(timeoutResponse['_']meta.error.details.timeout).toBe(30000);
+      expect(timeoutResponse['_']meta.error.details.operation).toBe('memory_find');
+      expect(timeoutResponse['_']meta.error.details.partialResults).toBe(true);
+    });
+  });
+
+  // ============================================================================
+  // Response Consistency Tests
+  // ============================================================================
+
+  describe('Response Consistency', () => {
+    it('should maintain consistent response structure across operations', () => {
+      const operations = ['memory_store', 'memory_find'];
+      const responses = operations.map((op) => createValidToolResponse(op));
+
+      responses.forEach((response) => {
+        // All responses should have the same base structure
+        expect(response).toHaveProperty('content');
+        expect(response).toHaveProperty('_meta');
+        expect(response).toHaveProperty('isError');
+
+        expect(Array.isArray(response.content)).toBe(true);
+        expect(typeof response['_']meta).toBe('object');
+        expect(typeof response.isError).toBe('boolean');
+
+        // All metadata should have the same required fields
+        expect(response['_']meta).toHaveProperty('requestId');
+        expect(response['_']meta).toHaveProperty('timestamp');
+        expect(response['_']meta).toHaveProperty('operation');
+        expect(response['_']meta).toHaveProperty('duration');
+        expect(response['_']meta).toHaveProperty('version');
+      });
+    });
+
+    it('should maintain consistent error response format', () => {
+      const errorTypes = [
+        'VALIDATION_ERROR',
+        'TIMEOUT',
+        'DATABASE_ERROR',
+        'RATE_LIMITED',
+        'INTERNAL_ERROR',
+      ];
+
+      const errorResponses = errorTypes.map((code) =>
+        createErrorResponse({ code, message: `Test ${code}`, type: 'system' })
+      );
+
+      errorResponses.forEach((response) => {
+        // All error responses should have the same structure
+        expect(response.isError).toBe(true);
+        expect(response['_']meta).toHaveProperty('error');
+
+        const error = response['_']meta.error;
+        expect(error).toHaveProperty('code');
+        expect(error).toHaveProperty('message');
+        expect(error).toHaveProperty('type');
+        expect(error).toHaveProperty('details');
+
+        expect(typeof error.code).toBe('string');
+        expect(typeof error.message).toBe('string');
+        expect(['validation', 'operational', 'system']).toContain(error.type);
+        expect(typeof error.details).toBe('object');
+      });
+    });
+
+    it('should handle response versioning correctly', () => {
+      const response = createValidToolResponse();
+
+      // Verify version information
+      expect(response['_']meta.version).toMatch(/^\d+\.\d+\.\d+$/);
+      expect(response['_']meta.apiVersion).toMatch(/^\d+\.\d+\.\d+$/);
+
+      // Should support backward compatibility
+      expect(response['_']meta.minCompatibleVersion).toMatch(/^\d+\.\d+\.\d+$/);
+    });
+  });
+
+  // ============================================================================
+  // Response Serialization Tests
+  // ============================================================================
+
+  describe('Response Serialization', () => {
+    it('should serialize responses to JSON correctly', () => {
+      const response = createValidToolResponse();
+
+      // Should be able to serialize without errors
+      expect(() => JSON.stringify(response)).not.toThrow();
+
+      const serialized = JSON.stringify(response);
+      const deserialized = JSON.parse(serialized);
+
+      // Should maintain structure after round-trip
+      expect(deserialized).toHaveProperty('content');
+      expect(deserialized).toHaveProperty('_meta');
+      expect(deserialized).toHaveProperty('isError');
+
+      expect(Array.isArray(deserialized.content)).toBe(true);
+      expect(typeof deserialized['_']meta).toBe('object');
+      expect(typeof deserialized.isError).toBe('boolean');
+    });
+
+    it('should handle large responses efficiently', () => {
+      const largeResponse = createBatchResponse('memory_store', 100, {
+        includeDetails: true,
+        successes: 100,
+      });
+
+      // Should serialize large responses
+      const serialized = JSON.stringify(largeResponse);
+      expect(serialized.length).toBeGreaterThan(0);
+      expect(serialized.length).toBeLessThan(10 * 1024 * 1024); // Less than 10MB
+
+      // Should deserialize correctly
+      const deserialized = JSON.parse(serialized);
+      expect(deserialized['_']meta.itemCount).toBe(100);
+    });
+
+    it('should handle special characters in response content', () => {
+      const specialCharResponse = createValidToolResponse('memory_store', {
+        content: 'Special characters: 🧠 中文测试 ñáéíóú',
+      });
+
+      expect(() => JSON.stringify(specialCharResponse)).not.toThrow();
+
+      const serialized = JSON.stringify(specialCharResponse);
+      const deserialized = JSON.parse(serialized);
+
+      // Should preserve special characters
+      const hasSpecialChars = deserialized.content.some(
+        (item) => item.text.includes('🧠') || item.text.includes('中文')
+      );
+      expect(hasSpecialChars).toBe(true);
+    });
+  });
+});

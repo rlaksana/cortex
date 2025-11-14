@@ -1,5 +1,3 @@
-
-// @ts-nocheck - Emergency rollback: Critical business service
 /**
  * P2-P3: R/A/G Status Dashboard Infrastructure
  *

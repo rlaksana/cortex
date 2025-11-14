@@ -1,0 +1,858 @@
+/**
+ * EventEmitter Lifecycle Management and Leak Detection
+ *
+ * Provides comprehensive EventEmitter lifecycle management including:
+ * - Automatic listener cleanup on teardown
+ * - Memory leak detection and prevention
+ * - Listener tracking and monitoring
+ * - Performance metrics collection
+ * - Resource usage optimization
+ *
+ * @author Cortex Team
+ * @version 1.0.0
+ * @since 2025-11-10
+ */
+
+import { EventEmitter } from 'node:events';
+import { logger } from '@/utils/logger.js';
+
+/**
+ * Listener tracking information
+ */
+export interface ListenerInfo {
+  id: string;
+  event: string;
+  listener: Function;
+  once: boolean;
+  addedAt: Date;
+  component: string;
+  location?: string;
+  weakRef?: WeakRef<Function>;
+}
+
+/**
+ * Leak detection configuration
+ */
+export interface LeakDetectionConfig {
+  enabled: boolean;
+  maxListeners: number;
+  maxListenerAge: number; // milliseconds
+  checkInterval: number; // milliseconds
+  memoryThreshold: number; // MB
+  gcThreshold: number; // number of listeners before forced GC
+}
+
+/**
+ * Lifecycle metrics
+ */
+export interface LifecycleMetrics {
+  totalListeners: number;
+  activeListeners: number;
+  onceListeners: number;
+  memoryUsage: number;
+  listenersByComponent: Record<string, number>;
+  listenersByEvent: Record<string, number>;
+  leakWarnings: number;
+  forcedCleanups: number;
+  lastCleanup: Date;
+  averageListenerAge: number;
+}
+
+/**
+ * Enhanced EventEmitter with lifecycle management
+ */
+export class ManagedEventEmitter extends EventEmitter {
+  private listeners = new Map<string, ListenerInfo>();
+  private componentListeners = new Map<string, Set<string>>();
+  private eventListeners = new Map<string, Set<string>>();
+  private leakDetectionConfig: LeakDetectionConfig;
+  private _metrics: LifecycleMetrics;
+  private leakDetectionTimer: NodeJS.Timeout | null = null;
+  private isShuttingDown = false;
+  private forceGCThreshold = 1000;
+
+  constructor(config?: Partial<LeakDetectionConfig>) {
+    super();
+
+    this.leakDetectionConfig = {
+      enabled: true,
+      maxListeners: 50,
+      maxListenerAge: 300000, // 5 minutes
+      checkInterval: 60000, // 1 minute
+      memoryThreshold: 100, // 100MB
+      gcThreshold: 500,
+      ...config,
+    };
+
+    this.metrics = {
+      totalListeners: 0,
+      activeListeners: 0,
+      onceListeners: 0,
+      memoryUsage: 0,
+      listenersByComponent: {},
+      listenersByEvent: {},
+      leakWarnings: 0,
+      forcedCleanups: 0,
+      lastCleanup: new Date(),
+      averageListenerAge: 0,
+    };
+
+    this.setupLeakDetection();
+    this.overrideEventMethods();
+  }
+
+  /**
+   * Add event listener with tracking
+   */
+  on(
+    _event: string, 
+    _listener: Function, 
+    options: {
+      component?: string;
+      location?: string;
+      weak?: boolean;
+    } = {}
+  ): this {
+    if (this.isShuttingDown) {
+      logger.warn('Attempted to add listener during shutdown', { event });
+      return this;
+    }
+
+    const component = options.component || 'unknown';
+    const location = options.location || this.getCallSite();
+
+    // Check listener limits
+    if (this.listeners.size >= this.leakDetectionConfig.maxListeners) {
+      logger.warn('Maximum listener limit reached', {
+        current: this.listeners.size,
+        max: this.leakDetectionConfig.maxListeners,
+        event,
+        component,
+      });
+
+      // Force cleanup if necessary
+      if (this.listeners.size > this.forceGCThreshold) {
+        this.forceCleanup();
+      }
+    }
+
+    // Create listener info
+    const listenerInfo: ListenerInfo = {
+      id: this.generateListenerId(),
+      event,
+      listener,
+      once: false,
+      addedAt: new Date(),
+      component,
+      location,
+      weakRef: options.weak ? new WeakRef(listener) : undefined,
+    };
+
+    // Track listener
+    this.listeners.set(listenerInfo.id, listenerInfo);
+    this.trackListenerByComponent(component, listenerInfo.id);
+    this.trackListenerByEvent(event, listenerInfo.id);
+
+    // Update metrics
+    this.updateMetrics();
+
+    // Wrap listener for cleanup tracking
+    const wrappedListener = this.wrapListener(listenerInfo);
+    super.on(event, wrappedListener);
+
+    logger.debug('Listener added', {
+      listenerId: listenerInfo.id,
+      event,
+      component,
+      totalListeners: this.listeners.size,
+    });
+
+    return this;
+  }
+
+  /**
+   * Add once listener with tracking
+   */
+  once(
+    _event: string, 
+    _listener: Function, 
+    options: { component?: string; location?: string } = {}
+  ): this {
+    const component = options.component || 'unknown';
+    const location = options.location || this.getCallSite();
+
+    const listenerInfo: ListenerInfo = {
+      id: this.generateListenerId(),
+      event,
+      listener,
+      once: true,
+      addedAt: new Date(),
+      component,
+      location,
+    };
+
+    // Track listener
+    this.listeners.set(listenerInfo.id, listenerInfo);
+    this.trackListenerByComponent(component, listenerInfo.id);
+    this.trackListenerByEvent(event, listenerInfo.id);
+
+    // Update metrics
+    this.updateMetrics();
+
+    // Wrap listener for automatic cleanup
+    const wrappedListener = this.wrapOnceListener(listenerInfo);
+    super.once(event, wrappedListener);
+
+    logger.debug('Once listener added', {
+      listenerId: listenerInfo.id,
+      event,
+      component,
+      totalListeners: this.listeners.size,
+    });
+
+    return this;
+  }
+
+  /**
+   * Remove specific listener with cleanup
+   */
+  off(_event: string,  _listener: Function): this {
+    // Find listener info
+    const listenerInfo = Array.from(this.listeners.values()).find(
+      (info) => info.event === event && info.listener === listener
+    );
+
+    if (listenerInfo) {
+      this.removeListenerInfo(listenerInfo.id);
+    }
+
+    super.off(event, listener);
+
+    return this;
+  }
+
+  /**
+   * Remove all listeners with cleanup
+   */
+  removeAllListeners(event?: string): this {
+    if (event) {
+      // Remove specific event listeners
+      const eventListenerIds = this.eventListeners.get(event);
+      if (eventListenerIds) {
+        for (const listenerId of eventListenerIds) {
+          this.removeListenerInfo(listenerId);
+        }
+      }
+    } else {
+      // Remove all listeners
+      this.cleanupAllListeners();
+    }
+
+    super.removeAllListeners(event);
+
+    return this;
+  }
+
+  /**
+   * Remove listeners by component
+   */
+  removeListenersByComponent(component: string): number {
+    const componentListenerIds = this.componentListeners.get(component);
+    if (!componentListenerIds) return 0;
+
+    let removedCount = 0;
+    for (const listenerId of componentListenerIds) {
+      const listenerInfo = this.listeners.get(listenerId);
+      if (listenerInfo) {
+        super.off(listenerInfo.event, listenerInfo.listener);
+        this.listeners.delete(listenerId);
+        removedCount++;
+      }
+    }
+
+    this.componentListeners.delete(component);
+
+    logger.info('Component listeners removed', {
+      component,
+      count: removedCount,
+      remaining: this.listeners.size,
+    });
+
+    this.updateMetrics();
+    return removedCount;
+  }
+
+  /**
+   * Get lifecycle metrics
+   */
+  getMetrics(): LifecycleMetrics {
+    return { ...this.metrics };
+  }
+
+  /**
+   * Get listener details
+   */
+  getListenerDetails(): Array<{
+    id: string;
+    event: string;
+    component: string;
+    location?: string;
+    age: number;
+    once: boolean;
+  }> {
+    return Array.from(this.listeners.values()).map((info) => ({
+      id: info.id,
+      event: info.event,
+      component: info.component,
+      location: info.location,
+      age: Date.now() - info.addedAt.getTime(),
+      once: info.once,
+    }));
+  }
+
+  /**
+   * Check for potential leaks
+   */
+  checkForLeaks(): Array<{
+    type: 'old_listener' | 'memory_threshold' | 'too_many_listeners';
+    severity: 'warning' | 'critical';
+    message: string;
+    details: unknown;
+  }> {
+    const issues: Array<{
+      type: 'old_listener' | 'memory_threshold' | 'too_many_listeners';
+      severity: 'warning' | 'critical';
+      message: string;
+      details: unknown;
+    }> = [];
+
+    const now = Date.now();
+
+    // Check for old listeners
+    for (const listenerInfo of this.listeners.values()) {
+      const age = now - listenerInfo.addedAt.getTime();
+      if (age > this.leakDetectionConfig.maxListenerAge) {
+        issues.push({
+          type: 'old_listener',
+          severity: age > this.leakDetectionConfig.maxListenerAge * 2 ? 'critical' : 'warning',
+          message: `Long-lived listener detected: ${listenerInfo.event}`,
+          details: {
+            listenerId: listenerInfo.id,
+            event: listenerInfo.event,
+            component: listenerInfo.component,
+            age: age,
+            location: listenerInfo.location,
+          },
+        });
+      }
+    }
+
+    // Check memory usage
+    const memUsage = process.memoryUsage();
+    const heapUsedMB = memUsage.heapUsed / (1024 * 1024);
+    if (heapUsedMB > this.leakDetectionConfig.memoryThreshold) {
+      issues.push({
+        type: 'memory_threshold',
+        severity: 'critical',
+        message: `Memory threshold exceeded: ${String(heapUsedMB.toFixed(2))}MB`,
+        details: {
+          heapUsedMB,
+          threshold: this.leakDetectionConfig.memoryThreshold,
+          listenerCount: this.listeners.size,
+        },
+      });
+    }
+
+    // Check listener count
+    if (this.listeners.size > this.leakDetectionConfig.maxListeners) {
+      issues.push({
+        type: 'too_many_listeners',
+        severity:
+          this.listeners.size > this.leakDetectionConfig.maxListeners * 2 ? 'critical' : 'warning',
+        message: `Too many listeners: ${this.listeners.size}`,
+        details: {
+          listenerCount: this.listeners.size,
+          maxListeners: this.leakDetectionConfig.maxListeners,
+          listenersByComponent: this.metrics.listenersByComponent,
+        },
+      });
+    }
+
+    return issues;
+  }
+
+  /**
+   * Force cleanup of potential leaks
+   */
+  forceCleanup(): void {
+    const beforeCount = this.listeners.size;
+    let cleanedCount = 0;
+
+    // Clean up weak references
+    for (const [listenerId,  listenerInfo] of this.listeners) {
+      if (listenerInfo.weakRef && !listenerInfo.weakRef.deref()) {
+        this.removeListenerInfo(listenerId);
+        cleanedCount++;
+      }
+    }
+
+    // Clean up old once listeners
+    const now = Date.now();
+    for (const [listenerId,  listenerInfo] of this.listeners) {
+      if (
+        listenerInfo.once &&
+        now - listenerInfo.addedAt.getTime() > this.leakDetectionConfig.maxListenerAge
+      ) {
+        super.off(listenerInfo.event, listenerInfo.listener);
+        this.listeners.delete(listenerId);
+        cleanedCount++;
+      }
+    }
+
+    // Force garbage collection if available
+    if (global.gc && this.listeners.size > this.leakDetectionConfig.gcThreshold) {
+      global.gc();
+      logger.debug('Forced garbage collection', {
+        beforeCount,
+        afterCount: this.listeners.size,
+        cleanedCount,
+      });
+    }
+
+    this.metrics.forcedCleanups++;
+    this.metrics.lastCleanup = new Date();
+    this.updateMetrics();
+
+    logger.info('Force cleanup completed', {
+      beforeCount,
+      afterCount: this.listeners.size,
+      cleanedCount,
+      memoryUsage: process.memoryUsage().heapUsed / (1024 * 1024),
+    });
+  }
+
+  /**
+   * Graceful shutdown
+   */
+ shutdown(): Promise<void> {
+    if (this.isShuttingDown) return;
+
+    this.isShuttingDown = true;
+    logger.info('EventEmitter shutdown started', {
+      listenerCount: this.listeners.size,
+    });
+
+    // Stop leak detection
+    if (this.leakDetectionTimer) {
+      clearInterval(this.leakDetectionTimer);
+      this.leakDetectionTimer = null;
+    }
+
+    // Remove all listeners
+    this.cleanupAllListeners();
+    super.removeAllListeners();
+
+    logger.info('EventEmitter shutdown completed');
+  }
+
+  // Private methods
+
+  private setupLeakDetection(): void {
+    if (!this.leakDetectionConfig.enabled) return;
+
+    this.leakDetectionTimer = setInterval(() => {
+      if (!this.isShuttingDown) {
+        this.performLeakCheck();
+      }
+    }, this.leakDetectionConfig.checkInterval);
+  }
+
+  private performLeakCheck(): void {
+    try {
+      const issues = this.checkForLeaks();
+
+      if (issues.length > 0) {
+        this.metrics.leakWarnings += issues.length;
+
+        issues.forEach((issue) => {
+          if (issue.severity === 'critical') {
+            logger.error('Memory leak detected', issue);
+            this.forceCleanup();
+          } else {
+            logger.warn('Potential memory leak', issue);
+          }
+        });
+      }
+
+      // Update metrics
+      this.updateMetrics();
+    } catch (error) {
+      logger.error('Leak detection failed', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  private overrideEventMethods(): void {
+    // Override emit to add metrics
+    const originalEmit = this.emit.bind(this);
+    this.emit = (event: string, ...args: unknown[]) => {
+      try {
+        return originalEmit(event, ...args);
+      } catch (error) {
+        logger.error('Event emit error', {
+          event,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        throw error;
+      }
+    };
+  }
+
+  private wrapListener(_listenerInfo: ListenerInfo): Function {
+    return (...args: unknown[]) => {
+      try {
+        return listenerInfo.listener.apply(this, args);
+      } catch (error) {
+        logger.error('Listener execution error', {
+          listenerId: listenerInfo.id,
+          event: listenerInfo.event,
+          component: listenerInfo.component,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        throw error;
+      }
+    };
+  }
+
+  private wrapOnceListener(_listenerInfo: ListenerInfo): Function {
+    return (...args: unknown[]) => {
+      try {
+        // Remove from tracking before execution
+        this.removeListenerInfo(listenerInfo.id);
+
+        // Execute original listener
+        return listenerInfo.listener.apply(this, args);
+      } catch (error) {
+        logger.error('Once listener execution error', {
+          listenerId: listenerInfo.id,
+          event: listenerInfo.event,
+          component: listenerInfo.component,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        throw error;
+      }
+    };
+  }
+
+  private removeListenerInfo(_listenerId: string): void {
+    const listenerInfo = this.listeners.get(listenerId);
+    if (!listenerInfo) return;
+
+    // Remove from component tracking
+    const componentListeners = this.componentListeners.get(listenerInfo.component);
+    if (componentListeners) {
+      componentListeners.delete(listenerId);
+      if (componentListeners.size === 0) {
+        this.componentListeners.delete(listenerInfo.component);
+      }
+    }
+
+    // Remove from event tracking
+    const eventListeners = this.eventListeners.get(listenerInfo.event);
+    if (eventListeners) {
+      eventListeners.delete(listenerId);
+      if (eventListeners.size === 0) {
+        this.eventListeners.delete(listenerInfo.event);
+      }
+    }
+
+    // Remove from main tracking
+    this.listeners.delete(listenerId);
+  }
+
+  private trackListenerByComponent(component: string, listenerId: string): void {
+    if (!this.componentListeners.has(component)) {
+      this.componentListeners.set(component, new Set());
+    }
+    this.componentListeners.get(component)!.add(listenerId);
+  }
+
+  private trackListenerByEvent(event: string, listenerId: string): void {
+    if (!this.eventListeners.has(event)) {
+      this.eventListeners.set(event, new Set());
+    }
+    this.eventListeners.get(event)!.add(listenerId);
+  }
+
+  private cleanupAllListeners(): void {
+    this.listeners.clear();
+    this.componentListeners.clear();
+    this.eventListeners.clear();
+  }
+
+  private updateMetrics(): void {
+    const now = Date.now();
+    let totalAge = 0;
+    let onceCount = 0;
+
+    const listenersByComponent: Record<string, number> = {};
+    const listenersByEvent: Record<string, number> = {};
+
+    for (const listenerInfo of this.listeners.values()) {
+      totalAge += now - listenerInfo.addedAt.getTime();
+      if (listenerInfo.once) onceCount++;
+
+      listenersByComponent[listenerInfo.component] =
+        (listenersByComponent[listenerInfo.component] || 0) + 1;
+      listenersByEvent[listenerInfo.event] = (listenersByEvent[listenerInfo.event] || 0) + 1;
+    }
+
+    this.metrics = {
+      totalListeners: this.listeners.size,
+      activeListeners: this.listeners.size - onceCount,
+      onceListeners: onceCount,
+      memoryUsage: process.memoryUsage().heapUsed / (1024 * 1024),
+      listenersByComponent,
+      listenersByEvent,
+      leakWarnings: this.metrics.leakWarnings,
+      forcedCleanups: this.metrics.forcedCleanups,
+      lastCleanup: this.metrics.lastCleanup,
+      averageListenerAge: this.listeners.size > 0 ? totalAge / this.listeners.size : 0,
+    };
+  }
+
+  private generateListenerId(): string {
+    return `listener_${Date.now()}_${String(Math.random().toString(36).substr(2, 9))}`;
+  }
+
+  private getCallSite(): string {
+    // Simplified call site extraction
+    const stack = new Error().stack;
+    if (!stack) return 'unknown';
+
+    const lines = stack.split('\n');
+    // Skip the current function and find the first meaningful call site
+    for (let i = 3; i < lines.length; i++) {
+      const line = lines[i];
+      if (line && !line.includes('event-emitter-lifecycle.ts')) {
+        return line.trim();
+      }
+    }
+
+    return 'unknown';
+  }
+}
+
+/**
+ * Leak detection test utilities
+ */
+export class LeakDetectionTests {
+  private emitter: ManagedEventEmitter;
+
+  constructor() {
+    this.emitter = new ManagedEventEmitter({
+      enabled: true,
+      maxListeners: 10,
+      maxListenerAge: 1000, // 1 second for testing
+      checkInterval: 500, // 0.5 seconds for testing
+      memoryThreshold: 50, // 50MB for testing
+      gcThreshold: 20,
+    });
+  }
+
+  /**
+   * Test listener leak detection
+   */
+  async testListenerLeak(): Promise<void> {
+    logger.info('Starting listener leak test');
+
+    // Add listeners without removing them
+    for (let i = 0; i < 15; i++) {
+      // Exceeds maxListeners
+      this.emitter.on(
+        'test-event', 
+        () => {
+          // Do nothing
+        },
+        {
+          component: `test-component-${String(i % 3)}`,
+          location: 'test-location',
+        }
+      );
+    }
+
+    // Wait for leak detection
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    const metrics = this.emitter.getMetrics();
+    const leaks = this.emitter.checkForLeaks();
+
+    logger.info('Listener leak test completed', {
+      metrics,
+      leakCount: leaks.length,
+      forcedCleanups: metrics.forcedCleanups,
+    });
+
+    if (leaks.length === 0) {
+      logger.warn('No leaks detected, but test expected leaks');
+    }
+
+    // Cleanup
+    await this.emitter.shutdown();
+  }
+
+  /**
+   * Test once listener cleanup
+   */
+  async testOnceListenerCleanup(): Promise<void> {
+    logger.info('Starting once listener cleanup test');
+
+    let callCount = 0;
+    this.emitter.once('once-test',  () => {
+      callCount++;
+    });
+
+    // Emit multiple times
+    this.emitter.emit('once-test');
+    this.emitter.emit('once-test');
+    this.emitter.emit('once-test');
+
+    // Wait a bit
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const metrics = this.emitter.getMetrics();
+
+    logger.info('Once listener cleanup test completed', {
+      callCount,
+      totalListeners: metrics.totalListeners,
+      onceListeners: metrics.onceListeners,
+    });
+
+    if (callCount !== 1) {
+      logger.error('Once listener should only be called once', { callCount });
+    }
+
+    if (metrics.totalListeners !== 0) {
+      logger.error('Once listener should be cleaned up', {
+        totalListeners: metrics.totalListeners,
+      });
+    }
+
+    await this.emitter.shutdown();
+  }
+
+  /**
+   * Test component-based cleanup
+   */
+  async testComponentCleanup(): Promise<void> {
+    logger.info('Starting component cleanup test');
+
+    // Add listeners from different components
+    this.emitter.on('component-test',  () => {}, { component: 'component-a' });
+    this.emitter.on('component-test',  () => {}, { component: 'component-a' });
+    this.emitter.on('component-test',  () => {}, { component: 'component-b' });
+    this.emitter.on('other-test',  () => {}, { component: 'component-a' });
+
+    const removedCount = this.emitter.removeListenersByComponent('component-a');
+
+    const metrics = this.emitter.getMetrics();
+
+    logger.info('Component cleanup test completed', {
+      removedCount,
+      totalListeners: metrics.totalListeners,
+      listenersByComponent: metrics.listenersByComponent,
+    });
+
+    if (removedCount !== 3) {
+      logger.error('Expected 3 listeners to be removed', { removedCount });
+    }
+
+    if (metrics.totalListeners !== 1) {
+      logger.error('Expected 1 remaining listener', { totalListeners: metrics.totalListeners });
+    }
+
+    await this.emitter.shutdown();
+  }
+
+  /**
+   * Test memory threshold detection
+   */
+  async testMemoryThreshold(): Promise<void> {
+    logger.info('Starting memory threshold test');
+
+    // Create a large number of listeners to trigger memory threshold
+    const largeData = new Array(1000).fill(0).map(() => ({ data: 'x'.repeat(1000) }));
+
+    for (let i = 0; i < 100; i++) {
+      this.emitter.on(
+        'memory-test', 
+        () => {
+          // Capture large data in closure
+          return largeData[i % largeData.length];
+        },
+        {
+          component: 'memory-test-component',
+        }
+      );
+    }
+
+    // Wait for memory threshold detection
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    const metrics = this.emitter.getMetrics();
+    const leaks = this.emitter.checkForLeaks();
+
+    logger.info('Memory threshold test completed', {
+      metrics,
+      leakCount: leaks.length,
+      memoryUsage: metrics.memoryUsage,
+    });
+
+    await this.emitter.shutdown();
+  }
+
+  /**
+   * Run all leak detection tests
+   */
+  async runAllTests(): Promise<void> {
+    logger.info('Starting all leak detection tests');
+
+    try {
+      await this.testListenerLeak();
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      await this.testOnceListenerCleanup();
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      await this.testComponentCleanup();
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      await this.testMemoryThreshold();
+
+      logger.info('All leak detection tests completed successfully');
+    } catch (error) {
+      logger.error('Leak detection test failed', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
+}
+
+/**
+ * Global emitter instance for system-wide events
+ */
+export const systemEventEmitter = new ManagedEventEmitter({
+  enabled: process.env.NODE_ENV !== 'test',
+  maxListeners: 100,
+  maxListenerAge: 600000, // 10 minutes
+  checkInterval: 30000, // 30 seconds
+  memoryThreshold: 200, // 200MB
+  gcThreshold: 1000,
+});
+
+/**
+ * Test utilities for external use
+ */
+export const leakDetectionTests = new LeakDetectionTests();
