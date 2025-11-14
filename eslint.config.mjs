@@ -243,7 +243,25 @@ export default defineConfig([
       '@typescript-eslint/no-unsafe-return': 'off',
       '@typescript-eslint/require-await': 'off',
       '@typescript-eslint/no-misused-promises': 'off',
-      'unused-imports/no-unused-vars': 'off',
+      // Enable unused imports detection with auto-fix
+      'unused-imports/no-unused-imports': 'warn',
+      'unused-imports/no-unused-vars': [
+        'warn',
+        {
+          'vars': 'all',
+          'varsIgnorePattern': '^_',
+          'args': 'after-used',
+          'argsIgnorePattern': '^_',
+        },
+      ],
+      // Enable unreachable code detection
+      'no-unreachable': 'warn',
+      'no-constant-condition': [
+        'warn',
+        {
+          'checkLoops': false,
+        },
+      ],
     },
   },
 
