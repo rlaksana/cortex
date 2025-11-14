@@ -480,9 +480,45 @@ export type {
 export type {
   ConnectionPool,
   DatabaseContext,
-  DatabaseResult,
   IndexStatistics,
 } from './database-types-enhanced.js';
+
+// Database Result Types (Optimal Pattern)
+export type {
+  DatabaseResult,
+  DatabaseError,
+  BatchResult,
+  PaginatedResult,
+  SearchResult,
+  SearchResponse,
+} from './database-generics.js';
+
+// Migration utilities for backward compatibility
+export {
+  migrateToOptimal,
+  migrateLegacyResult,
+  migrateEnhancedResult,
+  isLegacyResult,
+  isEnhancedResult,
+  DatabaseResultMigration,
+} from './database-result-migration.js';
+
+// Filter compatibility adapters for seamless conversion between filter patterns
+export {
+  FilterAdapter,
+  toQueryFilter,
+  toLegacyFilter,
+  toVectorFilter,
+  isMongoDBFilter,
+  isLegacyFilter,
+  isVectorFilter,
+  FilterMigration,
+} from './filter-compatibility-adapter.js';
+
+// Re-export unified filter types
+export type {
+  UnifiedFilter,
+} from './filter-compatibility-adapter.js';
 
 // ============================================================================
 // Audit & Metrics Types

@@ -1138,7 +1138,9 @@ export class DataLifecycleService {
         });
 
         // Filter by data type and convert to search result format
-        const filteredItems = scopeFilteredItems.filter((item) => item.kind === dataType);
+        const filteredItems = scopeFilteredItems.success
+          ? scopeFilteredItems.data.filter((item) => item.kind === dataType)
+          : [];
 
         const searchResult = {
           results: filteredItems,
