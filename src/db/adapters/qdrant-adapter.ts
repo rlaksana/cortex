@@ -74,8 +74,9 @@ import type {
 import type {
   DatabaseResult,
   PointId,
+  ConnectionError,
+  NotFoundError,
 } from '../../types/database-generics.js';
-import { ConnectionError, DatabaseError, NotFoundError } from '../database-interface.js';
 import type {
   DatabaseMetrics,
   DeleteOptions,
@@ -162,7 +163,7 @@ export class QdrantAdapter implements IVectorAdapter {
   private createErrorResult<T>(error: DatabaseError, metadata?: Record<string, unknown>): DatabaseResult<T> {
     return {
       success: false,
-      error: error as any, // Type assertion to handle DatabaseError interface differences
+      error,
       metadata,
     };
   }
