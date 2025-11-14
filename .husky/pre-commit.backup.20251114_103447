@@ -36,42 +36,32 @@ npx tsc --noEmit --strict || {
 
 # Run ESLint on staged files with strict rules
 echo "🔧 Running ESLint on staged files..."
-# TEMPORARILY DISABLED - ESLint causing major issues with emergency rollback
-# STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|ts|tsx|mjs|cjs)$' | tr '\n' ' ')
-#
-# if [ -n "$STAGED_FILES" ]; then
-#   npx eslint $STAGED_FILES --max-warnings 0 || {
-#     echo "❌ ESLint found issues in staged files"
-#     echo "💡 Fix the linting errors before committing"
-#     echo "   Run 'npx eslint $STAGED_FILES --fix' to auto-fix many issues"
-#     exit 1
-#   }
-# fi
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|ts|tsx|mjs|cjs)$' | tr '\n' ' ')
 
-echo "⚠️  ESLint temporarily disabled for emergency rollback"
-echo "   To re-enable: uncomment ESLint sections in .husky/pre-commit"
+if [ -n "$STAGED_FILES" ]; then
+  npx eslint $STAGED_FILES --max-warnings 0 || {
+    echo "❌ ESLint found issues in staged files"
+    echo "💡 Fix the linting errors before committing"
+    echo "   Run 'npx eslint $STAGED_FILES --fix' to auto-fix many issues"
+    exit 1
+  }
+fi
 
 # Run security-focused ESLint
-# TEMPORARILY DISABLED - Security ESLint causing major issues
-# echo "🔒 Running security ESLint..."
-# npx eslint src --ext .ts --config eslint.security.config.cjs --max-warnings 0 || {
-#   echo "❌ Security ESLint found issues"
-#   echo "💡 Fix security issues before committing"
-#   exit 1
-# }
-
-echo "⚠️  Security ESLint temporarily disabled for emergency rollback"
+echo "🔒 Running security ESLint..."
+npx eslint src --ext .ts --config eslint.security.config.cjs --max-warnings 0 || {
+  echo "❌ Security ESLint found issues"
+  echo "💡 Fix security issues before committing"
+  exit 1
+}
 
 # Check code formatting
 echo "🎨 Checking code formatting..."
-# TEMPORARILY DISABLED - Formatting causing issues during emergency rollback
-# npm run format:check || {
-#   echo "❌ Code formatting issues found"
-#   echo "💡 Run 'npm run format' to fix formatting issues"
-#   exit 1
-# }
-
-echo "⚠️  Code formatting temporarily disabled for emergency rollback"
+npm run format:check || {
+  echo "❌ Code formatting issues found"
+  echo "💡 Run 'npm run format' to fix formatting issues"
+  exit 1
+}
 
 # Run MCP Inspector validation if MCP files changed
 MCP_FILES_CHANGED=$(git diff --cached --name-only | grep -E '\.(mcp|mcp\.json|index\.ts|.*mcp.*)$' | wc -l)
@@ -208,8 +198,8 @@ echo "🎉 Ready to commit changes"
 echo ""
 echo "📊 Quality Summary:"
 echo "  • TypeScript: ✅ Strict validation passed"
-echo "  • ESLint: ⚠️  Temporarily disabled (emergency rollback)"
-echo "  • Security: ⚠️  Security ESLint disabled (emergency rollback)"
+echo "  • ESLint: ✅ Linting passed"
+echo "  • Security: ✅ Security checks passed"
 echo "  • Tests: ✅ Tests passed"
 echo "  • MCP: $([ "$MCP_FILES_CHANGED" -gt 0 ] && echo "✅ MCP validation passed" || echo "ℹ️  No MCP changes")"
 echo "  • Production: $([ "$DEPLOY_FILES_CHANGED" -gt 0 ] && echo "✅ Production checks passed" || echo "ℹ️  No deployment changes")"
