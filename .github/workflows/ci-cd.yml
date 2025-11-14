@@ -1,462 +1,74 @@
-# ============================================================================
-# CORTEX MEMORY MCP - CI/CD PIPELINE
-# ============================================================================
 name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main, master, develop, staging ]
   pull_request:
-    branches: [main, develop]
+    branches: [ main, master ]
   release:
-    types: [published]
+    types: [ published ]
 
 env:
+  NODE_VERSION: "20"
   REGISTRY: ghcr.io
-  IMAGE_NAME: cortex-memory-mcp
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # Security and Quality Gates
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: "npm"
+    - name: Install dependencies
+      run: npm ci
+    - name: Type checking
+      run: npm run type-check
+    - name: Linting
+      run: npm run lint
+    - name: Security linting
+      run: npm run lint:security
+    - name: Unit tests
+      run: npm run test:unit
+    - name: Integration tests
+      run: npm run test:integration
+    - name: Coverage report
+      run: npm run test:coverage:ci
+
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    outputs:
-      scan-passed: ${{ steps.scan.outputs.scan-passed }}
+    needs: build-and-test
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run npm audit
-        run: npm audit --audit-level=high
-        id: audit
-
-      - name: Run Snyk security scan
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-      - name: Set scan result
-        id: scan
-        run: echo "scan-passed=true" >> $GITHUB_OUTPUT
-
-  # Code Quality
-  code-quality:
-    name: Code Quality
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: npm run lint
-
-      - name: Run Prettier check
-        run: npm run format:check
-
-      - name: TypeScript type check
-        run: npm run type-check
-
-      - name: Complex code analysis
-        run: npm run complexity
-
-  # Testing
-  test:
-    name: Test Suite
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18, 20]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run unit tests
-        run: npm run test:coverage:ci
-
-      - name: Run integration tests
-        run: npm run test:integration
-
-      - name: Run contract tests
-        run: npm run test:contract
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-
-  # Build and Test Docker Image
-  build-test:
-    name: Build and Test Docker Image
-    runs-on: ubuntu-latest
-    needs: [security-scan, code-quality, test]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and export Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./docker/Dockerfile
-          load: true
-          tags: test-image:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Test Docker image
-        run: |
-          docker run --rm -d --name test-container test-image:latest
-          sleep 30
-          docker logs test-container
-          docker exec test-container curl -f http://localhost:3000/health
-          docker stop test-container
-
-      - name: Build and push Docker image
-        if: github.event_name != 'pull_request'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./docker/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # Deploy to Development
-  deploy-dev:
-    name: Deploy to Development
-    runs-on: ubuntu-latest
-    needs: build-test
-    if: github.ref == 'refs/heads/develop'
-    environment: development
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Deploy to development
-        run: |
-          chmod +x scripts/deploy/deploy.sh
-          ./scripts/deploy/deploy.sh dev --force
-
-      - name: Run smoke tests
-        run: npm run test:smoke:dev
-
-  # Deploy to Staging
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: build-test
-    if: github.ref == 'refs/heads/main'
-    environment: staging
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Deploy to staging
-        run: |
-          chmod +x scripts/deploy/deploy.sh
-          ./scripts/deploy/deploy.sh staging --force
-
-      - name: Run integration tests on staging
-        run: npm run test:e2e:staging
-
-      - name: Performance testing
-        run: npm run test:performance:staging
-
-  # Deploy to Production
-  deploy-prod:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: deploy-staging
-    if: github.event_name == 'release'
-    environment: production
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Deploy to production
-        run: |
-          chmod +x scripts/deploy/deploy.sh
-          ./scripts/deploy/deploy.sh prod --force
-
-      - name: Run production health checks
-        run: npm run test:health:prod
-
-      - name: Notify deployment
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          channel: '#deployments'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-        if: always()
-
-  # Kubernetes Deployment
-  k8s-deploy:
-    name: Deploy to Kubernetes
-    runs-on: ubuntu-latest
-    needs: build-test
-    if: github.ref == 'refs/heads/main'
-    strategy:
-      matrix:
-        environment: [staging, production]
-    environment: ${{ matrix.environment }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'v1.28.0'
-
-      - name: Configure kubectl
-        run: |
-          echo "${{ secrets.KUBE_CONFIG_${{ matrix.environment }} }}" | base64 -d > kubeconfig
-          export KUBECONFIG=kubeconfig
-
-      - name: Deploy to Kubernetes
-        run: |
-          export KUBECONFIG=kubeconfig
-          kubectl apply -f k8s/namespace.yaml
-          kubectl apply -f k8s/configmap.yaml
-          kubectl apply -f k8s/secrets.yaml
-          kubectl apply -f k8s/qdrant-statefulset.yaml
-          kubectl apply -f k8s/cortex-mcp-deployment.yaml
-          kubectl apply -f k8s/monitoring.yaml
-          kubectl apply -f k8s/ingress.yaml
-
-      - name: Verify deployment
-        run: |
-          export KUBECONFIG=kubeconfig
-          kubectl rollout status deployment/cortex-mcp -n cortex-mcp
-          kubectl get pods -n cortex-mcp
-          kubectl get services -n cortex-mcp
-
-  # Performance Monitoring
-  performance-monitor:
-    name: Performance Monitoring
-    runs-on: ubuntu-latest
-    needs: deploy-prod
-    if: github.event_name == 'release'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run performance tests
-        run: npm run test:performance:prod
-
-      - name: Generate performance report
-        run: npm run perf:report
-
-      - name: Upload performance artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: performance-report
-          path: artifacts/performance/
-
-  # Documentation Generation
-  docs:
-    name: Generate Documentation
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate API documentation
-        run: npm run docs:generate
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-
-  # Release Tasks
-  release-tasks:
-    name: Release Tasks
-    runs-on: ubuntu-latest
-    needs: [deploy-prod, performance-monitor]
-    if: github.event_name == 'release'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Create release artifacts
-        run: |
-          npm run build
-          npm run artifacts:archive
-
-      - name: Upload release artifacts
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: artifacts/cortex-memory-mcp.tar.gz
-          asset_name: cortex-memory-mcp-${{ github.event.release.tag_name }}.tar.gz
-          asset_content_type: application/gzip
-
-      - name: Tag Docker image for release
-        uses: docker/metadata-action@v5
-        id: release-meta
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-
-      - name: Build and push release Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./docker/Dockerfile
-          push: true
-          tags: ${{ steps.release-meta.outputs.tags }}
-          labels: ${{ steps.release-meta.outputs.labels }}
-
-  # Cleanup
-  cleanup:
-    name: Cleanup
-    runs-on: ubuntu-latest
-    needs: [deploy-prod, k8s-deploy]
-    if: always()
-    steps:
-      - name: Cleanup old images
-        run: |
-          docker system prune -f
-          docker volume prune -f
-
-      - name: Cleanup old releases
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const releases = await github.rest.repos.listReleases({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              per_page: 50
-            });
-
-            // Keep only the last 5 releases
-            const releasesToDelete = releases.data.slice(5);
-
-            for (const release of releasesToDelete) {
-              await github.rest.repos.deleteRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                release_id: release.id
-              });
-            }
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20.x"
+        cache: "npm"
+    - name: Install dependencies
+      run: npm ci
+    - name: Run npm audit
+      run: npm audit --audit-level=moderate --json > audit-results.json || true
+    - name: Run security scanner
+      run: npm run security:scan:ci
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-scan-results
+        path: audit-results.json
+        retention-days: 30

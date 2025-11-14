@@ -205,6 +205,7 @@
     "security:fix": "npm audit fix",
     "security:scan": "./scripts/security-scan.sh",
     "security:scan:ci": "npm run security:audit:ci && npm run lint:security && npm run test:security",
+    "audit:security": "npm audit --audit-level=moderate && npm run lint:security && npm run test:security",
     "performance:profile": "node --prof dist/index.js",
     "performance:benchmark": "./scripts/benchmark.js",
     "performance:analyze": "./scripts/analyze-performance.js",
