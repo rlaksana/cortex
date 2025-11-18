@@ -1,13 +1,14 @@
-// @ts-nocheck
-// FINAL COMPREHENSIVE EMERGENCY ROLLBACK: Utility layer type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
+// PHASE 2.2A RECOVERY: Expiry utilities synchronization complete
+// Recovery Date: 2025-11-14T17:57:00+07:00 (Asia/Jakarta)
+// Recovery Method: Sequential file-by-file approach with quality gates
+// Dependencies: Time calculation and expiration policies for knowledge items
 
 /**
  * P6-T6.1: Expiry time calculation utilities
  * Handles different time formats and expiration policies
  */
 
-import { type ExpiryTimeLabel,getExpiryTimestamp } from '../constants/expiry-times.js';
+import { type ExpiryTimeLabel, getExpiryTimestamp } from '../constants/expiry-times.js';
 import type { KnowledgeItem } from '../types/core-interfaces.js';
 
 /**
@@ -15,7 +16,7 @@ import type { KnowledgeItem } from '../types/core-interfaces.js';
  */
 export function calculateItemExpiry(item: KnowledgeItem, defaultTTL?: ExpiryTimeLabel): string {
   // Priority order: explicit expiry_at → scope-level TTL → default
-  if (item.data.expiry_at) {
+  if (item.data.expiry_at && typeof item.data.expiry_at === 'string') {
     return item.data.expiry_at;
   }
 
@@ -35,7 +36,7 @@ export function calculateItemExpiry(item: KnowledgeItem, defaultTTL?: ExpiryTime
  */
 export function isExpired(item: KnowledgeItem): boolean {
   const expiryTime = item.expiry_at || item.data.expiry_at;
-  if (!expiryTime) return false;
+  if (!expiryTime || typeof expiryTime !== 'string') return false;
 
   try {
     return new Date(expiryTime) < new Date();
@@ -49,7 +50,7 @@ export function isExpired(item: KnowledgeItem): boolean {
  */
 export function getItemTTL(item: KnowledgeItem): number {
   const expiryTime = item.expiry_at || item.data.expiry_at;
-  if (!expiryTime) return 0;
+  if (!expiryTime || typeof expiryTime !== 'string') return 0;
 
   try {
     const expiryDate = new Date(expiryTime);

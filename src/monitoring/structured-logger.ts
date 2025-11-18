@@ -1,6 +1,4 @@
-// @ts-nocheck
 // LAST ABSOLUTE FINAL EMERGENCY ROLLBACK: Complete the systematic rollback
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Structured Logging Service
@@ -12,27 +10,29 @@
  * - Correlation IDs for request tracing
  */
 
-// @ts-expect-error - next import
 import { logger, slowQueryLogger } from '@/utils/logger.js';
 
 import { metricsService } from './metrics-service.js';
 import { OperationType } from './operation-types.js';
 import type { AuthContext } from '../types/auth-types.js';
 import type {
-  DeduplicationStrategy,
   ErrorInfo,
   OperationMetadata,
   RequestContext,
   ResultMetrics,
-  SearchStrategy,
   StructuredLogEntry as TypedStructuredLogEntry,
   SystemHealth,
-  UserContext} from '../types/monitoring-types.js';
+  UserContext,
+} from '../types/monitoring-types.js';
+import {
+  DeduplicationStrategy,
+  SearchStrategy,
+} from '../types/monitoring-types.js';
 
 /**
  * Re-export the types from monitoring-types for backward compatibility
  */
-export { DeduplicationStrategy,SearchStrategy } from '../types/monitoring-types.js';
+export type { DeduplicationStrategy, SearchStrategy } from '../types/monitoring-types.js';
 
 /**
  * Structured log entry interface (alias for backward compatibility)
@@ -55,6 +55,8 @@ interface StructuredLoggerConfig {
  * Service for structured logging across all operations
  */
 export class StructuredLogger {
+  private static instance: StructuredLogger | null = null;
+
   private config: StructuredLoggerConfig = {
     enableConsoleOutput: true,
     enableFileOutput: true,
@@ -80,10 +82,10 @@ export class StructuredLogger {
    * Get singleton instance
    */
   public static getInstance(): StructuredLogger {
-    if (!(StructuredLogger as unknown).instance) {
-      (StructuredLogger as unknown).instance = new StructuredLogger();
+    if (!StructuredLogger.instance) {
+      StructuredLogger.instance = new StructuredLogger();
     }
-    return (StructuredLogger as unknown).instance;
+    return StructuredLogger.instance;
   }
 
   /**
@@ -155,7 +157,7 @@ export class StructuredLogger {
         total_count: itemCount,
         result_count: resultMetrics?.stored || 0,
         duplicates_found: resultMetrics?.duplicates || 0,
-        newer_versions_allowed: resultMetrics?.newerVersionsAllowed || 0,
+        newer_versions_allowed: resultMetrics?.newer_versions_allowed || 0,
       },
       error: error ? this.formatError(error) : undefined,
       metadata: {
@@ -342,10 +344,7 @@ export class StructuredLogger {
   /**
    * Log system health
    */
-  logSystemHealth(
-    correlationId: string,
-    systemHealth: SystemHealth
-  ): void {
+  logSystemHealth(correlationId: string, systemHealth: SystemHealth): void {
     const convertedSystemHealth: SystemHealth = { ...systemHealth };
 
     this.logOperation({
@@ -391,18 +390,29 @@ export class StructuredLogger {
   /**
    * Get all metrics
    */
-  getAllMetrics(): Record<OperationType, {
-    count: number;
-    averageLatency: number;
-    errorRate: number;
-    lastUpdate: string;
-  }> {
-    const allMetrics: Record<OperationType, {
+  getAllMetrics(): Record<
+    OperationType,
+    {
       count: number;
       averageLatency: number;
       errorRate: number;
       lastUpdate: string;
-    }> = {};
+    }
+  > {
+    const allMetrics: Record<
+      OperationType,
+      {
+        count: number;
+        averageLatency: number;
+        errorRate: number;
+        lastUpdate: string;
+      }
+    > = {} as Record<OperationType, {
+      count: number;
+      averageLatency: number;
+      errorRate: number;
+      lastUpdate: string;
+    }>;
 
     for (const [operation, metrics] of this.operationMetrics.entries()) {
       allMetrics[operation] = {
@@ -519,7 +529,7 @@ export class StructuredLogger {
       type: error.constructor.name,
       message: error.message,
       stack: error.stack,
-      code: (error as unknown).code,
+      code: (error as { code?: string | number }).code,
     };
   }
 

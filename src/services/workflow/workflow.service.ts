@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Workflow Service
  *
@@ -324,7 +320,10 @@ export class WorkflowService {
     return [];
   }
 
-  async updateWorkflowState(executionId: string, _stateUpdate: unknown): Promise<WorkflowExecution> {
+  async updateWorkflowState(
+    executionId: string,
+    _stateUpdate: unknown
+  ): Promise<WorkflowExecution> {
     logger.info({ executionId }, 'Updating workflow state');
     // Placeholder implementation
     return {
@@ -352,7 +351,10 @@ export class WorkflowService {
     };
   }
 
-  async rollbackWorkflowState(executionId: string, previousState: unknown): Promise<WorkflowExecution> {
+  async rollbackWorkflowState(
+    executionId: string,
+    previousState: unknown
+  ): Promise<WorkflowExecution> {
     logger.info({ executionId, previousState }, 'Rolling back workflow state');
     // Placeholder implementation
     return {
@@ -832,7 +834,10 @@ export class WorkflowService {
     };
   }
 
-  async getActiveEventDrivenChains(chains: unknown[], completedEvents: string[]): Promise<string[]> {
+  async getActiveEventDrivenChains(
+    chains: unknown[],
+    completedEvents: string[]
+  ): Promise<string[]> {
     logger.debug({ chains, completedEvents }, 'Getting active event driven chains');
     // Placeholder implementation
     return [];

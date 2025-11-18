@@ -1,6 +1,4 @@
-// @ts-nocheck
-// LAST ABSOLUTE FINAL EMERGENCY ROLLBACK: Complete the systematic rollback
-// TODO: Fix systematic type issues before removing @ts-nocheck
+// NUCLEAR STRIKE COMPLETED: Maximum force TypeScript error elimination
 
 /**
  * Generic Resource Pool Implementation
@@ -35,10 +33,12 @@ import type {
   PooledResource,
   PoolEvent,
   PoolEventListener,
+  PoolEventType,
   PoolFactory,
   PoolHealthInfo,
   PoolHealthIssue,
   PoolHealthResult,
+  PoolId,
   PoolStats,
   ResourceId,
   ResourceMetrics,
@@ -65,7 +65,7 @@ class PoolUtilsImpl {
   createConfigKey(config: Record<string, unknown>): ConfigKey {
     const sorted = Object.keys(config)
       .sort()
-      .map(key => `${key}:${config[key]}`)
+      .map((key) => `${key}:${config[key]}`)
       .join('|');
     return Buffer.from(sorted).toString('base64') as ConfigKey;
   }
@@ -116,7 +116,9 @@ class PoolUtilsImpl {
           errors.push(...factoryValidation.errors);
           warnings.push(...factoryValidation.warnings);
         } catch (error) {
-          errors.push(`Resource factory validation failed: ${error instanceof Error ? error.message : String(error)}`);
+          errors.push(
+            `Resource factory validation failed: ${error instanceof Error ? error.message : String(error)}`
+          );
         }
       }
     }
@@ -135,7 +137,8 @@ class PoolUtilsImpl {
 
   determineHealthStatus(stats: PoolStats): 'healthy' | 'degraded' | 'unhealthy' {
     const utilization = this.calculateUtilization(stats);
-    const errorRate = stats.totalAcquisitions > 0 ? (stats.totalErrors / stats.totalAcquisitions) * 100 : 0;
+    const errorRate =
+      stats.totalAcquisitions > 0 ? (stats.totalErrors / stats.totalAcquisitions) * 100 : 0;
 
     if (errorRate > 20 || stats.errorResources > stats.totalResources * 0.3) {
       return 'unhealthy';
@@ -160,12 +163,12 @@ interface InternalResource<TResource = unknown> {
   readonly resourceId: ResourceId;
   readonly poolId: PoolId;
   readonly created: Date;
-  readonly lastUsed: Date;
-  readonly usageCount: number;
-  readonly errorCount: number;
-  readonly averageResponseTime: number;
-  readonly lastHealthCheck: Date;
-  readonly responseTimeHistory: number[];
+  lastUsed: Date;
+  usageCount: number;
+  errorCount: number;
+  averageResponseTime: number;
+  lastHealthCheck: Date;
+  responseTimeHistory: number[];
   state: ResourceState;
   isValid: boolean;
   lastValidation?: ResourceValidationResult<TResource>;
@@ -192,7 +195,7 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
   private healthCheckInterval?: NodeJS.Timeout;
   private metricsInterval?: NodeJS.Timeout;
 
-  private stats: PoolStats = {
+  private stats: Omit<PoolStats, 'poolId'> & { poolId: PoolId } = {
     poolId: '' as PoolId,
     totalResources: 0,
     availableResources: 0,
@@ -218,7 +221,8 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
     this.config = Object.freeze({ ...config });
     this.poolId = config.id;
     this.startTime = new Date();
-    this.stats.poolId = config.id;
+    // Re-create stats with proper poolId since it's a mutable property
+    this.stats = { ...this.stats, poolId: config.id };
   }
 
   /**
@@ -244,11 +248,14 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
       }
 
       if (validation.warnings.length > 0) {
-        logger.warn({ poolId: this.poolId, warnings: validation.warnings }, 'Pool configuration warnings');
+        logger.warn(
+          { poolId: this.poolId, warnings: validation.warnings },
+          'Pool configuration warnings'
+        );
       }
 
       // Create minimum resources
-      const initPromises: Promise<void>[] = [];
+      const initPromises: Promise<InternalResource<TResource>>[] = [];
       for (let i = 0; i < this.config.minResources; i++) {
         initPromises.push(this.createResource());
       }
@@ -314,12 +321,15 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
         const resource = await this.tryAcquire(options);
         const acquireTime = Date.now() - startTime;
 
-        this.stats.totalAcquisitions++;
-        this.stats.averageAcquireTime = this.updateAverage(
-          this.stats.averageAcquireTime,
-          acquireTime,
-          this.stats.totalAcquisitions
-        );
+        this.stats = {
+          ...this.stats,
+          totalAcquisitions: this.stats.totalAcquisitions + 1,
+          averageAcquireTime: this.updateAverage(
+            this.stats.averageAcquireTime,
+            acquireTime,
+            this.stats.totalAcquisitions + 1
+          ),
+        };
 
         this.emitEvent({
           type: 'resource_acquired',
@@ -361,7 +371,7 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
       }
     }
 
-    this.stats.totalErrors++;
+    this.stats = { ...this.stats, totalErrors: this.stats.totalErrors + 1 };
     throw lastError || new Error('Failed to acquire resource after all retries');
   }
 
@@ -392,7 +402,9 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
     try {
       // Validate resource if validator is provided
       if (this.config.resourceValidator?.validateOnReturn) {
-        const validation = await this.config.resourceValidator.validateOnReturn(internalResource.resource);
+        const validation = await this.config.resourceValidator.validateOnReturn(
+          internalResource.resource
+        );
         internalResource.lastValidation = validation;
 
         if (!validation.isValid) {
@@ -408,15 +420,20 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
           // Mark resource as error if validation failed
           internalResource.state = 'error';
           internalResource.isValid = false;
-          this.stats.errorResources++;
-          this.stats.availableResources--;
+          this.stats = {
+            ...this.stats,
+            errorResources: this.stats.errorResources + 1,
+            availableResources: this.stats.availableResources - 1,
+          };
 
           this.emitEvent({
             type: 'resource_error',
             poolId: this.poolId,
             resourceId: resource.resourceId,
             timestamp: new Date(),
-            data: { error: new Error(`Resource validation failed: ${validation.errors.join(', ')}`) },
+            data: {
+              error: new Error(`Resource validation failed: ${validation.errors.join(', ')}`),
+            },
           });
         }
       }
@@ -428,9 +445,12 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
         this.availableResources.add(resource.resourceId);
 
         internalResource.lastUsed = new Date();
-        this.stats.totalReleases++;
-        this.stats.inUseResources--;
-        this.stats.availableResources++;
+        this.stats = {
+          ...this.stats,
+          totalReleases: this.stats.totalReleases + 1,
+          inUseResources: this.stats.inUseResources - 1,
+          availableResources: this.stats.availableResources + 1,
+        };
       }
 
       this.updateStats();
@@ -452,7 +472,7 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
         'Resource released successfully'
       );
     } catch (error) {
-      this.stats.totalErrors++;
+      this.stats = { ...this.stats, totalErrors: this.stats.totalErrors + 1 };
       logger.error(
         {
           poolId: this.poolId,
@@ -534,7 +554,10 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
 
     // Analyze pool health
     const utilization = poolUtils.calculateUtilization(this.stats);
-    const errorRate = this.stats.totalAcquisitions > 0 ? (this.stats.totalErrors / this.stats.totalAcquisitions) * 100 : 0;
+    const errorRate =
+      this.stats.totalAcquisitions > 0
+        ? (this.stats.totalErrors / this.stats.totalAcquisitions) * 100
+        : 0;
 
     if (errorRate > 20) {
       issues.push(`High error rate: ${errorRate.toFixed(2)}%`);
@@ -571,7 +594,7 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
    * Get all resource metrics
    */
   getResourceMetrics(): readonly ResourceMetrics[] {
-    return Array.from(this.resources.values()).map(resource => ({
+    return Array.from(this.resources.values()).map((resource) => ({
       resourceId: resource.resourceId,
       poolId: resource.poolId,
       state: resource.state,
@@ -650,7 +673,7 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
     const successRate = totalResources > 0 ? (healthyResources.length / totalResources) * 100 : 100;
     const status = successRate >= 80 ? 'healthy' : successRate >= 60 ? 'degraded' : 'unhealthy';
 
-    this.stats.lastHealthCheck = new Date();
+    this.stats = { ...this.stats, lastHealthCheck: new Date() };
 
     return {
       status,
@@ -691,9 +714,12 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
       }
 
       // Destroy all resources
-      const destroyPromises = Array.from(this.resources.keys()).map(resourceId =>
-        this.destroyResource(resourceId).catch(error =>
-          logger.error({ poolId: this.poolId, resourceId, error }, 'Failed to destroy resource during pool close')
+      const destroyPromises = Array.from(this.resources.keys()).map((resourceId) =>
+        this.destroyResource(resourceId).catch((error) =>
+          logger.error(
+            { poolId: this.poolId, resourceId, error },
+            'Failed to destroy resource during pool close'
+          )
         )
       );
 
@@ -739,7 +765,7 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
     // Try to get preferred resource first
     if (options.preferredResourceId) {
       const preferred = this.resources.get(options.preferredResourceId);
-      if (preferred && this.canAcquireResource(preferred, options)) {
+      if (preferred && (await this.canAcquireResource(preferred, options))) {
         return this.markResourceAsUsed(preferred);
       }
     }
@@ -747,7 +773,7 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
     // Try to get any available resource
     for (const resourceId of this.availableResources) {
       const resource = this.resources.get(resourceId);
-      if (resource && this.canAcquireResource(resource, options)) {
+      if (resource && (await this.canAcquireResource(resource, options))) {
         return this.markResourceAsUsed(resource);
       }
     }
@@ -765,7 +791,7 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
     while (Date.now() - startTime < timeout) {
       for (const resourceId of this.availableResources) {
         const resource = this.resources.get(resourceId);
-        if (resource && this.canAcquireResource(resource, options)) {
+        if (resource && (await this.canAcquireResource(resource, options))) {
           return this.markResourceAsUsed(resource);
         }
       }
@@ -776,7 +802,10 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
     throw new Error('No available resources and timeout reached');
   }
 
-  private canAcquireResource(resource: InternalResource<TResource>, options: AcquireOptions): boolean {
+  private async canAcquireResource(
+    resource: InternalResource<TResource>,
+    options: AcquireOptions
+  ): Promise<boolean> {
     if (resource.state !== 'available' || !resource.isValid) {
       return false;
     }
@@ -794,7 +823,9 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
     return true;
   }
 
-  private markResourceAsUsed(internalResource: InternalResource<TResource>): PooledResource<TResource> {
+  private markResourceAsUsed(
+    internalResource: InternalResource<TResource>
+  ): PooledResource<TResource> {
     internalResource.state = 'in_use';
     internalResource.lastUsed = new Date();
     internalResource.usageCount++;
@@ -856,7 +887,7 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
 
           if (!validation.isValid) {
             internalResource.state = 'error';
-            this.stats.errorResources++;
+            this.stats = { ...this.stats, errorResources: this.stats.errorResources + 1 };
             logger.warn(
               {
                 poolId: this.poolId,
@@ -869,7 +900,7 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
         } catch (error) {
           internalResource.state = 'error';
           internalResource.isValid = false;
-          this.stats.errorResources++;
+          this.stats = { ...this.stats, errorResources: this.stats.errorResources + 1 };
           logger.error(
             {
               poolId: this.poolId,
@@ -900,22 +931,33 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
       logger.debug({ poolId: this.poolId, resourceId }, 'New resource created successfully');
       return internalResource;
     } catch (error) {
-      this.stats.totalErrors++;
+      this.stats = { ...this.stats, totalErrors: this.stats.totalErrors + 1 };
       logger.error({ poolId: this.poolId, error }, 'Failed to create resource');
       throw error;
     }
   }
 
   private updateStats(): void {
-    this.stats.totalResources = this.resources.size;
-    this.stats.availableResources = this.availableResources.size;
-    this.stats.inUseResources = this.inUseResources.size;
-    this.stats.maintenanceResources = this.maintenanceResources.size;
-    this.stats.errorResources = Array.from(this.resources.values()).filter(r => r.state === 'error').length;
-    this.stats.destroyedResources = this.destroyedResources.size;
-    this.stats.poolUtilization = poolUtils.calculateUtilization(this.stats);
-    this.stats.healthStatus = poolUtils.determineHealthStatus(this.stats);
-    this.stats.uptime = Date.now() - this.startTime.getTime();
+    const errorResources = Array.from(this.resources.values()).filter(
+      (r) => r.state === 'error'
+    ).length;
+    const poolUtilization = poolUtils.calculateUtilization(this.stats);
+    const healthStatus = poolUtils.determineHealthStatus(this.stats);
+    const uptime = Date.now() - this.startTime.getTime();
+
+    this.stats = {
+      ...this.stats,
+      totalResources: this.resources.size,
+      availableResources: this.availableResources.size,
+      inUseResources: this.inUseResources.size,
+      maintenanceResources: this.maintenanceResources.size,
+      errorResources,
+      destroyedResources: this.destroyedResources.size,
+      poolUtilization,
+      healthStatus,
+      lastHealthCheck: this.stats.lastHealthCheck,
+      uptime,
+    };
   }
 
   private startHealthMonitoring(): void {
@@ -944,7 +986,7 @@ export class GenericResourcePool<TResource = unknown, TConfig = unknown>
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 
@@ -972,7 +1014,7 @@ export class TypedPoolFactory implements PoolFactory {
   }
 
   async closeAll(): Promise<void> {
-    const closePromises = Array.from(this.pools.values()).map(pool => pool.close());
+    const closePromises = Array.from(this.pools.values()).map((pool) => pool.close());
     await Promise.allSettled(closePromises);
     this.pools.clear();
   }
@@ -1008,20 +1050,23 @@ export class TypedPoolManager implements IPoolManager {
   private pools: Map<PoolId, IResourcePool> = new Map();
   private eventListeners: Map<PoolEventType, Set<PoolEventListener>> = new Map();
 
-  async registerPool<TResource, TConfig>(
-    pool: IResourcePool<TResource, TConfig>
-  ): Promise<void> {
+  async registerPool<TResource, TConfig>(pool: IResourcePool<TResource, TConfig>): Promise<void> {
     this.pools.set(pool.poolId, pool);
 
-    // Forward pool events to manager listeners
-    pool.on('resource_created', (event: PoolEvent<TResource>) => this.forwardEvent(event));
-    pool.on('resource_acquired', (event: PoolEvent<TResource>) => this.forwardEvent(event));
-    pool.on('resource_released', (event: PoolEvent<TResource>) => this.forwardEvent(event));
-    pool.on('resource_destroyed', (event: PoolEvent<TResource>) => this.forwardEvent(event));
-    pool.on('resource_error', (event: PoolEvent<TResource>) => this.forwardEvent(event));
-    pool.on('health_check_completed', (event: PoolEvent<TResource>) => this.forwardEvent(event));
-    pool.on('pool_initialized', (event: PoolEvent<TResource>) => this.forwardEvent(event));
-    pool.on('pool_closed', (event: PoolEvent<TResource>) => this.forwardEvent(event));
+    // Forward pool events to manager listeners if pool is an EventEmitter
+    const eventPool = pool as { on: (event: string, listener: (event: PoolEvent<TResource>) => void) => void };
+    if (typeof eventPool.on === 'function') {
+      eventPool.on('resource_created', (event: PoolEvent<TResource>) => this.forwardEvent(event));
+      eventPool.on('resource_acquired', (event: PoolEvent<TResource>) => this.forwardEvent(event));
+      eventPool.on('resource_released', (event: PoolEvent<TResource>) => this.forwardEvent(event));
+      eventPool.on('resource_destroyed', (event: PoolEvent<TResource>) => this.forwardEvent(event));
+      eventPool.on('resource_error', (event: PoolEvent<TResource>) => this.forwardEvent(event));
+      eventPool.on('health_check_completed', (event: PoolEvent<TResource>) =>
+        this.forwardEvent(event)
+      );
+      eventPool.on('pool_initialized', (event: PoolEvent<TResource>) => this.forwardEvent(event));
+      eventPool.on('pool_closed', (event: PoolEvent<TResource>) => this.forwardEvent(event));
+    }
   }
 
   async unregisterPool(poolId: PoolId): Promise<void> {
@@ -1037,23 +1082,23 @@ export class TypedPoolManager implements IPoolManager {
   }
 
   getPoolsByType<TResource = unknown>(resourceType: string): readonly IResourcePool<TResource>[] {
-    return Array.from(this.pools.values()).filter(pool => {
+    return Array.from(this.pools.values()).filter((pool) => {
       // This would need to be enhanced to track resource types
       return true; // Simplified for now
     }) as IResourcePool<TResource>[];
   }
 
   async getAllPoolHealth(): Promise<readonly PoolHealthInfo[]> {
-    return Array.from(this.pools.values()).map(pool => pool.getHealthStatus());
+    return Array.from(this.pools.values()).map((pool) => pool.getHealthStatus());
   }
 
   async performGlobalHealthCheck(): Promise<readonly PoolHealthResult[]> {
-    const healthChecks = Array.from(this.pools.values()).map(pool => pool.performHealthCheck());
+    const healthChecks = Array.from(this.pools.values()).map((pool) => pool.performHealthCheck());
     return Promise.all(healthChecks);
   }
 
   async closeAll(): Promise<void> {
-    const closePromises = Array.from(this.pools.values()).map(pool => pool.close());
+    const closePromises = Array.from(this.pools.values()).map((pool) => pool.close());
     await Promise.allSettled(closePromises);
     this.pools.clear();
   }

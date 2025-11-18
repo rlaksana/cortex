@@ -1,11 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * ZAI Services Integration Index
  *
@@ -19,12 +11,12 @@
 
 import { logger } from '@/utils/logger.js';
 
-import { AIOrchestratorService,aiOrchestratorService } from './ai-orchestrator.service';
+import { AIOrchestratorService, aiOrchestratorService } from './ai-orchestrator.service';
 import {
   BackgroundProcessorService,
   backgroundProcessorService,
 } from './background-processor.service';
-import { ZAIClientService,zaiClientService } from './zai-client.service';
+import { ZAIClientService, zaiClientService } from './zai-client.service';
 import { zaiConfigManager } from '../../config/zai-config.js';
 import type {
   AIOrchestratorConfig,
@@ -241,9 +233,10 @@ export class ZAIServicesManager {
         orchestrator: {
           status: orchestratorStatus.status,
           activeProvider: orchestratorStatus.activeProvider,
-          fallbackProvider: typeof orchestratorStatus.fallbackProvider === 'string'
-            ? orchestratorStatus.fallbackProvider
-            : orchestratorStatus.fallbackProvider?.name || 'openai',
+          fallbackProvider:
+            typeof orchestratorStatus.fallbackProvider === 'string'
+              ? orchestratorStatus.fallbackProvider
+              : orchestratorStatus.fallbackProvider?.name || 'openai',
           failoverCount: orchestratorStatus.failoverCount,
         },
         backgroundProcessor: {
@@ -403,7 +396,7 @@ export class ZAIServicesManager {
    */
   private startHealthMonitoring(): void {
     this.healthCheckInterval = setInterval(
-      async function(this: ZAIServicesManager): Promise<void> {
+      async function (this: ZAIServicesManager): Promise<void> {
         try {
           const health = await this.healthCheck();
 
@@ -430,7 +423,7 @@ export const zaiServicesManager = ZAIServicesManager.getInstance();
 /**
  * Export service classes for testing
  */
-export { AIOrchestratorService, BackgroundProcessorService,ZAIClientService };
+export { AIOrchestratorService, BackgroundProcessorService, ZAIClientService };
 
 /**
  * Export convenience functions

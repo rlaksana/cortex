@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 import { execSync } from 'child_process';
 
 import { logger } from '@/utils/logger.js';
@@ -12,6 +8,7 @@ export interface Scope {
   org?: string | undefined;
   project?: string | undefined;
   branch?: string | undefined;
+  [key: string]: unknown; // Add index signature for Record<string, unknown> compatibility
 }
 
 let cachedScope: Scope | null = null;

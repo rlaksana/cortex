@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Safe Configuration Builders with Validation
  *
@@ -9,16 +5,9 @@
  * with comprehensive validation, default values, and detailed error reporting.
  */
 
-import type {
-  Config} from './base-types.js';
-import type {
-  Environment,
-  Version} from './branded-types.js';
-import type {
-  ValidationError,
-  ValidationWarning
-} from './config-validation-schema.js';
-import type {
+import type { Config } from './base-types.js';
+import type { Environment, Version } from './branded-types.js';
+import {
   arrayGuard,
   booleanGuard,
   enumGuard,
@@ -29,11 +18,12 @@ import type {
   patternGuard,
   rangeGuard,
   stringGuard,
-  TypeGuard,
-  ValidationContext} from './runtime-type-guard-framework.js';
-import type {
-  safeGetNestedProperty,
-  safeSetNestedProperty} from './safe-property-access.js';
+  type TypeGuard,
+  type ValidationContext,
+  type ValidationError,
+  type ValidationWarning,
+} from './runtime-type-guard-framework.js';
+import { safeGetNestedProperty, safeSetNestedProperty } from './safe-property-access.js';
 
 // ============================================================================
 // Configuration Builder Types
@@ -132,17 +122,17 @@ export interface ConfigBuildResult {
  */
 export interface ConfigBuildStats {
   /** Number of properties processed */
-  readonly propertiesProcessed: number;
+  propertiesProcessed: number;
   /** Number of properties successfully validated */
-  readonly propertiesValidated: number;
+  propertiesValidated: number;
   /** Number of default values used */
-  readonly defaultsUsed: number;
+  defaultsUsed: number;
   /** Number of environment overrides applied */
-  readonly overridesApplied: number;
+  overridesApplied: number;
   /** Number of deprecated properties encountered */
-  readonly deprecatedProperties: number;
+  deprecatedProperties: number;
   /** Build duration in milliseconds */
-  readonly durationMs: number;
+  durationMs: number;
 }
 
 /**
@@ -150,19 +140,19 @@ export interface ConfigBuildStats {
  */
 export interface ConfigBuilderContext {
   /** Target environment */
-  readonly environment?: Environment;
+  environment?: Environment;
   /** Strict validation mode */
-  readonly strict?: boolean;
-  /** Allow unknown properties */
-  readonly allowUnknown?: boolean;
+  strict?: boolean;
+  /** Allow any properties */
+  allowUnknown?: boolean;
   /** Collect detailed statistics */
-  readonly collectStats?: boolean;
+  collectStats?: boolean;
   /** Custom property resolvers */
-  readonly propertyResolvers?: Map<string, (context: ConfigBuilderContext) => unknown>;
+  propertyResolvers?: Map<string, (context: ConfigBuilderContext) => unknown>;
   /** Environment variable mappings */
-  readonly envMappings?: Map<string, string>;
+  envMappings?: Map<string, string>;
   /** Configuration sources */
-  readonly sources?: ConfigSource[];
+  sources?: ConfigSource[];
 }
 
 /**
@@ -202,7 +192,7 @@ export class ConfigBuilder {
       version,
       description,
       properties: new Map(),
-      metadata: {}
+      metadata: {},
     };
 
     this.context = {
@@ -213,7 +203,7 @@ export class ConfigBuilder {
       propertyResolvers: new Map(),
       envMappings: new Map(),
       sources: [],
-      ...context
+      ...context,
     };
   }
 
@@ -252,9 +242,9 @@ export class ConfigBuilder {
         minLength: options.minLength,
         maxLength: options.maxLength,
         pattern: options.pattern?.toString(),
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -280,11 +270,10 @@ export class ConfigBuilder {
     let validator = numberGuard;
 
     if (options.min !== undefined || options.max !== undefined) {
-      validator = rangeGuard(
-        options.min ?? -Infinity,
-        options.max ?? Infinity,
-        { integer: options.integer, inclusive: true }
-      );
+      validator = rangeGuard(options.min ?? -Infinity, options.max ?? Infinity, {
+        integer: options.integer,
+        inclusive: true,
+      });
     }
 
     this.addProperty(name, {
@@ -299,9 +288,9 @@ export class ConfigBuilder {
         max: options.max,
         integer: options.integer,
         positive: options.positive,
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -328,9 +317,9 @@ export class ConfigBuilder {
       validator: booleanGuard,
       metadata: {
         type: 'boolean',
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -354,7 +343,7 @@ export class ConfigBuilder {
   ): this {
     const validator = enumGuard(values, {
       caseSensitive: options.caseSensitive,
-      allowCoercion: options.allowCoercion
+      allowCoercion: options.allowCoercion,
     });
 
     this.addProperty(name, {
@@ -368,9 +357,9 @@ export class ConfigBuilder {
         values,
         caseSensitive: options.caseSensitive,
         allowCoercion: options.allowCoercion,
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -396,7 +385,7 @@ export class ConfigBuilder {
     const validator = arrayGuard(itemValidator, {
       minLength: options.minLength,
       maxLength: options.maxLength,
-      uniqueItems: options.uniqueItems
+      uniqueItems: options.uniqueItems,
     });
 
     this.addProperty(name, {
@@ -411,9 +400,9 @@ export class ConfigBuilder {
         minLength: options.minLength,
         maxLength: options.maxLength,
         uniqueItems: options.uniqueItems,
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -437,7 +426,7 @@ export class ConfigBuilder {
   ): this {
     const validator = objectGuard(shape, {
       strict: options.strict,
-      allowExtra: options.allowExtra
+      allowExtra: options.allowExtra,
     });
 
     this.addProperty(name, {
@@ -448,12 +437,12 @@ export class ConfigBuilder {
       validator,
       metadata: {
         type: 'object',
-        shape: Object.keys(shape).map(k => `${k}: ${shape[k as keyof T].typeName}`),
+        shape: Object.keys(shape).map((k) => `${k}: ${shape[k as keyof T].typeName}`),
         strict: options.strict,
         allowExtra: options.allowExtra,
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -472,7 +461,7 @@ export class ConfigBuilder {
       deprecated?: DeprecationInfo;
     } = {}
   ): this {
-    const validator = guard(stringGuard).name('configKey');
+    const validator = guard(stringGuard).name('configKey').build();
 
     this.addProperty(name, {
       name,
@@ -482,9 +471,9 @@ export class ConfigBuilder {
       validator,
       metadata: {
         type: 'configKey',
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -503,7 +492,7 @@ export class ConfigBuilder {
       deprecated?: DeprecationInfo;
     } = {}
   ): this {
-    const validator = guard(stringGuard).name('environment');
+    const validator = guard(stringGuard).name('environment').build();
 
     this.addProperty(name, {
       name,
@@ -513,9 +502,9 @@ export class ConfigBuilder {
       validator,
       metadata: {
         type: 'environment',
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -534,7 +523,7 @@ export class ConfigBuilder {
       deprecated?: DeprecationInfo;
     } = {}
   ): this {
-    const validator = guard(stringGuard).name('serviceName');
+    const validator = guard(stringGuard).name('serviceName').build();
 
     this.addProperty(name, {
       name,
@@ -544,9 +533,9 @@ export class ConfigBuilder {
       validator,
       metadata: {
         type: 'serviceName',
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -565,7 +554,7 @@ export class ConfigBuilder {
       deprecated?: DeprecationInfo;
     } = {}
   ): this {
-    const validator = guard(stringGuard).name('connectionString');
+    const validator = guard(stringGuard).name('connectionString').build();
 
     this.addProperty(name, {
       name,
@@ -575,9 +564,9 @@ export class ConfigBuilder {
       validator,
       metadata: {
         type: 'connectionString',
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -595,7 +584,7 @@ export class ConfigBuilder {
       deprecated?: DeprecationInfo;
     } = {}
   ): this {
-    const validator = guard(stringGuard).name('secret');
+    const validator = guard(stringGuard).name('secret').build();
 
     this.addProperty(name, {
       name,
@@ -604,9 +593,9 @@ export class ConfigBuilder {
       validator,
       metadata: {
         type: 'secret',
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -625,7 +614,7 @@ export class ConfigBuilder {
       deprecated?: DeprecationInfo;
     } = {}
   ): this {
-    const validator = guard(stringGuard).name('hostname');
+    const validator = guard(stringGuard).name('hostname').build();
 
     this.addProperty(name, {
       name,
@@ -635,9 +624,9 @@ export class ConfigBuilder {
       validator,
       metadata: {
         type: 'hostname',
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -658,11 +647,9 @@ export class ConfigBuilder {
       deprecated?: DeprecationInfo;
     } = {}
   ): this {
-    const validator = guard(rangeGuard(
-      options.min ?? 1,
-      options.max ?? 65535,
-      { integer: true }
-    )).name('port');
+    const validator = rangeGuard(options.min ?? 1, options.max ?? 65535, { integer: true }).name(
+      'port'
+    );
 
     this.addProperty(name, {
       name,
@@ -674,9 +661,9 @@ export class ConfigBuilder {
         type: 'port',
         min: options.min,
         max: options.max,
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -695,7 +682,7 @@ export class ConfigBuilder {
       deprecated?: DeprecationInfo;
     } = {}
   ): this {
-    const validator = guard(stringGuard).name('version');
+    const validator = guard(stringGuard).name('version').build();
 
     this.addProperty(name, {
       name,
@@ -705,9 +692,9 @@ export class ConfigBuilder {
       validator,
       metadata: {
         type: 'version',
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -726,7 +713,7 @@ export class ConfigBuilder {
       deprecated?: DeprecationInfo;
     } = {}
   ): this {
-    const validator = guard(booleanGuard).name('featureFlag');
+    const validator = guard(booleanGuard).name('featureFlag').build();
 
     this.addProperty(name, {
       name,
@@ -736,9 +723,9 @@ export class ConfigBuilder {
       validator,
       metadata: {
         type: 'featureFlag',
-        envVar: options.envVar
+        envVar: options.envVar,
       },
-      deprecated: options.deprecated
+      deprecated: options.deprecated,
     });
 
     return this;
@@ -761,7 +748,7 @@ export class ConfigBuilder {
   }
 
   /**
-   * Allow unknown properties
+   * Allow any properties
    */
   allowUnknown(allow: boolean = true): this {
     this.context.allowUnknown = allow;
@@ -807,7 +794,7 @@ export class ConfigBuilder {
    */
   set(path: string, value: unknown): this {
     safeSetNestedProperty(this.intermediate, path.split('.'), value, {
-      createPath: true
+      createPath: true,
     });
     return this;
   }
@@ -825,13 +812,13 @@ export class ConfigBuilder {
       defaultsUsed: 0,
       overridesApplied: 0,
       deprecatedProperties: 0,
-      durationMs: 0
+      durationMs: 0,
     };
 
     const config: Record<string, unknown> = {};
 
     // Process each property in the schema
-    for (const [propertyName, property] of this.schema.properties) {
+    for (const [propertyName, property] of Array.from(this.schema.properties.entries())) {
       stats.propertiesProcessed++;
 
       const propertyResult = this.buildProperty(property, propertyName);
@@ -857,19 +844,25 @@ export class ConfigBuilder {
           code: 'DEPRECATED_PROPERTY',
           message: `Property '${propertyName}' is deprecated: ${property.deprecated.message}`,
           path: propertyName,
-          value: config[propertyName]
+          value: config[propertyName],
+          severity: 'medium',
         });
 
         // Handle automatic migration
         if (property.deprecated.autoMigrate && property.deprecated.migrationPath) {
           const migratedValue = property.deprecated.autoMigrate(config[propertyName]);
           if (property.deprecated.migrationPath) {
-            safeSetNestedProperty(config, property.deprecated.migrationPath.split('.'), migratedValue);
+            safeSetNestedProperty(
+              config,
+              property.deprecated.migrationPath.split('.'),
+              migratedValue
+            );
             warnings.push({
               code: 'AUTO_MIGRATED',
               message: `Deprecated property '${propertyName}' automatically migrated to '${property.deprecated.migrationPath}'`,
               path: property.deprecated.migrationPath,
-              value: migratedValue
+              value: migratedValue,
+              severity: 'low',
             });
           }
         }
@@ -888,7 +881,7 @@ export class ConfigBuilder {
       config,
       errors,
       warnings,
-      stats
+      stats,
     };
   }
 
@@ -910,10 +903,11 @@ export class ConfigBuilder {
       return this;
     }
 
-    for (const [propertyName, property] of this.schema.properties) {
-      const envVar = property.metadata?.envVar as string ||
-                     this.context.envMappings!.get(propertyName) ||
-                     `${prefix}${propertyName.toUpperCase().replace('.', '_')}`;
+    for (const [propertyName, property] of Array.from(this.schema.properties.entries())) {
+      const envVar =
+        (property.metadata?.envVar as string) ||
+        this.context.envMappings!.get(propertyName) ||
+        `${prefix}${propertyName.toUpperCase().replace('.', '_')}`;
 
       if (envVar in process.env) {
         const envValue = process.env[envVar];
@@ -978,7 +972,10 @@ export class ConfigBuilder {
     this.schema.properties.set(name, property);
   }
 
-  private buildProperty(property: ConfigProperty, propertyName: string): {
+  private buildProperty(
+    property: ConfigProperty,
+    propertyName: string
+  ): {
     success: boolean;
     value?: unknown;
     errors: ValidationError[];
@@ -1016,8 +1013,9 @@ export class ConfigBuilder {
         message: `Required property '${propertyName}' is missing`,
         path: propertyName,
         value: undefined,
-        expected: property.validator.typeName,
-        suggestions: ['Provide a value for this property', 'Add a default value if appropriate']
+        expected: property.validator.typeName || 'value',
+        actual: 'undefined',
+        suggestions: ['Provide a value for this property', 'Add a default value if appropriate'],
       });
       return { success: false, errors, warnings };
     }
@@ -1032,10 +1030,15 @@ export class ConfigBuilder {
     const validationContext: ValidationContext = {
       path: propertyName,
       root: this.intermediate,
+      config: this.intermediate as any, // JSONObject compatibility
+      strict: this.context.strict ?? false,
+      mode: 'lenient',
+      errors: [],
+      warnings: [],
       options: {
         strict: this.context.strict,
-        collectMetrics: this.context.collectStats
-      }
+        collectMetrics: this.context.collectStats,
+      },
     };
 
     const validationResult = validator.validate(value, validationContext);
@@ -1052,7 +1055,7 @@ export class ConfigBuilder {
       errors,
       warnings,
       usedDefault,
-      usedOverride
+      usedOverride,
     };
   }
 
@@ -1102,7 +1105,7 @@ export class ConfigBuilder {
         try {
           return JSON.parse(envValue);
         } catch {
-          return envValue.split(',').map(s => s.trim());
+          return envValue.split(',').map((s) => s.trim());
         }
       case 'object':
         try {
@@ -1131,29 +1134,29 @@ export function createAppConfigBuilder(
     .environmentProperty('environment', {
       required: true,
       description: 'Application environment',
-      envVar: 'NODE_ENV'
+      envVar: 'NODE_ENV',
     })
     .boolean('debug', {
       default: false,
       description: 'Enable debug mode',
-      envVar: 'DEBUG'
+      envVar: 'DEBUG',
     })
     .enum('logLevel', ['error', 'warn', 'info', 'debug', 'trace'] as const, {
       default: 'info',
       description: 'Logging level',
-      envVar: 'LOG_LEVEL'
+      envVar: 'LOG_LEVEL',
     })
     .port('port', {
       default: 3000,
       min: 1000,
       max: 65535,
       description: 'Server port',
-      envVar: 'PORT'
+      envVar: 'PORT',
     })
     .hostname('host', {
       default: 'localhost',
       description: 'Server host',
-      envVar: 'HOST'
+      envVar: 'HOST',
     });
 }
 
@@ -1165,37 +1168,41 @@ export function createDatabaseConfigBuilder(
   context?: Partial<ConfigBuilderContext>
 ): ConfigBuilder {
   return new ConfigBuilder('database', version, 'Database configuration', context)
-    .object('qdrant', {
-      host: guard(stringGuard).name('hostname'),
-      port: guard(rangeGuard(1, 65535, { integer: true })).name('port'),
-      apiKey: guard(stringGuard).name('secret'),
-      timeout: guard(numberGuard).name('timeout'),
-      maxRetries: guard(rangeGuard(0, 10, { integer: true })).name('maxRetries'),
-      retryDelay: guard(numberGuard).name('retryDelay'),
-      useHttps: guard(booleanGuard).name('useHttps'),
-      collectionPrefix: guard(optionalGuard(stringGuard)).name('collectionPrefix'),
-      enableHealthChecks: guard(booleanGuard).name('enableHealthChecks'),
-      connectionPoolSize: guard(rangeGuard(1, 100, { integer: true })).name('connectionPoolSize'),
-      requestTimeout: guard(numberGuard).name('requestTimeout'),
-      connectTimeout: guard(numberGuard).name('connectTimeout')
-    }, {
-      required: true,
-      description: 'Qdrant vector database configuration'
-    })
+    .object(
+      'qdrant',
+      {
+        host: guard(stringGuard).name('hostname'),
+        port: rangeGuard(1, 65535, { integer: true }).name('port'),
+        apiKey: guard(stringGuard).name('secret'),
+        timeout: (guard(numberGuard) as unknown).build().name('timeout'),
+        maxRetries: rangeGuard(0, 10, { integer: true }).name('maxRetries'),
+        retryDelay: (guard(numberGuard) as unknown).build().name('retryDelay'),
+        useHttps: (guard(booleanGuard) as unknown).build().name('useHttps'),
+        collectionPrefix: optionalGuard(stringGuard).build().name('collectionPrefix'),
+        enableHealthChecks: (guard(booleanGuard) as unknown).build().name('enableHealthChecks'),
+        connectionPoolSize: rangeGuard(1, 100, { integer: true }).name('connectionPoolSize'),
+        requestTimeout: (guard(numberGuard) as unknown).build().name('requestTimeout'),
+        connectTimeout: (guard(numberGuard) as unknown).build().name('connectTimeout'),
+      },
+      {
+        required: true,
+        description: 'Qdrant vector database configuration',
+      }
+    )
     .boolean('fallbackEnabled', {
       default: true,
       description: 'Enable fallback storage',
-      envVar: 'DB_FALLBACK_ENABLED'
+      envVar: 'DB_FALLBACK_ENABLED',
     })
     .boolean('backupEnabled', {
       default: false,
       description: 'Enable database backups',
-      envVar: 'DB_BACKUP_ENABLED'
+      envVar: 'DB_BACKUP_ENABLED',
     })
     .boolean('migrationEnabled', {
       default: true,
       description: 'Enable database migrations',
-      envVar: 'DB_MIGRATION_ENABLED'
+      envVar: 'DB_MIGRATION_ENABLED',
     });
 }
 
@@ -1207,38 +1214,52 @@ export function createMonitoringConfigBuilder(
   context?: Partial<ConfigBuilderContext>
 ): ConfigBuilder {
   return new ConfigBuilder('monitoring', version, 'Monitoring configuration', context)
-    .object('metrics', {
-      enabled: guard(booleanGuard).name('enabled'),
-      interval: guard(numberGuard).name('interval'),
-      prefix: guard(stringGuard).name('prefix'),
-      labels: guard(objectGuard({}, { allowExtra: true })).name('labels'),
-      defaultBuckets: guard(arrayGuard(numberGuard)).name('defaultBuckets')
-    }, {
-      description: 'Metrics collection configuration'
-    })
-    .object('healthCheck', {
-      enabled: guard(booleanGuard).name('enabled'),
-      interval: guard(numberGuard).name('interval'),
-      timeout: guard(numberGuard).name('timeout'),
-      retries: guard(numberGuard).name('retries'),
-      endpoints: guard(arrayGuard(objectGuard({
-        name: guard(stringGuard).name('name'),
-        path: guard(stringGuard).name('path'),
-        method: guard(enumGuard(['GET', 'POST', 'PUT', 'DELETE'] as const)).name('method'),
-        expectedStatus: guard(rangeGuard(200, 299)).name('expectedStatus'),
-        timeout: guard(numberGuard).name('timeout')
-      }))).name('endpoints')
-    }, {
-      description: 'Health check configuration'
-    })
-    .object('tracing', {
-      enabled: guard(booleanGuard).name('enabled'),
-      samplingRate: guard(rangeGuard(0, 1)).name('samplingRate'),
-      serviceName: guard(stringGuard).name('serviceName'),
-      version: guard(stringGuard).name('version')
-    }, {
-      description: 'Distributed tracing configuration'
-    });
+    .object(
+      'metrics',
+      {
+        enabled: (guard(booleanGuard) as unknown).build().name('enabled'),
+        interval: (guard(numberGuard) as unknown).build().name('interval'),
+        prefix: guard(stringGuard).name('prefix'),
+        labels: objectGuard({}, { allowExtra: true }).build().name('labels'),
+        defaultBuckets: arrayGuard(numberGuard).build().name('defaultBuckets'),
+      },
+      {
+        description: 'Metrics collection configuration',
+      }
+    )
+    .object(
+      'healthCheck',
+      {
+        enabled: (guard(booleanGuard) as unknown).build().name('enabled'),
+        interval: (guard(numberGuard) as unknown).build().name('interval'),
+        timeout: (guard(numberGuard) as unknown).build().name('timeout'),
+        retries: (guard(numberGuard) as unknown).build().name('retries'),
+        endpoints: arrayGuard(
+          objectGuard({
+            name: stringGuard,
+            path: stringGuard,
+            method: enumGuard(['GET', 'POST', 'PUT', 'DELETE'] as const),
+            expectedStatus: rangeGuard(200, 299),
+            timeout: numberGuard,
+          })
+        ),
+      },
+      {
+        description: 'Health check configuration',
+      }
+    )
+    .object(
+      'tracing',
+      {
+        enabled: (guard(booleanGuard) as unknown).build().name('enabled'),
+        samplingRate: rangeGuard(0, 1).build().name('samplingRate'),
+        serviceName: guard(stringGuard).name('serviceName'),
+        version: guard(stringGuard).name('version'),
+      },
+      {
+        description: 'Distributed tracing configuration',
+      }
+    );
 }
 
 // ============================================================================
@@ -1268,7 +1289,7 @@ export function createConfigBuilder(
       getValue: (path, ctx) => {
         const envVar = ctx.envMappings?.get(path) || path.toUpperCase().replace('.', '_');
         return typeof process !== 'undefined' && process.env ? process.env[envVar] : undefined;
-      }
+      },
     })
     .source({
       name: 'command-line',
@@ -1280,10 +1301,10 @@ export function createConfigBuilder(
       getValue: (path, ctx) => {
         // Get value from command line arguments
         return undefined; // Implementation would parse argv
-      }
+      },
     });
 
-  return builder;
+  return builder as unknown;
 }
 
 /**
@@ -1303,7 +1324,7 @@ export function buildConfig(
   const builder = createConfigBuilder(name, version, options?.description, {
     environment: options?.environment,
     strict: options?.strict,
-    allowUnknown: options?.allowUnknown
+    allowUnknown: options?.allowUnknown,
   });
 
   if (options?.envPrefix) {
@@ -1327,7 +1348,7 @@ export function validateConfig(
   const builder = new ConfigBuilder(schema.name, schema.version, schema.description, {
     environment: options?.environment,
     strict: options?.strict,
-    allowUnknown: false
+    allowUnknown: false,
   });
 
   // Copy schema properties to builder

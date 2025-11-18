@@ -1,11 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Background Processor Service
  *
@@ -32,7 +24,7 @@ import type {
   ZAIJob,
   ZAIJobType,
 } from '../../types/zai-interfaces.js';
-import { ZAIError } from '../../types/zai-interfaces.js';
+import { ZAIError, ZAIErrorType } from '../../types/zai-interfaces.js';
 
 /**
  * Priority queue implementation for background jobs
@@ -74,15 +66,21 @@ class PriorityQueue<T> {
 
   sizeByPriority(): Record<string, number> {
     const sizes: Record<string, number> = {};
-    for (const [priority, queue] of this.queues) {
-      sizes[priority] = queue.length;
+    for (const priority of this.priorities) {
+      const queue = this.queues.get(priority);
+      if (queue) {
+        sizes[priority] = queue.length;
+      }
     }
     return sizes;
   }
 
   clear(): void {
-    for (const queue of this.queues.values()) {
-      queue.length = 0;
+    for (const priority of this.priorities) {
+      const queue = this.queues.get(priority);
+      if (queue) {
+        queue.length = 0;
+      }
     }
   }
 
@@ -99,8 +97,7 @@ interface JobExecutionContext {
   startTime: number;
   attemptNumber: number;
   signal: AbortSignal;
-
-  abortController?: unknown
+  abortController?: AbortController;
 }
 
 /**
@@ -487,7 +484,10 @@ export class BackgroundProcessorService extends EventEmitter {
       const zaiError =
         error instanceof ZAIError
           ? error
-          : new ZAIError(error.message || 'Unknown error', 'unknown_error' as unknown);
+          : new ZAIError(
+              error instanceof Error ? error.message : 'Unknown error',
+              ZAIErrorType.UNKNOWN_ERROR
+            );
 
       job.error = {
         error: {
@@ -562,13 +562,19 @@ export class BackgroundProcessorService extends EventEmitter {
           return await this.executeChatCompletion(job.payload as ZAIChatRequest, signal);
 
         case 'batch_completion':
-          return await this.executeBatchCompletion(job.payload, signal);
+          return await this.executeBatchCompletion(
+            job.payload as { requests: ZAIChatRequest[] },
+            signal
+          );
 
         case 'embedding_generation':
-          return await this.executeEmbeddingGeneration(job.payload, signal);
+          return await this.executeEmbeddingGeneration(job.payload as { text: string }, signal);
 
         case 'content_analysis':
-          return await this.executeContentAnalysis(job.payload, signal);
+          return await this.executeContentAnalysis(
+            job.payload as { content: string; analysisType: string },
+            signal
+          );
 
         case 'text_transformation':
           return await this.executeTextTransformation(job.payload, signal);

@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Safe Base Types for Cortex MCP System
  *
@@ -57,7 +53,7 @@ export interface Metadata {
   readonly version?: string;
   readonly source?: string;
   readonly timestamp?: string;
-  readonly [key: string]: JSONValue;
+  readonly [key: string]: JSONValue | undefined;
 }
 
 /** Tags structure for categorization and filtering */
@@ -196,8 +192,8 @@ export function isJSONObject(value: unknown): value is JSONObject {
     value !== null &&
     typeof value === 'object' &&
     !Array.isArray(value) &&
-    Object.keys(value).every(key =>
-      typeof key === 'string' && isJSONValue((value as Record<string, unknown>)[key])
+    Object.keys(value).every(
+      (key) => typeof key === 'string' && isJSONValue((value as Record<string, unknown>)[key])
     )
   );
 }
@@ -257,8 +253,8 @@ export function isMetadata(value: unknown): value is Metadata {
   }
 
   // All other fields must be JSON values
-  return Object.entries(obj).every(([key, val]) =>
-    ['tags', 'version', 'source', 'timestamp'].includes(key) || isJSONValue(val)
+  return Object.entries(obj).every(
+    ([key, val]) => ['tags', 'version', 'source', 'timestamp'].includes(key) || isJSONValue(val)
   );
 }
 

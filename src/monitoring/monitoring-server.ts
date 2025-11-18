@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Enhanced monitoring type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * HTTP Monitoring Server for Cortex MCP
@@ -12,7 +10,15 @@
  * - /system - System information and resource usage
  */
 
-import express, { type Application, json, type Request, type Response, type Server,urlencoded } from 'express';
+import express, {
+  type Application,
+  json,
+  type Request,
+  type Response,
+  urlencoded,
+} from 'express';
+
+import type { Server } from 'http';
 
 import { logger } from '@/utils/logger.js';
 
@@ -143,7 +149,7 @@ export class MonitoringServer {
     return {
       isRunning: this.isRunning,
       config: this.config,
-      uptime: this.isRunning ? this.server?.uptime() || 0 : 0,
+      uptime: this.isRunning ? (this.server as any)?.uptime?.() || 0 : 0,
     };
   }
 
@@ -534,20 +540,37 @@ export class MonitoringServer {
       // Try to get circuit breaker stats from various services
       const allStats = circuitBreakerManager.getAllStats();
 
+      // Type guard for circuit breaker stats
+      const isCircuitBreakerStats = (stats: unknown): stats is Record<string, unknown> & {
+        state?: 'closed' | 'open' | 'half-open';
+        failures?: unknown;
+        successes?: unknown;
+        lastFailureTime?: unknown;
+      } => {
+        return (
+          stats &&
+          typeof stats === 'object' &&
+          'state' in stats &&
+          typeof stats.state === 'string' &&
+          ['closed', 'open', 'half-open'].includes(stats.state)
+        );
+      };
+
       for (const [serviceName, stats] of Object.entries(allStats)) {
-        const statsObj = stats as {
-          state: 'closed' | 'open' | 'half-open';
-          failures?: number;
-          successes?: number;
-          lastFailureTime?: number;
-        };
-        const stateValue = statsObj.state === 'closed' ? 0 : statsObj.state === 'open' ? 1 : 2;
+        if (!isCircuitBreakerStats(stats)) {
+          continue;
+        }
+
+        const stateValue = stats.state === 'closed' ? 0 : stats.state === 'open' ? 1 : 2;
+        const failures = typeof stats.failures === 'number' ? stats.failures : 0;
+        const successes = typeof stats.successes === 'number' ? stats.successes : 0;
+        const lastFailureTime = typeof stats.lastFailureTime === 'number' ? stats.lastFailureTime : 0;
 
         metrics.push(
           `cortex_circuit_breaker_state{service="${serviceName}"} ${stateValue}`,
-          `cortex_circuit_breaker_failures_total{service="${serviceName}"} ${statsObj.failures || 0}`,
-          `cortex_circuit_breaker_successes_total{service="${serviceName}"} ${statsObj.successes || 0}`,
-          `cortex_circuit_breaker_last_failure_time_seconds{service="${serviceName}"} ${(statsObj.lastFailureTime || 0) / 1000}`
+          `cortex_circuit_breaker_failures_total{service="${serviceName}"} ${failures}`,
+          `cortex_circuit_breaker_successes_total{service="${serviceName}"} ${successes}`,
+          `cortex_circuit_breaker_last_failure_time_seconds{service="${serviceName}"} ${lastFailureTime / 1000}`
         );
       }
     } catch (error) {

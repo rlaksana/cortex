@@ -1,6 +1,4 @@
-// @ts-nocheck
 // FINAL COMPREHENSIVE EMERGENCY ROLLBACK: Utility layer type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Configuration Testing and Validation Utilities
@@ -32,7 +30,11 @@ export interface TestResult {
   passed: boolean;
   duration: number;
   message: string;
-  details?: unknown;
+  details?: {
+    recommendation?: string;
+    warning?: string;
+    [key: string]: unknown;
+  };
   error?: Error;
 }
 

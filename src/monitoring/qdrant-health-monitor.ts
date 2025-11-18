@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTE FINAL EMERGENCY ROLLBACK: Last remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Enhanced Qdrant Health Monitor
@@ -18,7 +16,7 @@ import { EventEmitter } from 'events';
 import { logger } from '@/utils/logger.js';
 
 import { CircuitBreaker } from '../services/circuit-breaker.service.js';
-import {HealthStatus } from '../types/unified-health-interfaces.js';
+import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**
  * Qdrant connection status types
@@ -38,41 +36,41 @@ export enum QdrantConnectionStatus {
  */
 export interface QdrantPerformanceMetrics {
   // Connection metrics
-  connectionTime: number;              // Time to establish connection (ms)
-  lastConnectionTime: number;          // Timestamp of last connection
-  totalConnections: number;            // Total connection attempts
-  successfulConnections: number;       // Successful connections
-  failedConnections: number;           // Failed connections
+  connectionTime: number; // Time to establish connection (ms)
+  lastConnectionTime: number; // Timestamp of last connection
+  totalConnections: number; // Total connection attempts
+  successfulConnections: number; // Successful connections
+  failedConnections: number; // Failed connections
 
   // Request metrics
-  requestsPerSecond: number;           // Current request rate
-  averageResponseTime: number;         // Average response time (ms)
-  p95ResponseTime: number;             // 95th percentile response time
-  p99ResponseTime: number;             // 99th percentile response time
-  totalRequests: number;               // Total requests made
-  successfulRequests: number;          // Successful requests
-  failedRequests: number;              // Failed requests
+  requestsPerSecond: number; // Current request rate
+  averageResponseTime: number; // Average response time (ms)
+  p95ResponseTime: number; // 95th percentile response time
+  p99ResponseTime: number; // 99th percentile response time
+  totalRequests: number; // Total requests made
+  successfulRequests: number; // Successful requests
+  failedRequests: number; // Failed requests
 
   // Vector operation metrics
-  vectorUpsertsPerSecond: number;      // Vector upsert rate
-  vectorSearchesPerSecond: number;     // Vector search rate
-  averageVectorUpsertTime: number;     // Average upsert time (ms)
-  averageVectorSearchTime: number;     // Average search time (ms)
-  vectorOperationSuccessRate: number;  // Success rate for vector ops
+  vectorUpsertsPerSecond: number; // Vector upsert rate
+  vectorSearchesPerSecond: number; // Vector search rate
+  averageVectorUpsertTime: number; // Average upsert time (ms)
+  averageVectorSearchTime: number; // Average search time (ms)
+  vectorOperationSuccessRate: number; // Success rate for vector ops
 
   // Database metrics
-  collectionCount: number;             // Number of collections
-  totalVectors: number;                // Total vectors across all collections
-  memoryUsage: number;                 // Memory usage in bytes
-  diskUsage: number;                   // Disk usage in bytes
+  collectionCount: number; // Number of collections
+  totalVectors: number; // Total vectors across all collections
+  memoryUsage: number; // Memory usage in bytes
+  diskUsage: number; // Disk usage in bytes
   indexStatus: Record<string, string>; // Status of indexes per collection
 
   // Error metrics
-  errorRate: number;                   // Overall error rate (percentage)
-  timeOutRate: number;                 // Timeout rate (percentage)
-  authenticationErrors: number;        // Authentication error count
-  networkErrors: number;               // Network error count
-  rateLimitErrors: number;             // Rate limit error count
+  errorRate: number; // Overall error rate (percentage)
+  timeOutRate: number; // Timeout rate (percentage)
+  authenticationErrors: number; // Authentication error count
+  networkErrors: number; // Network error count
+  rateLimitErrors: number; // Rate limit error count
 }
 
 /**
@@ -120,16 +118,16 @@ export interface QdrantHealthMonitorConfig {
 
   // Performance thresholds
   thresholds: {
-    responseTimeWarning: number;      // milliseconds
-    responseTimeCritical: number;     // milliseconds
-    errorRateWarning: number;         // percentage
-    errorRateCritical: number;        // percentage
-    connectionTimeWarning: number;    // milliseconds
-    connectionTimeCritical: number;   // milliseconds
-    memoryUsageWarning: number;       // percentage
-    memoryUsageCritical: number;      // percentage
-    diskUsageWarning: number;         // percentage
-    diskUsageCritical: number;        // percentage
+    responseTimeWarning: number; // milliseconds
+    responseTimeCritical: number; // milliseconds
+    errorRateWarning: number; // percentage
+    errorRateCritical: number; // percentage
+    connectionTimeWarning: number; // milliseconds
+    connectionTimeCritical: number; // milliseconds
+    memoryUsageWarning: number; // percentage
+    memoryUsageCritical: number; // percentage
+    diskUsageWarning: number; // percentage
+    diskUsageCritical: number; // percentage
   };
 
   // Circuit breaker configuration
@@ -173,7 +171,11 @@ export class QdrantHealthMonitor extends EventEmitter {
   // Performance tracking
   private responseTimeHistory: number[] = [];
   private requestHistory: Array<{ timestamp: number; success: boolean; responseTime: number }> = [];
-  private connectionHistory: Array<{ timestamp: number; success: boolean; connectionTime: number }> = [];
+  private connectionHistory: Array<{
+    timestamp: number;
+    success: boolean;
+    connectionTime: number;
+  }> = [];
 
   constructor(config: Partial<QdrantHealthMonitorConfig>) {
     super();
@@ -232,8 +234,10 @@ export class QdrantHealthMonitor extends EventEmitter {
       retryAttempts: config.retryAttempts ?? defaultConfig.retryAttempts,
       retryDelayMs: config.retryDelayMs ?? defaultConfig.retryDelayMs,
       healthCheckIntervalMs: config.healthCheckIntervalMs ?? defaultConfig.healthCheckIntervalMs,
-      metricsCollectionIntervalMs: config.metricsCollectionIntervalMs ?? defaultConfig.metricsCollectionIntervalMs,
-      connectionTestIntervalMs: config.connectionTestIntervalMs ?? defaultConfig.connectionTestIntervalMs,
+      metricsCollectionIntervalMs:
+        config.metricsCollectionIntervalMs ?? defaultConfig.metricsCollectionIntervalMs,
+      connectionTestIntervalMs:
+        config.connectionTestIntervalMs ?? defaultConfig.connectionTestIntervalMs,
       circuitBreaker: {
         ...defaultConfig.circuitBreaker,
         ...config.circuitBreaker,
@@ -379,7 +383,6 @@ export class QdrantHealthMonitor extends EventEmitter {
 
       this.emit('health_check', result);
       return result;
-
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       logger.error({ error: errorMsg }, 'Qdrant health check failed');
@@ -437,7 +440,6 @@ export class QdrantHealthMonitor extends EventEmitter {
 
       this.updateConnectionMetrics(result, connectionTime);
       this.emit('connection_test', { success: result, connectionTime });
-
     } catch (error) {
       const connectionTime = Date.now() - this.startTime;
 
@@ -464,7 +466,6 @@ export class QdrantHealthMonitor extends EventEmitter {
 
       Object.assign(this.currentMetrics, metrics);
       this.emit('metrics_collected', this.currentMetrics);
-
     } catch (error) {
       logger.warn({ error }, 'Failed to collect Qdrant metrics');
       this.emit('metrics_collection_error', error);
@@ -538,8 +539,8 @@ export class QdrantHealthMonitor extends EventEmitter {
       connectionTime: metrics.connectionTime || responseTime,
       lastConnectionTime: Date.now(),
       totalConnections: this.connectionHistory.length,
-      successfulConnections: this.connectionHistory.filter(h => h.success).length,
-      failedConnections: this.connectionHistory.filter(h => !h.success).length,
+      successfulConnections: this.connectionHistory.filter((h) => h.success).length,
+      failedConnections: this.connectionHistory.filter((h) => !h.success).length,
       requestsPerSecond: metrics.requestsPerSecond || 0,
       averageResponseTime: metrics.averageResponseTime || responseTime,
       p95ResponseTime: metrics.p95ResponseTime || responseTime,
@@ -604,14 +605,20 @@ export class QdrantHealthMonitor extends EventEmitter {
 
       // Calculate derived metrics
       const now = Date.now();
-      const recentRequests = this.requestHistory.filter(r => now - r.timestamp < 60000); // Last minute
+      const recentRequests = this.requestHistory.filter((r) => now - r.timestamp < 60000); // Last minute
       const requestsPerSecond = recentRequests.length / 60;
 
-      const successfulRequests = recentRequests.filter(r => r.success).length;
-      const errorRate = recentRequests.length > 0 ? ((recentRequests.length - successfulRequests) / recentRequests.length) * 100 : 0;
+      const successfulRequests = recentRequests.filter((r) => r.success).length;
+      const errorRate =
+        recentRequests.length > 0
+          ? ((recentRequests.length - successfulRequests) / recentRequests.length) * 100
+          : 0;
 
-      const responseTimes = recentRequests.map(r => r.responseTime);
-      const averageResponseTime = responseTimes.length > 0 ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length : 0;
+      const responseTimes = recentRequests.map((r) => r.responseTime);
+      const averageResponseTime =
+        responseTimes.length > 0
+          ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+          : 0;
 
       // Calculate percentiles
       const sortedTimes = responseTimes.sort((a, b) => a - b);
@@ -629,7 +636,6 @@ export class QdrantHealthMonitor extends EventEmitter {
         failedRequests: this.requestHistory.length - successfulRequests,
         ...metrics,
       };
-
     } catch (error) {
       logger.warn({ error }, 'Failed to get Qdrant metrics');
       return this.getBasicMetrics();
@@ -639,23 +645,39 @@ export class QdrantHealthMonitor extends EventEmitter {
   /**
    * Get collections information
    */
-  private async getCollectionsInfo(): Promise<Array<{
-    name: string;
-    vectors: number;
-    status: string;
-    indexerStatus: string;
-  }>> {
+  private async getCollectionsInfo(): Promise<
+    Array<{
+      name: string;
+      vectors: number;
+      status: string;
+      indexerStatus: string;
+    }>
+  > {
     try {
       const response = await this.makeQdrantRequest('/collections');
       const data = await response.json();
 
-      return (data.result?.collections || []).map((collection: unknown) => ({
-        name: collection.name,
-        vectors: collection.vectors_count || 0,
-        status: collection.status || 'unknown',
-        indexerStatus: collection.optimizer_status?.status || 'unknown',
-      }));
-
+      return (data.result?.collections || []).map((collection: unknown) => {
+        if (typeof collection === 'object' && collection !== null) {
+          const coll = collection as Record<string, unknown>;
+          return {
+            name: typeof coll.name === 'string' ? coll.name : 'unknown',
+            vectors: typeof coll.vectors_count === 'number' ? coll.vectors_count : 0,
+            status: typeof coll.status === 'string' ? coll.status : 'unknown',
+            indexerStatus: typeof coll.optimizer_status === 'object' &&
+              coll.optimizer_status !== null &&
+              'status' in coll.optimizer_status &&
+              typeof coll.optimizer_status.status === 'string'
+              ? coll.optimizer_status.status : 'unknown',
+          };
+        }
+        return {
+          name: 'unknown',
+          vectors: 0,
+          status: 'unknown',
+          indexerStatus: 'unknown',
+        };
+      });
     } catch (error) {
       logger.warn({ error }, 'Failed to get collections info');
       return [];
@@ -675,17 +697,37 @@ export class QdrantHealthMonitor extends EventEmitter {
   }> {
     try {
       const response = await this.makeQdrantRequest('/telemetry');
-      const data = await response.json();
+      const data = await response.json() as Record<string, unknown>;
 
-      return {
-        uptime: data.result?.uptime || 0,
-        memory: data.result?.memory?.usage?.ram || 0,
-        cpu: data.result?.cpu?.usage || 0,
-        disk: data.result?.disk?.usage || 0,
-        totalMemory: data.result?.memory?.total?.ram || 1,
-        totalDisk: data.result?.disk?.total || 1,
+      // Type guards for safe property access
+      const getNumber = (obj: unknown, key: string): number => {
+        if (typeof obj === 'object' && obj !== null && key in obj) {
+          const value = (obj as Record<string, unknown>)[key];
+          return typeof value === 'number' ? value : 0;
+        }
+        return 0;
       };
 
+      const getNestedNumber = (obj: unknown, path: string[]): number => {
+        let current = obj;
+        for (const key of path) {
+          if (typeof current === 'object' && current !== null && key in current) {
+            current = (current as Record<string, unknown>)[key];
+          } else {
+            return 0;
+          }
+        }
+        return typeof current === 'number' ? current : 0;
+      };
+
+      return {
+        uptime: getNumber(data.result, 'uptime'),
+        memory: getNestedNumber(data.result, ['memory', 'usage', 'ram']),
+        cpu: getNestedNumber(data.result, ['cpu', 'usage']),
+        disk: getNestedNumber(data.result, ['disk', 'usage']),
+        totalMemory: getNestedNumber(data.result, ['memory', 'total', 'ram']) || 1,
+        totalDisk: getNestedNumber(data.result, ['disk', 'total']) || 1,
+      };
     } catch (error) {
       logger.warn({ error }, 'Failed to get system info');
       return {
@@ -742,7 +784,6 @@ export class QdrantHealthMonitor extends EventEmitter {
       }
 
       return response;
-
     } catch (error) {
       clearTimeout(timeoutId);
 
@@ -825,16 +866,24 @@ export class QdrantHealthMonitor extends EventEmitter {
       this.currentMetrics.connectionTime = connectionTime;
     }
 
-    const recentConnections = this.connectionHistory.filter(c => Date.now() - c.timestamp < 300000); // Last 5 minutes
+    const recentConnections = this.connectionHistory.filter(
+      (c) => Date.now() - c.timestamp < 300000
+    ); // Last 5 minutes
     this.currentMetrics.totalConnections = this.connectionHistory.length;
-    this.currentMetrics.successfulConnections = this.connectionHistory.filter(c => c.success).length;
-    this.currentMetrics.failedConnections = this.connectionHistory.length - this.currentMetrics.successfulConnections;
+    this.currentMetrics.successfulConnections = this.connectionHistory.filter(
+      (c) => c.success
+    ).length;
+    this.currentMetrics.failedConnections =
+      this.connectionHistory.length - this.currentMetrics.successfulConnections;
 
     // Calculate average connection time
-    const successfulConnectionTimes = recentConnections.filter(c => c.success).map(c => c.connectionTime);
-    this.currentMetrics.connectionTime = successfulConnectionTimes.length > 0
-      ? successfulConnectionTimes.reduce((a, b) => a + b, 0) / successfulConnectionTimes.length
-      : 0;
+    const successfulConnectionTimes = recentConnections
+      .filter((c) => c.success)
+      .map((c) => c.connectionTime);
+    this.currentMetrics.connectionTime =
+      successfulConnectionTimes.length > 0
+        ? successfulConnectionTimes.reduce((a, b) => a + b, 0) / successfulConnectionTimes.length
+        : 0;
   }
 
   /**
@@ -936,11 +985,14 @@ export class QdrantHealthMonitor extends EventEmitter {
    */
   private getBasicMetrics(): Partial<QdrantPerformanceMetrics> {
     const now = Date.now();
-    const recentRequests = this.requestHistory.filter(r => now - r.timestamp < 60000);
+    const recentRequests = this.requestHistory.filter((r) => now - r.timestamp < 60000);
     const requestsPerSecond = recentRequests.length / 60;
 
-    const successfulRequests = recentRequests.filter(r => r.success).length;
-    const errorRate = recentRequests.length > 0 ? ((recentRequests.length - successfulRequests) / recentRequests.length) * 100 : 0;
+    const successfulRequests = recentRequests.filter((r) => r.success).length;
+    const errorRate =
+      recentRequests.length > 0
+        ? ((recentRequests.length - successfulRequests) / recentRequests.length) * 100
+        : 0;
 
     return {
       requestsPerSecond,

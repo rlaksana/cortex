@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Database Row Type Definitions
  * Updated to match qdrant 18 schema with all 16 knowledge types and 8-LOG SYSTEM

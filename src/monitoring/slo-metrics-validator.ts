@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * SLO Metrics Validator
  *
@@ -13,8 +9,8 @@
  */
 
 import { EventEmitter } from 'events';
-import type { TypedMetric, MetricCategory, MetricType } from '../types/metrics-types.js';
-import type { AlertSeverity } from '../types/slo-types.js';
+
+import type { TypedMetric } from '../types/metrics-types.js';
 
 // ============================================================================
 // Stable Metric Names (as defined in SLO documentation)
@@ -48,7 +44,7 @@ export const CORTEX_METRIC_NAMES = {
   // Business metrics
   MCP_TOOL_EXECUTIONS: 'cortex_mcp_tool_executions_total',
   MCP_TOOL_SUCCESS_RATE: 'cortex_mcp_tool_success_rate',
-  MCP_TOOL_DURATION: 'cortex_mcp_tool_duration_seconds'
+  MCP_TOOL_DURATION: 'cortex_mcp_tool_duration_seconds',
 } as const;
 
 // ============================================================================
@@ -65,7 +61,7 @@ export const STANDARD_LABELS = {
   ENDPOINT: 'endpoint',
   METHOD: 'method',
   ERROR_TYPE: 'error_type',
-  COLLECTION: 'collection'
+  COLLECTION: 'collection',
 } as const;
 
 export const STANDARD_VALUES = {
@@ -75,18 +71,18 @@ export const STANDARD_VALUES = {
     QDRANT: 'qdrant',
     MEMORY_STORE: 'memory-store',
     AI_ORCHESTRATOR: 'ai-orchestrator',
-    DEDUPLICATION: 'deduplication'
+    DEDUPLICATION: 'deduplication',
   },
   ENVIRONMENTS: {
     PRODUCTION: 'production',
     STAGING: 'staging',
-    DEVELOPMENT: 'development'
+    DEVELOPMENT: 'development',
   },
   STATUSES: {
     SUCCESS: 'success',
     ERROR: 'error',
-    TIMEOUT: 'timeout'
-  }
+    TIMEOUT: 'timeout',
+  },
 } as const;
 
 // ============================================================================
@@ -168,7 +164,7 @@ export class SLOMetricsValidator extends EventEmitter {
       errors,
       warnings,
       info,
-      suggestions
+      suggestions,
     };
   }
 
@@ -185,7 +181,7 @@ export class SLOMetricsValidator extends EventEmitter {
       naming: { errors: 0, warnings: 0 },
       labeling: { errors: 0, warnings: 0 },
       value: { errors: 0, warnings: 0 },
-      structure: { errors: 0, warnings: 0 }
+      structure: { errors: 0, warnings: 0 },
     };
 
     const issues: Array<{
@@ -216,7 +212,7 @@ export class SLOMetricsValidator extends EventEmitter {
               rule: rule.name,
               severity: 'error',
               message: error,
-              suggestion: ruleResult.suggestions?.[0]
+              suggestion: ruleResult.suggestions?.[0],
             });
           }
         }
@@ -228,7 +224,7 @@ export class SLOMetricsValidator extends EventEmitter {
               rule: rule.name,
               severity: 'warning',
               message: warning,
-              suggestion: ruleResult.suggestions?.[0]
+              suggestion: ruleResult.suggestions?.[0],
             });
           }
         }
@@ -242,7 +238,7 @@ export class SLOMetricsValidator extends EventEmitter {
       invalidMetrics,
       summary,
       issues,
-      recommendations: this.generateRecommendations(summary, issues)
+      recommendations: this.generateRecommendations(summary, issues),
     };
 
     // Store in history
@@ -256,7 +252,7 @@ export class SLOMetricsValidator extends EventEmitter {
     if (invalidMetrics > 0) {
       this.emit('validation_errors_found', {
         count: invalidMetrics,
-        issues: issues.filter(i => i.severity === 'error')
+        issues: issues.filter((i) => i.severity === 'error'),
       });
     }
 
@@ -275,7 +271,7 @@ export class SLOMetricsValidator extends EventEmitter {
     // Ensure standard labels are present
     standardized.labels = {
       [STANDARD_LABELS.SERVICE]: STANDARD_VALUES.SERVICE,
-      ...metric.labels
+      ...metric.labels,
     };
 
     // Validate and standardize label values
@@ -284,10 +280,12 @@ export class SLOMetricsValidator extends EventEmitter {
     }
 
     // Ensure dimensions are properly formatted
-    standardized.dimensions = metric.dimensions.map(dim => ({
+    standardized.dimensions = metric.dimensions.map((dim) => ({
       ...dim,
       name: dim.name.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
-      value: String(dim.value).toLowerCase().replace(/[^a-z0-9_]/g, '_')
+      value: String(dim.value)
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, '_'),
     }));
 
     // Set default quality if not provided
@@ -299,7 +297,7 @@ export class SLOMetricsValidator extends EventEmitter {
         timeliness: 1.0,
         validity: 1.0,
         reliability: 1.0,
-        lastValidated: new Date().toISOString()
+        lastValidated: new Date().toISOString(),
       };
     }
 
@@ -344,14 +342,14 @@ export class SLOMetricsValidator extends EventEmitter {
         description: 'Metric name should use stable naming convention',
         validator: this.validateStableMetricName.bind(this),
         severity: 'error',
-        category: 'naming'
+        category: 'naming',
       },
       {
         name: 'metric_name_format',
         description: 'Metric name should follow cortex_* naming pattern',
         validator: this.validateMetricNameFormat.bind(this),
         severity: 'warning',
-        category: 'naming'
+        category: 'naming',
       },
 
       // Labeling rules
@@ -360,14 +358,14 @@ export class SLOMetricsValidator extends EventEmitter {
         description: 'Standard labels should be present',
         validator: this.validateRequiredLabels.bind(this),
         severity: 'warning',
-        category: 'labeling'
+        category: 'labeling',
       },
       {
         name: 'label_value_format',
         description: 'Label values should be properly formatted',
         validator: this.validateLabelValues.bind(this),
         severity: 'warning',
-        category: 'labeling'
+        category: 'labeling',
       },
 
       // Value rules
@@ -376,14 +374,14 @@ export class SLOMetricsValidator extends EventEmitter {
         description: 'Metric value should match metric type',
         validator: this.validateMetricValueType.bind(this),
         severity: 'error',
-        category: 'value'
+        category: 'value',
       },
       {
         name: 'timestamp_format',
         description: 'Timestamp should be in ISO format',
         validator: this.validateTimestampFormat.bind(this),
         severity: 'error',
-        category: 'value'
+        category: 'value',
       },
 
       // Structure rules
@@ -392,15 +390,15 @@ export class SLOMetricsValidator extends EventEmitter {
         description: 'Required metric fields should be present',
         validator: this.validateRequiredFields.bind(this),
         severity: 'error',
-        category: 'structure'
+        category: 'structure',
       },
       {
         name: 'quality_indicators',
         description: 'Quality indicators should be within valid range',
         validator: this.validateQualityIndicators.bind(this),
         severity: 'warning',
-        category: 'structure'
-      }
+        category: 'structure',
+      },
     ];
   }
 
@@ -410,13 +408,17 @@ export class SLOMetricsValidator extends EventEmitter {
     const suggestions: string[] = [];
 
     const stableNames = Object.values(CORTEX_METRIC_NAMES);
-    const isStableName = stableNames.includes(metric.name as any);
+    const isStableName = stableNames.includes(metric.name as typeof CORTEX_METRIC_NAMES[keyof typeof CORTEX_METRIC_NAMES]);
 
     if (!isStableName) {
       // Check if it follows the pattern but isn't in our known list
       if (metric.name.startsWith('cortex_')) {
-        warnings.push(`Metric name '${metric.name}' follows cortex pattern but is not in stable names list`);
-        suggestions.push(`Consider adding '${metric.name}' to CORTEX_METRIC_NAMES if it's a new metric`);
+        warnings.push(
+          `Metric name '${metric.name}' follows cortex pattern but is not in stable names list`
+        );
+        suggestions.push(
+          `Consider adding '${metric.name}' to CORTEX_METRIC_NAMES if it's a new metric`
+        );
       } else {
         errors.push(`Metric name '${metric.name}' does not use stable naming convention`);
         suggestions.push(`Use stable names like '${stableNames[0]}' or follow 'cortex_*' pattern`);
@@ -428,7 +430,7 @@ export class SLOMetricsValidator extends EventEmitter {
       errors,
       warnings,
       info: isStableName ? [`Using stable metric name: ${metric.name}`] : [],
-      suggestions
+      suggestions,
     };
   }
 
@@ -449,7 +451,7 @@ export class SLOMetricsValidator extends EventEmitter {
       valid: errors.length === 0,
       errors,
       warnings,
-      info: []
+      info: [],
     };
   }
 
@@ -460,7 +462,7 @@ export class SLOMetricsValidator extends EventEmitter {
     const requiredLabels = [
       STANDARD_LABELS.SERVICE,
       STANDARD_LABELS.COMPONENT,
-      STANDARD_LABELS.ENVIRONMENT
+      STANDARD_LABELS.ENVIRONMENT,
     ];
 
     for (const label of requiredLabels) {
@@ -473,7 +475,7 @@ export class SLOMetricsValidator extends EventEmitter {
       valid: errors.length === 0,
       errors,
       warnings,
-      info: []
+      info: [],
     };
   }
 
@@ -495,7 +497,7 @@ export class SLOMetricsValidator extends EventEmitter {
       valid: errors.length === 0,
       errors,
       warnings,
-      info: []
+      info: [],
     };
   }
 
@@ -520,7 +522,7 @@ export class SLOMetricsValidator extends EventEmitter {
       valid: errors.length === 0,
       errors,
       warnings,
-      info: []
+      info: [],
     };
   }
 
@@ -550,7 +552,7 @@ export class SLOMetricsValidator extends EventEmitter {
       valid: errors.length === 0,
       errors,
       warnings,
-      info: []
+      info: [],
     };
   }
 
@@ -569,7 +571,7 @@ export class SLOMetricsValidator extends EventEmitter {
       valid: errors.length === 0,
       errors,
       warnings,
-      info: []
+      info: [],
     };
   }
 
@@ -582,7 +584,14 @@ export class SLOMetricsValidator extends EventEmitter {
       return { valid: true, errors, warnings, info: [] };
     }
 
-    const qualityFields = ['accuracy', 'completeness', 'consistency', 'timeliness', 'validity', 'reliability'];
+    const qualityFields = [
+      'accuracy',
+      'completeness',
+      'consistency',
+      'timeliness',
+      'validity',
+      'reliability',
+    ];
     for (const field of qualityFields) {
       const value = metric.quality[field as keyof typeof metric.quality] as number;
       if (typeof value !== 'number' || value < 0 || value > 1) {
@@ -594,7 +603,7 @@ export class SLOMetricsValidator extends EventEmitter {
       valid: errors.length === 0,
       errors,
       warnings,
-      info: []
+      info: [],
     };
   }
 
@@ -603,13 +612,15 @@ export class SLOMetricsValidator extends EventEmitter {
     if (!name.startsWith('cortex_')) {
       // Convert common patterns to cortex naming
       const conversions: Record<string, string> = {
-        'qps': 'cortex_total_qps',
-        'latency': 'cortex_request_duration_seconds',
-        'error_rate': 'cortex_error_rate',
-        'memory_usage': 'cortex_memory_usage_bytes'
+        qps: 'cortex_total_qps',
+        latency: 'cortex_request_duration_seconds',
+        error_rate: 'cortex_error_rate',
+        memory_usage: 'cortex_memory_usage_bytes',
       };
 
-      return conversions[name.toLowerCase()] || `cortex_${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+      return (
+        conversions[name.toLowerCase()] || `cortex_${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`
+      );
     }
 
     return name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
@@ -625,25 +636,37 @@ export class SLOMetricsValidator extends EventEmitter {
       const componentValue = value.toLowerCase().replace(/[^a-z0-9]/g, '-');
       // Check if it matches known components
       for (const [name, standardValue] of Object.entries(STANDARD_VALUES.COMPONENTS)) {
-        if (componentValue.includes(name.toLowerCase()) || name.toLowerCase().includes(componentValue)) {
+        if (
+          componentValue.includes(name.toLowerCase()) ||
+          name.toLowerCase().includes(componentValue)
+        ) {
           return standardValue;
         }
       }
       return componentValue;
     }
 
-    return String(value).toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    return String(value)
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]/g, '_');
   }
 
-  private generateRecommendations(summary: MetricsValidationReport['summary'], issues: MetricsValidationReport['issues']): string[] {
+  private generateRecommendations(
+    summary: MetricsValidationReport['summary'],
+    issues: MetricsValidationReport['issues']
+  ): string[] {
     const recommendations: string[] = [];
 
     if (summary.naming.errors > 0) {
-      recommendations.push('Review metric naming conventions and update to use stable names from CORTEX_METRIC_NAMES');
+      recommendations.push(
+        'Review metric naming conventions and update to use stable names from CORTEX_METRIC_NAMES'
+      );
     }
 
     if (summary.labeling.errors > 0) {
-      recommendations.push('Ensure all metrics include required standard labels (service, component, environment)');
+      recommendations.push(
+        'Ensure all metrics include required standard labels (service, component, environment)'
+      );
     }
 
     if (summary.value.errors > 0) {
@@ -659,17 +682,24 @@ export class SLOMetricsValidator extends EventEmitter {
     }
 
     // Specific recommendations based on common issues
-    const commonIssues = issues.reduce((acc, issue) => {
-      acc[issue.rule] = (acc[issue.rule] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const commonIssues = issues.reduce(
+      (acc, issue) => {
+        acc[issue.rule] = (acc[issue.rule] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     if (commonIssues['required_labels'] > 0) {
-      recommendations.push('Add standardization middleware to automatically inject required labels');
+      recommendations.push(
+        'Add standardization middleware to automatically inject required labels'
+      );
     }
 
     if (commonIssues['stable_metric_name'] > 0) {
-      recommendations.push('Update metric definitions to use stable names from the SLO specification');
+      recommendations.push(
+        'Update metric definitions to use stable names from the SLO specification'
+      );
     }
 
     return recommendations;

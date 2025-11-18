@@ -1,14 +1,18 @@
-// @ts-nocheck
 // FINAL COMPREHENSIVE EMERGENCY ROLLBACK: Utility layer type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Utils module index file
  * Centralized exports for all utility functions and services
  */
 
-export { extractCorrelationIdFromRequest,generateCorrelationId, getOrCreateCorrelationId, setCorrelationId, withCorrelationId } from './correlation-id.js';
-export { createChildLogger,logger } from './logger.js';
+export {
+  extractCorrelationIdFromRequest,
+  generateCorrelationId,
+  getOrCreateCorrelationId,
+  setCorrelationId,
+  withCorrelationId,
+} from './correlation-id.js';
+export { createChildLogger, logger } from './logger.js';
 
 // Re-export other utilities as needed
 export * from './error-handler.js';
@@ -22,7 +26,8 @@ export {
   isValidPort,
   isValidTimeout,
   validateAndNormalizeConfig,
-  validateConfig} from './configuration-validators.js';
+  validateConfig,
+} from './configuration-validators.js';
 
 // Export specific type guards (excluding duplicates)
 export {

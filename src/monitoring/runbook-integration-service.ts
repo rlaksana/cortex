@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTE FINAL EMERGENCY ROLLBACK: Last remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Runbook Integration Service for MCP Cortex Alerting
@@ -20,7 +18,7 @@
 
 import { EventEmitter } from 'events';
 
-import { logger } from '@/utils/logger.js';
+import { logger } from '../utils/logger.js';
 
 import { type Alert } from './alert-management-service.js';
 import { AlertSeverity } from '../types/unified-health-interfaces.js';
@@ -422,11 +420,14 @@ export class RunbookIntegrationService extends EventEmitter {
 
       this.runbooks.set(runbook.id, runbook);
 
-      logger.info({
-        runbookId: runbook.id,
-        name: runbook.name,
-        version: runbook.version,
-      }, 'Runbook upserted');
+      logger.info(
+        {
+          runbookId: runbook.id,
+          name: runbook.name,
+          version: runbook.version,
+        },
+        'Runbook upserted'
+      );
 
       this.emit('runbook_updated', runbook);
     } catch (error) {
@@ -453,7 +454,7 @@ export class RunbookIntegrationService extends EventEmitter {
    * Search runbooks by criteria
    */
   searchRunbooks(criteria: RunbookSearchCriteria): Runbook[] {
-    return Array.from(this.runbooks.values()).filter(runbook => {
+    return Array.from(this.runbooks.values()).filter((runbook) => {
       if (criteria.category && runbook.category !== criteria.category) {
         return false;
       }
@@ -462,7 +463,7 @@ export class RunbookIntegrationService extends EventEmitter {
         return false;
       }
 
-      if (criteria.tags && !criteria.tags.some(tag => runbook.tags.includes(tag))) {
+      if (criteria.tags && !criteria.tags.some((tag) => runbook.tags.includes(tag))) {
         return false;
       }
 
@@ -472,7 +473,8 @@ export class RunbookIntegrationService extends EventEmitter {
 
       if (criteria.keyword) {
         const searchLower = criteria.keyword.toLowerCase();
-        const searchText = `${runbook.name} ${runbook.description} ${runbook.tags.join(' ')}`.toLowerCase();
+        const searchText =
+          `${runbook.name} ${runbook.description} ${runbook.tags.join(' ')}`.toLowerCase();
         if (!searchText.includes(searchLower)) {
           return false;
         }
@@ -536,12 +538,15 @@ export class RunbookIntegrationService extends EventEmitter {
       // Add to execution queue
       this.executionQueue.push(execution);
 
-      logger.info({
-        executionId,
-        runbookId,
-        triggeredBy: options.triggeredBy,
-        triggerType: options.triggerType,
-      }, 'Runbook execution queued');
+      logger.info(
+        {
+          executionId,
+          runbookId,
+          triggeredBy: options.triggeredBy,
+          triggerType: options.triggerType,
+        },
+        'Runbook execution queued'
+      );
 
       this.emit('runbook_execution_queued', execution);
 
@@ -586,10 +591,13 @@ export class RunbookIntegrationService extends EventEmitter {
       // Remove from active executions
       this.activeExecutions.delete(executionId);
 
-      logger.info({
-        executionId,
-        reason,
-      }, 'Runbook execution cancelled');
+      logger.info(
+        {
+          executionId,
+          reason,
+        },
+        'Runbook execution cancelled'
+      );
 
       this.emit('runbook_execution_cancelled', execution);
     } catch (error) {
@@ -618,18 +626,21 @@ export class RunbookIntegrationService extends EventEmitter {
 
       // Sort by confidence and relevance
       recommendations.sort((a, b) => {
-        const scoreA = (a.confidence * 0.7) + (a.relevanceScore * 0.3);
-        const scoreB = (b.confidence * 0.7) + (b.relevanceScore * 0.3);
+        const scoreA = a.confidence * 0.7 + a.relevanceScore * 0.3;
+        const scoreB = b.confidence * 0.7 + b.relevanceScore * 0.3;
         return scoreB - scoreA;
       });
 
       // Cache recommendations
       this.recommendations.set(alert.id, recommendations);
 
-      logger.info({
-        alertId: alert.id,
-        recommendationCount: recommendations.length,
-      }, 'Generated runbook recommendations');
+      logger.info(
+        {
+          alertId: alert.id,
+          recommendationCount: recommendations.length,
+        },
+        'Generated runbook recommendations'
+      );
 
       return recommendations.slice(0, 10); // Return top 10
     } catch (error) {
@@ -682,12 +693,31 @@ export class RunbookIntegrationService extends EventEmitter {
       // Apply template
       const runbookData = this.applyTemplate(template, variables);
       const runbook: Runbook = {
-        ...runbookData,
-        ...metadata,
         id: this.generateRunbookId(),
+        name: runbookData.name || metadata.name || 'Untitled Runbook',
+        description: runbookData.description || metadata.description || 'No description',
+        version: '1.0.0',
+        category: runbookData.category || metadata.category || 'general',
+        severity: runbookData.severity || metadata.severity || AlertSeverity.INFO,
+        tags: runbookData.tags || metadata.tags || [],
+        author: runbookData.author || metadata.author || 'system',
+        estimatedDuration: runbookData.estimatedDuration || metadata.estimatedDuration || 30,
+        prerequisites: runbookData.prerequisites || metadata.prerequisites || [],
+        riskLevel: runbookData.riskLevel || metadata.riskLevel || 'medium',
+        rollbackPlan: runbookData.rollbackPlan || metadata.rollbackPlan || {
+          enabled: false,
+          automatic: false,
+          triggers: [],
+          steps: [],
+        },
+        steps: runbookData.steps || metadata.steps || [],
+        variables: runbookData.variables || metadata.variables || [],
+        dependencies: runbookData.dependencies || metadata.dependencies || [],
+        metadata: { ...(runbookData.metadata || {}), ...(metadata.metadata || {}) },
         createdAt: new Date(),
         updatedAt: new Date(),
-        version: '1.0.0',
+        ...runbookData,
+        ...metadata,
       };
 
       // Validate runbook
@@ -696,11 +726,14 @@ export class RunbookIntegrationService extends EventEmitter {
       // Store runbook
       this.runbooks.set(runbook.id, runbook);
 
-      logger.info({
-        runbookId: runbook.id,
-        templateId,
-        variables: Object.keys(variables),
-      }, 'Runbook created from template');
+      logger.info(
+        {
+          runbookId: runbook.id,
+          templateId,
+          variables: Object.keys(variables),
+        },
+        'Runbook created from template'
+      );
 
       this.emit('runbook_created_from_template', { runbook, templateId, variables });
 
@@ -1136,7 +1169,8 @@ export class RunbookIntegrationService extends EventEmitter {
               id: 'restart-monitoring',
               type: 'shell',
               executor: 'bash',
-              script: 'sudo systemctl restart monitoring-agent || echo "Monitoring agent restart failed"',
+              script:
+                'sudo systemctl restart monitoring-agent || echo "Monitoring agent restart failed"',
               parameters: {},
               timeout: 60,
               environment: {},
@@ -1219,66 +1253,70 @@ export class RunbookIntegrationService extends EventEmitter {
       name: 'Incident Response Template',
       description: 'Template for creating incident response runbooks',
       category: 'incident',
-      template: JSON.stringify({
-        name: '{{incident_type}} Incident Response',
-        description: 'Runbook for responding to {{incident_type}} incidents',
-        category: 'incident',
-        severity: '{{severity}}',
-        tags: ['{{incident_type}}', 'incident', 'response'],
-        estimatedDuration: '{{estimated_duration}}',
-        prerequisites: ['Incident commander access', 'Communication tools'],
-        riskLevel: '{{risk_level}}',
-        steps: [
-          {
-            id: 'assess-impact',
-            title: 'Assess Incident Impact',
-            description: 'Evaluate the scope and impact of the incident',
-            type: 'investigation',
-            order: 1,
-            estimatedDuration: 5,
-            required: true,
-            commands: [
-              {
-                id: 'check-system-status',
-                type: 'shell',
-                executor: 'bash',
-                script: '{{assessment_commands}}',
-                timeout: 300,
-                expectedExitCode: 0,
-              },
-            ],
-            verificationCriteria: [
-              {
-                id: 'impact-assessed',
-                name: 'Impact assessment completed',
-                type: 'manual',
-                description: 'Manual verification of impact assessment',
-                critical: true,
-                timeout: 600,
-              },
-            ],
-          },
-          {
-            id: 'communicate-stakeholders',
-            title: 'Communicate with Stakeholders',
-            description: 'Inform stakeholders about the incident',
-            type: 'notification',
-            order: 2,
-            estimatedDuration: 10,
-            required: true,
-            commands: [
-              {
-                id: 'send-notification',
-                type: 'http',
-                executor: 'curl',
-                script: '{{notification_commands}}',
-                timeout: 120,
-                expectedExitCode: 0,
-              },
-            ],
-          },
-        ],
-      }, null, 2),
+      template: JSON.stringify(
+        {
+          name: '{{incident_type}} Incident Response',
+          description: 'Runbook for responding to {{incident_type}} incidents',
+          category: 'incident',
+          severity: '{{severity}}',
+          tags: ['{{incident_type}}', 'incident', 'response'],
+          estimatedDuration: '{{estimated_duration}}',
+          prerequisites: ['Incident commander access', 'Communication tools'],
+          riskLevel: '{{risk_level}}',
+          steps: [
+            {
+              id: 'assess-impact',
+              title: 'Assess Incident Impact',
+              description: 'Evaluate the scope and impact of the incident',
+              type: 'investigation',
+              order: 1,
+              estimatedDuration: 5,
+              required: true,
+              commands: [
+                {
+                  id: 'check-system-status',
+                  type: 'shell',
+                  executor: 'bash',
+                  script: '{{assessment_commands}}',
+                  timeout: 300,
+                  expectedExitCode: 0,
+                },
+              ],
+              verificationCriteria: [
+                {
+                  id: 'impact-assessed',
+                  name: 'Impact assessment completed',
+                  type: 'manual',
+                  description: 'Manual verification of impact assessment',
+                  critical: true,
+                  timeout: 600,
+                },
+              ],
+            },
+            {
+              id: 'communicate-stakeholders',
+              title: 'Communicate with Stakeholders',
+              description: 'Inform stakeholders about the incident',
+              type: 'notification',
+              order: 2,
+              estimatedDuration: 10,
+              required: true,
+              commands: [
+                {
+                  id: 'send-notification',
+                  type: 'http',
+                  executor: 'curl',
+                  script: '{{notification_commands}}',
+                  timeout: 120,
+                  expectedExitCode: 0,
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2
+      ),
       variables: [
         {
           name: 'incident_type',
@@ -1336,7 +1374,8 @@ export class RunbookIntegrationService extends EventEmitter {
             estimated_duration: 45,
             risk_level: 'high',
             assessment_commands: 'pg_isready -h $DB_HOST -p $DB_PORT\ndocker ps | grep postgres',
-            notification_commands: 'curl -X POST $SLACK_WEBHOOK -d \'{"text":"Database outage detected"}\'',
+            notification_commands:
+              'curl -X POST $SLACK_WEBHOOK -d \'{"text":"Database outage detected"}\'',
           },
           useCase: 'When database becomes unavailable or unresponsive',
         },
@@ -1360,12 +1399,15 @@ export class RunbookIntegrationService extends EventEmitter {
     this.isProcessingQueue = true;
 
     try {
-      while (this.executionQueue.length > 0 && this.activeExecutions.size < this.maxConcurrentExecutions) {
+      while (
+        this.executionQueue.length > 0 &&
+        this.activeExecutions.size < this.maxConcurrentExecutions
+      ) {
         const execution = this.executionQueue.shift();
         if (!execution) break;
 
         this.activeExecutions.add(execution.id);
-        this.executeRunbookAsync(execution).catch(error => {
+        this.executeRunbookAsync(execution).catch((error) => {
           logger.error({ executionId: execution.id, error }, 'Runbook execution failed');
           this.activeExecutions.delete(execution.id);
         });
@@ -1391,7 +1433,7 @@ export class RunbookIntegrationService extends EventEmitter {
       try {
         // Execute steps in order
         for (const step of runbook.steps) {
-          if (execution.status === 'cancelled' as ExecutionStatus) break;
+          if (execution.status === ('cancelled' as ExecutionStatus)) break;
 
           // Check if step should be executed
           if (step.condition && !this.evaluateStepCondition(step.condition, execution)) {
@@ -1429,7 +1471,10 @@ export class RunbookIntegrationService extends EventEmitter {
         execution.completedAt = new Date(endTime);
         execution.steps = stepExecutions;
 
-        if (execution.status !== 'failed' as ExecutionStatus && execution.status !== 'cancelled' as ExecutionStatus) {
+        if (
+          execution.status !== ('failed' as ExecutionStatus) &&
+          execution.status !== ('cancelled' as ExecutionStatus)
+        ) {
           execution.status = 'completed';
           execution.result.success = true;
           execution.result.exitCode = 0;
@@ -1437,23 +1482,27 @@ export class RunbookIntegrationService extends EventEmitter {
         }
 
         // Calculate summary
-        execution.result.summary = this.calculateExecutionSummary(stepExecutions, execution.duration);
-
+        execution.result.summary = this.calculateExecutionSummary(
+          stepExecutions,
+          execution.duration
+        );
       } catch (error) {
         execution.status = 'failed';
         execution.result.message = error instanceof Error ? error.message : 'Unknown error';
         execution.result.exitCode = 1;
       }
 
-      logger.info({
-        executionId: execution.id,
-        status: execution.status,
-        duration: execution.duration,
-        success: execution.result.success,
-      }, 'Runbook execution completed');
+      logger.info(
+        {
+          executionId: execution.id,
+          status: execution.status,
+          duration: execution.duration,
+          success: execution.result.success,
+        },
+        'Runbook execution completed'
+      );
 
       this.emit('runbook_execution_completed', execution);
-
     } catch (error) {
       execution.status = 'failed';
       execution.result.message = error instanceof Error ? error.message : 'Unknown error';
@@ -1467,7 +1516,10 @@ export class RunbookIntegrationService extends EventEmitter {
     }
   }
 
-  private async executeStep(step: RunbookStep, execution: RunbookExecution): Promise<StepExecution> {
+  private async executeStep(
+    step: RunbookStep,
+    execution: RunbookExecution
+  ): Promise<StepExecution> {
     const stepExecution: StepExecution = {
       id: this.generateStepExecutionId(),
       stepId: step.id,
@@ -1510,7 +1562,6 @@ export class RunbookIntegrationService extends EventEmitter {
       stepExecution.status = 'completed';
       stepExecution.completedAt = new Date();
       stepExecution.duration = (Date.now() - startTime) / 1000;
-
     } catch (error) {
       stepExecution.status = 'failed';
       stepExecution.error = error instanceof Error ? error.message : 'Unknown error';
@@ -1565,7 +1616,10 @@ export class RunbookIntegrationService extends EventEmitter {
     }
   }
 
-  private async executeShellCommand(command: Command, execution: RunbookExecution): Promise<unknown> {
+  private async executeShellCommand(
+    command: Command,
+    execution: RunbookExecution
+  ): Promise<unknown> {
     try {
       // This is a simplified implementation
       // In a real system, you'd want to use a proper process execution library
@@ -1593,7 +1647,10 @@ export class RunbookIntegrationService extends EventEmitter {
     }
   }
 
-  private async executeHttpCommand(command: Command, execution: RunbookExecution): Promise<unknown> {
+  private async executeHttpCommand(
+    command: Command,
+    execution: RunbookExecution
+  ): Promise<unknown> {
     // Placeholder for HTTP command execution
     logger.info({ command: command.id }, 'Executing HTTP command');
     return {
@@ -1641,7 +1698,6 @@ export class RunbookIntegrationService extends EventEmitter {
       if (!passed) {
         verification.error = `Verification failed: expected ${criteria.expected} ${criteria.operator} actual ${actual}`;
       }
-
     } catch (error) {
       verification.status = 'failed';
       verification.error = error instanceof Error ? error.message : 'Unknown error';
@@ -1700,10 +1756,13 @@ export class RunbookIntegrationService extends EventEmitter {
       };
 
       // Use Function constructor for safer evaluation than eval
-      const func = new Function('context', `
+      const func = new Function(
+        'context',
+        `
         const { steps, variables, alert } = context;
         return ${condition};
-      `);
+      `
+      );
 
       return Boolean(func(context));
     } catch (error) {
@@ -1712,7 +1771,9 @@ export class RunbookIntegrationService extends EventEmitter {
     }
   }
 
-  private async createExecutionContext(options: RunbookExecutionOptions): Promise<ExecutionContext> {
+  private async createExecutionContext(
+    options: RunbookExecutionOptions
+  ): Promise<ExecutionContext> {
     const systemInfo = await this.getSystemInfo();
 
     return {
@@ -1753,7 +1814,10 @@ export class RunbookIntegrationService extends EventEmitter {
     };
   }
 
-  private async evaluateRunbookMatch(runbook: Runbook, alert: Alert): Promise<RunbookRecommendation> {
+  private async evaluateRunbookMatch(
+    runbook: Runbook,
+    alert: Alert
+  ): Promise<RunbookRecommendation> {
     let confidence = 0;
     let relevanceScore = 0;
     const matchCriteria: MatchCriteria[] = [];
@@ -1791,9 +1855,10 @@ export class RunbookIntegrationService extends EventEmitter {
 
     // Check keyword matches in title and description
     const alertText = `${alert.title} ${alert.message}`.toLowerCase();
-    const runbookText = `${runbook.name} ${runbook.description} ${runbook.tags.join(' ')}`.toLowerCase();
+    const runbookText =
+      `${runbook.name} ${runbook.description} ${runbook.tags.join(' ')}`.toLowerCase();
 
-    const keywordMatches = runbook.tags.filter(tag =>
+    const keywordMatches = runbook.tags.filter((tag) =>
       alertText.includes(tag.toLowerCase())
     ).length;
 
@@ -1831,10 +1896,10 @@ export class RunbookIntegrationService extends EventEmitter {
 
   private isCompatibleSeverity(runbookSeverity: string, alertSeverity: string): boolean {
     const severityOrder = {
-      'info': 0,
-      'warning': 1,
-      'critical': 2,
-      'emergency': 3,
+      info: 0,
+      warning: 1,
+      critical: 2,
+      emergency: 3,
     };
 
     const runbookLevel = severityOrder[runbookSeverity as keyof typeof severityOrder] || 0;
@@ -1849,8 +1914,8 @@ export class RunbookIntegrationService extends EventEmitter {
     matchCriteria: MatchCriteria[]
   ): string {
     const reasons = matchCriteria
-      .filter(criteria => criteria.matched)
-      .map(criteria => {
+      .filter((criteria) => criteria.matched)
+      .map((criteria) => {
         switch (criteria.type) {
           case 'severity':
             return `Matches alert severity (${alert.severity})`;
@@ -1887,7 +1952,10 @@ export class RunbookIntegrationService extends EventEmitter {
     });
   }
 
-  private validateTemplateVariables(template: RunbookTemplate, variables: Record<string, unknown>): Promise<void> {
+  private validateTemplateVariables(
+    template: RunbookTemplate,
+    variables: Record<string, unknown>
+  ): Promise<void> {
     for (const templateVar of template.variables) {
       if (templateVar.required && !(templateVar.name in variables)) {
         throw new Error(`Required variable '${templateVar.name}' is missing`);
@@ -1903,15 +1971,24 @@ export class RunbookIntegrationService extends EventEmitter {
           }
         }
 
-        if (templateVar.validation.min !== undefined && Number(value) < templateVar.validation.min) {
+        if (
+          templateVar.validation.min !== undefined &&
+          Number(value) < templateVar.validation.min
+        ) {
           throw new Error(`Variable '${templateVar.name}' is below minimum value`);
         }
 
-        if (templateVar.validation.max !== undefined && Number(value) > templateVar.validation.max) {
+        if (
+          templateVar.validation.max !== undefined &&
+          Number(value) > templateVar.validation.max
+        ) {
           throw new Error(`Variable '${templateVar.name}' exceeds maximum value`);
         }
 
-        if (templateVar.validation.options && !templateVar.validation.options.includes(String(value))) {
+        if (
+          templateVar.validation.options &&
+          !templateVar.validation.options.includes(String(value))
+        ) {
           throw new Error(`Variable '${templateVar.name}' is not in allowed options`);
         }
       }
@@ -1920,7 +1997,7 @@ export class RunbookIntegrationService extends EventEmitter {
     return Promise.resolve();
   }
 
-  private applyTemplate(template: RunbookTemplate, variables: Record<string, unknown>): unknown {
+  private applyTemplate(template: RunbookTemplate, variables: Record<string, unknown>): Partial<Runbook> {
     let templateStr = template.template;
 
     // Replace variables in template
@@ -1929,13 +2006,16 @@ export class RunbookIntegrationService extends EventEmitter {
       templateStr = templateStr.replace(regex, String(value));
     }
 
-    return JSON.parse(templateStr);
+    return JSON.parse(templateStr) as Partial<Runbook>;
   }
 
-  private calculateExecutionSummary(steps: StepExecution[], totalDuration?: number): ExecutionSummary {
-    const completedSteps = steps.filter(s => s.status === 'completed').length;
-    const failedSteps = steps.filter(s => s.status === 'failed').length;
-    const skippedSteps = steps.filter(s => s.skipped).length;
+  private calculateExecutionSummary(
+    steps: StepExecution[],
+    totalDuration?: number
+  ): ExecutionSummary {
+    const completedSteps = steps.filter((s) => s.status === 'completed').length;
+    const failedSteps = steps.filter((s) => s.status === 'failed').length;
+    const skippedSteps = steps.filter((s) => s.skipped).length;
 
     return {
       totalSteps: steps.length,
@@ -1970,7 +2050,7 @@ export class RunbookIntegrationService extends EventEmitter {
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

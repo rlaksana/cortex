@@ -1,6 +1,4 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
+// TypeScript Recovery: Phase 1 - Database Interface Synchronization
 
 /**
  * Vector Adapter Interface
@@ -36,35 +34,14 @@ import {
   type StoreOptions as TypedStoreOptions,
   type Transaction,
   type TransactionOptions,
-  type VectorDatabaseConfig} from '../../types/database-generics.js';
-import {
-  type DatabaseMetrics
-} from '../database-interface.js';
+} from '../../types/database-generics.js';
+import { type DatabaseMetrics } from '../database-interface.js';
 
 // Re-export DatabaseMetrics for use in other modules
 export type { DatabaseMetrics };
 
-export interface VectorConfig extends VectorDatabaseConfig {
-  // Direct properties for compatibility with qdrant-adapter
-  url?: string;
-  apiKey?: string;
-  vectorSize?: number;
-  dimensions?: number;
-  distanceMetric?: 'Cosine' | 'Euclid' | 'Dot' | 'Manhattan';
-  collectionName?: string;
-  logQueries?: boolean;
-  connectionTimeout?: number;
-  maxConnections?: number;
-  maxRetries?: number;
-  timeout?: number;
-
-  // Legacy nested config for backward compatibility
-  qdrant?: {
-    url: string;
-    apiKey?: string;
-    timeout?: number;
-  };
-}
+// Re-export unified VectorConfig from database-config
+export type VectorConfig = import('../../config/database-config.js').VectorConfig;
 
 export interface SearchOptions extends TypedSearchOptions {
   cache?: boolean;
@@ -130,20 +107,31 @@ export interface IVectorAdapter<TClient = unknown, TConfig extends VectorConfig 
   /**
    * Store knowledge items with vector embeddings
    */
-  store(items: readonly KnowledgeItem[], options?: StoreOptions): Promise<DatabaseResult<MemoryStoreResponse>>;
+  store(
+    items: readonly KnowledgeItem[],
+    options?: StoreOptions
+  ): Promise<DatabaseResult<MemoryStoreResponse>>;
 
   /**
    * Update existing knowledge items
    */
-  update(items: readonly KnowledgeItem[], options?: StoreOptions): Promise<DatabaseResult<MemoryStoreResponse>>;
+  update(
+    items: readonly KnowledgeItem[],
+    options?: StoreOptions
+  ): Promise<DatabaseResult<MemoryStoreResponse>>;
 
   /**
    * Delete knowledge items by ID
    */
-  delete(ids: readonly PointId[], options?: DeleteOptions): Promise<DatabaseResult<{
-    deletedCount: number;
-    errors: readonly StoreError[];
-  }>>;
+  delete(
+    ids: readonly PointId[],
+    options?: DeleteOptions
+  ): Promise<
+    DatabaseResult<{
+      deletedCount: number;
+      errors: readonly StoreError[];
+    }>
+  >;
 
   /**
    * Find knowledge items by ID
@@ -160,17 +148,26 @@ export interface IVectorAdapter<TClient = unknown, TConfig extends VectorConfig 
   /**
    * Semantic search using vector embeddings
    */
-  semanticSearch(query: string, options?: SearchOptions): Promise<DatabaseResult<readonly SearchResult[]>>;
+  semanticSearch(
+    query: string,
+    options?: SearchOptions
+  ): Promise<DatabaseResult<readonly SearchResult[]>>;
 
   /**
    * Hybrid search combining semantic and exact results
    */
-  hybridSearch(query: string, options?: SearchOptions): Promise<DatabaseResult<readonly SearchResult[]>>;
+  hybridSearch(
+    query: string,
+    options?: SearchOptions
+  ): Promise<DatabaseResult<readonly SearchResult[]>>;
 
   /**
    * Exact search using keyword matching
    */
-  exactSearch(query: string, options?: SearchOptions): Promise<DatabaseResult<readonly SearchResult[]>>;
+  exactSearch(
+    query: string,
+    options?: SearchOptions
+  ): Promise<DatabaseResult<readonly SearchResult[]>>;
 
   /**
    * Advanced search with query builder
@@ -180,7 +177,10 @@ export interface IVectorAdapter<TClient = unknown, TConfig extends VectorConfig 
   /**
    * Search using query filter
    */
-  findByFilter(filter: QueryFilter<Record<string, unknown>>, options?: QueryOptions<Record<string, unknown>>): Promise<DatabaseResult<readonly Record<string, unknown>[]>>;
+  findByFilter(
+    filter: QueryFilter<Record<string, unknown>>,
+    options?: QueryOptions<Record<string, unknown>>
+  ): Promise<DatabaseResult<readonly Record<string, unknown>[]>>;
 
   // === Knowledge Type Specific Operations ===
 
@@ -228,11 +228,13 @@ export interface IVectorAdapter<TClient = unknown, TConfig extends VectorConfig 
   /**
    * Check for duplicate items using semantic similarity
    */
-  checkDuplicates(items: readonly KnowledgeItem[]): Promise<DatabaseResult<{
-    duplicates: readonly KnowledgeItem[];
-    originals: readonly KnowledgeItem[];
-    similarityThreshold: number;
-  }>>;
+  checkDuplicates(items: readonly KnowledgeItem[]): Promise<
+    DatabaseResult<{
+      duplicates: readonly KnowledgeItem[];
+      originals: readonly KnowledgeItem[];
+      similarityThreshold: number;
+    }>
+  >;
 
   /**
    * Get statistics about the knowledge base
@@ -241,29 +243,34 @@ export interface IVectorAdapter<TClient = unknown, TConfig extends VectorConfig 
     readonly project?: string;
     readonly branch?: string;
     readonly org?: string;
-  }): Promise<DatabaseResult<{
-    totalItems: number;
-    itemsByKind: Readonly<Record<string, number>>;
-    storageSize: number;
-    lastUpdated: string;
-    vectorCount: number;
-    collectionInfo?: {
-      readonly name: string;
-      readonly vectorsCount: number;
-      readonly indexedVectorsCount: number;
-      readonly pointsCount: number;
-      readonly segmentsCount: number;
-      readonly diskDataSize: number;
-      readonly ramDataSize: number;
-    };
-  }>>;
+  }): Promise<
+    DatabaseResult<{
+      totalItems: number;
+      itemsByKind: Readonly<Record<string, number>>;
+      storageSize: number;
+      lastUpdated: string;
+      vectorCount: number;
+      collectionInfo?: {
+        readonly name: string;
+        readonly vectorsCount: number;
+        readonly indexedVectorsCount: number;
+        readonly pointsCount: number;
+        readonly segmentsCount: number;
+        readonly diskDataSize: number;
+        readonly ramDataSize: number;
+      };
+    }>
+  >;
 
   // === Batch Operations ===
 
   /**
    * Bulk operations for improved performance
    */
-  bulkStore(items: readonly KnowledgeItem[], options?: StoreOptions): Promise<DatabaseResult<BatchResult<KnowledgeItem>>>;
+  bulkStore(
+    items: readonly KnowledgeItem[],
+    options?: StoreOptions
+  ): Promise<DatabaseResult<BatchResult<KnowledgeItem>>>;
 
   /**
    * Bulk delete operations
@@ -276,7 +283,10 @@ export interface IVectorAdapter<TClient = unknown, TConfig extends VectorConfig 
   /**
    * Bulk search across multiple queries
    */
-  bulkSearch(queries: readonly SearchQuery[], options?: SearchOptions): Promise<DatabaseResult<readonly MemoryFindResponse[]>>;
+  bulkSearch(
+    queries: readonly SearchQuery[],
+    options?: SearchOptions
+  ): Promise<DatabaseResult<readonly MemoryFindResponse[]>>;
 
   /**
    * Create mutation builder for batch operations
@@ -293,7 +303,9 @@ export interface IVectorAdapter<TClient = unknown, TConfig extends VectorConfig 
   /**
    * Generate multiple embeddings for batch processing
    */
-  generateEmbeddingsBatch(contents: readonly string[]): Promise<DatabaseResult<readonly number[][]>>;
+  generateEmbeddingsBatch(
+    contents: readonly string[]
+  ): Promise<DatabaseResult<readonly number[][]>>;
 
   /**
    * Store items with pre-computed embeddings
@@ -306,7 +318,10 @@ export interface IVectorAdapter<TClient = unknown, TConfig extends VectorConfig 
   /**
    * Search using vector similarity
    */
-  vectorSearch(embedding: readonly number[], options?: SearchOptions): Promise<DatabaseResult<readonly SearchResult[]>>;
+  vectorSearch(
+    embedding: readonly number[],
+    options?: SearchOptions
+  ): Promise<DatabaseResult<readonly SearchResult[]>>;
 
   /**
    * Find nearest neighbors for a vector
@@ -346,32 +361,41 @@ export interface IVectorAdapter<TClient = unknown, TConfig extends VectorConfig 
   /**
    * Validate data integrity
    */
-  validate(): Promise<DatabaseResult<{
-    valid: boolean;
-    issues: readonly string[];
-    warnings?: readonly string[];
-    recommendations?: readonly string[];
-  }>>;
+  validate(): Promise<
+    DatabaseResult<{
+      valid: boolean;
+      issues: readonly string[];
+      warnings?: readonly string[];
+      recommendations?: readonly string[];
+    }>
+  >;
 
   /**
    * Create or update collection schema
    */
-  updateCollectionSchema(config: Partial<VectorConfig>): Promise<DatabaseResult<{ updated: boolean }>>;
+  updateCollectionSchema(
+    config: Partial<VectorConfig>
+  ): Promise<DatabaseResult<{ updated: boolean }>>;
 
   /**
    * Get collection information
    */
-  getCollectionInfo(): Promise<DatabaseResult<{
-    name: string;
-    config: VectorConfig;
-    status: 'healthy' | 'degraded' | 'unhealthy';
-    metadata: Readonly<Record<string, unknown>>;
-  }>>;
+  getCollectionInfo(): Promise<
+    DatabaseResult<{
+      name: string;
+      config: VectorConfig;
+      status: 'healthy' | 'degraded' | 'unhealthy';
+      metadata: Readonly<Record<string, unknown>>;
+    }>
+  >;
 
   /**
    * Create a new collection
    */
-  createCollection(name: string, config: VectorConfig): Promise<DatabaseResult<{ created: boolean; collectionId: CollectionId }>>;
+  createCollection(
+    name: string,
+    config: VectorConfig
+  ): Promise<DatabaseResult<{ created: boolean; collectionId: CollectionId }>>;
 
   /**
    * Delete a collection
@@ -426,24 +450,28 @@ export interface IVectorAdapter<TClient = unknown, TConfig extends VectorConfig 
   /**
    * Get performance metrics
    */
-  getPerformanceMetrics(): Promise<DatabaseResult<{
-    queryLatency: number;
-    indexingLatency: number;
-    throughput: number;
-    errorRate: number;
-    cacheHitRate?: number;
-  }>>;
+  getPerformanceMetrics(): Promise<
+    DatabaseResult<{
+      queryLatency: number;
+      indexingLatency: number;
+      throughput: number;
+      errorRate: number;
+      cacheHitRate?: number;
+    }>
+  >;
 
   /**
    * Health check with detailed status
    */
-  detailedHealthCheck(): Promise<DatabaseResult<{
-    healthy: boolean;
-    connectionStatus: string;
-    collectionStatus: string;
-    issues: readonly string[];
-    recommendations?: readonly string[];
-  }>>;
+  detailedHealthCheck(): Promise<
+    DatabaseResult<{
+      healthy: boolean;
+      connectionStatus: string;
+      collectionStatus: string;
+      issues: readonly string[];
+      recommendations?: readonly string[];
+    }>
+  >;
 
   // === Client Access (for advanced operations) ===
 

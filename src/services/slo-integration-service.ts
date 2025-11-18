@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * SLO Integration Service
  *
@@ -17,7 +13,7 @@
 import { EventEmitter } from 'events';
 
 import { ErrorBudgetService } from './error-budget-service.js';
-import {SLOBreachDetectionService } from './slo-breach-detection-service.js';
+import { SLOBreachDetectionService } from './slo-breach-detection-service.js';
 import { SLOReportingService } from './slo-reporting-service.js';
 import { SLOService } from './slo-service.js';
 import { SLODashboardService } from '../monitoring/slo-dashboard-service.js';
@@ -101,7 +97,6 @@ export class SLOIntegrationService extends EventEmitter {
 
       this.emit('started', 'SLO Integration Service started successfully');
       console.log('✅ SLO Integration Service started successfully');
-
     } catch (error) {
       this.healthStatus = 'unhealthy';
       this.emit('error', `Failed to start SLO Integration Service: ${error}`);
@@ -131,7 +126,6 @@ export class SLOIntegrationService extends EventEmitter {
 
       this.emit('stopped', 'SLO Integration Service stopped successfully');
       console.log('✅ SLO Integration Service stopped successfully');
-
     } catch (error) {
       this.emit('error', `Error stopping SLO Integration Service: ${error}`);
       console.error('❌ Error stopping SLO Integration Service:', error);
@@ -144,12 +138,15 @@ export class SLOIntegrationService extends EventEmitter {
    */
   getServiceHealth(): {
     overall: 'healthy' | 'degraded' | 'unhealthy';
-    services: Record<string, {
-      status: 'healthy' | 'degraded' | 'unhealthy';
-      uptime: number;
-      lastCheck: Date;
-      issues: string[];
-    }>;
+    services: Record<
+      string,
+      {
+        status: 'healthy' | 'degraded' | 'unhealthy';
+        uptime: number;
+        lastCheck: Date;
+        issues: string[];
+      }
+    >;
     metrics: unknown;
     lastUpdate: Date;
   } {
@@ -224,7 +221,6 @@ export class SLOIntegrationService extends EventEmitter {
 
       this.emit('slo:created', result);
       return result;
-
     } catch (error) {
       this.emit('error', `Failed to create SLO: ${error}`);
       throw error;
@@ -264,13 +260,14 @@ export class SLOIntegrationService extends EventEmitter {
       ]);
 
       // Get incidents and alerts
-      const extendedIncidents = this.services.breachDetectionService.getActiveIncidents()
-        .filter(incident => incident.sloId === sloId);
+      const extendedIncidents = this.services.breachDetectionService
+        .getActiveIncidents()
+        .filter((incident) => incident.sloId === sloId);
 
       // Convert ExtendedSLOBreachIncident to SLOBreachIncident
       // ExtendedSLOBreachIncident has additional properties: sloName, detectedAt, evaluation, etc.
       // We need to extract the base properties and convert/extend to match SLOBreachIncident interface
-      const activeIncidents: SLOBreachIncident[] = extendedIncidents.map(incident => {
+      const activeIncidents: SLOBreachIncident[] = extendedIncidents.map((incident) => {
         const {
           sloName,
           detectedAt,
@@ -285,12 +282,14 @@ export class SLOIntegrationService extends EventEmitter {
 
         // Convert resolution structure to match base interface
         // ExtendedSLOBreachIncident.resolution has different structure than SLOBreachIncident.resolution
-        const resolution = extendedResolution ? {
-          timestamp: extendedResolution.resolvedBy ? new Date() : new Date(),
-          actions: extendedResolution.actions || [],
-          rootCause: extendedResolution.reason || '',
-          preventiveMeasures: extendedResolution.preventRecurrence || []
-        } : undefined;
+        const resolution = extendedResolution
+          ? {
+              timestamp: extendedResolution.resolvedBy ? new Date() : new Date(),
+              actions: extendedResolution.actions || [],
+              rootCause: extendedResolution.reason || '',
+              preventiveMeasures: extendedResolution.preventRecurrence || [],
+            }
+          : undefined;
 
         // Map the extended properties to base interface structure
         return {
@@ -304,15 +303,20 @@ export class SLOIntegrationService extends EventEmitter {
             impactAssessment,
             notifications,
             escalations,
-            responses
-          }
+            responses,
+          },
         } as SLOBreachIncident;
       });
 
       const alerts = this.services.sloService.getLatestEvaluation(sloId)?.alerts || [];
 
       // Generate recommendations
-      const recommendations = this.generateRecommendations(slo, evaluation, errorBudget, burnRateAnalysis);
+      const recommendations = this.generateRecommendations(
+        slo,
+        evaluation,
+        errorBudget,
+        burnRateAnalysis
+      );
 
       return {
         slo,
@@ -324,7 +328,6 @@ export class SLOIntegrationService extends EventEmitter {
         alerts,
         recommendations,
       };
-
     } catch (error) {
       this.emit('error', `Failed to get SLO overview: ${error}`);
       throw error;
@@ -334,7 +337,10 @@ export class SLOIntegrationService extends EventEmitter {
   /**
    * Update SLO with cascading updates
    */
-  async updateSLO(sloId: string, updates: Partial<SLO>): Promise<{
+  async updateSLO(
+    sloId: string,
+    updates: Partial<SLO>
+  ): Promise<{
     slo: SLO;
     affected: string[];
     status: string;
@@ -359,7 +365,6 @@ export class SLOIntegrationService extends EventEmitter {
 
       this.emit('slo:updated', result);
       return result;
-
     } catch (error) {
       this.emit('error', `Failed to update SLO: ${error}`);
       throw error;
@@ -401,7 +406,6 @@ export class SLOIntegrationService extends EventEmitter {
 
       this.emit('slo:deleted', result);
       return result;
-
     } catch (error) {
       this.emit('error', `Failed to delete SLO: ${error}`);
       throw error;
@@ -415,12 +419,14 @@ export class SLOIntegrationService extends EventEmitter {
   /**
    * Get all SLOs with comprehensive data
    */
-  async getAllSLOsOverview(): Promise<Array<{
-    slo: SLO;
-    evaluation: SLOEvaluation | undefined;
-    errorBudget: ErrorBudget;
-    status: 'healthy' | 'warning' | 'critical';
-  }>> {
+  async getAllSLOsOverview(): Promise<
+    Array<{
+      slo: SLO;
+      evaluation: SLOEvaluation | undefined;
+      errorBudget: ErrorBudget;
+      status: 'healthy' | 'warning' | 'critical';
+    }>
+  > {
     this.ensureStarted();
 
     try {
@@ -446,7 +452,6 @@ export class SLOIntegrationService extends EventEmitter {
       }
 
       return overviews;
-
     } catch (error) {
       this.emit('error', `Failed to get all SLOs overview: ${error}`);
       throw error;
@@ -485,10 +490,10 @@ export class SLOIntegrationService extends EventEmitter {
       // Calculate summary metrics
       const summary = {
         totalSLOs: slos.length,
-        activeSLOs: slos.filter(slo => slo.status === 'active').length,
-        compliantSLOs: overviews.filter(o => o.status === 'healthy').length,
-        violatingSLOs: overviews.filter(o => o.status === 'critical').length,
-        warningSLOs: overviews.filter(o => o.status === 'warning').length,
+        activeSLOs: slos.filter((slo) => slo.status === 'active').length,
+        compliantSLOs: overviews.filter((o) => o.status === 'healthy').length,
+        violatingSLOs: overviews.filter((o) => o.status === 'critical').length,
+        warningSLOs: overviews.filter((o) => o.status === 'warning').length,
         totalErrorBudget: overviews.reduce((sum, o) => sum + o.errorBudget.total, 0),
         consumedErrorBudget: overviews.reduce((sum, o) => sum + o.errorBudget.consumed, 0),
         overallHealth: this.calculateOverallHealth(overviews),
@@ -520,7 +525,6 @@ export class SLOIntegrationService extends EventEmitter {
 
       this.emit('report:generated', report);
       return report;
-
     } catch (error) {
       this.emit('error', `Failed to generate system report: ${error}`);
       throw error;
@@ -565,7 +569,6 @@ export class SLOIntegrationService extends EventEmitter {
         url,
         widgets,
       };
-
     } catch (error) {
       this.emit('error', `Failed to create default dashboard: ${error}`);
       throw error;
@@ -584,8 +587,7 @@ export class SLOIntegrationService extends EventEmitter {
       type: type as unknown,
       title,
       position: { x: 0, y: 0, width: 4, height: 3 },
-      config: {
-      },
+      config: {},
     });
   }
 
@@ -833,17 +835,17 @@ export class SLOIntegrationService extends EventEmitter {
   private updateHealthStatus(): void {
     try {
       const serviceHealth = this.getServiceHealth();
-      const unhealthyServices = Object.values(serviceHealth.services)
-        .filter(s => s.status === 'unhealthy').length;
+      const unhealthyServices = Object.values(serviceHealth.services).filter(
+        (s) => s.status === 'unhealthy'
+      ).length;
 
       if (unhealthyServices > 0) {
         this.healthStatus = 'unhealthy';
-      } else if (Object.values(serviceHealth.services).some(s => s.status === 'degraded')) {
+      } else if (Object.values(serviceHealth.services).some((s) => s.status === 'degraded')) {
         this.healthStatus = 'degraded';
       } else {
         this.healthStatus = 'healthy';
       }
-
     } catch (error) {
       this.healthStatus = 'unhealthy';
       this.emit('error', `Health check failed: ${error}`);
@@ -856,8 +858,8 @@ export class SLOIntegrationService extends EventEmitter {
   private calculateOverallHealth(overviews: unknown[]): string {
     if (overviews.length === 0) return 'unknown';
 
-    const criticalCount = overviews.filter(o => o.status === 'critical').length;
-    const warningCount = overviews.filter(o => o.status === 'warning').length;
+    const criticalCount = overviews.filter((o) => o.status === 'critical').length;
+    const warningCount = overviews.filter((o) => o.status === 'warning').length;
 
     if (criticalCount > 0) return 'critical';
     if (warningCount > overviews.length * 0.3) return 'warning';
@@ -914,7 +916,7 @@ export class SLOIntegrationService extends EventEmitter {
     for (const slo of slos) {
       const evaluation = this.services.sloService.getLatestEvaluation(slo.id);
       if (evaluation) {
-        allAlerts.push(...evaluation.alerts.filter(alert => !alert.resolved));
+        allAlerts.push(...evaluation.alerts.filter((alert) => !alert.resolved));
       }
     }
 
@@ -964,7 +966,9 @@ export class SLOIntegrationService extends EventEmitter {
 
     // Incident recommendations
     if (details.incidents.length > 0) {
-      recommendations.push(`Resolve ${details.incidents.length} active incidents to restore service health`);
+      recommendations.push(
+        `Resolve ${details.incidents.length} active incidents to restore service health`
+      );
     }
 
     // Alert recommendations
@@ -985,7 +989,7 @@ export class SLOIntegrationService extends EventEmitter {
   private updateMetrics(): void {
     const slos = this.services.sloService.getAllSLOs();
     this.metrics.totalSLOs = slos.length;
-    this.metrics.activeSLOs = slos.filter(slo => slo.status === 'active').length;
+    this.metrics.activeSLOs = slos.filter((slo) => slo.status === 'active').length;
   }
 }
 

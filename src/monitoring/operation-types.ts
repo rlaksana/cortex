@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Operation Types for Monitoring Services
  *
@@ -33,4 +28,11 @@ export enum OperationType {
   KILL_SWITCH_TRIGGERED = 'kill_switch_triggered',
   KILL_SWITCH_DEACTIVATED = 'kill_switch_deactivated',
   KILL_SWITCH_RECOVERED = 'kill_switch_recovered',
+  DATABASE_QUERY = 'database_query',
+  VECTOR_SEARCH = 'vector_search',
+  EMBEDDING_GENERATION = 'embedding_generation',
+  AUTH_VALIDATION = 'auth_validation',
+  CACHE_GET = 'cache_get',
+  CACHE_SET = 'cache_set',
+  CACHE_DELETE = 'cache_delete',
 }

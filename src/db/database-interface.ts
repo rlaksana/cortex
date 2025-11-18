@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Qdrant Database Interface - Vector Database Abstraction Layer
  *
@@ -221,7 +217,7 @@ export interface IDatabase {
     _filter: {
       readonly kind?: string;
       readonly scope?: Readonly<Record<string, unknown>>;
-      readonly before?: string
+      readonly before?: string;
     },
     _options?: DeleteOptions
   ): Promise<{ deleted: number }>;
@@ -333,7 +329,10 @@ export interface IDatabaseAdapter extends IDatabase {
   /**
    * Test specific Qdrant functionality
    */
-  testFunctionality(_operation: string, _params?: Readonly<Record<string, unknown>>): Promise<boolean>;
+  testFunctionality(
+    _operation: string,
+    _params?: Readonly<Record<string, unknown>>
+  ): Promise<boolean>;
 
   /**
    * Get collection statistics
@@ -441,17 +440,31 @@ export class ValidationError extends DatabaseError {
 
 export class NotFoundError extends DatabaseError {
   constructor(_id: string, _type: string = 'item') {
-    super(`${_type} with id '${_id}' not found`, 'NOT_FOUND', undefined, { id: _id, type: _type }, 'low', false);
+    super(
+      `${_type} with id '${_id}' not found`,
+      'NOT_FOUND',
+      undefined,
+      { id: _id, type: _type },
+      'low',
+      false
+    );
     this.name = 'NotFoundError';
   }
 }
 
 export class DuplicateError extends DatabaseError {
   constructor(_id: string, _type: string = 'item') {
-    super(`${_type} with id '${_id}' already exists`, 'DUPLICATE_ERROR', undefined, {
-      id: _id,
-      type: _type,
-    }, 'medium', false);
+    super(
+      `${_type} with id '${_id}' already exists`,
+      'DUPLICATE_ERROR',
+      undefined,
+      {
+        id: _id,
+        type: _type,
+      },
+      'medium',
+      false
+    );
     this.name = 'DuplicateError';
   }
 }

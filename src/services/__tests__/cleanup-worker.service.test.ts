@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Comprehensive Cleanup Worker Service Tests
  *
@@ -14,26 +9,26 @@
  * - Error handling and recovery
  */
 
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { logger } from '@/utils/logger.js';
+import { logger } from '@/utils/logger';
 
-import { CleanupWorkerService } from '../cleanup-worker.service.js';
+import { CleanupWorkerService } from '../cleanup-worker.service';
 
 // Mock dependencies
-jest.mock('../../utils/logger.js');
-jest.mock('../memory-find.js');
-jest.mock('../memory-store.js');
-jest.mock('../expiry-worker.js');
-jest.mock('../metrics/system-metrics.js');
+vi.mock('../../utils/logger.js');
+vi.mock('../memory-find.js');
+vi.mock('../memory-store.js');
+vi.mock('../expiry-worker.js');
+vi.mock('../metrics/system-metrics.js');
 
-const mockLogger = logger as jest.Mocked<typeof logger>;
+const mockLogger = logger as ReturnType<typeof vi.mocked<typeof logger>>;
 
 describe('CleanupWorkerService', () => {
   let cleanupWorker: CleanupWorkerService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     cleanupWorker = new CleanupWorkerService({
       dry_run: true,
       require_confirmation: false,
@@ -50,7 +45,7 @@ describe('CleanupWorkerService', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Configuration Management', () => {
@@ -100,7 +95,8 @@ describe('CleanupWorkerService', () => {
   describe('Dry Run Operations', () => {
     it('should perform dry run without deletions', async () => {
       const mockMemoryFind = await import('../memory-find.js');
-      (mockMemoryFind.memoryFind as jest.Mock).mockResolvedValue({
+      const mockMemoryFindFunction = vi.mocked(await import('../memory-find.js')).memoryFind as ReturnType<typeof vi.fn>;
+      mockMemoryFindFunction.mockResolvedValue({
         items: [
           { id: '1', kind: 'entity', data: {} },
           { id: '2', kind: 'relation', data: {} },
@@ -108,7 +104,8 @@ describe('CleanupWorkerService', () => {
       });
 
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      const mockRunExpiryWorker = vi.mocked(await import('../expiry-worker.js')).runExpiryWorker as ReturnType<typeof vi.fn>;
+      mockRunExpiryWorker.mockResolvedValue({
         total_processed: 5,
         total_deleted: 0,
         deleted_counts: { entity: 2, relation: 1 },
@@ -129,7 +126,7 @@ describe('CleanupWorkerService', () => {
 
     it('should identify expired items in dry run mode', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
         total_processed: 10,
         total_deleted: 0,
         deleted_counts: { entity: 5, relation: 3, todo: 2 },
@@ -230,20 +227,20 @@ describe('CleanupWorkerService', () => {
       const token = dryRunReport.safety_confirmations.confirmation_token;
 
       // Manually expire the token by advancing time
-      jest.useFakeTimers();
-      jest.advanceTimersByTime(31 * 60 * 1000); // 31 minutes
+      vi.useFakeTimers();
+      vi.advanceTimersByTime(31 * 60 * 1000); // 31 minutes
 
       const confirmed = worker.confirmCleanup(token!);
       expect(confirmed).toBe(false);
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
   });
 
   describe('Metrics Tracking', () => {
     it('should track cleanup_deleted_total metric', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
         total_processed: 20,
         total_deleted: 15,
         deleted_counts: { entity: 8, relation: 4, todo: 3 },
@@ -262,7 +259,7 @@ describe('CleanupWorkerService', () => {
 
     it('should track cleanup_dryrun_total metric', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
         total_processed: 25,
         total_deleted: 0,
         deleted_counts: {},
@@ -281,7 +278,7 @@ describe('CleanupWorkerService', () => {
 
     it('should track cleanup_by_type breakdown', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
         total_processed: 30,
         total_deleted: 25,
         deleted_counts: { entity: 10, relation: 8, todo: 4, decision: 3 },
@@ -304,7 +301,7 @@ describe('CleanupWorkerService', () => {
 
     it('should track cleanup_duration for each operation', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
         total_processed: 10,
         total_deleted: 8,
         deleted_counts: { entity: 5, relation: 3 },
@@ -323,7 +320,7 @@ describe('CleanupWorkerService', () => {
 
     it('should track performance metrics', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
         total_processed: 50,
         total_deleted: 40,
         deleted_counts: { entity: 20, relation: 15, todo: 5 },
@@ -346,7 +343,7 @@ describe('CleanupWorkerService', () => {
   describe('Error Handling', () => {
     it('should handle expiry worker errors gracefully', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockRejectedValue(
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockRejectedValue(
         new Error('Database connection failed')
       );
 
@@ -384,7 +381,7 @@ describe('CleanupWorkerService', () => {
 
     it('should log errors appropriately', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockRejectedValue(new Error('Test error'));
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockRejectedValue(new Error('Test error'));
 
       await cleanupWorker.runCleanup({
         dry_run: false,
@@ -404,7 +401,7 @@ describe('CleanupWorkerService', () => {
   describe('Operation History and Statistics', () => {
     it('should maintain operation history', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
         total_processed: 5,
         total_deleted: 3,
         deleted_counts: { entity: 2, relation: 1 },
@@ -432,7 +429,7 @@ describe('CleanupWorkerService', () => {
 
     it('should limit operation history size', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
         total_processed: 1,
         total_deleted: 1,
         deleted_counts: { entity: 1 },
@@ -454,7 +451,7 @@ describe('CleanupWorkerService', () => {
 
     it('should calculate cleanup statistics', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
         total_processed: 10,
         total_deleted: 8,
         deleted_counts: { entity: 5, relation: 3 },
@@ -497,7 +494,7 @@ describe('CleanupWorkerService', () => {
     it('should handle large item counts efficiently', async () => {
       const largeItemCount = 10000;
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
         total_processed: largeItemCount,
         total_deleted: largeItemCount - 1000,
         deleted_counts: { entity: 4000, relation: 3000, todo: 1500, decision: 500 },
@@ -521,7 +518,7 @@ describe('CleanupWorkerService', () => {
 
     it('should maintain performance with multiple concurrent operations', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
         total_processed: 100,
         total_deleted: 80,
         deleted_counts: { entity: 40, relation: 25, todo: 15 },
@@ -557,7 +554,7 @@ describe('CleanupWorkerService', () => {
   describe('Scope Filtering', () => {
     it('should apply scope filters to operations', async () => {
       const mockMemoryFind = await import('../memory-find.js');
-      (mockMemoryFind.memoryFind as jest.Mock).mockResolvedValue({
+      vi.mocked(mockMemoryFind.memoryFind).mockResolvedValue({
         items: [
           { id: '1', kind: 'entity', scope: { project: 'test-project' }, data: {} },
           { id: '2', kind: 'relation', scope: { project: 'test-project' }, data: {} },
@@ -596,14 +593,14 @@ describe('CleanupWorkerService', () => {
       });
 
       const mockMemoryStore = await import('../memory-store.js');
-      (mockMemoryStore.memoryStore as jest.Mock).mockResolvedValue({
+      vi.mocked(mockMemoryStore.memoryStore).mockResolvedValue({
         stored: [],
         errors: [],
         summary: { total: 0, stored: 0, skipped_dedupe: 0 },
       });
 
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
         total_processed: 5,
         total_deleted: 5,
         deleted_counts: { entity: 3, relation: 2 },
@@ -625,13 +622,11 @@ describe('CleanupWorkerService', () => {
   describe('Integration with System Metrics', () => {
     it('should update system metrics after cleanup', async () => {
       const mockSystemMetrics = await import('../metrics/system-metrics.js');
-      const mockUpdateMetrics = jest.fn();
-      (mockSystemMetrics.systemMetricsService.updateMetrics as jest.Mock) = {
-        updateMetrics: mockUpdateMetrics,
-      };
+      const mockUpdateMetrics = vi.fn();
+      vi.mocked(mockSystemMetrics.systemMetricsService.updateMetrics).mockImplementation(mockUpdateMetrics);
 
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock).mockResolvedValue({
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
         total_processed: 10,
         total_deleted: 8,
         deleted_counts: { entity: 5, relation: 3 },

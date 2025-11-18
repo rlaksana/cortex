@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Relationship Analysis Strategy
  *
@@ -238,12 +234,14 @@ export class RelationshipAnalysisStrategy {
                 role: 'cluster_member',
                 confidence: 0.7,
               })),
-            target_items: cluster.items.slice(Math.ceil(cluster.items.length / 2)).map((item: KnowledgeItem) => ({
-              item_id: item.id,
-              item_type: item.kind,
-              role: 'cluster_member',
-              confidence: 0.7,
-            })),
+            target_items: cluster.items
+              .slice(Math.ceil(cluster.items.length / 2))
+              .map((item: KnowledgeItem) => ({
+                item_id: item.id,
+                item_type: item.kind,
+                role: 'cluster_member',
+                confidence: 0.7,
+              })),
             relationship_direction: 'bidirectional',
             relationship_nature: 'moderate',
             metadata: {
@@ -389,18 +387,22 @@ export class RelationshipAnalysisStrategy {
             description: `Items showing collaborative work or shared effort`,
             confidence: 0.8,
             strength: group.items.length / items.length,
-            source_items: group.items.slice(0, Math.ceil(group.items.length / 2)).map((item: KnowledgeItem) => ({
-              item_id: item.id,
-              item_type: item.kind,
-              role: 'collaborator',
-              confidence: 0.8,
-            })),
-            target_items: group.items.slice(Math.ceil(group.items.length / 2)).map((item: KnowledgeItem) => ({
-              item_id: item.id,
-              item_type: item.kind,
-              role: 'collaborator',
-              confidence: 0.8,
-            })),
+            source_items: group.items
+              .slice(0, Math.ceil(group.items.length / 2))
+              .map((item: KnowledgeItem) => ({
+                item_id: item.id,
+                item_type: item.kind,
+                role: 'collaborator',
+                confidence: 0.8,
+              })),
+            target_items: group.items
+              .slice(Math.ceil(group.items.length / 2))
+              .map((item: KnowledgeItem) => ({
+                item_id: item.id,
+                item_type: item.kind,
+                role: 'collaborator',
+                confidence: 0.8,
+              })),
             relationship_direction: 'bidirectional',
             relationship_nature: 'strong',
             metadata: {

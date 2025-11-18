@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Enhanced Monitoring & Metrics Types for Cortex MCP System
  *
@@ -16,7 +12,8 @@ import type {
   Metadata,
   OperationContext,
   Result,
-  Tags} from './base-types.js';
+  Tags,
+} from './base-types.js';
 
 // ============================================================================
 // Core Monitoring Types
@@ -72,13 +69,7 @@ export interface Metric {
   readonly metadata?: Metadata;
 }
 
-export type MetricType =
-  | 'counter'
-  | 'gauge'
-  | 'histogram'
-  | 'summary'
-  | 'timer'
-  | 'ratio';
+export type MetricType = 'counter' | 'gauge' | 'histogram' | 'summary' | 'timer' | 'ratio';
 
 export interface Counter {
   readonly name: string;
@@ -200,13 +191,7 @@ export interface AlertCondition {
   readonly evaluationPeriods?: number;
 }
 
-export type AlertOperator =
-  | 'gt'
-  | 'gte'
-  | 'lt'
-  | 'lte'
-  | 'eq'
-  | 'neq';
+export type AlertOperator = 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'neq';
 
 export interface AlertAction {
   readonly type: 'webhook' | 'email' | 'slack' | 'pagerduty' | 'custom';
@@ -318,12 +303,7 @@ export interface SLOObjective {
   readonly targetPercentile?: number;
 }
 
-export type SLIType =
-  | 'availability'
-  | 'latency'
-  | 'throughput'
-  | 'error_rate'
-  | 'custom';
+export type SLIType = 'availability' | 'latency' | 'throughput' | 'error_rate' | 'custom';
 
 export interface SLOTimeWindow {
   readonly type: 'rolling' | 'calendar';

@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * P3 Data Management: Data Lifecycle Service (Orchestrator)
  *
@@ -26,9 +22,9 @@
 
 import { logger } from '@/utils/logger.js';
 
-import type { ArchivalConfig,IArchivalService } from './archival/archival.interface.js';
+import type { ArchivalConfig, IArchivalService } from './archival/archival.interface.js';
 import { ArchivalService } from './archival/archival.service.js';
-import type { CompactionConfig,ICompactionService } from './compaction/compaction.interface.js';
+import type { CompactionConfig, ICompactionService } from './compaction/compaction.interface.js';
 import { CompactionService } from './compaction/compaction.service.js';
 import type { ITTLCleanupService, TTLCleanupConfig } from './ttl-cleanup/ttl-cleanup.interface.js';
 // Import specialized services
@@ -1104,7 +1100,6 @@ export class DataLifecycleService {
         },
         'Policy execution completed with specialized services'
       );
-
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
 
@@ -1164,12 +1159,14 @@ export class DataLifecycleService {
     execution.results.storage_freed_mb = ttlExecution.results.storage_freed_mb;
 
     // Add any errors from TTL service
-    execution.details.errors.push(...ttlExecution.details.errors.map(e => ({
-      item_id: '',
-      error: e.error,
-      timestamp: e.timestamp,
-      phase: 'ttl_cleanup',
-    })));
+    execution.details.errors.push(
+      ...ttlExecution.details.errors.map((e) => ({
+        item_id: '',
+        error: e.error,
+        timestamp: e.timestamp,
+        phase: 'ttl_cleanup',
+      }))
+    );
   }
 
   /**
@@ -1210,12 +1207,14 @@ export class DataLifecycleService {
     execution.results.archive_size_mb = archiveExecution.results.archive_size_mb;
 
     // Add any errors from archival service
-    execution.details.errors.push(...archiveExecution.details.errors.map(e => ({
-      item_id: '',
-      error: e.error,
-      timestamp: e.timestamp,
-      phase: 'archival',
-    })));
+    execution.details.errors.push(
+      ...archiveExecution.details.errors.map((e) => ({
+        item_id: '',
+        error: e.error,
+        timestamp: e.timestamp,
+        phase: 'archival',
+      }))
+    );
   }
 
   /**
@@ -1709,7 +1708,11 @@ export class DataLifecycleService {
   /**
    * Evaluate condition
    */
-  private evaluateCondition(fieldValue: unknown, operator: string, expectedValue: unknown): boolean {
+  private evaluateCondition(
+    fieldValue: unknown,
+    operator: string,
+    expectedValue: unknown
+  ): boolean {
     switch (operator) {
       case 'contains':
         return (
@@ -2222,7 +2225,8 @@ export class DataLifecycleService {
     return {
       processing: {
         batch_size: this.config.processing.batch_size,
-        max_items_per_run: this.config.processing.max_batches_per_run * this.config.processing.batch_size,
+        max_items_per_run:
+          this.config.processing.max_batches_per_run * this.config.processing.batch_size,
         processing_interval_hours: this.config.processing.processing_interval_hours,
         enable_parallel_processing: this.config.processing.enable_parallel_processing,
         max_concurrent_operations: this.config.processing.max_concurrent_operations,
@@ -2281,22 +2285,27 @@ export class DataLifecycleService {
             storage_class: 'ARCHIVE',
           },
         },
-        default_backend: this.config.archiving.archive_storage.type as unknown || 'local',
+        default_backend: (this.config.archiving.archive_storage.type as unknown) || 'local',
       },
       processing: {
         batch_size: Math.min(this.config.processing.batch_size, 100),
-        max_items_per_run: this.config.processing.max_batches_per_run * this.config.processing.batch_size,
+        max_items_per_run:
+          this.config.processing.max_batches_per_run * this.config.processing.batch_size,
         processing_interval_hours: this.config.processing.processing_interval_hours,
         enable_parallel_processing: this.config.processing.enable_parallel_processing,
         max_concurrent_operations: this.config.processing.max_concurrent_operations,
       },
       policies: {
-        age_triggers: Object.entries(this.config.retention_policies.type_policies).map(([type, policy]) => ({
-          data_type: type,
-          archive_after_days: policy.archive_after_days || this.config.retention_policies.default_policy.archive_after_days!,
-          storage_tier: this.determineArchiveTierForType(type),
-          priority: policy.priority,
-        })),
+        age_triggers: Object.entries(this.config.retention_policies.type_policies).map(
+          ([type, policy]) => ({
+            data_type: type,
+            archive_after_days:
+              policy.archive_after_days ||
+              this.config.retention_policies.default_policy.archive_after_days!,
+            storage_tier: this.determineArchiveTierForType(type),
+            priority: policy.priority,
+          })
+        ),
         access_triggers: {
           no_access_days: 365,
           low_access_frequency: {
@@ -2340,10 +2349,14 @@ export class DataLifecycleService {
     return {
       processing: {
         batch_size: Math.min(this.config.processing.batch_size, 200),
-        max_items_per_run: this.config.processing.max_batches_per_run * this.config.processing.batch_size,
+        max_items_per_run:
+          this.config.processing.max_batches_per_run * this.config.processing.batch_size,
         processing_interval_hours: this.config.processing.processing_interval_hours * 4, // Less frequent than other operations
         enable_parallel_processing: this.config.processing.enable_parallel_processing,
-        max_concurrent_operations: Math.max(1, this.config.processing.max_concurrent_operations - 1),
+        max_concurrent_operations: Math.max(
+          1,
+          this.config.processing.max_concurrent_operations - 1
+        ),
       },
       strategies: {
         enable_defragmentation: true,

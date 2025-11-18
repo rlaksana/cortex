@@ -1,17 +1,13 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /* AUTO-GENERATED: relax overly-strict or missing types for build stability */
 declare global {
   // GC typing used in performance-harness
   type GCFunction = () => void | Promise<void>;
   // Some modules assume global.gc exists
-   
+
   var gc: GCFunction | undefined;
 
   // Fallbacks used by orchestrators / services
-   
+
   var retryBudgetIntegration: unknown;
 }
 

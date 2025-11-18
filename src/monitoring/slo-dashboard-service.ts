@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * SLO Dashboard Service
  *
@@ -55,9 +50,9 @@ export class SLODashboardService extends EventEmitter {
     this.server = createServer(this.app);
     this.io = new Server(this.server, {
       cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-      }
+        origin: '*',
+        methods: ['GET', 'POST'],
+      },
     });
 
     this.setupExpress();
@@ -83,7 +78,6 @@ export class SLODashboardService extends EventEmitter {
         this.emit('started', `SLO Dashboard Service started on ${host}:${port}`);
         console.log(`🎯 SLO Dashboard Service listening on http://${host}:${port}`);
       });
-
     } catch (error) {
       this.emit('error', `Failed to start SLO Dashboard Service: ${error}`);
       throw error;
@@ -255,7 +249,7 @@ export class SLODashboardService extends EventEmitter {
       throw new Error(`Dashboard ${dashboardId} not found`);
     }
 
-    const widgetIndex = dashboard.widgets.findIndex(w => w.id === widgetId);
+    const widgetIndex = dashboard.widgets.findIndex((w) => w.id === widgetId);
     if (widgetIndex === -1) {
       throw new Error(`Widget ${widgetId} not found in dashboard ${dashboardId}`);
     }
@@ -284,7 +278,7 @@ export class SLODashboardService extends EventEmitter {
       throw new Error(`Dashboard ${dashboardId} not found`);
     }
 
-    const widgetIndex = dashboard.widgets.findIndex(w => w.id === widgetId);
+    const widgetIndex = dashboard.widgets.findIndex((w) => w.id === widgetId);
     if (widgetIndex === -1) {
       return false;
     }
@@ -305,13 +299,17 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Get data for a widget
    */
-  async getWidgetData(dashboardId: string, widgetId: string, filters?: Record<string, unknown>): Promise<unknown> {
+  async getWidgetData(
+    dashboardId: string,
+    widgetId: string,
+    filters?: Record<string, unknown>
+  ): Promise<unknown> {
     const dashboard = this.dashboards.get(dashboardId);
     if (!dashboard) {
       throw new Error(`Dashboard ${dashboardId} not found`);
     }
 
-    const widget = dashboard.widgets.find(w => w.id === widgetId);
+    const widget = dashboard.widgets.find((w) => w.id === widgetId);
     if (!widget) {
       throw new Error(`Widget ${widgetId} not found`);
     }
@@ -349,8 +347,8 @@ export class SLODashboardService extends EventEmitter {
     }
 
     const sloIds = dashboard.widgets
-      .filter(w => w.config.sloIds)
-      .flatMap(w => w.config.sloIds || []);
+      .filter((w) => w.config.sloIds)
+      .flatMap((w) => w.config.sloIds || []);
 
     const status = {
       total: sloIds.length,
@@ -455,15 +453,15 @@ export class SLODashboardService extends EventEmitter {
     }
 
     const sloIds = dashboard.widgets
-      .filter(w => w.config.sloIds)
-      .flatMap(w => w.config.sloIds || []);
+      .filter((w) => w.config.sloIds)
+      .flatMap((w) => w.config.sloIds || []);
 
     const alerts: SLOAlert[] = [];
 
     for (const sloId of sloIds) {
       const evaluation = this.sloService.getLatestEvaluation(sloId);
       if (evaluation) {
-        alerts.push(...evaluation.alerts.filter(a => !a.resolved));
+        alerts.push(...evaluation.alerts.filter((a) => !a.resolved));
       }
     }
 
@@ -481,7 +479,7 @@ export class SLODashboardService extends EventEmitter {
       const evaluations = this.sloService.getEvaluations(slo.id);
 
       for (const evaluation of evaluations) {
-        const alert = evaluation.alerts.find(a => a.id === alertId);
+        const alert = evaluation.alerts.find((a) => a.id === alertId);
         if (alert && !alert.acknowledged) {
           alert.acknowledged = true;
           alert.acknowledgedBy = acknowledgedBy;
@@ -587,7 +585,10 @@ export class SLODashboardService extends EventEmitter {
 
     this.app.post('/api/alerts/:alertId/acknowledge', async (req, res) => {
       try {
-        const acknowledged = await this.acknowledgeAlert(req.params.alertId, req.body.acknowledgedBy || 'unknown');
+        const acknowledged = await this.acknowledgeAlert(
+          req.params.alertId,
+          req.body.acknowledgedBy || 'unknown'
+        );
         res.status(acknowledged ? 200 : 404).json({ acknowledged });
       } catch (error) {
         res.status(400).json({ error: error instanceof Error ? error.message : 'Unknown error' });
@@ -623,10 +624,20 @@ export class SLODashboardService extends EventEmitter {
       // Handle widget data requests
       socket.on('get:widget-data', async (data) => {
         try {
-          const widgetData = await this.getWidgetData(data.dashboardId, data.widgetId, data.filters);
-          socket.emit('widget-data', { dashboardId: data.dashboardId, widgetId: data.widgetId, data: widgetData });
+          const widgetData = await this.getWidgetData(
+            data.dashboardId,
+            data.widgetId,
+            data.filters
+          );
+          socket.emit('widget-data', {
+            dashboardId: data.dashboardId,
+            widgetId: data.widgetId,
+            data: widgetData,
+          });
         } catch (error) {
-          socket.emit('error', { message: error instanceof Error ? error.message : 'Unknown error' });
+          socket.emit('error', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+          });
         }
       });
 
@@ -646,7 +657,7 @@ export class SLODashboardService extends EventEmitter {
     this.sloService.on('slo:evaluated', (evaluation: SLOEvaluation) => {
       // Find all dashboards that include this SLO
       for (const dashboard of this.dashboards.values()) {
-        const relevantWidgets = dashboard.widgets.filter(w =>
+        const relevantWidgets = dashboard.widgets.filter((w) =>
           w.config.sloIds?.includes(evaluation.sloId)
         );
 
@@ -660,7 +671,7 @@ export class SLODashboardService extends EventEmitter {
     this.sloService.on('alert:created', (alert: SLOAlert) => {
       // Find all dashboards that include this SLO
       for (const dashboard of this.dashboards.values()) {
-        const relevantWidgets = dashboard.widgets.filter(w =>
+        const relevantWidgets = dashboard.widgets.filter((w) =>
           w.config.sloIds?.includes(alert.sloId)
         );
 
@@ -674,7 +685,10 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate data for a widget based on its configuration
    */
-  private async generateWidgetData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
+  private async generateWidgetData(
+    widget: DashboardWidget,
+    filters?: Record<string, unknown>
+  ): Promise<unknown> {
     switch (widget.type) {
       case WidgetType.SLO_STATUS:
         return this.generateSLOStatusData(widget, filters);
@@ -696,7 +710,10 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate SLO status data
    */
-  private async generateSLOStatusData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
+  private async generateSLOStatusData(
+    widget: DashboardWidget,
+    filters?: Record<string, unknown>
+  ): Promise<unknown> {
     const sloIds = widget.config.sloIds || [];
     const statusData = [];
 
@@ -730,9 +747,15 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate compliance chart data
    */
-  private async generateComplianceChartData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
+  private async generateComplianceChartData(
+    widget: DashboardWidget,
+    filters?: Record<string, unknown>
+  ): Promise<unknown> {
     const sloIds = widget.config.sloIds || [];
-    const timeRange = widget.config.timeRange || { type: 'relative', duration: 24 * 60 * 60 * 1000 };
+    const timeRange = widget.config.timeRange || {
+      type: 'relative',
+      duration: 24 * 60 * 60 * 1000,
+    };
     const chartData = [];
 
     for (const sloId of sloIds) {
@@ -740,7 +763,7 @@ export class SLODashboardService extends EventEmitter {
       const slo = this.sloService.getSLO(sloId);
 
       if (slo && evaluations.length > 0) {
-        const seriesData = evaluations.map(e => ({
+        const seriesData = evaluations.map((e) => ({
           timestamp: e.timestamp,
           compliance: e.objective.compliance,
           target: e.objective.target,
@@ -764,7 +787,10 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate burn rate data
    */
-  private async generateBurnRateData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
+  private async generateBurnRateData(
+    widget: DashboardWidget,
+    filters?: Record<string, unknown>
+  ): Promise<unknown> {
     const sloIds = widget.config.sloIds || [];
     const burnRateData = [];
 
@@ -795,7 +821,10 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate error budget data
    */
-  private async generateErrorBudgetData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
+  private async generateErrorBudgetData(
+    widget: DashboardWidget,
+    filters?: Record<string, unknown>
+  ): Promise<unknown> {
     const sloIds = widget.config.sloIds || [];
     const budgetData = [];
 
@@ -826,7 +855,10 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate trend analysis data
    */
-  private async generateTrendAnalysisData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
+  private async generateTrendAnalysisData(
+    widget: DashboardWidget,
+    filters?: Record<string, unknown>
+  ): Promise<unknown> {
     const sloIds = widget.config.sloIds || [];
     const evaluations = this.sloService.getEvaluations(sloIds[0], 50);
 
@@ -834,7 +866,7 @@ export class SLODashboardService extends EventEmitter {
       return { type: 'trend_analysis', data: [], timestamp: new Date() };
     }
 
-    const trendData = evaluations.map(e => ({
+    const trendData = evaluations.map((e) => ({
       timestamp: e.timestamp,
       compliance: e.objective.compliance,
       burnRate: e.budget.burnRate,
@@ -851,7 +883,10 @@ export class SLODashboardService extends EventEmitter {
   /**
    * Generate alert summary data
    */
-  private async generateAlertSummaryData(widget: DashboardWidget, filters?: Record<string, unknown>): Promise<unknown> {
+  private async generateAlertSummaryData(
+    widget: DashboardWidget,
+    filters?: Record<string, unknown>
+  ): Promise<unknown> {
     const sloIds = widget.config.sloIds || [];
     const alertSummary = {
       total: 0,

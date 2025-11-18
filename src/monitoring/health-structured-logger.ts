@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Structured Health Event Logger
  *
@@ -21,9 +16,7 @@ import { CircuitBreakerEventType } from './circuit-breaker-monitor.js';
 import type { ProbeResult } from './container-probes.js';
 import type { MCPServerHealthMetrics } from './mcp-server-health-monitor.js';
 import type { QdrantHealthCheckResult } from './qdrant-health-monitor.js';
-import {
-  DependencyType,
-  HealthStatus} from '../types/unified-health-interfaces.js';
+import { DependencyType, HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**
  * Log severity levels
@@ -298,10 +291,12 @@ export class HealthStructuredLogger extends EventEmitter {
         componentName,
         componentType,
       },
-      error: error ? {
-        type: 'component_error',
-        message: error,
-      } : undefined,
+      error: error
+        ? {
+            type: 'component_error',
+            message: error,
+          }
+        : undefined,
       metadata: {},
     });
   }
@@ -329,10 +324,12 @@ export class HealthStructuredLogger extends EventEmitter {
         consecutiveFailures: event.consecutiveFailures,
         failureRate: event.failureRate,
       },
-      error: event.error ? {
-        type: 'circuit_breaker_error',
-        message: event.error,
-      } : undefined,
+      error: event.error
+        ? {
+            type: 'circuit_breaker_error',
+            message: event.error,
+          }
+        : undefined,
       metadata: event.metadata || {},
     });
   }
@@ -364,10 +361,12 @@ export class HealthStructuredLogger extends EventEmitter {
         collections: result.details.collections.length,
         systemInfo: result.details.systemInfo,
       },
-      error: result.error ? {
-        type: 'qdrant_error',
-        message: result.error,
-      } : undefined,
+      error: result.error
+        ? {
+            type: 'qdrant_error',
+            message: result.error,
+          }
+        : undefined,
       metadata: {},
     });
   }
@@ -576,7 +575,9 @@ export class HealthStructuredLogger extends EventEmitter {
   /**
    * Generic log method
    */
-  private log(entry: Omit<StructuredLogEntry, 'timestamp' | 'service' | 'version' | 'environment'>): void {
+  private log(
+    entry: Omit<StructuredLogEntry, 'timestamp' | 'service' | 'version' | 'environment'>
+  ): void {
     // Apply filtering
     if (!this.shouldLog(entry)) {
       return;
@@ -624,7 +625,9 @@ export class HealthStructuredLogger extends EventEmitter {
   /**
    * Check if entry should be logged based on filtering rules
    */
-  private shouldLog(entry: Omit<StructuredLogEntry, 'timestamp' | 'service' | 'version' | 'environment'>): boolean {
+  private shouldLog(
+    entry: Omit<StructuredLogEntry, 'timestamp' | 'service' | 'version' | 'environment'>
+  ): boolean {
     // Check level filtering
     if (!this.config.filtering.levels.includes(entry.level)) {
       return false;
@@ -653,9 +656,10 @@ export class HealthStructuredLogger extends EventEmitter {
   private outputToConsole(entry: StructuredLogEntry): void {
     if (!this.config.outputs.console.enabled) return;
 
-    const output = this.config.outputs.console.format === 'json'
-      ? JSON.stringify(entry, null, 2)
-      : this.formatPretty(entry);
+    const output =
+      this.config.outputs.console.format === 'json'
+        ? JSON.stringify(entry, null, 2)
+        : this.formatPretty(entry);
 
     if (this.config.outputs.console.colorize) {
       // Add color based on level
@@ -748,12 +752,18 @@ export class HealthStructuredLogger extends EventEmitter {
    */
   private getColorCode(level: LogLevel): string {
     switch (level) {
-      case LogLevel.DEBUG: return '36'; // Cyan
-      case LogLevel.INFO: return '32';  // Green
-      case LogLevel.WARN: return '33';  // Yellow
-      case LogLevel.ERROR: return '31'; // Red
-      case LogLevel.FATAL: return '35'; // Magenta
-      default: return '0';
+      case LogLevel.DEBUG:
+        return '36'; // Cyan
+      case LogLevel.INFO:
+        return '32'; // Green
+      case LogLevel.WARN:
+        return '33'; // Yellow
+      case LogLevel.ERROR:
+        return '31'; // Red
+      case LogLevel.FATAL:
+        return '35'; // Magenta
+      default:
+        return '0';
     }
   }
 
@@ -762,12 +772,16 @@ export class HealthStructuredLogger extends EventEmitter {
    */
   private getLogLevelForHealthStatus(status: HealthStatus): LogLevel {
     switch (status) {
-      case HealthStatus.HEALTHY: return LogLevel.INFO;
+      case HealthStatus.HEALTHY:
+        return LogLevel.INFO;
       case HealthStatus.WARNING:
-      case HealthStatus.DEGRADED: return LogLevel.WARN;
+      case HealthStatus.DEGRADED:
+        return LogLevel.WARN;
       case HealthStatus.CRITICAL:
-      case HealthStatus.UNHEALTHY: return LogLevel.ERROR;
-      default: return LogLevel.INFO;
+      case HealthStatus.UNHEALTHY:
+        return LogLevel.ERROR;
+      default:
+        return LogLevel.INFO;
     }
   }
 
@@ -777,12 +791,16 @@ export class HealthStructuredLogger extends EventEmitter {
   private getLogLevelForCircuitEvent(event: CircuitBreakerEvent): LogLevel {
     switch (event.eventType) {
       case CircuitBreakerEventType.SUCCESS:
-      case CircuitBreakerEventType.RECOVERY: return LogLevel.INFO;
-      case CircuitBreakerEventType.STATE_CHANGE: return LogLevel.WARN;
+      case CircuitBreakerEventType.RECOVERY:
+        return LogLevel.INFO;
+      case CircuitBreakerEventType.STATE_CHANGE:
+        return LogLevel.WARN;
       case CircuitBreakerEventType.FAILURE:
       case CircuitBreakerEventType.TIMEOUT:
-      case CircuitBreakerEventType.THRESHOLD_EXCEEDED: return LogLevel.ERROR;
-      default: return LogLevel.INFO;
+      case CircuitBreakerEventType.THRESHOLD_EXCEEDED:
+        return LogLevel.ERROR;
+      default:
+        return LogLevel.INFO;
     }
   }
 
@@ -791,10 +809,14 @@ export class HealthStructuredLogger extends EventEmitter {
    */
   private getLogLevelForSeverity(severity: 'info' | 'warning' | 'critical'): LogLevel {
     switch (severity) {
-      case 'info': return LogLevel.INFO;
-      case 'warning': return LogLevel.WARN;
-      case 'critical': return LogLevel.ERROR;
-      default: return LogLevel.INFO;
+      case 'info':
+        return LogLevel.INFO;
+      case 'warning':
+        return LogLevel.WARN;
+      case 'critical':
+        return LogLevel.ERROR;
+      default:
+        return LogLevel.INFO;
     }
   }
 
@@ -833,23 +855,25 @@ export class HealthStructuredLogger extends EventEmitter {
    * Get system information
    */
   private getSystemInfo(): unknown {
-    import('os').then(os => {
-      return {
-        hostname: os.hostname(),
-        platform: process.platform,
-        arch: process.arch,
-        nodeVersion: process.version,
-        uptime: process.uptime(),
-      };
-    }).catch(() => {
-      return {
-        hostname: 'unknown',
-        platform: process.platform,
-        arch: process.arch,
-        nodeVersion: process.version,
-        uptime: process.uptime(),
-      };
-    });
+    import('os')
+      .then((os) => {
+        return {
+          hostname: os.hostname(),
+          platform: process.platform,
+          arch: process.arch,
+          nodeVersion: process.version,
+          uptime: process.uptime(),
+        };
+      })
+      .catch(() => {
+        return {
+          hostname: 'unknown',
+          platform: process.platform,
+          arch: process.arch,
+          nodeVersion: process.version,
+          uptime: process.uptime(),
+        };
+      });
 
     // Synchronous fallback
     return {

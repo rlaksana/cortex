@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Deployment Artifact Manager
  *
@@ -14,12 +9,20 @@
  * @version 2.0.1
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync,writeFileSync } from 'fs';
-import {join } from 'path';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from 'fs';
+import { join } from 'path';
 import { createHash, createHmac } from 'crypto';
 
 import { execSync } from 'child_process';
-import { gunzipSync,gzipSync } from 'zlib';
+import { gunzipSync, gzipSync } from 'zlib';
 
 import { ProductionLogger as productionLogger } from '@/utils/logger.js';
 
@@ -87,7 +90,7 @@ export interface ArtifactMetadata {
     rollbackEnabled: boolean;
   };
 
-  signature?: unknown
+  signature?: unknown;
 }
 
 export interface ArtifactVerification {
@@ -223,12 +226,11 @@ export class DeploymentArtifactManager {
       await this.cleanupOldArtifacts();
 
       return artifactId;
-
     } catch (error) {
       this.logger.error('Failed to create deployment artifact', {
         version,
         environment,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -369,11 +371,11 @@ export class DeploymentArtifactManager {
               executable: (stats.mode & parseInt('111', 8)) !== 0,
             });
           } catch (error) {
-            this.logger.warn('Failed to include file', { filePath, error: error.message });
+            this.logger.warn('Failed to include file', { filePath, error: error instanceof Error ? error.message : String(error) });
           }
         }
       } catch (error) {
-        this.logger.warn('Failed to glob pattern', { pattern, error: error.message });
+        this.logger.warn('Failed to glob pattern', { pattern, error: error instanceof Error ? error.message : String(error) });
       }
     }
 
@@ -458,7 +460,10 @@ export class DeploymentArtifactManager {
 
       // Verify signature if present
       if (this.config.signingEnabled && metadata.signature) {
-        verification.checks.signature = this.verifySignature(artifactBuf, String(metadata.signature))
+        verification.checks.signature = this.verifySignature(
+          artifactBuf,
+          String(metadata.signature)
+        );
         if (!verification.checks.signature) {
           verification.issues.push('Artifact signature verification failed');
         }
@@ -492,7 +497,9 @@ export class DeploymentArtifactManager {
 
       // Calculate overall score
       const passedChecks = Object.values(verification.checks).filter(Boolean).length;
-      verification.score = Math.round((passedChecks / Object.keys(verification.checks).length) * 100);
+      verification.score = Math.round(
+        (passedChecks / Object.keys(verification.checks).length) * 100
+      );
 
       // Determine status
       if (verification.issues.length > 0) {
@@ -510,15 +517,14 @@ export class DeploymentArtifactManager {
       });
 
       return verification;
-
     } catch (error) {
       verification.status = 'fail';
-      verification.issues.push(`Verification error: ${error.message}`);
+      verification.issues.push(`Verification error: ${error instanceof Error ? error.message : String(error)}`);
       verification.score = 0;
 
       this.logger.error('Artifact verification failed', {
         artifactId,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
 
       return verification;
@@ -596,16 +602,15 @@ export class DeploymentArtifactManager {
       });
 
       return { success: true, deploymentId, issues };
-
     } catch (error) {
       this.logger.error('Artifact deployment failed', {
         deploymentId,
         artifactId,
         targetEnvironment,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
 
-      issues.push(`Deployment failed: ${error.message}`);
+      issues.push(`Deployment failed: ${error instanceof Error ? error.message : String(error)}`);
       return { success: false, deploymentId, issues };
     }
   }
@@ -618,7 +623,7 @@ export class DeploymentArtifactManager {
 
     try {
       const files = readdirSync(this.artifactsDirectory);
-      const metadataFiles = files.filter(file => file.endsWith('.metadata.json'));
+      const metadataFiles = files.filter((file) => file.endsWith('.metadata.json'));
 
       for (const metadataFile of metadataFiles.slice(0, limit)) {
         try {
@@ -631,16 +636,15 @@ export class DeploymentArtifactManager {
         } catch (error) {
           this.logger.warn('Failed to load metadata file', {
             file: metadataFile,
-            error: error.message,
+            error: error instanceof Error ? error.message : String(error),
           });
         }
       }
 
       // Sort by timestamp (newest first)
       artifacts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
     } catch (error) {
-      this.logger.error('Failed to list artifacts', { error: error.message });
+      this.logger.error('Failed to list artifacts', { error: error instanceof Error ? error.message : String(error) });
     }
 
     return artifacts;
@@ -660,7 +664,7 @@ export class DeploymentArtifactManager {
     } catch (error) {
       this.logger.error('Failed to get artifact metadata', {
         artifactId,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
       return null;
     }
@@ -691,11 +695,10 @@ export class DeploymentArtifactManager {
       }
 
       return deleted;
-
     } catch (error) {
       this.logger.error('Failed to delete artifact', {
         artifactId,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
       return false;
     }
@@ -722,7 +725,7 @@ export class DeploymentArtifactManager {
       // Also delete if we have too many artifacts
       if (artifacts.length > this.config.maxArtifacts) {
         const excess = artifacts.slice(this.config.maxArtifacts);
-        toDelete.push(...excess.map(a => a.id));
+        toDelete.push(...excess.map((a) => a.id));
       }
 
       for (const artifactId of toDelete) {
@@ -732,9 +735,8 @@ export class DeploymentArtifactManager {
       if (toDelete.length > 0) {
         this.logger.info('Cleaned up old artifacts', { count: toDelete.length });
       }
-
     } catch (error) {
-      this.logger.warn('Failed to cleanup old artifacts', { error: error.message });
+      this.logger.warn('Failed to cleanup old artifacts', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -849,9 +851,14 @@ export class DeploymentArtifactManager {
     try {
       const result = execSync(`find . -name "${pattern.replace('**/', '*')}" -type f`, {
         encoding: 'utf8',
-        stdio: 'pipe'
+        stdio: 'pipe',
       });
-      files.push(...result.trim().split('\n').filter(f => f));
+      files.push(
+        ...result
+          .trim()
+          .split('\n')
+          .filter((f) => f)
+      );
     } catch {
       // Ignore errors
     }
@@ -953,7 +960,7 @@ For issues and support, refer to the deployment guide.
 - Build: ${metadata.buildNumber}
 
 ## Features
-${metadata.features.map(f => `- ${f}`).join('\n')}
+${metadata.features.map((f) => `- ${f}`).join('\n')}
 
 ## Security Scan
 - Critical: ${metadata.security.vulnerabilities.critical}
@@ -1068,7 +1075,11 @@ ${metadata.deployment.previousVersion ? `Rollback to: ${metadata.deployment.prev
     // Decrypt if needed
     if (this.config.encryptionEnabled && this.config.encryptionKey) {
       // ensure non-shared buffer instance for downstream types
-      const view = new Uint8Array(artifactBuf.buffer, artifactBuf.byteOffset, artifactBuf.byteLength);
+      const view = new Uint8Array(
+        artifactBuf.buffer,
+        artifactBuf.byteOffset,
+        artifactBuf.byteLength
+      );
       const nonShared = Buffer.from(view);
       artifactBuf = this.decryptArtifact(nonShared, this.config.encryptionKey);
     }
@@ -1099,7 +1110,11 @@ ${metadata.deployment.previousVersion ? `Rollback to: ${metadata.deployment.prev
     // In a real implementation, this would update system configuration
   }
 
-  private async recordDeployment(deploymentId: string, artifactId: string, environment: string): Promise<void> {
+  private async recordDeployment(
+    deploymentId: string,
+    artifactId: string,
+    environment: string
+  ): Promise<void> {
     this.logger.info('Recording deployment', { deploymentId, artifactId, environment });
     // In a real implementation, this would record the deployment in a database or log
   }

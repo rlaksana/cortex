@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Metadata Flagging Service
  * Handles flagging items with contradiction metadata and managing pointers
@@ -125,7 +120,7 @@ export class MetadataFlaggingService {
     }
 
     // Ensure metadata exists
-    const metadata = item.metadata ? { ...item.metadata } : {} as Record<string, unknown>;
+    const metadata = item.metadata ? { ...item.metadata } : ({} as Record<string, unknown>);
 
     // Add contradiction flags
     const contradictionIds = new Set<string>();
@@ -133,7 +128,10 @@ export class MetadataFlaggingService {
       flag.contradiction_ids.forEach((id) => contradictionIds.add(id));
     });
 
-    if (contradictionIds.size > 0 && !(metadata.flags as string[])?.includes('possible_contradiction')) {
+    if (
+      contradictionIds.size > 0 &&
+      !(metadata.flags as string[])?.includes('possible_contradiction')
+    ) {
       metadata.flags = [...((metadata.flags as string[]) || []), 'possible_contradiction'];
       metadata.contradiction_ids = Array.from(contradictionIds);
       metadata.contradiction_flagged_at = new Date().toISOString();
@@ -229,7 +227,9 @@ export class MetadataFlaggingService {
       const updatedPointers = pointers.filter(
         (pointer) =>
           !(pointer.metadata as Record<string, unknown>).contradiction_id ||
-          !contradictionIds.includes((pointer.metadata as Record<string, unknown>).contradiction_id as string)
+          !contradictionIds.includes(
+            (pointer.metadata as Record<string, unknown>).contradiction_id as string
+          )
       );
 
       if (updatedPointers.length === 0) {

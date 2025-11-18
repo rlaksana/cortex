@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Centralized SLO Types - Unified Type System for MCP Cortex
  *
@@ -35,20 +31,20 @@ export enum BreachSeverity {
   LOW = 'low',
   MEDIUM = 'medium',
   HIGH = 'high',
-  CRITICAL = 'critical'
+  CRITICAL = 'critical',
 }
 
 export enum EscalationLevel {
   TIER_1 = 'tier_1',
   TIER_2 = 'tier_2',
-  TIER_3 = 'tier_3'
+  TIER_3 = 'tier_3',
 }
 
 export enum IncidentStatus {
   OPEN = 'open',
   INVESTIGATING = 'investigating',
   RESOLVED = 'resolved',
-  CLOSED = 'closed'
+  CLOSED = 'closed',
 }
 
 // ============================================================================
@@ -86,7 +82,7 @@ export interface DashboardWidget {
   id: string;
   type: string;
   title: string;
-  width: number;  // Standardized from 'w'
+  width: number; // Standardized from 'w'
   height: number; // Standardized from 'h'
   x: number;
   y: number;
@@ -131,7 +127,6 @@ export interface MetricsData {
   labels?: Record<string, string>;
 }
 
-
 export class ObservabilityService extends EventEmitter {
   protected socketServer: SocketServerLike | null = null;
 
@@ -164,7 +159,7 @@ export class ObservabilityService extends EventEmitter {
       x,
       y,
       category,
-      defaultPosition: { x: 0, y: 0 }
+      defaultPosition: { x: 0, y: 0 },
     };
   }
 }
@@ -194,7 +189,7 @@ export function adaptWidget(legacy: LegacyDashboardWidget): ModernDashboardWidge
     x: legacy.x ?? 0,
     y: legacy.y ?? 0,
     defaultPosition: { x: legacy.x ?? 0, y: legacy.y ?? 0 },
-    category: 'migrated'
+    category: 'migrated',
   };
 }
 
@@ -203,10 +198,7 @@ export function adaptWidget(legacy: LegacyDashboardWidget): ModernDashboardWidge
 // ============================================================================
 
 // Re-export commonly used types from slo-interfaces.ts for compatibility
-export type {
-  SLA,
-  SLI,
-  SLO} from './slo-interfaces.js';
+export type { SLA, SLI, SLO } from './slo-interfaces.js';
 
 // Provide access to legacy types during migration
-export type { AlertSeverity,HealthStatus } from './unified-health-interfaces.js';
+export type { AlertSeverity, HealthStatus } from './unified-health-interfaces.js';

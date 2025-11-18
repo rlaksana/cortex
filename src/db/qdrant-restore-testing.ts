@@ -13,19 +13,15 @@
  * @since 2025
  */
 
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 import { type QdrantClient } from '@qdrant/js-client-rest';
 
 import { logger } from '@/utils/logger.js';
+import { type RpoRtoMetrics } from '../types/database-types-enhanced.js';
 
 import type {
   BackupConfiguration,
   BackupMetadata,
-  RestoreTestResult
+  RestoreTestResult,
 } from './qdrant-backup-config.js';
 
 /**
@@ -35,7 +31,12 @@ export interface TestScenario {
   id: string;
   name: string;
   description: string;
-  type: 'full-restore' | 'incremental-restore' | 'point-in-time' | 'partial-restore' | 'cross-environment';
+  type:
+    | 'full-restore'
+    | 'incremental-restore'
+    | 'point-in-time'
+    | 'partial-restore'
+    | 'cross-environment';
   frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly';
   enabled: boolean;
   priority: 'low' | 'medium' | 'high' | 'critical';
@@ -171,16 +172,16 @@ export interface FunctionalTestResult {
     };
   };
   crudOperations: {
-    insert: { passed: number; failed: number; avgLatency: number; };
-    update: { passed: number; failed: number; avgLatency: number; };
-    delete: { passed: number; failed: number; avgLatency: number; };
-    retrieve: { passed: number; failed: number; avgLatency: number; };
+    insert: { passed: number; failed: number; avgLatency: number };
+    update: { passed: number; failed: number; avgLatency: number };
+    delete: { passed: number; failed: number; avgLatency: number };
+    retrieve: { passed: number; failed: number; avgLatency: number };
   };
   edgeCases: {
-    emptyQueries: { passed: number; failed: number; };
-    malformedQueries: { passed: number; failed: number; };
-    largeVectors: { passed: number; failed: number; };
-    specialCharacters: { passed: number; failed: number; };
+    emptyQueries: { passed: number; failed: number };
+    malformedQueries: { passed: number; failed: number };
+    largeVectors: { passed: number; failed: number };
+    specialCharacters: { passed: number; failed: number };
   };
 }
 
@@ -296,7 +297,10 @@ export class AutomatedRestoreTestingService {
   /**
    * Execute a restore test scenario
    */
-  async executeTest(scenarioId: string, backupId?: string): Promise<ComprehensiveRestoreTestResult> {
+  async executeTest(
+    scenarioId: string,
+    backupId?: string
+  ): Promise<ComprehensiveRestoreTestResult> {
     const scenario = this.testScenarios.get(scenarioId);
     if (!scenario) {
       throw new Error(`Test scenario not found: ${scenarioId}`);
@@ -307,12 +311,15 @@ export class AutomatedRestoreTestingService {
     const timeout = new Date(startTime.getTime() + scenario.parameters.timeoutMinutes * 60 * 1000);
 
     try {
-      logger.info({
-        testId,
-        scenarioId,
-        scenarioName: scenario.name,
-        startTime: startTime.toISOString(),
-      }, 'Starting restore test execution');
+      logger.info(
+        {
+          testId,
+          scenarioId,
+          scenarioName: scenario.name,
+          startTime: startTime.toISOString(),
+        },
+        'Starting restore test execution'
+      );
 
       // Select backup for testing
       const backup = await this.selectBackupForTest(scenario, backupId);
@@ -350,16 +357,18 @@ export class AutomatedRestoreTestingService {
 
       this.activeTests.delete(testId);
 
-      logger.info({
-        testId,
-        scenarioId,
-        success: result.success,
-        duration: result.duration,
-        dataIntegrityScore: result.dataIntegrity.overall.score,
-      }, 'Restore test execution completed');
+      logger.info(
+        {
+          testId,
+          scenarioId,
+          success: result.success,
+          duration: result.duration,
+          dataIntegrityScore: result.dataIntegrity.overall.score,
+        },
+        'Restore test execution completed'
+      );
 
       return result;
-
     } catch (error) {
       this.activeTests.delete(testId);
 
@@ -430,7 +439,10 @@ export class AutomatedRestoreTestingService {
   /**
    * Get test history and statistics
    */
-  async getTestHistory(limit?: number, scenarioId?: string): Promise<{
+  async getTestHistory(
+    limit?: number,
+    scenarioId?: string
+  ): Promise<{
     totalTests: number;
     successRate: number;
     averageDuration: number;
@@ -442,9 +454,9 @@ export class AutomatedRestoreTestingService {
     const allTests = Array.from(this.testHistory.values());
 
     // Filter by scenario if specified
-    const filteredTests = scenarioId ?
-      allTests.filter(test => test.scenarioId === scenarioId) :
-      allTests;
+    const filteredTests = scenarioId
+      ? allTests.filter((test) => test.scenarioId === scenarioId)
+      : allTests;
 
     // Sort by timestamp (most recent first)
     filteredTests.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -453,22 +465,32 @@ export class AutomatedRestoreTestingService {
     const recentTests = limit ? filteredTests.slice(0, limit) : filteredTests;
 
     // Calculate statistics
-    const successfulTests = filteredTests.filter(test => test.success);
-    const successRate = filteredTests.length > 0 ? (successfulTests.length / filteredTests.length) * 100 : 0;
+    const successfulTests = filteredTests.filter((test) => test.success);
+    const successRate =
+      filteredTests.length > 0 ? (successfulTests.length / filteredTests.length) * 100 : 0;
 
-    const averageDuration = filteredTests.length > 0 ?
-      filteredTests.reduce((sum, test) => sum + test.duration, 0) / filteredTests.length :
-      0;
+    const averageDuration =
+      filteredTests.length > 0
+        ? filteredTests.reduce((sum, test) => sum + test.duration, 0) / filteredTests.length
+        : 0;
 
-    const averageDataIntegrityScore = filteredTests.length > 0 ?
-      filteredTests.reduce((sum, test) => sum + test.dataIntegrity.overall.score, 0) / filteredTests.length :
-      0;
+    const averageDataIntegrityScore =
+      filteredTests.length > 0
+        ? filteredTests.reduce((sum, test) => sum + test.dataIntegrity.overall.score, 0) /
+          filteredTests.length
+        : 0;
 
-    const rpoCompliantTests = filteredTests.filter(test => test.compliance.rpoCompliance.compliant);
-    const averageRpoCompliance = filteredTests.length > 0 ? (rpoCompliantTests.length / filteredTests.length) * 100 : 0;
+    const rpoCompliantTests = filteredTests.filter(
+      (test) => test.compliance.rpoCompliance.compliant
+    );
+    const averageRpoCompliance =
+      filteredTests.length > 0 ? (rpoCompliantTests.length / filteredTests.length) * 100 : 0;
 
-    const rtoCompliantTests = filteredTests.filter(test => test.compliance.rtoCompliance.compliant);
-    const averageRtoCompliance = filteredTests.length > 0 ? (rtoCompliantTests.length / filteredTests.length) * 100 : 0;
+    const rtoCompliantTests = filteredTests.filter(
+      (test) => test.compliance.rtoCompliance.compliant
+    );
+    const averageRtoCompliance =
+      filteredTests.length > 0 ? (rtoCompliantTests.length / filteredTests.length) * 100 : 0;
 
     return {
       totalTests: filteredTests.length,
@@ -537,7 +559,7 @@ export class AutomatedRestoreTestingService {
   }> {
     const now = new Date();
 
-    return Array.from(this.activeTests.values()).map(context => ({
+    return Array.from(this.activeTests.values()).map((context) => ({
       testId: context.testId,
       scenarioId: context.scenario.id,
       scenarioName: context.scenario.name,
@@ -550,7 +572,9 @@ export class AutomatedRestoreTestingService {
 
   // === Private Helper Methods ===
 
-  private async executeTestPhases(context: TestExecutionContext): Promise<ComprehensiveRestoreTestResult> {
+  private async executeTestPhases(
+    context: TestExecutionContext
+  ): Promise<ComprehensiveRestoreTestResult> {
     const startTime = Date.now();
 
     // Phase 1: Environment Preparation
@@ -584,7 +608,13 @@ export class AutomatedRestoreTestingService {
     await this.cleanupTestEnvironment(context);
 
     const totalDuration = Date.now() - startTime;
-    const success = this.evaluateTestSuccess(context, dataIntegrity, performance, functionalTests, compliance);
+    const success = this.evaluateTestSuccess(
+      context,
+      dataIntegrity,
+      performance,
+      functionalTests,
+      compliance
+    );
 
     return {
       id: context.testId,
@@ -594,20 +624,32 @@ export class AutomatedRestoreTestingService {
       environment: context.environment,
       timestamp: context.startTime,
       success,
-      status: success ? 'passed' as const : 'failed' as const,
+      status: success ? ('passed' as const) : ('failed' as const),
       duration: totalDuration,
       recordsRestored: dataIntegrity.vectorEmbeddings.count,
-      recordsExpected: (context.backup.metadata?.recordCount as number) || dataIntegrity.vectorEmbeddings.count,
-      successRate: dataIntegrity.vectorEmbeddings.count / ((context.backup.metadata?.recordCount as number) || dataIntegrity.vectorEmbeddings.count || 1) * 100,
+      recordsExpected:
+        (context.backup.metadata?.recordCount as number) || dataIntegrity.vectorEmbeddings.count,
+      successRate:
+        (dataIntegrity.vectorEmbeddings.count /
+          ((context.backup.metadata?.recordCount as number) ||
+            dataIntegrity.vectorEmbeddings.count ||
+            1)) *
+        100,
       errors: success ? [] : ['Test did not meet all success criteria'],
       warnings: [],
-      recommendations: this.generateTestRecommendations(context, dataIntegrity, performance, functionalTests),
+      recommendations: this.generateTestRecommendations(
+        context,
+        dataIntegrity,
+        performance,
+        functionalTests
+      ),
       backupMetadata: context.backup,
       dataIntegrity,
       performance: {
         restoreSpeed: performance.throughput?.itemsPerSecond || 0,
         totalDuration: performance.restore?.totalTime || 0,
-        averageLatency: (performance.restore?.totalTime || 0) / (dataIntegrity.vectorEmbeddings.count || 1),
+        averageLatency:
+          (performance.restore?.totalTime || 0) / (dataIntegrity.vectorEmbeddings.count || 1),
       },
       performanceDetails: performance,
       functionalTests,
@@ -756,7 +798,10 @@ export class AutomatedRestoreTestingService {
     return `restore_test_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
   }
 
-  private async selectBackupForTest(scenario: TestScenario, backupId?: string): Promise<BackupMetadata> {
+  private async selectBackupForTest(
+    scenario: TestScenario,
+    backupId?: string
+  ): Promise<BackupMetadata> {
     // Implementation would select appropriate backup based on scenario parameters
     throw new Error('Backup selection not implemented');
   }
@@ -784,7 +829,9 @@ export class AutomatedRestoreTestingService {
     return this.createEmptyPerformanceBenchmarkResult();
   }
 
-  private async performFunctionalTests(context: TestExecutionContext): Promise<FunctionalTestResult> {
+  private async performFunctionalTests(
+    context: TestExecutionContext
+  ): Promise<FunctionalTestResult> {
     // Implementation would perform functional testing
     return this.createEmptyFunctionalTestResult();
   }
@@ -842,7 +889,11 @@ export class AutomatedRestoreTestingService {
     dataIntegrity: DataIntegrityResult,
     performance: PerformanceBenchmarkResult,
     functionalTests: FunctionalTestResult,
-    compliance: unknown
+    compliance: {
+      rpoCompliance: { target: number; actual: number; compliant: boolean };
+      rtoCompliance: { target: number; actual: number; compliant: boolean };
+      slaMetrics: { availability: number; errorRate: number; responseTime: number };
+    }
   ): boolean {
     const criteria = context.scenario.successCriteria;
 
@@ -852,40 +903,53 @@ export class AutomatedRestoreTestingService {
     }
 
     // Check performance thresholds
-    if (performance.restore.totalTime > criteria.performanceThreshold.maxRestoreTimeMinutes * 60 * 1000) {
+    if (
+      performance.restore.totalTime >
+      criteria.performanceThreshold.maxRestoreTimeMinutes * 60 * 1000
+    ) {
       return false;
     }
 
-    if (performance.throughput.itemsPerSecond < criteria.performanceThreshold.minThroughputItemsPerSecond) {
+    if (
+      performance.throughput.itemsPerSecond <
+      criteria.performanceThreshold.minThroughputItemsPerSecond
+    ) {
       return false;
     }
 
     // Check compliance
-    if (criteria.rpoComplianceRequired && !compliance.rpoCompliance.compliant) {
-      return false;
+    if (criteria.rpoComplianceRequired) {
+      const rpoMetrics = compliance.rpoCompliance as { target: number; actual: number; compliant: boolean };
+      if (!rpoMetrics.compliant) {
+        return false;
+      }
     }
 
-    if (criteria.rtoComplianceRequired && !compliance.rtoCompliance.compliant) {
-      return false;
+    if (criteria.rtoComplianceRequired) {
+      const rtoMetrics = compliance.rtoCompliance as { target: number; actual: number; compliant: boolean };
+      if (!rtoMetrics.compliant) {
+        return false;
+      }
     }
 
     // Check functional tests
     if (criteria.functionalTestsRequired) {
       const totalFunctionalTests = Object.values(functionalTests).reduce((sum, group) => {
-        if (typeof group === 'object' && 'passed' in group && 'failed' in group) {
-          return sum + (group as unknown).passed + (group as unknown).failed;
+        if (typeof group === 'object' && group !== null && 'passed' in group && 'failed' in group) {
+          const groupObj = group as Record<string, unknown>;
+          return sum + (groupObj.passed as number) + (groupObj.failed as number);
         }
         return sum;
       }, 0);
 
       const failedFunctionalTests = Object.values(functionalTests).reduce((sum, group) => {
-        if (typeof group === 'object' && 'failed' in group) {
-          return sum + (group as unknown).failed;
+        if (typeof group === 'object' && group !== null && 'failed' in group) {
+          return sum + ((group as Record<string, unknown>).failed as number);
         }
         return sum;
       }, 0);
 
-      if (totalFunctionalTests > 0 && (failedFunctionalTests / totalFunctionalTests) > 0.05) {
+      if (totalFunctionalTests > 0 && failedFunctionalTests / totalFunctionalTests > 0.05) {
         return false; // More than 5% functional test failures
       }
     }
@@ -920,21 +984,24 @@ export class AutomatedRestoreTestingService {
 
     // Functional test recommendations
     const totalFunctionalTests = Object.values(functionalTests).reduce((sum, group) => {
-      if (typeof group === 'object' && 'passed' in group && 'failed' in group) {
-        return sum + (group as unknown).passed + (group as unknown).failed;
+      if (typeof group === 'object' && group !== null && 'passed' in group && 'failed' in group) {
+        const groupObj = group as Record<string, unknown>;
+        return sum + (groupObj.passed as number) + (groupObj.failed as number);
       }
       return sum;
     }, 0);
 
     const failedFunctionalTests = Object.values(functionalTests).reduce((sum, group) => {
-      if (typeof group === 'object' && 'failed' in group) {
-        return sum + (group as unknown).failed;
+      if (typeof group === 'object' && group !== null && 'failed' in group) {
+        return sum + ((group as Record<string, unknown>).failed as number);
       }
       return sum;
     }, 0);
 
     if (failedFunctionalTests > 0) {
-      recommendations.push(`${failedFunctionalTests} functional tests failed - review test cases and system behavior`);
+      recommendations.push(
+        `${failedFunctionalTests} functional tests failed - review test cases and system behavior`
+      );
     }
 
     return recommendations;
@@ -972,7 +1039,7 @@ export class AutomatedRestoreTestingService {
 
   private findScheduledTests(now: Date): TestScenario[] {
     // Implementation would find tests scheduled for current time
-    return Array.from(this.testScenarios.values()).filter(scenario => scenario.enabled);
+    return Array.from(this.testScenarios.values()).filter((scenario) => scenario.enabled);
   }
 
   private calculateTestProgress(context: TestExecutionContext): number {
@@ -1010,19 +1077,52 @@ export class AutomatedRestoreTestingService {
   private createEmptyDataIntegrityResult(): DataIntegrityResult {
     return {
       overall: { score: 0, passed: false, issues: [] },
-      vectorEmbeddings: { count: 0, checksumValid: false, dimensionsValid: false, corruptedCount: 0, corruptionRate: 0 },
-      metadata: { schemaValid: false, requiredFieldsPresent: false, dataTypesValid: false, inconsistencies: [] },
+      vectorEmbeddings: {
+        count: 0,
+        checksumValid: false,
+        dimensionsValid: false,
+        corruptedCount: 0,
+        corruptionRate: 0,
+      },
+      metadata: {
+        schemaValid: false,
+        requiredFieldsPresent: false,
+        dataTypesValid: false,
+        inconsistencies: [],
+      },
       relationships: { referentialIntegrityValid: false, orphanedRecords: 0, brokenReferences: [] },
-      content: { semanticSimilarityValid: false, contentLossCount: 0, truncationIssues: [], encodingIssues: [] },
+      content: {
+        semanticSimilarityValid: false,
+        contentLossCount: 0,
+        truncationIssues: [],
+        encodingIssues: [],
+      },
     };
   }
 
   private createEmptyPerformanceBenchmarkResult(): PerformanceBenchmarkResult {
     return {
-      restore: { totalTime: 0, initTime: 0, dataTransferTime: 0, indexRebuildTime: 0, finalizationTime: 0 },
-      validation: { totalTime: 0, integrityCheckTime: 0, consistencyCheckTime: 0, functionalTestTime: 0 },
+      restore: {
+        totalTime: 0,
+        initTime: 0,
+        dataTransferTime: 0,
+        indexRebuildTime: 0,
+        finalizationTime: 0,
+      },
+      validation: {
+        totalTime: 0,
+        integrityCheckTime: 0,
+        consistencyCheckTime: 0,
+        functionalTestTime: 0,
+      },
       throughput: { itemsPerSecond: 0, megabytesPerSecond: 0, vectorOperationsPerSecond: 0 },
-      resources: { peakMemoryUsageMB: 0, peakCpuUsage: 0, diskIORead: 0, diskIOWrite: 0, networkIO: 0 },
+      resources: {
+        peakMemoryUsageMB: 0,
+        peakCpuUsage: 0,
+        diskIORead: 0,
+        diskIOWrite: 0,
+        networkIO: 0,
+      },
       comparison: { baselineRestored: false, performanceChange: 0, withinThreshold: false },
     };
   }

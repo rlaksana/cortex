@@ -1,155 +1,32 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Audit and Metrics Types for Cortex MCP System
  *
- * Provides comprehensive type definitions for audit events, metrics,
- * compliance tracking, and validation operations.
+ * Re-exports consolidated audit types from audit-types.ts to maintain compatibility.
+ * This file now focuses on metrics-specific types while providing audit type exports.
  */
 
 // ============================================================================
-// Audit Types
+// Re-export Consolidated Audit Types from audit-types.ts
 // ============================================================================
 
-export enum AuditCategory {
-  SYSTEM = 'system',
-  SECURITY = 'security',
-  PERFORMANCE = 'performance',
-  BUSINESS = 'business',
-  COMPLIANCE = 'compliance',
-  OPERATION = 'operation',
-  DATA = 'data',
-  ACCESS = 'access'
-}
+// Re-export consolidated audit enums
+export {
+  AuditCategory,
+  AuditEventType,
+  AuditOperation,
+  AuditSource,
+  ComplianceFramework,
+  ComplianceRegulation,
+  SensitivityLevel,
+} from './audit-types.js';
 
-export enum AuditEventType {
-  USER_ACTION = 'user_action',
-  SYSTEM_EVENT = 'system_event',
-  ERROR_OCCURRED = 'error_occurred',
-  SECURITY_VIOLATION = 'security_violation',
-  CONFIGURATION_CHANGE = 'configuration_change',
-  DATA_ACCESS = 'data_access',
-  API_CALL = 'api_call',
-  BATCH_OPERATION = 'batch_operation'
-}
-
-export enum AuditOperation {
-  CREATE = 'create',
-  READ = 'read',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  EXECUTE = 'execute',
-  ACCESS = 'access',
-  MODIFY = 'modify',
-  APPROVE = 'approve',
-  REJECT = 'reject',
-  EXPORT = 'export',
-  IMPORT = 'import'
-}
-
-export enum AuditSource {
-  USER_INTERFACE = 'user_interface',
-  API = 'api',
-  SYSTEM = 'system',
-  BATCH_PROCESS = 'batch_process',
-  AUTOMATION = 'automation',
-  EXTERNAL_SYSTEM = 'external_system',
-  BACKGROUND_SERVICE = 'background_service'
-}
-
-export enum ComplianceFramework {
-  GDPR = 'gdpr',
-  HIPAA = 'hipaa',
-  SOX = 'sox',
-  PCI_DSS = 'pci_dss',
-  ISO_27001 = 'iso_27001',
-  SOC_2 = 'soc_2',
-  NIST = 'nist',
-  CCPA = 'ccpa'
-}
-
-export enum ComplianceRegulation {
-  GDPR_ARTICLE_5 = 'gdpr_article_5',
-  GDPR_ARTICLE_25 = 'gdpr_article_25',
-  HIPAA_SECURITY_RULE = 'hipaa_security_rule',
-  SOX_SECTION_404 = 'sox_section_404',
-  PCI_DSS_3_2 = 'pci_dss_3_2',
-  ISO_27001_A_8_2 = 'iso_27001_a_8_2'
-}
-
-export enum SensitivityLevel {
-  PUBLIC = 'public',
-  INTERNAL = 'internal',
-  CONFIDENTIAL = 'confidential',
-  RESTRICTED = 'restricted',
-  TOP_SECRET = 'top_secret'
-}
-
-export interface TypedAuditEvent {
-  id: string;
-  timestamp: string;
-  category: AuditCategory;
-  eventType: AuditEventType;
-  operation: AuditOperation;
-  source: AuditSource;
-  userId?: string;
-  sessionId?: string;
-  resourceId?: string;
-  resourceType?: string;
-  action: string;
-  result: 'success' | 'failure' | 'partial';
-  details: Record<string, unknown>;
-  ipAddress?: string;
-  userAgent?: string;
-  location?: GeographicInfo;
-  sensitivity: SensitivityLevel;
-  compliance: ComplianceInfo;
-  complianceFrameworks: ComplianceFramework[];
-  regulations: ComplianceRegulation[];
-  metadata: Record<string, unknown>;
-  // Additional properties for validation
-  entityType?: string;
-  entityId?: string;
-  oldData?: Record<string, unknown>;
-  newData?: Record<string, unknown>;
-}
-
-// Additional type definitions for TypedAuditEvent compatibility
-export interface GeographicInfo {
-  country?: string;
-  region?: string;
-  city?: string;
-  coordinates?: {
-    latitude?: number;
-    longitude?: number;
-  };
-}
-
-export interface ComplianceInfo {
-  frameworks: ComplianceFramework[];
-  regulations: ComplianceRegulation[];
-  flags?: {
-    gdpr: boolean;
-    hipaa: boolean;
-    sox: boolean;
-    pci: boolean;
-  };
-}
-
-export interface AuditValidationResult {
-  isValid: boolean;
-  severity: 'error' | 'warning' | 'info';
-  errors: ValidationError[];
-  warnings: ValidationWarning[];
-  validatedEvent?: TypedAuditEvent;
-  metadata: {
-    validationTimeMs: number;
-    validatorVersion: string;
-    checkedFields: string[];
-  };
-}
+// Re-export audit types with proper type declarations for isolatedModules
+export type {
+  AuditValidationResult,
+  ComplianceInfo,
+  GeographicInfo,
+  TypedAuditEvent,
+} from './audit-types.js';
 
 // ============================================================================
 // Metrics Types
@@ -163,7 +40,7 @@ export enum MetricCategory {
   RESOURCE_UTILIZATION = 'resource_utilization',
   BUSINESS = 'business',
   USER_EXPERIENCE = 'user_experience',
-  SECURITY = 'security'
+  SECURITY = 'security',
 }
 
 export const MetricType = {
@@ -172,10 +49,10 @@ export const MetricType = {
   HISTOGRAM: 'histogram',
   TIMER: 'timer',
   METER: 'meter',
-  PERCENTILE: 'percentile'
+  PERCENTILE: 'percentile',
 } as const;
 
-export type MetricType = typeof MetricType[keyof typeof MetricType];
+export type MetricType = (typeof MetricType)[keyof typeof MetricType];
 
 export enum OutputFormat {
   JSON = 'json',
@@ -183,7 +60,7 @@ export enum OutputFormat {
   XML = 'xml',
   PROMETHEUS = 'prometheus',
   INFLUXDB = 'influxdb',
-  GRAFANA = 'grafana'
+  GRAFANA = 'grafana',
 }
 
 export interface TypedMetric {
@@ -198,6 +75,8 @@ export interface TypedMetric {
   thresholds?: {
     warning?: number;
     critical?: number;
+    min?: number;
+    max?: number;
     expectedRange?: [number, number];
     criticalRange?: [number, number];
   };
@@ -210,14 +89,6 @@ export interface TypedMetric {
   };
   labels?: Record<string, string>;
   component?: string;
-  thresholds?: {
-    warning?: number;
-    critical?: number;
-    min?: number;
-    max?: number;
-    expectedRange?: [number, number];
-    criticalRange?: [number, number];
-  };
 }
 
 export interface MetricValidationResult {
@@ -276,7 +147,9 @@ export interface ValidationContext {
   version?: string;
 }
 
-export type ValidationFunction = ((data: unknown, context?: ValidationContext) => ValidationResult) | ((data: unknown, context?: ValidationContext) => Promise<ValidationResult>);
+export type ValidationFunction =
+  | ((data: unknown, context?: ValidationContext) => ValidationResult)
+  | ((data: unknown, context?: ValidationContext) => Promise<ValidationResult>);
 
 export interface ValidationResult {
   isValid: boolean;

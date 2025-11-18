@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * ZAI Configuration Management
  *
@@ -189,7 +185,8 @@ export class ZAIConfigManager {
           String(DEFAULT_ZAI_CONFIG.circuitBreakerThreshold)
       ),
       circuitBreakerTimeout: parseInt(
-        process.env['ZAI_CIRCUIT_BREAKER_TIMEOUT'] || String(DEFAULT_ZAI_CONFIG.circuitBreakerTimeout)
+        process.env['ZAI_CIRCUIT_BREAKER_TIMEOUT'] ||
+          String(DEFAULT_ZAI_CONFIG.circuitBreakerTimeout)
       ),
       enableLogging: process.env['ZAI_ENABLE_LOGGING'] !== 'false',
       rateLimitRPM: parseInt(
@@ -203,21 +200,24 @@ export class ZAIConfigManager {
    */
   private async loadOrchestratorConfig(): Promise<void> {
     const primaryProvider =
-      (process.env['ZAI_PRIMARY_PROVIDER'] as unknown) || DEFAULT_ORCHESTRATOR_CONFIG.primaryProvider;
+      (process.env['ZAI_PRIMARY_PROVIDER'] as unknown) ||
+      DEFAULT_ORCHESTRATOR_CONFIG.primaryProvider;
     const fallbackProvider =
-      (process.env['ZAI_FALLBACK_PROVIDER'] as unknown) || DEFAULT_ORCHESTRATOR_CONFIG.fallbackProvider;
+      (process.env['ZAI_FALLBACK_PROVIDER'] as unknown) ||
+      DEFAULT_ORCHESTRATOR_CONFIG.fallbackProvider;
 
     this.orchestratorConfig = {
       ...DEFAULT_ORCHESTRATOR_CONFIG,
-      primaryProvider: primaryProvider as "openai" | "zai",
-      fallbackProvider: fallbackProvider as "openai" | "zai",
+      primaryProvider: primaryProvider as 'openai' | 'zai',
+      fallbackProvider: fallbackProvider as 'openai' | 'zai',
       autoFailover: process.env['ZAI_AUTO_FAILOVER'] !== 'false',
       healthCheckInterval: parseInt(
         process.env['ZAI_HEALTH_CHECK_INTERVAL'] ||
           String(DEFAULT_ORCHESTRATOR_CONFIG.healthCheckInterval)
       ),
       fallbackThreshold: parseInt(
-        process.env['ZAI_FALLBACK_THRESHOLD'] || String(DEFAULT_ORCHESTRATOR_CONFIG.fallbackThreshold)
+        process.env['ZAI_FALLBACK_THRESHOLD'] ||
+          String(DEFAULT_ORCHESTRATOR_CONFIG.fallbackThreshold)
       ),
       providerConfigs: {
         zai: this.config!,
@@ -246,10 +246,12 @@ export class ZAIConfigManager {
         process.env['ZAI_QUEUE_SIZE'] || String(DEFAULT_BACKGROUND_PROCESSOR_CONFIG.queueSize)
       ),
       retryAttempts: parseInt(
-        process.env['ZAI_RETRY_ATTEMPTS'] || String(DEFAULT_BACKGROUND_PROCESSOR_CONFIG.retryAttempts)
+        process.env['ZAI_RETRY_ATTEMPTS'] ||
+          String(DEFAULT_BACKGROUND_PROCESSOR_CONFIG.retryAttempts)
       ),
       retryDelayMs: parseInt(
-        process.env['ZAI_RETRY_DELAY_MS'] || String(DEFAULT_BACKGROUND_PROCESSOR_CONFIG.retryDelayMs)
+        process.env['ZAI_RETRY_DELAY_MS'] ||
+          String(DEFAULT_BACKGROUND_PROCESSOR_CONFIG.retryDelayMs)
       ),
       timeoutMs: parseInt(
         process.env['ZAI_TIMEOUT_MS'] || String(DEFAULT_BACKGROUND_PROCESSOR_CONFIG.timeoutMs)
@@ -303,7 +305,8 @@ export class ZAIConfigManager {
         process.env['ZAI_QUEUE_TIMEOUT_MS'] || String(DEFAULT_REQUEST_QUEUE_CONFIG.timeoutMs)
       ),
       retryAttempts: parseInt(
-        process.env['ZAI_QUEUE_RETRY_ATTEMPTS'] || String(DEFAULT_REQUEST_QUEUE_CONFIG.retryAttempts)
+        process.env['ZAI_QUEUE_RETRY_ATTEMPTS'] ||
+          String(DEFAULT_REQUEST_QUEUE_CONFIG.retryAttempts)
       ),
       retryDelayMs: parseInt(
         process.env['ZAI_QUEUE_RETRY_DELAY_MS'] || String(DEFAULT_REQUEST_QUEUE_CONFIG.retryDelayMs)

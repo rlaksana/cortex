@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * P8-T8.4: Multi-Tenancy Governance Service
  *
@@ -134,7 +129,14 @@ export interface TenantOffboardingRequest {
   };
 
   /** Request status */
-  status: 'pending' | 'under_review' | 'approved' | 'rejected' | 'in_progress' | 'completed' | 'failed';
+  status:
+    | 'pending'
+    | 'under_review'
+    | 'approved'
+    | 'rejected'
+    | 'in_progress'
+    | 'completed'
+    | 'failed';
 
   /** Review information */
   review_info?: {
@@ -472,19 +474,23 @@ export class TenantGovernanceService extends EventEmitter {
   /**
    * Submit tenant onboarding request
    */
-  async submitOnboardingRequest(request: Omit<TenantOnboardingRequest, 'request_id' | 'requested_at' | 'status' | 'audit_trail'>): Promise<string> {
+  async submitOnboardingRequest(
+    request: Omit<TenantOnboardingRequest, 'request_id' | 'requested_at' | 'status' | 'audit_trail'>
+  ): Promise<string> {
     const requestId = this.generateRequestId('ONBOARD');
     const onboardingRequest: TenantOnboardingRequest = {
       ...request,
       request_id: requestId,
       requested_at: new Date().toISOString(),
       status: 'pending',
-      audit_trail: [{
-        timestamp: new Date().toISOString(),
-        action: 'request_submitted',
-        actor: request.requester.user_id,
-        details: { tenant_name: request.tenant_info.tenant_name },
-      }],
+      audit_trail: [
+        {
+          timestamp: new Date().toISOString(),
+          action: 'request_submitted',
+          actor: request.requester.user_id,
+          details: { tenant_name: request.tenant_info.tenant_name },
+        },
+      ],
     };
 
     this.onboardingRequests.set(requestId, onboardingRequest);
@@ -496,7 +502,10 @@ export class TenantGovernanceService extends EventEmitter {
       service_tier: request.tenant_info.service_tier,
     });
 
-    this.emit('onboarding_request_submitted', { request_id: requestId, request: onboardingRequest });
+    this.emit('onboarding_request_submitted', {
+      request_id: requestId,
+      request: onboardingRequest,
+    });
 
     // Trigger review process
     await this.triggerOnboardingReview(requestId);
@@ -598,7 +607,7 @@ export class TenantGovernanceService extends EventEmitter {
 
     try {
       const results = await Promise.allSettled(checks);
-      const failed = results.filter(r => r.status === 'rejected');
+      const failed = results.filter((r) => r.status === 'rejected');
 
       if (failed.length > 0) {
         // Mark request as failed due to automated checks
@@ -684,7 +693,6 @@ export class TenantGovernanceService extends EventEmitter {
         configuration: tenantConfig,
         credentials,
       });
-
     } catch (error) {
       request.status = 'failed';
       request.audit_trail.push({
@@ -708,8 +716,12 @@ export class TenantGovernanceService extends EventEmitter {
   /**
    * Generate tenant configuration
    */
-  private async generateTenantConfiguration(request: TenantOnboardingRequest): Promise<TenantConfig> {
-    const template = this.configurationTemplates.get(`template_${request.tenant_info.service_tier}`);
+  private async generateTenantConfiguration(
+    request: TenantOnboardingRequest
+  ): Promise<TenantConfig> {
+    const template = this.configurationTemplates.get(
+      `template_${request.tenant_info.service_tier}`
+    );
     const baseConfig = template?.default_configuration || {};
 
     return {
@@ -733,7 +745,9 @@ export class TenantGovernanceService extends EventEmitter {
 
       circuit_breaker: {
         ...baseConfig.circuit_breaker,
-        failure_threshold: this.calculateCircuitBreakerThreshold(request.tenant_info.expected_volume),
+        failure_threshold: this.calculateCircuitBreakerThreshold(
+          request.tenant_info.expected_volume
+        ),
         recovery_timeout_ms: 60000,
         half_open_max_requests: 3,
         success_threshold: 3,
@@ -747,12 +761,16 @@ export class TenantGovernanceService extends EventEmitter {
         db_connection_pool_size: this.calculateDbConnections(request.tenant_info.expected_volume),
         vector_storage_quota: this.calculateVectorQuota(request.tenant_info.expected_volume),
         network_bandwidth_mbps: this.calculateNetworkLimit(request.tenant_info.expected_volume),
-        concurrent_requests_limit: this.calculateConcurrentRequests(request.tenant_info.expected_volume),
+        concurrent_requests_limit: this.calculateConcurrentRequests(
+          request.tenant_info.expected_volume
+        ),
       },
 
       monitoring: {
         ...baseConfig.monitoring,
-        health_check_interval_ms: this.calculateHealthCheckInterval(request.tenant_info.service_tier),
+        health_check_interval_ms: this.calculateHealthCheckInterval(
+          request.tenant_info.service_tier
+        ),
         metrics_retention_days: this.calculateMetricsRetention(request.tenant_info.service_tier),
         alert_thresholds: {
           cpu_usage_percent: 80,
@@ -771,7 +789,9 @@ export class TenantGovernanceService extends EventEmitter {
           issue: 90,
           todo: 90,
         },
-        compliance_frameworks: request.requirements.compliance_frameworks.filter(framework => framework !== 'PCI-DSS') as Array<"GDPR" | "HIPAA" | "CCPA" | "SOX">,
+        compliance_frameworks: request.requirements.compliance_frameworks.filter(
+          (framework) => framework !== 'PCI-DSS'
+        ) as Array<'GDPR' | 'HIPAA' | 'CCPA' | 'SOX'>,
         audit_logging_enabled: true,
         cost_allocation_tags: {
           organization: request.tenant_info.organization_name,
@@ -791,19 +811,26 @@ export class TenantGovernanceService extends EventEmitter {
   /**
    * Submit tenant offboarding request
    */
-  async submitOffboardingRequest(request: Omit<TenantOffboardingRequest, 'request_id' | 'requested_at' | 'status' | 'audit_trail'>): Promise<string> {
+  async submitOffboardingRequest(
+    request: Omit<
+      TenantOffboardingRequest,
+      'request_id' | 'requested_at' | 'status' | 'audit_trail'
+    >
+  ): Promise<string> {
     const requestId = this.generateRequestId('OFFBOARD');
     const offboardingRequest: TenantOffboardingRequest = {
       ...request,
       request_id: requestId,
       requested_at: new Date().toISOString(),
       status: 'pending',
-      audit_trail: [{
-        timestamp: new Date().toISOString(),
-        action: 'request_submitted',
-        actor: request.requester.user_id,
-        details: { tenant_id: request.tenant_id, reason: request.reason.category },
-      }],
+      audit_trail: [
+        {
+          timestamp: new Date().toISOString(),
+          action: 'request_submitted',
+          actor: request.requester.user_id,
+          details: { tenant_id: request.tenant_id, reason: request.reason.category },
+        },
+      ],
     };
 
     this.offboardingRequests.set(requestId, offboardingRequest);
@@ -814,7 +841,10 @@ export class TenantGovernanceService extends EventEmitter {
       reason_category: request.reason.category,
     });
 
-    this.emit('offboarding_request_submitted', { request_id: requestId, request: offboardingRequest });
+    this.emit('offboarding_request_submitted', {
+      request_id: requestId,
+      request: offboardingRequest,
+    });
 
     // Trigger review process
     await this.triggerOffboardingReview(requestId);
@@ -902,7 +932,6 @@ export class TenantGovernanceService extends EventEmitter {
 
       // Execute offboarding phases
       await this.executeOffboardingPhases(requestId);
-
     } catch (error) {
       request.status = 'failed';
       request.audit_trail.push({
@@ -926,7 +955,9 @@ export class TenantGovernanceService extends EventEmitter {
   /**
    * Create offboarding plan
    */
-  private async createOffboardingPlan(request: TenantOffboardingRequest): Promise<TenantOffboardingRequest['offboarding_plan']> {
+  private async createOffboardingPlan(
+    request: TenantOffboardingRequest
+  ): Promise<TenantOffboardingRequest['offboarding_plan']> {
     const now = new Date();
     const phases = [
       {
@@ -939,7 +970,9 @@ export class TenantGovernanceService extends EventEmitter {
       },
       {
         phase_name: 'data_export',
-        description: request.data_handling.export_required ? 'Export tenant data' : 'Skip data export',
+        description: request.data_handling.export_required
+          ? 'Export tenant data'
+          : 'Skip data export',
         scheduled_date: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
         estimated_duration_hours: request.data_handling.export_required ? 4 : 0,
         impact: 'low' as const,
@@ -964,7 +997,9 @@ export class TenantGovernanceService extends EventEmitter {
       {
         phase_name: 'data_cleanup',
         description: `Clean up tenant data after ${request.data_handling.retention_period_days} days`,
-        scheduled_date: new Date(now.getTime() + request.data_handling.retention_period_days * 24 * 60 * 60 * 1000).toISOString(),
+        scheduled_date: new Date(
+          now.getTime() + request.data_handling.retention_period_days * 24 * 60 * 60 * 1000
+        ).toISOString(),
         estimated_duration_hours: 3,
         impact: 'none' as const,
         completed: false,
@@ -1013,7 +1048,6 @@ export class TenantGovernanceService extends EventEmitter {
           request_id: requestId,
           phase: phase.phase_name,
         });
-
       } catch (error) {
         logger.error('Offboarding phase failed', {
           request_id: requestId,
@@ -1073,9 +1107,12 @@ export class TenantGovernanceService extends EventEmitter {
   /**
    * Execute specific offboarding phase
    */
-  private async executeOffboardingPhase(request: TenantOffboardingRequest, phase: { phase_name: string; estimated_duration_hours: number; }): Promise<void> {
+  private async executeOffboardingPhase(
+    request: TenantOffboardingRequest,
+    phase: { phase_name: string; estimated_duration_hours: number }
+  ): Promise<void> {
     // Simulate phase execution with appropriate delays
-    await new Promise(resolve => setTimeout(resolve, phase.estimated_duration_hours * 100)); // Simulated
+    await new Promise((resolve) => setTimeout(resolve, phase.estimated_duration_hours * 100)); // Simulated
 
     switch (phase.phase_name) {
       case 'data_backup':
@@ -1088,7 +1125,8 @@ export class TenantGovernanceService extends EventEmitter {
       case 'data_export':
         if (request.data_handling.export_required && request.offboarding_plan) {
           request.offboarding_plan.data_exported = true;
-          request.offboarding_plan.export_location = request.data_handling.export_destination || 'secure_export_' + request.request_id;
+          request.offboarding_plan.export_location =
+            request.data_handling.export_destination || 'secure_export_' + request.request_id;
         }
         break;
 
@@ -1118,8 +1156,10 @@ export class TenantGovernanceService extends EventEmitter {
   /**
    * Generate compliance certificates
    */
-  private generateComplianceCertificates(request: TenantOffboardingRequest): Array<{ framework: string; certificate_id: string; issued_at: string }> {
-    return request.data_handling.compliance_requirements.map(framework => ({
+  private generateComplianceCertificates(
+    request: TenantOffboardingRequest
+  ): Array<{ framework: string; certificate_id: string; issued_at: string }> {
+    return request.data_handling.compliance_requirements.map((framework) => ({
       framework,
       certificate_id: `cert_${framework}_${request.request_id}`,
       issued_at: new Date().toISOString(),
@@ -1233,7 +1273,9 @@ export class TenantGovernanceService extends EventEmitter {
   /**
    * Assess compliance frameworks
    */
-  private async assessComplianceFrameworks(tenantId: string): Promise<TenantComplianceReport['frameworks']> {
+  private async assessComplianceFrameworks(
+    tenantId: string
+  ): Promise<TenantComplianceReport['frameworks']> {
     // Simulate compliance assessment
     return [
       {
@@ -1283,24 +1325,24 @@ export class TenantGovernanceService extends EventEmitter {
         compute_costs: {
           cpu_hours: 720,
           memory_gb_hours: 1440,
-          total_cost: 150.00,
+          total_cost: 150.0,
         },
         storage_costs: {
           vector_storage_gb: 50,
           database_storage_gb: 20,
           backup_storage_gb: 15,
-          total_cost: 42.50,
+          total_cost: 42.5,
         },
         network_costs: {
           data_transfer_gb: 100,
           request_count: 500000,
-          total_cost: 25.00,
+          total_cost: 25.0,
         },
         service_costs: {
           api_calls: 500000,
           premium_features: ['advanced_analytics', 'priority_support'],
           support_hours: 5,
-          total_cost: 75.00,
+          total_cost: 75.0,
         },
       },
 
@@ -1320,9 +1362,9 @@ export class TenantGovernanceService extends EventEmitter {
       allocation_rules: {
         allocation_method: 'usage_based',
         cost_centers: {
-          'engineering': 0.6,
-          'operations': 0.3,
-          'general': 0.1,
+          engineering: 0.6,
+          operations: 0.3,
+          general: 0.1,
         },
         tags: {
           environment: 'production',
@@ -1333,7 +1375,7 @@ export class TenantGovernanceService extends EventEmitter {
       },
 
       billing_info: {
-        subtotal: 292.50,
+        subtotal: 292.5,
         discounts: [
           {
             description: 'Annual commitment discount',
@@ -1343,11 +1385,11 @@ export class TenantGovernanceService extends EventEmitter {
         taxes: [
           {
             type: 'VAT',
-            rate: 0.20,
+            rate: 0.2,
             amount: 52.65,
           },
         ],
-        total: 315.90,
+        total: 315.9,
         currency: 'USD',
         due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         status: 'pending',
@@ -1383,7 +1425,10 @@ export class TenantGovernanceService extends EventEmitter {
 
   private generateTenantId(organizationName: string): string {
     const normalized = organizationName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    const hash = createHash('md5').update(organizationName + Date.now()).digest('hex').substr(0, 8);
+    const hash = createHash('md5')
+      .update(organizationName + Date.now())
+      .digest('hex')
+      .substr(0, 8);
     return `tenant_${normalized}_${hash}`;
   }
 
@@ -1458,22 +1503,22 @@ export class TenantGovernanceService extends EventEmitter {
   // Automated check methods
   private async checkOrganizationCompliance(request: TenantOnboardingRequest): Promise<void> {
     // Simulate organization compliance check
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   private async checkServiceAvailability(request: TenantOnboardingRequest): Promise<void> {
     // Simulate service availability check
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   private async checkComplianceRequirements(request: TenantOnboardingRequest): Promise<void> {
     // Simulate compliance requirements check
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   private async checkSecurityRequirements(request: TenantOnboardingRequest): Promise<void> {
     // Simulate security requirements check
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   private async triggerOffboardingReview(requestId: string): Promise<void> {
@@ -1507,8 +1552,8 @@ export class TenantGovernanceService extends EventEmitter {
             burst_capacity: 75,
             window_ms: 1000,
             tool_limits: {
-              'memory_store': { requests_per_second: 25, burst_capacity: 40 },
-              'memory_find': { requests_per_second: 30, burst_capacity: 45 },
+              memory_store: { requests_per_second: 25, burst_capacity: 40 },
+              memory_find: { requests_per_second: 30, burst_capacity: 45 },
             },
           },
           resource_quotas: {
@@ -1540,8 +1585,8 @@ export class TenantGovernanceService extends EventEmitter {
             burst_capacity: 150,
             window_ms: 1000,
             tool_limits: {
-              'memory_store': { requests_per_second: 50, burst_capacity: 75 },
-              'memory_find': { requests_per_second: 60, burst_capacity: 90 },
+              memory_store: { requests_per_second: 50, burst_capacity: 75 },
+              memory_find: { requests_per_second: 60, burst_capacity: 90 },
             },
           },
           resource_quotas: {
@@ -1573,8 +1618,8 @@ export class TenantGovernanceService extends EventEmitter {
             burst_capacity: 750,
             window_ms: 1000,
             tool_limits: {
-              'memory_store': { requests_per_second: 250, burst_capacity: 375 },
-              'memory_find': { requests_per_second: 300, burst_capacity: 450 },
+              memory_store: { requests_per_second: 250, burst_capacity: 375 },
+              memory_find: { requests_per_second: 300, burst_capacity: 450 },
             },
           },
           resource_quotas: {
@@ -1606,8 +1651,8 @@ export class TenantGovernanceService extends EventEmitter {
             burst_capacity: 3000,
             window_ms: 1000,
             tool_limits: {
-              'memory_store': { requests_per_second: 1000, burst_capacity: 1500 },
-              'memory_find': { requests_per_second: 1200, burst_capacity: 1800 },
+              memory_store: { requests_per_second: 1000, burst_capacity: 1500 },
+              memory_find: { requests_per_second: 1200, burst_capacity: 1800 },
             },
           },
           resource_quotas: {
@@ -1737,7 +1782,7 @@ export class TenantGovernanceService extends EventEmitter {
    */
   listOnboardingRequests(status?: string): TenantOnboardingRequest[] {
     const requests = Array.from(this.onboardingRequests.values());
-    return status ? requests.filter(r => r.status === status) : requests;
+    return status ? requests.filter((r) => r.status === status) : requests;
   }
 
   /**
@@ -1745,7 +1790,7 @@ export class TenantGovernanceService extends EventEmitter {
    */
   listOffboardingRequests(status?: string): TenantOffboardingRequest[] {
     const requests = Array.from(this.offboardingRequests.values());
-    return status ? requests.filter(r => r.status === status) : requests;
+    return status ? requests.filter((r) => r.status === status) : requests;
   }
 
   /**
@@ -1766,13 +1811,19 @@ export class TenantGovernanceService extends EventEmitter {
 
     return {
       total_onboarding_requests: onboardingRequests.length,
-      pending_onboarding_requests: onboardingRequests.filter(r => r.status === 'pending' || r.status === 'under_review').length,
+      pending_onboarding_requests: onboardingRequests.filter(
+        (r) => r.status === 'pending' || r.status === 'under_review'
+      ).length,
       total_offboarding_requests: offboardingRequests.length,
-      active_offboarding_requests: offboardingRequests.filter(r => r.status === 'in_progress').length,
+      active_offboarding_requests: offboardingRequests.filter((r) => r.status === 'in_progress')
+        .length,
       total_compliance_reports: this.complianceReports.size,
       total_cost_allocations: this.costAllocations.size,
-      active_templates: Array.from(this.configurationTemplates.values()).filter(t => t.is_active).length,
-      active_policies: Array.from(this.governancePolicies.values()).filter(p => p.status === 'active').length,
+      active_templates: Array.from(this.configurationTemplates.values()).filter((t) => t.is_active)
+        .length,
+      active_policies: Array.from(this.governancePolicies.values()).filter(
+        (p) => p.status === 'active'
+      ).length,
     };
   }
 }

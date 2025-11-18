@@ -338,8 +338,8 @@ describe('In-Memory Fallback Storage', () => {
     });
 
     it('should handle search errors gracefully', async () => {
-      // @ts-expect-error - Testing invalid query
-      const result = await storage.search(null);
+      // Testing invalid query via type assertion
+      const result = await storage.search(null as any);
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
@@ -719,22 +719,22 @@ describe('In-Memory Fallback Storage', () => {
     });
 
     it('should handle search with malformed queries', async () => {
-      // @ts-expect-error - Testing invalid input
-      const result1 = await storage.search(null);
+      // Testing invalid input via type assertion
+      const result1 = await storage.search(null as any);
       expect(result1.success).toBe(false);
 
-      // @ts-expect-error - Testing invalid input
-      const result2 = await storage.search(undefined);
+      // Testing invalid input via type assertion
+      const result2 = await storage.search(undefined as any);
       expect(result2.success).toBe(false);
     });
 
     it('should handle delete with malformed input', async () => {
-      // @ts-expect-error - Testing invalid input
-      const result1 = await storage.delete(null);
+      // Testing invalid input via type assertion
+      const result1 = await storage.delete(null as any);
       expect(result1.deleted).toBe(0);
 
-      // @ts-expect-error - Testing invalid input
-      const result2 = await storage.delete(undefined);
+      // Testing invalid input via type assertion
+      const result2 = await storage.delete(undefined as any);
       expect(result2.deleted).toBe(0);
     });
   });

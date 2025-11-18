@@ -1,6 +1,4 @@
-// @ts-nocheck
 // FINAL COMPREHENSIVE EMERGENCY ROLLBACK: Utility layer type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Logger wrapper to break circular dependencies
@@ -20,28 +18,96 @@ export interface SimpleLogger {
  */
 export const simpleLogger: SimpleLogger = {
   info: (message: unknown, meta?: unknown) => {
-    const logData = typeof message === 'string'
-      ? { level: 'info', message, timestamp: new Date().toISOString(), ...meta }
-      : { level: 'info', message: 'Log entry', timestamp: new Date().toISOString(), ...message, ...meta };
-    console.log(JSON.stringify(logData));
+    const baseData = {
+      level: 'info' as const,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (typeof message === 'string') {
+      const logData = {
+        ...baseData,
+        message,
+        ...(meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {}),
+      };
+      console.log(JSON.stringify(logData));
+    } else {
+      const logData = {
+        ...baseData,
+        message: 'Log entry',
+        ...(message && typeof message === 'object' ? (message as Record<string, unknown>) : {}),
+        ...(meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {}),
+      };
+      console.log(JSON.stringify(logData));
+    }
   },
   warn: (message: unknown, meta?: unknown) => {
-    const logData = typeof message === 'string'
-      ? { level: 'warn', message, timestamp: new Date().toISOString(), ...meta }
-      : { level: 'warn', message: 'Log entry', timestamp: new Date().toISOString(), ...message, ...meta };
-    console.warn(JSON.stringify(logData));
+    const baseData = {
+      level: 'warn' as const,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (typeof message === 'string') {
+      const logData = {
+        ...baseData,
+        message,
+        ...(meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {}),
+      };
+      console.warn(JSON.stringify(logData));
+    } else {
+      const logData = {
+        ...baseData,
+        message: 'Log entry',
+        ...(message && typeof message === 'object' ? (message as Record<string, unknown>) : {}),
+        ...(meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {}),
+      };
+      console.warn(JSON.stringify(logData));
+    }
   },
   error: (message: unknown, meta?: unknown) => {
-    const logData = typeof message === 'string'
-      ? { level: 'error', message, timestamp: new Date().toISOString(), ...meta }
-      : { level: 'error', message: 'Log entry', timestamp: new Date().toISOString(), ...message, ...meta };
-    console.error(JSON.stringify(logData));
+    const baseData = {
+      level: 'error' as const,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (typeof message === 'string') {
+      const logData = {
+        ...baseData,
+        message,
+        ...(meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {}),
+      };
+      console.error(JSON.stringify(logData));
+    } else {
+      const logData = {
+        ...baseData,
+        message: 'Log entry',
+        ...(message && typeof message === 'object' ? (message as Record<string, unknown>) : {}),
+        ...(meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {}),
+      };
+      console.error(JSON.stringify(logData));
+    }
   },
   debug: (message: unknown, meta?: unknown) => {
-    const logData = typeof message === 'string'
-      ? { level: 'debug', message, timestamp: new Date().toISOString(), ...meta }
-      : { level: 'debug', message: 'Log entry', timestamp: new Date().toISOString(), ...message, ...meta };
-    console.debug(JSON.stringify(logData));
+    const baseData = {
+      level: 'debug' as const,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (typeof message === 'string') {
+      const logData = {
+        ...baseData,
+        message,
+        ...(meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {}),
+      };
+      console.debug(JSON.stringify(logData));
+    } else {
+      const logData = {
+        ...baseData,
+        message: 'Log entry',
+        ...(message && typeof message === 'object' ? (message as Record<string, unknown>) : {}),
+        ...(meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {}),
+      };
+      console.debug(JSON.stringify(logData));
+    }
   },
   flush: async () => {
     // No-op for console logger

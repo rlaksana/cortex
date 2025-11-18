@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Monitoring system type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Alert Management System for MCP Cortex
@@ -22,7 +20,12 @@ import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
 
-import { AlertSeverity, type ComponentHealth,HealthStatus, type SystemHealthResult } from '../types/unified-health-interfaces.js';
+import {
+  AlertSeverity,
+  type ComponentHealth,
+  HealthStatus,
+  type SystemHealthResult,
+} from '../types/unified-health-interfaces.js';
 
 // Re-export AlertSeverity for use by other modules
 export { AlertSeverity };
@@ -284,7 +287,7 @@ export class AlertManagementService extends EventEmitter {
 
       // Resolve any active alerts from this rule
       const activeAlerts = Array.from(this.activeAlerts.values()).filter(
-        alert => alert.ruleId === ruleId
+        (alert) => alert.ruleId === ruleId
       );
 
       for (const alert of activeAlerts) {
@@ -344,7 +347,10 @@ export class AlertManagementService extends EventEmitter {
   /**
    * Evaluate individual alert rule against health data
    */
-  private async evaluateAlertRule(rule: AlertRule, healthResult: SystemHealthResult): Promise<boolean> {
+  private async evaluateAlertRule(
+    rule: AlertRule,
+    healthResult: SystemHealthResult
+  ): Promise<boolean> {
     try {
       const relevantComponents = this.getRelevantComponents(rule.condition, healthResult);
       if (relevantComponents.length === 0) return false;
@@ -361,11 +367,7 @@ export class AlertManagementService extends EventEmitter {
 
         if (conditionMet) {
           // Check duration requirement
-          const conditionDuration = await this.checkConditionDuration(
-            rule,
-            component,
-            Date.now()
-          );
+          const conditionDuration = await this.checkConditionDuration(rule, component, Date.now());
 
           if (conditionDuration) {
             return true;
@@ -494,7 +496,7 @@ export class AlertManagementService extends EventEmitter {
    */
   private async sendAlertNotifications(alert: Alert, actions: AlertAction[]): Promise<void> {
     try {
-      for (const action of actions.filter(a => a.enabled)) {
+      for (const action of actions.filter((a) => a.enabled)) {
         await this.sendNotification(alert, action);
       }
     } catch (error) {
@@ -521,7 +523,6 @@ export class AlertManagementService extends EventEmitter {
       };
 
       try {
-
         let result: unknown;
 
         switch (action.type) {
@@ -548,16 +549,21 @@ export class AlertManagementService extends EventEmitter {
         }
 
         notificationAttempt.status = 'sent';
-        notificationAttempt.response = result;
+        notificationAttempt.response = typeof result === 'object' && result !== null ?
+          result as Record<string, unknown> :
+          { result };
 
         alert.notificationsSent.push(notificationAttempt);
         this.notificationHistory.push(notificationAttempt);
 
-        logger.info({
-          alertId: alert.id,
-          actionType: action.type,
-          attempt: attempt + 1,
-        }, 'Notification sent successfully');
+        logger.info(
+          {
+            alertId: alert.id,
+            actionType: action.type,
+            attempt: attempt + 1,
+          },
+          'Notification sent successfully'
+        );
 
         return;
       } catch (error) {
@@ -568,20 +574,26 @@ export class AlertManagementService extends EventEmitter {
         this.notificationHistory.push(notificationAttempt);
 
         if (attempt < maxRetries) {
-          logger.warn({
-            alertId: alert.id,
-            actionType: action.type,
-            attempt: attempt + 1,
-            error: notificationAttempt.error,
-          }, 'Notification failed, retrying...');
+          logger.warn(
+            {
+              alertId: alert.id,
+              actionType: action.type,
+              attempt: attempt + 1,
+              error: notificationAttempt.error,
+            },
+            'Notification failed, retrying...'
+          );
 
           await this.sleep(retryDelay * (attempt + 1)); // Exponential backoff
         } else {
-          logger.error({
-            alertId: alert.id,
-            actionType: action.type,
-            error: notificationAttempt.error,
-          }, 'Notification failed after all retries');
+          logger.error(
+            {
+              alertId: alert.id,
+              actionType: action.type,
+              error: notificationAttempt.error,
+            },
+            'Notification failed after all retries'
+          );
         }
       }
     }
@@ -631,11 +643,14 @@ export class AlertManagementService extends EventEmitter {
       // Send escalation notifications
       await this.sendAlertNotifications(alert, escalationRule.actions);
 
-      logger.info({
-        alertId: alert.id,
-        escalationLevel: alert.escalationLevel,
-        severity: escalationRule.severity,
-      }, 'Alert escalated');
+      logger.info(
+        {
+          alertId: alert.id,
+          escalationLevel: alert.escalationLevel,
+          severity: escalationRule.severity,
+        },
+        'Alert escalated'
+      );
 
       this.emit('alert_escalated', alert);
     } catch (error) {
@@ -685,7 +700,7 @@ export class AlertManagementService extends EventEmitter {
         escalationsTriggered: this.countEscalations(),
         passed: this.validateTestResults(scenario, {
           alertsFired: finalActiveAlerts - initialActiveAlerts,
-          alertSeverities: Array.from(this.activeAlerts.values()).map(alert => alert.severity),
+          alertSeverities: Array.from(this.activeAlerts.values()).map((alert) => alert.severity),
           notificationsSent: finalNotificationHistory - initialNotificationHistory,
           escalationsTriggered: this.countEscalations(),
         }),
@@ -700,12 +715,15 @@ export class AlertManagementService extends EventEmitter {
         await this.executeTestCleanup(scenario.cleanup);
       }
 
-      logger.info({
-        scenarioId,
-        passed: result.passed,
-        alertsTriggered: result.alertsTriggered,
-        duration: result.duration,
-      }, 'Alert test scenario completed');
+      logger.info(
+        {
+          scenarioId,
+          passed: result.passed,
+          alertsTriggered: result.alertsTriggered,
+          duration: result.duration,
+        },
+        'Alert test scenario completed'
+      );
 
       this.emit('alert_test_completed', result);
 
@@ -746,7 +764,7 @@ export class AlertManagementService extends EventEmitter {
         throw new Error(`Runbook not found: ${runbookId}`);
       }
 
-      const step = runbook.steps.find(s => s.id === stepId);
+      const step = runbook.steps.find((s) => s.id === stepId);
       if (!step) {
         throw new Error(`Runbook step not found: ${stepId}`);
       }
@@ -782,11 +800,14 @@ export class AlertManagementService extends EventEmitter {
         result,
       };
 
-      logger.info({
-        runbookId,
-        stepId,
-        duration: stepResult.duration,
-      }, 'Runbook step executed successfully');
+      logger.info(
+        {
+          runbookId,
+          stepId,
+          duration: stepResult.duration,
+        },
+        'Runbook step executed successfully'
+      );
 
       this.emit('runbook_step_completed', stepResult);
 
@@ -821,11 +842,11 @@ export class AlertManagementService extends EventEmitter {
    */
   getAlertMetrics(): AlertMetrics {
     const now = Date.now();
-    const last24h = now - (24 * 60 * 60 * 1000);
-    const last7d = now - (7 * 24 * 60 * 60 * 1000);
+    const last24h = now - 24 * 60 * 60 * 1000;
+    const last7d = now - 7 * 24 * 60 * 60 * 1000;
 
-    const recentAlerts = this.alertHistory.filter(a => a.timestamp.getTime() > last24h);
-    const weeklyAlerts = this.alertHistory.filter(a => a.timestamp.getTime() > last7d);
+    const recentAlerts = this.alertHistory.filter((a) => a.timestamp.getTime() > last24h);
+    const weeklyAlerts = this.alertHistory.filter((a) => a.timestamp.getTime() > last7d);
 
     return {
       total: this.alertHistory.length,
@@ -993,8 +1014,11 @@ export class AlertManagementService extends EventEmitter {
     return `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private getRelevantComponents(condition: AlertCondition, healthResult: SystemHealthResult): ComponentHealth[] {
-    return healthResult.components.filter(component => {
+  private getRelevantComponents(
+    condition: AlertCondition,
+    healthResult: SystemHealthResult
+  ): ComponentHealth[] {
+    return healthResult.components.filter((component) => {
       if (condition.filters?.component && component.name !== condition.filters.component) {
         return false;
       }
@@ -1027,7 +1051,10 @@ export class AlertManagementService extends EventEmitter {
   /**
    * Safely extracts a numeric value from component details
    */
-  private extractNumberFromDetails(details: Record<string, unknown> | undefined, key: string): number | null {
+  private extractNumberFromDetails(
+    details: Record<string, unknown> | undefined,
+    key: string
+  ): number | null {
     if (!details || !(key in details)) {
       return null;
     }
@@ -1105,33 +1132,38 @@ export class AlertManagementService extends EventEmitter {
   }
 
   private generateAlertMessage(rule: AlertRule, healthResult: SystemHealthResult): string {
-    return `${rule.description}\n\nSystem Status: ${healthResult.status}\nTimestamp: ${healthResult.timestamp}\n\nAffected Components:\n${healthResult.components.map(c => `- ${c.name}: ${c.status}`).join('\n')}`;
+    return `${rule.description}\n\nSystem Status: ${healthResult.status}\nTimestamp: ${healthResult.timestamp}\n\nAffected Components:\n${healthResult.components.map((c) => `- ${c.name}: ${c.status}`).join('\n')}`;
   }
 
   private extractAlertSource(rule: AlertRule, healthResult: SystemHealthResult): Alert['source'] {
-    const relevantComponent = healthResult.components.find(c =>
-      rule.condition.filters?.component === c.name
+    const relevantComponent = healthResult.components.find(
+      (c) => rule.condition.filters?.component === c.name
     );
 
     return {
       component: relevantComponent?.name || 'system',
       type: relevantComponent?.type || DependencyType.MONITORING,
       metric: rule.condition.metric,
-      value: relevantComponent ? this.extractMetricValue(rule.condition.metric, relevantComponent) || 'unknown' : 'unknown',
+      value: relevantComponent
+        ? this.extractMetricValue(rule.condition.metric, relevantComponent) || 'unknown'
+        : 'unknown',
       threshold: Array.isArray(rule.condition.threshold)
         ? rule.condition.threshold[0] || 0
         : rule.condition.threshold,
     };
   }
 
-  private async checkAlertResolution(rule: AlertRule, healthResult: SystemHealthResult): Promise<void> {
+  private async checkAlertResolution(
+    rule: AlertRule,
+    healthResult: SystemHealthResult
+  ): Promise<void> {
     // Find active alerts for this rule
     const activeAlerts = Array.from(this.activeAlerts.values()).filter(
-      alert => alert.ruleId === rule.id
+      (alert) => alert.ruleId === rule.id
     );
 
     for (const alert of activeAlerts) {
-      const shouldResolve = !await this.evaluateAlertRule(rule, healthResult);
+      const shouldResolve = !(await this.evaluateAlertRule(rule, healthResult));
       if (shouldResolve) {
         await this.resolveAlert(alert.id, 'Condition resolved');
       }
@@ -1175,11 +1207,11 @@ export class AlertManagementService extends EventEmitter {
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private countEscalations(): number {
-    return Array.from(this.activeAlerts.values()).filter(alert => alert.escalated).length;
+    return Array.from(this.activeAlerts.values()).filter((alert) => alert.escalated).length;
   }
 
   private async executeTestScenario(scenario: AlertTestScenario): Promise<void> {
@@ -1369,7 +1401,7 @@ export class AlertManagementService extends EventEmitter {
       [AlertSeverity.EMERGENCY]: 0,
     };
 
-    alerts.forEach(alert => {
+    alerts.forEach((alert) => {
       groups[alert.severity]++;
     });
 
@@ -1384,7 +1416,7 @@ export class AlertManagementService extends EventEmitter {
       suppressed: 0,
     };
 
-    alerts.forEach(alert => {
+    alerts.forEach((alert) => {
       groups[alert.status]++;
     });
 
@@ -1392,7 +1424,7 @@ export class AlertManagementService extends EventEmitter {
   }
 
   private calculateAverageResolutionTime(alerts: Alert[]): number {
-    const resolvedAlerts = alerts.filter(alert => alert.resolvedAt);
+    const resolvedAlerts = alerts.filter((alert) => alert.resolvedAt);
     if (resolvedAlerts.length === 0) return 0;
 
     const totalResolutionTime = resolvedAlerts.reduce((total, alert) => {
@@ -1404,14 +1436,12 @@ export class AlertManagementService extends EventEmitter {
 
   private calculateNotificationSuccessRate(since: number): number {
     const recentNotifications = this.notificationHistory.filter(
-      n => n.timestamp.getTime() > since
+      (n) => n.timestamp.getTime() > since
     );
 
     if (recentNotifications.length === 0) return 100;
 
-    const successfulNotifications = recentNotifications.filter(
-      n => n.status === 'sent'
-    ).length;
+    const successfulNotifications = recentNotifications.filter((n) => n.status === 'sent').length;
 
     return (successfulNotifications / recentNotifications.length) * 100;
   }
@@ -1419,23 +1449,35 @@ export class AlertManagementService extends EventEmitter {
   private calculateEscalationRate(alerts: Alert[]): number {
     if (alerts.length === 0) return 0;
 
-    const escalatedAlerts = alerts.filter(alert => alert.escalated).length;
+    const escalatedAlerts = alerts.filter((alert) => alert.escalated).length;
     return (escalatedAlerts / alerts.length) * 100;
   }
 
-  private async executeAutomatedStep(step: RunbookStep, context?: Record<string, unknown>): Promise<unknown> {
+  private async executeAutomatedStep(
+    step: RunbookStep,
+    context?: Record<string, unknown>
+  ): Promise<unknown> {
     // Placeholder for automated step execution
     logger.info({ stepId: step.id, commands: step.commands }, 'Executing automated step');
     return { status: 'completed', output: 'Automated step executed successfully' };
   }
 
-  private async executeVerificationStep(step: RunbookStep, context?: Record<string, unknown>): Promise<unknown> {
+  private async executeVerificationStep(
+    step: RunbookStep,
+    context?: Record<string, unknown>
+  ): Promise<unknown> {
     // Placeholder for verification step execution
-    logger.info({ stepId: step.id, criteria: step.verificationCriteria }, 'Executing verification step');
+    logger.info(
+      { stepId: step.id, criteria: step.verificationCriteria },
+      'Executing verification step'
+    );
     return { status: 'verified', results: 'All criteria met' };
   }
 
-  private async executeManualStep(step: RunbookStep, context?: Record<string, unknown>): Promise<unknown> {
+  private async executeManualStep(
+    step: RunbookStep,
+    context?: Record<string, unknown>
+  ): Promise<unknown> {
     // Placeholder for manual step execution
     logger.info({ stepId: step.id }, 'Manual step requires human intervention');
     return { status: 'pending', instructions: step.description };
@@ -1519,21 +1561,21 @@ export interface AlertMetrics {
   notificationSuccessRate: number;
   escalationRate: number;
 
-  resolved?: unknown
+  resolved?: unknown;
 
-  acknowledged?: unknown
+  acknowledged?: unknown;
 
-  suppressed?: unknown
+  suppressed?: unknown;
 
-  byRule?: unknown
+  byRule?: unknown;
 
-  byComponent?: unknown
+  byComponent?: unknown;
 
-  bySource?: unknown
+  bySource?: unknown;
 
-  notificationsSent?: unknown
+  notificationsSent?: unknown;
 
-  averageResponseTime?: unknown
+  averageResponseTime?: unknown;
 }
 
 export interface RunbookStepResult {
@@ -1568,7 +1610,12 @@ export type TestResult = AlertTestResult;
 export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 export type TestCategory = 'functional' | 'performance' | 'security' | 'integration' | 'regression';
 export type StepType = 'setup' | 'execute' | 'validate' | 'cleanup' | 'notification';
-export type CommandType = 'api_call' | 'database_query' | 'file_operation' | 'system_command' | 'custom';
+export type CommandType =
+  | 'api_call'
+  | 'database_query'
+  | 'file_operation'
+  | 'system_command'
+  | 'custom';
 export type VerificationType = 'automatic' | 'manual' | 'hybrid';
 export type PanelType = 'metric' | 'log' | 'trace' | 'alert' | 'custom';
 export type QueryType = 'promql' | 'sql' | 'logql' | 'custom';

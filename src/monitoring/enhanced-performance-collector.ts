@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Enhanced monitoring type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Enhanced Performance Metrics Collector
@@ -44,8 +42,8 @@ export interface MetricData {
  * Performance histogram buckets
  */
 export interface HistogramBucket {
-  le: number;        // Less than or equal to value
-  count: number;     // Number of observations in this bucket
+  le: number; // Less than or equal to value
+  count: number; // Number of observations in this bucket
 }
 
 /**
@@ -63,36 +61,36 @@ export interface HistogramData {
 export interface SystemPerformanceMetrics {
   // CPU metrics
   cpuUsage: {
-    user: number;          // User CPU time (microseconds)
-    system: number;        // System CPU time (microseconds)
-    idle: number;          // Idle CPU time (microseconds)
-    total: number;         // Total CPU time (microseconds)
-    percentage: number;    // CPU usage percentage
+    user: number; // User CPU time (microseconds)
+    system: number; // System CPU time (microseconds)
+    idle: number; // Idle CPU time (microseconds)
+    total: number; // Total CPU time (microseconds)
+    percentage: number; // CPU usage percentage
   };
 
   // Memory metrics
   memoryUsage: {
-    rss: number;           // Resident set size in bytes
-    heapTotal: number;     // Total heap size in bytes
-    heapUsed: number;      // Used heap size in bytes
-    heapUnused: number;    // Unused heap size in bytes
-    external: number;      // External memory in bytes
-    arrayBuffers: number;  // Array buffers in bytes
+    rss: number; // Resident set size in bytes
+    heapTotal: number; // Total heap size in bytes
+    heapUsed: number; // Used heap size in bytes
+    heapUnused: number; // Unused heap size in bytes
+    external: number; // External memory in bytes
+    arrayBuffers: number; // Array buffers in bytes
     heapUsagePercent: number;
     rssUsagePercent: number;
   };
 
   // Event loop metrics
   eventLoop: {
-    lag: number;           // Event loop lag in microseconds
-    utilization: number;   // Event loop utilization percentage
-    delays: number[];      // Recent delay measurements
+    lag: number; // Event loop lag in microseconds
+    utilization: number; // Event loop utilization percentage
+    delays: number[]; // Recent delay measurements
   };
 
   // Garbage collection metrics
   garbageCollection: {
-    collections: number;   // Total GC collections
-    duration: number;      // Total GC duration in microseconds
+    collections: number; // Total GC collections
+    duration: number; // Total GC duration in microseconds
     averageDuration: number; // Average GC duration
     collectionsByType: Record<string, number>;
     durationByType: Record<string, number>;
@@ -100,11 +98,11 @@ export interface SystemPerformanceMetrics {
 
   // Process metrics
   process: {
-    uptime: number;        // Process uptime in seconds
-    pid: number;           // Process ID
-    version: string;       // Node.js version
-    platform: string;     // Platform
-    arch: string;          // Architecture
+    uptime: number; // Process uptime in seconds
+    pid: number; // Process ID
+    version: string; // Node.js version
+    platform: string; // Platform
+    arch: string; // Architecture
     activeHandles: number; // Active handles count
     activeRequests: number; // Active requests count
   };
@@ -116,32 +114,32 @@ export interface SystemPerformanceMetrics {
 export interface MCPOperationMetrics {
   // Request metrics
   requests: {
-    total: number;                     // Total requests
-    successful: number;                // Successful requests
-    failed: number;                    // Failed requests
-    rate: number;                      // Requests per second
-    averageResponseTime: number;       // Average response time
-    p50ResponseTime: number;           // 50th percentile
-    p90ResponseTime: number;           // 90th percentile
-    p95ResponseTime: number;           // 95th percentile
-    p99ResponseTime: number;           // 99th percentile
+    total: number; // Total requests
+    successful: number; // Successful requests
+    failed: number; // Failed requests
+    rate: number; // Requests per second
+    averageResponseTime: number; // Average response time
+    p50ResponseTime: number; // 50th percentile
+    p90ResponseTime: number; // 90th percentile
+    p95ResponseTime: number; // 95th percentile
+    p99ResponseTime: number; // 99th percentile
     responseTimeHistogram: HistogramData;
   };
 
   // Session metrics
   sessions: {
-    active: number;                    // Active sessions
-    total: number;                     // Total sessions created
-    averageDuration: number;           // Average session duration
-    totalDuration: number;             // Total session duration
+    active: number; // Active sessions
+    total: number; // Total sessions created
+    averageDuration: number; // Average session duration
+    totalDuration: number; // Total session duration
   };
 
   // Tool execution metrics
   tools: {
-    executions: number;                // Total tool executions
-    successful: number;                // Successful executions
-    failed: number;                    // Failed executions
-    averageExecutionTime: number;      // Average execution time
+    executions: number; // Total tool executions
+    successful: number; // Successful executions
+    failed: number; // Failed executions
+    averageExecutionTime: number; // Average execution time
     popularTools: Array<{
       name: string;
       count: number;
@@ -153,31 +151,31 @@ export interface MCPOperationMetrics {
   // Knowledge graph metrics
   knowledgeGraph: {
     entities: {
-      total: number;                  // Total entities
-      created: number;                // Entities created
-      updated: number;                // Entities updated
-      deleted: number;                // Entities deleted
+      total: number; // Total entities
+      created: number; // Entities created
+      updated: number; // Entities updated
+      deleted: number; // Entities deleted
     };
     relations: {
-      total: number;                  // Total relations
-      created: number;                // Relations created
-      deleted: number;                // Relations deleted
+      total: number; // Total relations
+      created: number; // Relations created
+      deleted: number; // Relations deleted
     };
     operations: {
-      stores: number;                 // Store operations
-      finds: number;                  // Find operations
-      updates: number;                // Update operations
-      deletes: number;                // Delete operations
+      stores: number; // Store operations
+      finds: number; // Find operations
+      updates: number; // Update operations
+      deletes: number; // Delete operations
     };
   };
 
   // Quality metrics
   quality: {
-    dedupeRate: number;               // Deduplication rate
-    cacheHitRate: number;             // Cache hit rate
-    embeddingSuccessRate: number;     // Embedding success rate
-    ttlCleanupRate: number;           // TTL cleanup rate
-    validationSuccessRate: number;    // Validation success rate
+    dedupeRate: number; // Deduplication rate
+    cacheHitRate: number; // Cache hit rate
+    embeddingSuccessRate: number; // Embedding success rate
+    ttlCleanupRate: number; // TTL cleanup rate
+    validationSuccessRate: number; // Validation success rate
   };
 }
 
@@ -197,14 +195,14 @@ export interface EnhancedPerformanceCollectorConfig {
 
   // Performance thresholds
   thresholds: {
-    responseTimeWarning: number;      // milliseconds
-    responseTimeCritical: number;     // milliseconds
-    cpuUsageWarning: number;          // percentage
-    cpuUsageCritical: number;         // percentage
-    memoryUsageWarning: number;       // percentage
-    memoryUsageCritical: number;      // percentage
-    eventLoopLagWarning: number;      // microseconds
-    eventLoopLagCritical: number;     // microseconds
+    responseTimeWarning: number; // milliseconds
+    responseTimeCritical: number; // milliseconds
+    cpuUsageWarning: number; // percentage
+    cpuUsageCritical: number; // percentage
+    memoryUsageWarning: number; // percentage
+    memoryUsageCritical: number; // percentage
+    eventLoopLagWarning: number; // microseconds
+    eventLoopLagCritical: number; // microseconds
   };
 
   // Alerting
@@ -245,26 +243,26 @@ export class EnhancedPerformanceCollector extends EventEmitter {
     super();
 
     this.config = {
-      systemMetricsIntervalMs: 10000,     // 10 seconds
-      mcpMetricsIntervalMs: 5000,        // 5 seconds
-      histogramRetentionMinutes: 60,     // 1 hour
-      timeSeriesRetentionMinutes: 1440,  // 24 hours
+      systemMetricsIntervalMs: 10000, // 10 seconds
+      mcpMetricsIntervalMs: 5000, // 5 seconds
+      histogramRetentionMinutes: 60, // 1 hour
+      timeSeriesRetentionMinutes: 1440, // 24 hours
       responseTimeBuckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000],
       executionTimeBuckets: [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000],
       thresholds: {
-        responseTimeWarning: 1000,       // 1 second
-        responseTimeCritical: 5000,      // 5 seconds
-        cpuUsageWarning: 80,             // 80%
-        cpuUsageCritical: 95,            // 95%
-        memoryUsageWarning: 80,          // 80%
-        memoryUsageCritical: 95,         // 95%
-        eventLoopLagWarning: 1000,       // 1 millisecond
-        eventLoopLagCritical: 5000,      // 5 milliseconds
+        responseTimeWarning: 1000, // 1 second
+        responseTimeCritical: 5000, // 5 seconds
+        cpuUsageWarning: 80, // 80%
+        cpuUsageCritical: 95, // 95%
+        memoryUsageWarning: 80, // 80%
+        memoryUsageCritical: 95, // 95%
+        eventLoopLagWarning: 1000, // 1 millisecond
+        eventLoopLagCritical: 5000, // 5 milliseconds
       },
       alerts: {
         enabled: true,
         consecutiveViolationsThreshold: 3,
-        cooldownPeriodMs: 300000,        // 5 minutes
+        cooldownPeriodMs: 300000, // 5 minutes
       },
       ...config,
     };
@@ -343,7 +341,12 @@ export class EnhancedPerformanceCollector extends EventEmitter {
   /**
    * Record a custom metric
    */
-  recordMetric(name: string, type: MetricType, value: number, labels?: Record<string, string>): void {
+  recordMetric(
+    name: string,
+    type: MetricType,
+    value: number,
+    labels?: Record<string, string>
+  ): void {
     const metric: MetricData = {
       name,
       type,
@@ -422,7 +425,7 @@ export class EnhancedPerformanceCollector extends EventEmitter {
     }
 
     // Update popular tools tracking
-    const existingTool = this.mcpMetrics.tools.popularTools.find(t => t.name === toolName);
+    const existingTool = this.mcpMetrics.tools.popularTools.find((t) => t.name === toolName);
     if (existingTool) {
       existingTool.count++;
       existingTool.averageTime = (existingTool.averageTime + duration) / 2;
@@ -452,7 +455,11 @@ export class EnhancedPerformanceCollector extends EventEmitter {
   /**
    * Record knowledge graph operation
    */
-  recordKnowledgeGraphOperation(operation: 'store' | 'find' | 'update' | 'delete', duration: number, success: boolean): void {
+  recordKnowledgeGraphOperation(
+    operation: 'store' | 'find' | 'update' | 'delete',
+    duration: number,
+    success: boolean
+  ): void {
     // Update operation counts
     this.mcpMetrics.knowledgeGraph.operations[`${operation}s`]++;
 
@@ -494,7 +501,7 @@ export class EnhancedPerformanceCollector extends EventEmitter {
 
     if (duration) {
       const cutoff = Date.now() - duration;
-      return series.filter(m => m.timestamp >= cutoff);
+      return series.filter((m) => m.timestamp >= cutoff);
     }
 
     return series;
@@ -514,7 +521,7 @@ export class EnhancedPerformanceCollector extends EventEmitter {
     const series = this.getTimeSeriesData(metricName);
     if (series.length === 0) return {};
 
-    const values = series.map(m => m.value).sort((a, b) => a - b);
+    const values = series.map((m) => m.value).sort((a, b) => a - b);
     const result: Record<number, number> = {};
 
     for (const p of percentiles) {
@@ -532,33 +539,69 @@ export class EnhancedPerformanceCollector extends EventEmitter {
     let output = '';
 
     // System metrics
-    output += this.generatePrometheusMetric('cortex_cpu_usage_percent', 'gauge',
-      this.systemMetrics.cpuUsage.percentage, 'CPU usage percentage');
+    output += this.generatePrometheusMetric(
+      'cortex_cpu_usage_percent',
+      'gauge',
+      this.systemMetrics.cpuUsage.percentage,
+      'CPU usage percentage'
+    );
 
-    output += this.generatePrometheusMetric('cortex_memory_heap_usage_bytes', 'gauge',
-      this.systemMetrics.memoryUsage.heapUsed, 'Heap memory usage in bytes');
+    output += this.generatePrometheusMetric(
+      'cortex_memory_heap_usage_bytes',
+      'gauge',
+      this.systemMetrics.memoryUsage.heapUsed,
+      'Heap memory usage in bytes'
+    );
 
-    output += this.generatePrometheusMetric('cortex_memory_heap_usage_percent', 'gauge',
-      this.systemMetrics.memoryUsage.heapUsagePercent, 'Heap memory usage percentage');
+    output += this.generatePrometheusMetric(
+      'cortex_memory_heap_usage_percent',
+      'gauge',
+      this.systemMetrics.memoryUsage.heapUsagePercent,
+      'Heap memory usage percentage'
+    );
 
-    output += this.generatePrometheusMetric('cortex_event_loop_lag_microseconds', 'gauge',
-      this.systemMetrics.eventLoop.lag, 'Event loop lag in microseconds');
+    output += this.generatePrometheusMetric(
+      'cortex_event_loop_lag_microseconds',
+      'gauge',
+      this.systemMetrics.eventLoop.lag,
+      'Event loop lag in microseconds'
+    );
 
     // MCP metrics
-    output += this.generatePrometheusMetric('cortex_requests_total', 'counter',
-      this.mcpMetrics.requests.total, 'Total number of requests');
+    output += this.generatePrometheusMetric(
+      'cortex_requests_total',
+      'counter',
+      this.mcpMetrics.requests.total,
+      'Total number of requests'
+    );
 
-    output += this.generatePrometheusMetric('cortex_requests_per_second', 'gauge',
-      this.mcpMetrics.requests.rate, 'Requests per second');
+    output += this.generatePrometheusMetric(
+      'cortex_requests_per_second',
+      'gauge',
+      this.mcpMetrics.requests.rate,
+      'Requests per second'
+    );
 
-    output += this.generatePrometheusMetric('cortex_request_duration_seconds', 'histogram',
-      this.mcpMetrics.requests.responseTimeHistogram, 'Request duration in seconds');
+    output += this.generatePrometheusMetric(
+      'cortex_request_duration_seconds',
+      'histogram',
+      this.mcpMetrics.requests.responseTimeHistogram,
+      'Request duration in seconds'
+    );
 
-    output += this.generatePrometheusMetric('cortex_active_sessions', 'gauge',
-      this.mcpMetrics.sessions.active, 'Number of active sessions');
+    output += this.generatePrometheusMetric(
+      'cortex_active_sessions',
+      'gauge',
+      this.mcpMetrics.sessions.active,
+      'Number of active sessions'
+    );
 
-    output += this.generatePrometheusMetric('cortex_tool_executions_total', 'counter',
-      this.mcpMetrics.tools.executions, 'Total tool executions');
+    output += this.generatePrometheusMetric(
+      'cortex_tool_executions_total',
+      'counter',
+      this.mcpMetrics.tools.executions,
+      'Total tool executions'
+    );
 
     // Histogram metrics
     for (const [name, histogram] of this.histograms) {
@@ -569,7 +612,12 @@ export class EnhancedPerformanceCollector extends EventEmitter {
     for (const [metricName, series] of this.timeSeriesData) {
       if (series.length > 0) {
         const latest = series[series.length - 1];
-        output += this.generatePrometheusMetric(metricName, latest.type, latest.value, latest.description);
+        output += this.generatePrometheusMetric(
+          metricName,
+          latest.type,
+          latest.value,
+          latest.description
+        );
       }
     }
 
@@ -632,13 +680,12 @@ export class EnhancedPerformanceCollector extends EventEmitter {
           version: process.version,
           platform: process.platform,
           arch: process.arch,
-          activeHandles: (process as unknown)._getActiveHandles().length,
-          activeRequests: (process as unknown)._getActiveRequests().length,
+          activeHandles: this.getActiveHandlesCount(),
+          activeRequests: this.getActiveRequestsCount(),
         },
       };
 
       this.emit('system_metrics_collected', this.systemMetrics);
-
     } catch (error) {
       logger.error({ error }, 'Failed to collect system metrics');
     }
@@ -673,12 +720,14 @@ export class EnhancedPerformanceCollector extends EventEmitter {
           p90ResponseTime: p90,
           p95ResponseTime: p95,
           p99ResponseTime: p99,
-          responseTimeHistogram: this.getHistogramData('response_time_all') || this.createEmptyHistogram(),
+          responseTimeHistogram:
+            this.getHistogramData('response_time_all') || this.createEmptyHistogram(),
         },
         tools: {
           ...this.mcpMetrics.tools,
           averageExecutionTime: this.calculateAverage(this.executionTimeSamples),
-          executionTimeHistogram: this.getHistogramData('tool_execution_time') || this.createEmptyHistogram(),
+          executionTimeHistogram:
+            this.getHistogramData('tool_execution_time') || this.createEmptyHistogram(),
         },
       };
 
@@ -687,7 +736,6 @@ export class EnhancedPerformanceCollector extends EventEmitter {
       this.executionTimeSamples = [];
 
       this.emit('mcp_metrics_collected', this.mcpMetrics);
-
     } catch (error) {
       logger.error({ error }, 'Failed to collect MCP metrics');
     }
@@ -716,7 +764,7 @@ export class EnhancedPerformanceCollector extends EventEmitter {
     this.histograms.set(name, {
       count: 0,
       sum: 0,
-      buckets: buckets.map(le => ({ le, count: 0 })),
+      buckets: buckets.map((le) => ({ le, count: 0 })),
     });
   }
 
@@ -748,7 +796,7 @@ export class EnhancedPerformanceCollector extends EventEmitter {
     return {
       count: 0,
       sum: 0,
-      buckets: this.config.responseTimeBuckets.map(le => ({ le, count: 0 })),
+      buckets: this.config.responseTimeBuckets.map((le) => ({ le, count: 0 })),
     };
   }
 
@@ -799,7 +847,9 @@ export class EnhancedPerformanceCollector extends EventEmitter {
         this.eventLoopDelaySamples = this.eventLoopDelaySamples.slice(-100);
       }
     });
-    return this.eventLoopDelaySamples.length > 0 ? this.eventLoopDelaySamples[this.eventLoopDelaySamples.length - 1] : 0;
+    return this.eventLoopDelaySamples.length > 0
+      ? this.eventLoopDelaySamples[this.eventLoopDelaySamples.length - 1]
+      : 0;
   }
 
   /**
@@ -818,6 +868,48 @@ export class EnhancedPerformanceCollector extends EventEmitter {
   private calculateAverage(values: number[]): number {
     if (values.length === 0) return 0;
     return values.reduce((sum, value) => sum + value, 0) / values.length;
+  }
+
+  /**
+   * Safely get active handles count
+   */
+  private getActiveHandlesCount(): number {
+    try {
+      const processWithHandles = process as unknown as { _getActiveHandles?: () => unknown[] };
+      const handles = processWithHandles._getActiveHandles?.();
+      return Array.isArray(handles) ? handles.length : 0;
+    } catch (error) {
+      logger.warn({ error }, 'Failed to get active handles count');
+      return 0;
+    }
+  }
+
+  /**
+   * Safely get active requests count
+   */
+  private getActiveRequestsCount(): number {
+    try {
+      const processWithRequests = process as unknown as { _getActiveRequests?: () => unknown[] };
+      const requests = processWithRequests._getActiveRequests?.();
+      return Array.isArray(requests) ? requests.length : 0;
+    } catch (error) {
+      logger.warn({ error }, 'Failed to get active requests count');
+      return 0;
+    }
+  }
+
+  /**
+   * Type guard for HistogramData
+   */
+  private isHistogramData(value: unknown): value is HistogramData {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      'count' in value &&
+      'sum' in value &&
+      'buckets' in value &&
+      Array.isArray((value as HistogramData).buckets)
+    );
   }
 
   /**
@@ -842,7 +934,9 @@ export class EnhancedPerformanceCollector extends EventEmitter {
           severity: isCritical ? 'critical' : 'warning',
           operation,
           duration,
-          threshold: isCritical ? this.config.thresholds.responseTimeCritical : this.config.thresholds.responseTimeWarning,
+          threshold: isCritical
+            ? this.config.thresholds.responseTimeCritical
+            : this.config.thresholds.responseTimeWarning,
           consecutiveViolations: alert.count,
         });
 
@@ -850,7 +944,9 @@ export class EnhancedPerformanceCollector extends EventEmitter {
           {
             operation,
             duration,
-            threshold: isCritical ? this.config.thresholds.responseTimeCritical : this.config.thresholds.responseTimeWarning,
+            threshold: isCritical
+              ? this.config.thresholds.responseTimeCritical
+              : this.config.thresholds.responseTimeWarning,
             severity: isCritical ? 'critical' : 'warning',
             consecutiveViolations: alert.count,
           },
@@ -866,7 +962,12 @@ export class EnhancedPerformanceCollector extends EventEmitter {
   /**
    * Generate Prometheus metric line
    */
-  private generatePrometheusMetric(name: string, type: string, value: unknown, help?: string): string {
+  private generatePrometheusMetric(
+    name: string,
+    type: string,
+    value: unknown,
+    help?: string
+  ): string {
     let output = '';
 
     if (help) {
@@ -875,7 +976,7 @@ export class EnhancedPerformanceCollector extends EventEmitter {
 
     output += `# TYPE ${name} ${type}\n`;
 
-    if (typeof value === 'object' && value.count !== undefined) {
+    if (this.isHistogramData(value)) {
       // Histogram
       return this.generatePrometheusHistogram(name, value);
     } else {
@@ -988,7 +1089,8 @@ export class EnhancedPerformanceCollector extends EventEmitter {
     };
   }
 
-  getCurrentMetrics?: unknown|undefined}
+  getCurrentMetrics?: unknown | undefined;
+}
 
 // Export singleton instance
 export const enhancedPerformanceCollector = new EnhancedPerformanceCollector();

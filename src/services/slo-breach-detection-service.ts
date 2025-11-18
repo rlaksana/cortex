@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * SLO Breach Detection and Notification Service
  *
@@ -27,12 +23,8 @@ import {
   type SLOEvaluation,
   SLOEvaluationStatus,
 } from '../types/slo-interfaces.js';
-import {
-  EscalationLevel,
-} from '../types/slo-types.js';
-import {
-  AlertSeverity,
-} from '../types/unified-health-interfaces.js';
+import { EscalationLevel } from '../types/slo-types.js';
+import { AlertSeverity } from '../types/unified-health-interfaces.js';
 
 /**
  * SLO Breach Detection and Notification Service
@@ -70,7 +62,6 @@ export class SLOBreachDetectionService extends EventEmitter {
 
       // Schedule periodic breach checks
       this.schedulePeriodicBreachChecks();
-
     } catch (error) {
       this.isStarted = false;
       this.emit('error', `Failed to start SLO Breach Detection Service: ${error}`);
@@ -123,7 +114,7 @@ export class SLOBreachDetectionService extends EventEmitter {
     const incidentId = this.generateIncidentId();
 
     // Calculate impact if not provided
-    const impact = impactAssessment || await this.calculateImpact(slo, evaluation);
+    const impact = impactAssessment || (await this.calculateImpact(slo, evaluation));
 
     const incident: ExtendedSLOBreachIncident = {
       id: incidentId,
@@ -140,7 +131,7 @@ export class SLOBreachDetectionService extends EventEmitter {
       },
       status: 'open' as IncidentStatus,
       response: this.createDefaultResponse(),
-      escalation: 'tier_1' as unknown,
+      escalation: EscalationLevel.TIER_1,
       communication: {
         stakeholders: [],
         channels: [],
@@ -245,10 +236,13 @@ export class SLOBreachDetectionService extends EventEmitter {
     await this.sendResolutionNotifications(resolvedIncident);
 
     // Move to resolved incidents storage
-    setTimeout(() => {
-      this.activeIncidents.delete(incidentId);
-      this.emit('incident:archived', resolvedIncident);
-    }, 24 * 60 * 60 * 1000); // Archive after 24 hours
+    setTimeout(
+      () => {
+        this.activeIncidents.delete(incidentId);
+        this.emit('incident:archived', resolvedIncident);
+      },
+      24 * 60 * 60 * 1000
+    ); // Archive after 24 hours
 
     this.emit('incident:resolved', resolvedIncident);
     return resolvedIncident;
@@ -272,9 +266,7 @@ export class SLOBreachDetectionService extends EventEmitter {
    * Get incidents by SLO
    */
   getIncidentsBySLO(sloId: string): ExtendedSLOBreachIncident[] {
-    return Array.from(this.activeIncidents.values()).filter(
-      incident => incident.sloId === sloId
-    );
+    return Array.from(this.activeIncidents.values()).filter((incident) => incident.sloId === sloId);
   }
 
   // ============================================================================
@@ -307,7 +299,12 @@ export class SLOBreachDetectionService extends EventEmitter {
       const channel = this.notificationChannels.get(channelId);
       if (channel && channel.enabled) {
         try {
-          const result = await this.sendNotificationToChannel(channel, incident, message, notificationSeverity);
+          const result = await this.sendNotificationToChannel(
+            channel,
+            incident,
+            message,
+            notificationSeverity
+          );
           notifications.push({
             channelId,
             timestamp: new Date(),
@@ -355,7 +352,7 @@ export class SLOBreachDetectionService extends EventEmitter {
     }
 
     const policy = this.escalationPolicies.get('default') || this.getDefaultEscalationPolicy();
-    const escalationConfig = policy.levels.find(l => l.level === escalationLevel);
+    const escalationConfig = policy.levels.find((l) => l.level === escalationLevel);
 
     if (!escalationConfig) {
       throw new Error(`Escalation level ${escalationLevel} not configured`);
@@ -374,7 +371,12 @@ export class SLOBreachDetectionService extends EventEmitter {
 
     // Send escalation notifications
     const message = `ESCALATION (${escalationLevel}): ${(incident as unknown).sloName} - ${reason}`;
-    await this.sendNotification(incident, message, escalationConfig.channels, 'critical' as AlertSeverity);
+    await this.sendNotification(
+      incident,
+      message,
+      escalationConfig.channels,
+      AlertSeverity.CRITICAL
+    );
 
     this.emit('incident:escalated', { incident, escalation });
   }
@@ -417,8 +419,8 @@ export class SLOBreachDetectionService extends EventEmitter {
     // Check for error budget exhaustion
     if (evaluation.budget.remaining <= 0) {
       const existingIncident = this.getActiveIncidentForSLO(sloId);
-      if (!existingIncident || existingIncident.severity !== 'catastrophic' as BreachSeverity) {
-        const incident = await this.createIncident(sloId, evaluation, 'catastrophic' as BreachSeverity);
+      if (!existingIncident || existingIncident.severity !== 'catastrophic') {
+        const incident = await this.createIncident(sloId, evaluation, 'catastrophic');
         breaches.push(incident);
       }
     }
@@ -477,9 +479,9 @@ export class SLOBreachDetectionService extends EventEmitter {
     const responses = [];
 
     // Trigger automated remediation based on severity and SLO type
-    if (incident.severity === 'catastrophic' as BreachSeverity) {
+    if (incident.severity === ('catastrophic' as BreachSeverity)) {
       responses.push(await this.executeCriticalResponse(incident));
-    } else if (incident.severity === 'critical' as BreachSeverity) {
+    } else if (incident.severity === ('critical' as BreachSeverity)) {
       responses.push(await this.executeHighSeverityResponse(incident));
     } else {
       responses.push(await this.executeStandardResponse(incident));
@@ -494,7 +496,9 @@ export class SLOBreachDetectionService extends EventEmitter {
   /**
    * Execute critical severity response
    */
-  private async executeCriticalResponse(incident: ExtendedSLOBreachIncident): Promise<AutomatedResponse> {
+  private async executeCriticalResponse(
+    incident: ExtendedSLOBreachIncident
+  ): Promise<AutomatedResponse> {
     const response: AutomatedResponse = {
       type: 'automated',
       category: 'critical',
@@ -505,8 +509,10 @@ export class SLOBreachDetectionService extends EventEmitter {
 
     try {
       // Immediate traffic shaping if applicable
-      if ((incident as unknown).sloName.toLowerCase().includes('latency') ||
-          (incident as unknown).sloName.toLowerCase().includes('response time')) {
+      if (
+        (incident as unknown).sloName.toLowerCase().includes('latency') ||
+        (incident as unknown).sloName.toLowerCase().includes('response time')
+      ) {
         response.actions.push({
           type: 'traffic_shaping',
           description: 'Implementing traffic shaping to reduce load',
@@ -535,7 +541,6 @@ export class SLOBreachDetectionService extends EventEmitter {
 
       response.status = 'completed';
       response.completedAt = new Date();
-
     } catch (error) {
       response.status = 'failed';
       response.error = error instanceof Error ? error.message : 'Unknown error';
@@ -547,7 +552,9 @@ export class SLOBreachDetectionService extends EventEmitter {
   /**
    * Execute high severity response
    */
-  private async executeHighSeverityResponse(incident: ExtendedSLOBreachIncident): Promise<AutomatedResponse> {
+  private async executeHighSeverityResponse(
+    incident: ExtendedSLOBreachIncident
+  ): Promise<AutomatedResponse> {
     const response: AutomatedResponse = {
       type: 'automated',
       category: 'high_severity',
@@ -575,7 +582,6 @@ export class SLOBreachDetectionService extends EventEmitter {
 
       response.status = 'completed';
       response.completedAt = new Date();
-
     } catch (error) {
       response.status = 'failed';
       response.error = error instanceof Error ? error.message : 'Unknown error';
@@ -587,7 +593,9 @@ export class SLOBreachDetectionService extends EventEmitter {
   /**
    * Execute standard response
    */
-  private async executeStandardResponse(incident: ExtendedSLOBreachIncident): Promise<AutomatedResponse> {
+  private async executeStandardResponse(
+    incident: ExtendedSLOBreachIncident
+  ): Promise<AutomatedResponse> {
     const response: AutomatedResponse = {
       type: 'automated',
       category: 'standard',
@@ -607,7 +615,6 @@ export class SLOBreachDetectionService extends EventEmitter {
 
       response.status = 'completed';
       response.completedAt = new Date();
-
     } catch (error) {
       response.status = 'failed';
       response.error = error instanceof Error ? error.message : 'Unknown error';
@@ -688,20 +695,23 @@ export class SLOBreachDetectionService extends EventEmitter {
    */
   private schedulePeriodicBreachChecks(): void {
     // Comprehensive check every 5 minutes
-    setInterval(async () => {
-      if (!this.isStarted) return;
+    setInterval(
+      async () => {
+        if (!this.isStarted) return;
 
-      try {
-        const slos = this.sloService.getAllSLOs();
-        for (const slo of slos) {
-          if (slo.status === 'active') {
-            await this.checkForBreaches(slo.id);
+        try {
+          const slos = this.sloService.getAllSLOs();
+          for (const slo of slos) {
+            if (slo.status === 'active') {
+              await this.checkForBreaches(slo.id);
+            }
           }
+        } catch (error) {
+          this.emit('error', `Periodic breach check failed: ${error}`);
         }
-      } catch (error) {
-        this.emit('error', `Periodic breach check failed: ${error}`);
-      }
-    }, 5 * 60 * 1000); // Every 5 minutes
+      },
+      5 * 60 * 1000
+    ); // Every 5 minutes
   }
 
   /**
@@ -709,7 +719,7 @@ export class SLOBreachDetectionService extends EventEmitter {
    */
   private getActiveIncidentForSLO(sloId: string): ExtendedSLOBreachIncident | undefined {
     return Array.from(this.activeIncidents.values()).find(
-      incident => incident.sloId === sloId && incident.status === 'open' as IncidentStatus
+      (incident) => incident.sloId === sloId && incident.status === 'open'
     );
   }
 
@@ -721,13 +731,13 @@ export class SLOBreachDetectionService extends EventEmitter {
     const budgetRemaining = evaluation.budget.remaining;
 
     if (compliance < 90 || budgetRemaining <= 0) {
-      return 'catastrophic' as BreachSeverity;
+      return 'catastrophic';
     } else if (compliance < 95 || budgetRemaining < 10) {
-      return 'critical' as BreachSeverity;
+      return 'critical';
     } else if (compliance < 98 || budgetRemaining < 25) {
-      return 'major' as BreachSeverity;
+      return 'major';
     } else {
-      return 'minor' as BreachSeverity;
+      return 'minor';
     }
   }
 
@@ -769,9 +779,14 @@ export class SLOBreachDetectionService extends EventEmitter {
     score += budgetConsumption * 0.3;
 
     // SLO priority factor
-    const priorityMultiplier = (slo.metadata as unknown).businessImpact === 'critical' ? 1.5 :
-                             (slo.metadata as unknown).businessImpact === 'high' ? 1.2 :
-                             (slo.metadata as unknown).businessImpact === 'medium' ? 1.0 : 0.8;
+    const priorityMultiplier =
+      (slo.metadata as unknown).businessImpact === 'critical'
+        ? 1.5
+        : (slo.metadata as unknown).businessImpact === 'high'
+          ? 1.2
+          : (slo.metadata as unknown).businessImpact === 'medium'
+            ? 1.0
+            : 0.8;
     score *= priorityMultiplier;
 
     return Math.min(100, score);
@@ -794,36 +809,54 @@ export class SLOBreachDetectionService extends EventEmitter {
     // For now, return a placeholder based on severity
     const severity = this.determineBreachSeverity(evaluation);
     switch (severity) {
-      case 'catastrophic': return Math.random() * 100000 + 10000;
-      case 'critical': return Math.random() * 50000 + 5000;
-      case 'major': return Math.random() * 10000 + 1000;
-      default: return Math.random() * 1000;
+      case 'catastrophic':
+        return Math.random() * 100000 + 10000;
+      case 'critical':
+        return Math.random() * 50000 + 5000;
+      case 'major':
+        return Math.random() * 10000 + 1000;
+      default:
+        return Math.random() * 1000;
     }
   }
 
   /**
    * Assess operational impact
    */
-  private assessOperationalImpact(slo: SLO, evaluation: SLOEvaluation): 'low' | 'medium' | 'high' | 'critical' {
+  private assessOperationalImpact(
+    slo: SLO,
+    evaluation: SLOEvaluation
+  ): 'low' | 'medium' | 'high' | 'critical' {
     const severity = this.determineBreachSeverity(evaluation);
     switch (severity) {
-      case 'catastrophic': return 'critical';
-      case 'critical': return 'high';
-      case 'major': return 'medium';
-      default: return 'low';
+      case 'catastrophic':
+        return 'critical';
+      case 'critical':
+        return 'high';
+      case 'major':
+        return 'medium';
+      default:
+        return 'low';
     }
   }
 
   /**
    * Assess customer impact
    */
-  private assessCustomerImpact(slo: SLO, evaluation: SLOEvaluation): 'low' | 'medium' | 'high' | 'critical' {
+  private assessCustomerImpact(
+    slo: SLO,
+    evaluation: SLOEvaluation
+  ): 'low' | 'medium' | 'high' | 'critical' {
     const severity = this.determineBreachSeverity(evaluation);
     switch (severity) {
-      case 'catastrophic': return 'critical';
-      case 'critical': return 'high';
-      case 'major': return 'medium';
-      default: return 'low';
+      case 'catastrophic':
+        return 'critical';
+      case 'critical':
+        return 'high';
+      case 'major':
+        return 'medium';
+      default:
+        return 'low';
     }
   }
 
@@ -833,8 +866,10 @@ export class SLOBreachDetectionService extends EventEmitter {
   private estimateImpactDuration(evaluation: SLOEvaluation): number {
     // Estimate duration based on burn rate and remaining budget
     if (evaluation.budget.burnRate > 0) {
-      return Math.min(24 * 60 * 60 * 1000, // Max 24 hours
-        (evaluation.budget.remaining / evaluation.budget.burnRate) * 60 * 60 * 1000);
+      return Math.min(
+        24 * 60 * 60 * 1000, // Max 24 hours
+        (evaluation.budget.remaining / evaluation.budget.burnRate) * 60 * 60 * 1000
+      );
     }
     return 60 * 60 * 1000; // Default 1 hour
   }
@@ -853,10 +888,10 @@ export class SLOBreachDetectionService extends EventEmitter {
    */
   private estimateResolutionTime(severity: BreachSeverity, impact: ImpactAssessment): number {
     const baseTime = {
-      'minor': 30 * 60 * 1000,      // 30 minutes
-      'major': 2 * 60 * 60 * 1000,   // 2 hours
-      'critical': 6 * 60 * 60 * 1000,   // 6 hours
-      'catastrophic': 24 * 60 * 60 * 1000, // 24 hours
+      minor: 30 * 60 * 1000, // 30 minutes
+      major: 2 * 60 * 60 * 1000, // 2 hours
+      critical: 6 * 60 * 60 * 1000, // 6 hours
+      catastrophic: 24 * 60 * 60 * 1000, // 24 hours
     };
 
     const multiplier = (impact as unknown).score / 50; // Scale by impact score
@@ -866,15 +901,24 @@ export class SLOBreachDetectionService extends EventEmitter {
   /**
    * Calculate business impact
    */
-  private calculateBusinessImpact(slo: SLO, evaluation: SLOEvaluation, impact: ImpactAssessment): {
+  private calculateBusinessImpact(
+    slo: SLO,
+    evaluation: SLOEvaluation,
+    impact: ImpactAssessment
+  ): {
     level: 'low' | 'medium' | 'high' | 'critical';
     description: string;
     estimatedCost: number;
     customerImpact: string;
   } {
-    const level = (impact as unknown).score > 75 ? 'critical' :
-                  (impact as unknown).score > 50 ? 'high' :
-                  (impact as unknown).score > 25 ? 'medium' : 'low';
+    const level =
+      (impact as unknown).score > 75
+        ? 'critical'
+        : (impact as unknown).score > 50
+          ? 'high'
+          : (impact as unknown).score > 25
+            ? 'medium'
+            : 'low';
 
     return {
       level,
@@ -1003,10 +1047,14 @@ Reason: ${(incident as unknown).resolution.reason}`;
    */
   private mapSeverityToAlertSeverity(severity: BreachSeverity): AlertSeverity {
     switch (severity) {
-      case 'catastrophic': return AlertSeverity.EMERGENCY;
-      case 'critical': return AlertSeverity.CRITICAL;
-      case 'major': return AlertSeverity.WARNING;
-      default: return AlertSeverity.INFO;
+      case 'catastrophic':
+        return AlertSeverity.EMERGENCY;
+      case 'critical':
+        return AlertSeverity.CRITICAL;
+      case 'major':
+        return AlertSeverity.WARNING;
+      default:
+        return AlertSeverity.INFO;
     }
   }
 
@@ -1065,7 +1113,7 @@ Reason: ${(incident as unknown).resolution.reason}`;
     if (!existingIncident) {
       const evaluation = this.sloService.getLatestEvaluation(alert.sloId);
       if (evaluation) {
-        await this.createIncident(alert.sloId, evaluation, 'critical' as BreachSeverity);
+        await this.createIncident(alert.sloId, evaluation, 'critical');
       }
     }
   }
@@ -1115,12 +1163,18 @@ Reason: ${(incident as unknown).resolution.reason}`;
   /**
    * Map customer impact severity
    */
-  private mapCustomerImpactSeverity(level: 'low' | 'medium' | 'high' | 'critical'): 'none' | 'partial' | 'significant' | 'total' {
+  private mapCustomerImpactSeverity(
+    level: 'low' | 'medium' | 'high' | 'critical'
+  ): 'none' | 'partial' | 'significant' | 'total' {
     switch (level) {
-      case 'critical': return 'total';
-      case 'high': return 'significant';
-      case 'medium': return 'partial';
-      default: return 'none';
+      case 'critical':
+        return 'total';
+      case 'high':
+        return 'significant';
+      case 'medium':
+        return 'partial';
+      default:
+        return 'none';
     }
   }
 

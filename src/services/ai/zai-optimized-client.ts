@@ -1,11 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Optimized ZAI Client with Advanced Caching and Performance Features
  *
@@ -24,8 +16,6 @@
  * @since 2025
  */
 
-import { logger } from '@/utils/logger.js';
-
 import {
   circuitBreakerManager,
   type CircuitBreakerStats,
@@ -36,6 +26,13 @@ import type {
   ZAIMetrics,
   ZAIStreamChunk,
 } from '../../types/zai-interfaces.js';
+import { logger } from '../../utils/logger.js';
+
+// Helper functions for safe property access
+const num = (v: unknown, d = 0): number => Number((v as number | undefined) ?? d);
+const str = (v: unknown, d = ''): string => ((v as string | undefined) ?? d).trim();
+const obj = <T extends object>(v: unknown, d: T): T =>
+  v && typeof v === 'object' ? (v as T) : d;
 
 /**
  * Cache entry with TTL and metadata
@@ -235,7 +232,8 @@ export class ZAIOptimizedClient {
     this.startBackgroundTasks();
 
     logger.info('ZAI optimized client initialized', {
-      cacheEnabled: this._options.cache?.enableMemoryCache || this._options.cache?.enableRedisCache || false,
+      cacheEnabled:
+        this._options.cache?.enableMemoryCache || this._options.cache?.enableRedisCache || false,
       deduplicationEnabled: this._options.deduplication?.enableDeduplication || false,
       rateLimitEnabled: this._options.rateLimit?.enableRateLimit || false,
       batchingEnabled: this._options.performance?.enableBatching || false,
@@ -343,7 +341,8 @@ export class ZAIOptimizedClient {
       if (memoryEntry && this.isCacheEntryValid(memoryEntry)) {
         memoryEntry.accessCount++;
         memoryEntry.lastAccessed = Date.now();
-        return (memoryEntry as unknown)._data || (memoryEntry as unknown).data;
+        const entryObj = obj(memoryEntry, {} as Record<string, unknown>);
+  return (entryObj._data as T) || (entryObj.data as T);
       }
     }
 
@@ -356,7 +355,8 @@ export class ZAIOptimizedClient {
           if (this._options.cache?.enableMemoryCache) {
             this.memoryCache.set(cacheKey, redisEntry);
           }
-          return (redisEntry as unknown)._data || (redisEntry as unknown).data;
+          const redisObj = obj(redisEntry, {} as Record<string, unknown>);
+  return (redisObj._data as T) || (redisObj.data as T);
         }
       } catch (error) {
         logger.warn({ error, cacheKey }, 'Redis cache lookup failed');
@@ -505,8 +505,12 @@ export class ZAIOptimizedClient {
   private async executeRequest(request: ZAIChatRequest): Promise<ZAIChatResponse> {
     if (this._options.enableCircuitBreaker && this.circuitBreaker) {
       // Execute through circuit breaker if available, otherwise fallback to direct request
-      if (typeof (this.circuitBreaker as unknown).execute === 'function') {
-        return await (this.circuitBreaker as unknown).execute(
+      const cbObj = obj(this.circuitBreaker, {} as Record<string, unknown>);
+      if (typeof cbObj.execute === 'function') {
+        return await (cbObj.execute as (
+          operation: () => Promise<ZAIChatResponse>,
+          operationName: string
+        ) => Promise<ZAIChatResponse>)(
           async () => await this.makeRequest(request),
           `zai_request_${Date.now()}`
         );
@@ -543,7 +547,9 @@ export class ZAIOptimizedClient {
           maxTokens: request.maxTokens,
           stream: false,
           ...Object.fromEntries(
-            Object.entries(request).filter(([key]) => !['messages', 'model', 'temperature', 'maxTokens', 'stream'].includes(key))
+            Object.entries(request).filter(
+              ([key]) => !['messages', 'model', 'temperature', 'maxTokens', 'stream'].includes(key)
+            )
           ),
         }),
         signal: controller.signal,
@@ -592,7 +598,9 @@ export class ZAIOptimizedClient {
           maxTokens: request.maxTokens,
           stream: true,
           ...Object.fromEntries(
-            Object.entries(request).filter(([key]) => !['messages', 'model', 'temperature', 'maxTokens', 'stream'].includes(key))
+            Object.entries(request).filter(
+              ([key]) => !['messages', 'model', 'temperature', 'maxTokens', 'stream'].includes(key)
+            )
           ),
         }),
         signal: controller.signal,
@@ -670,10 +678,7 @@ export class ZAIOptimizedClient {
       // Set batch timeout if not already set
       if (!this.batchTimeout) {
         const batchTimeout = this._options.performance?.batchTimeout || 100;
-        this.batchTimeout = setTimeout(
-          () => this.processBatch(),
-          batchTimeout
-        );
+        this.batchTimeout = setTimeout(() => this.processBatch(), batchTimeout);
       }
 
       // Process batch immediately if max size reached
@@ -904,9 +909,10 @@ export class ZAIOptimizedClient {
       ),
       batchQueueSize: this.batchRequests.length,
       rateLimitTokens: this.rateLimitTokens,
-      circuitBreakerStatus: this.circuitBreaker && typeof (this.circuitBreaker as unknown).getStats === 'function'
-        ? (this.circuitBreaker as unknown).getStats()
-        : undefined,
+      circuitBreakerStatus:
+        this.circuitBreaker && typeof obj(this.circuitBreaker, {} as Record<string, unknown>).getStats === 'function'
+          ? (obj(this.circuitBreaker, {} as Record<string, unknown>).getStats as () => unknown)()
+          : undefined,
     };
   }
 

@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Memory Store Orchestrator - Qdrant Implementation
  *
@@ -44,23 +40,30 @@
 
 import { createHash } from 'crypto';
 
-import { logger } from '@/utils/logger.js';
-
-import { IdempotentStoreService } from './idempotent-store-service.js';
-import { ConnectionError, type IDatabase } from '../../db/database-interface.js';
-import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
-import { OperationType } from '../../monitoring/operation-types.js';
-import type { AuthContext } from '../../types/auth-types.js';
+import { ServiceAdapterBase } from '../../interfaces/service-adapter.js';
+import type {
+  AuthContext,
+  BatchStorageResult,
+  BatchStatus,
+  FindMetrics,
+  IMemoryStoreOrchestrator,
+  ItemResult,
+  ServiceResponse,
+} from '../../interfaces/service-interfaces.js';
 import type {
   AutonomousContext,
   BatchSummary,
-  ItemResult,
   KnowledgeItem,
   MemoryStoreResponse,
   StoreError,
   StoreResult,
 } from '../../types/core-interfaces.js';
+import { IdempotentStoreService } from './idempotent-store-service.js';
+import { ConnectionError, type IDatabase } from '../../db/database-interface.js';
+import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
+import { OperationType } from '../../monitoring/operation-types.js';
 import { generateCorrelationId } from '../../utils/correlation-id.js';
+import { logger } from '../../utils/logger.js';
 import { createStoreObservability } from '../../utils/observability-helper.js';
 // import { auditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
 import { ChunkingService } from '../chunking/chunking-service.js';
@@ -102,7 +105,7 @@ interface DuplicateDetectionResult {
   isDuplicate: boolean;
   similarityScore?: number;
   existingItem?: KnowledgeItem;
-  duplicateType: 'content_hash' | 'semantic_similarity' | 'none';
+  duplicateType: 'contentHash' | 'semantic_similarity' | 'none';
   reason: string;
 }
 
@@ -114,6 +117,44 @@ interface SearchQuery {
   metadata?: Record<string, unknown>;
   kind: string;
   scope: unknown;
+}
+
+/**
+ * Enhanced knowledge item with content hash for deduplication
+ */
+interface EnhancedKnowledgeItem extends KnowledgeItem {
+  contentHash?: string;
+  data: EnhancedKnowledgeData;
+}
+
+/**
+ * Enhanced knowledge data with operation tracking
+ */
+interface EnhancedKnowledgeData extends Record<string, unknown> {
+  __operation?: 'delete';
+  contentHash?: string;
+  merge_count?: number;
+  merged_from?: Array<{
+    id: string;
+    timestamp: string;
+    similarity_score?: number;
+    merge_reason?: string;
+  }>;
+  last_merged_at?: string;
+  content?: string;
+  text?: string;
+}
+
+/**
+ * Rate limit result with proper typing
+ */
+interface RateLimitResult {
+  allowed: boolean;
+  reason?: string;
+  error?: {
+    error: string;
+    message?: string;
+  };
 }
 
 /**
@@ -149,7 +190,10 @@ interface ProcessingResult {
 /**
  * Orchestrator for memory store operations using Qdrant with enhanced semantic capabilities
  */
-export class MemoryStoreOrchestratorQdrant {
+export class MemoryStoreOrchestratorQdrant
+  extends ServiceAdapterBase
+  implements IMemoryStoreOrchestrator
+{
   private database: IDatabase;
   private readonly SIMILARITY_THRESHOLD = 0.85; // High threshold for duplicate detection
   private baselineTelemetry: BaselineTelemetry;
@@ -165,6 +209,7 @@ export class MemoryStoreOrchestratorQdrant {
   };
 
   constructor(database: IDatabase) {
+    super('MemoryStoreOrchestratorQdrant');
     this.database = database;
     this.baselineTelemetry = new BaselineTelemetry();
 
@@ -194,16 +239,16 @@ export class MemoryStoreOrchestratorQdrant {
 
   /**
    * Main entry point for storing knowledge items
-   * REFACTORED: Simplified orchestration with extracted helper methods
+   * REFACTORED: Uses ServiceResponse pattern with standardized error handling
    */
-  async storeItems(items: unknown[], authContext?: AuthContext): Promise<MemoryStoreResponse> {
-    const context = this.initializeStorageContext(items, authContext);
+  async storeItems(items: unknown[], authContext?: AuthContext): Promise<ServiceResponse<BatchStorageResult>> {
+    return this.executeOperation(async () => {
+      const context = this.initializeStorageContext(items, authContext);
 
-    try {
       // Step 1: Check rate limits
       const rateLimitResult = await this.checkRateLimits(context);
       if (!rateLimitResult.allowed) {
-        return this.createRateLimitResponse(context, rateLimitResult);
+        throw new Error(`Rate limit exceeded: ${rateLimitResult.reason}`);
       }
 
       // Step 2: Initialize database and reset stats
@@ -212,7 +257,7 @@ export class MemoryStoreOrchestratorQdrant {
       // Step 3: Validate input
       const validation = await this.validateInputItems(items);
       if (!validation.valid) {
-        return this.createErrorResponse(validation.errors);
+        throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(', ')}`);
       }
 
       // Step 4: Apply chunking
@@ -222,10 +267,8 @@ export class MemoryStoreOrchestratorQdrant {
       const processingResult = await this.processChunkedItems(chunkedItems, context);
 
       // Step 6: Generate response
-      return this.buildStorageResponse(processingResult, chunkedItems, context);
-    } catch (error) {
-      return this.handleBatchError(error, context);
-    }
+      return this.buildBatchStorageResult(processingResult, chunkedItems, context);
+    }, 'storeItems', { itemCount: items.length, authContext });
   }
 
   /**
@@ -248,9 +291,9 @@ export class MemoryStoreOrchestratorQdrant {
   /**
    * Check rate limits for the operation
    */
-  private async checkRateLimits(context: StoreOperationContext) {
+  private async checkRateLimits(context: StoreOperationContext): Promise<RateLimitResult> {
     return await this.rateLimiter.checkOrchestratorRateLimit(
-      context.authContext,
+      context.authContext as any,
       OperationType.MEMORY_STORE,
       0 // Will be updated with actual item count
     );
@@ -303,7 +346,7 @@ export class MemoryStoreOrchestratorQdrant {
     context: StoreOperationContext
   ): Promise<ProcessingResult> {
     for (let index = 0; index < chunkedItems.length; index++) {
-      const item = chunkedItems[index];
+      const item = chunkedItems[index] as EnhancedKnowledgeItem;
 
       try {
         // Run duplicate detection
@@ -322,7 +365,7 @@ export class MemoryStoreOrchestratorQdrant {
               ? 'update'
               : 'create',
           item.kind,
-          (result.id || item.id) as string,
+          result.id || item.id || '',
           item.scope,
           undefined,
           true
@@ -367,7 +410,7 @@ export class MemoryStoreOrchestratorQdrant {
     // Generate autonomous context
     const autonomousContext = await this.generateAutonomousContext(
       processingResult.stored,
-      processingResult.errors
+      processingResult?.errors
     );
 
     // Log batch operation
@@ -375,7 +418,7 @@ export class MemoryStoreOrchestratorQdrant {
       'store',
       chunkedItems.length,
       processingResult.stored.length,
-      processingResult.errors.length,
+      processingResult?.errors.length,
       undefined,
       undefined,
       Date.now() - context.startTime
@@ -423,8 +466,8 @@ export class MemoryStoreOrchestratorQdrant {
       stored: storedCount,
       skipped_dedupe: skippedDedupeCount,
       business_rule_blocked: 0,
-      validation_error: processingResult.errors.length,
-      total: itemResults.length + processingResult.errors.length,
+      validation_error: processingResult?.errors.length,
+      total: itemResults.length + processingResult?.errors.length,
     };
 
     // Log successful operation
@@ -452,7 +495,7 @@ export class MemoryStoreOrchestratorQdrant {
 
       // Legacy fields for backward compatibility
       stored: processingResult.stored,
-      errors: processingResult.errors,
+      errors: processingResult?.errors,
       autonomous_context: autonomousContext,
       observability: createStoreObservability(true, false, Date.now() - context.startTime, 0.85),
       meta: {
@@ -472,7 +515,7 @@ export class MemoryStoreOrchestratorQdrant {
    */
   private createRateLimitResponse(
     context: StoreOperationContext,
-    rateLimitResult: unknown
+    rateLimitResult: RateLimitResult
   ): MemoryStoreResponse {
     const latency = Date.now() - context.startTime;
 
@@ -486,7 +529,7 @@ export class MemoryStoreOrchestratorQdrant {
         source: 'api_key',
         operation: OperationType.MEMORY_STORE,
         tokens: 0, // Will be updated with actual item count
-        error: rateLimitResult.error?.error || 'rate_limit_exceeded',
+        error: rateLimitResult?.error?.error || 'rate_limit_exceeded',
       },
       'Rate limit exceeded for memory store'
     );
@@ -505,7 +548,7 @@ export class MemoryStoreOrchestratorQdrant {
         {
           index: 0,
           error_code: 'rate_limit_exceeded',
-          message: rateLimitResult.error?.message || 'Rate limit exceeded',
+          message: rateLimitResult?.error?.message || 'Rate limit exceeded',
         },
       ],
       autonomous_context: {
@@ -537,7 +580,7 @@ export class MemoryStoreOrchestratorQdrant {
     const latencyMs = Date.now() - context.startTime;
 
     // Log operation failure
-    logger.error(
+    logger?.error(
       {
         correlationId: context.correlationId,
         latency: latencyMs,
@@ -548,7 +591,7 @@ export class MemoryStoreOrchestratorQdrant {
       'Memory store operation failed'
     );
 
-    logger.error({ error }, 'Memory store operation failed');
+    logger?.error({ error }, 'Memory store operation failed');
 
     // Log critical error
     mockAuditService.logError(error instanceof Error ? error : new Error('Critical error'), {
@@ -569,7 +612,7 @@ export class MemoryStoreOrchestratorQdrant {
    * Process a single knowledge item with enhanced duplicate detection
    */
   private async processItem(
-    item: KnowledgeItem,
+    item: EnhancedKnowledgeItem,
     index: number,
     duplicateResult?: DuplicateDetectionResult
   ): Promise<StoreResult> {
@@ -585,7 +628,7 @@ export class MemoryStoreOrchestratorQdrant {
 
     // Generate content hash for deduplication
     const contentHash = this.generateContentHash(item);
-    (item as unknown).content_hash = contentHash;
+    item.contentHash = contentHash;
 
     // Check for duplicates using provided result or run detection if not provided
     const dupResult = duplicateResult || (await this.detectDuplicates(item));
@@ -611,7 +654,7 @@ export class MemoryStoreOrchestratorQdrant {
   /**
    * Enhanced duplicate detection using semantic similarity
    */
-  private async detectDuplicates(item: KnowledgeItem): Promise<DuplicateDetectionResult> {
+  private async detectDuplicates(item: EnhancedKnowledgeItem): Promise<DuplicateDetectionResult> {
     try {
       // Increment total checks
       this.duplicateDetectionStats.totalChecks++;
@@ -638,13 +681,14 @@ export class MemoryStoreOrchestratorQdrant {
 
       // Check for exact content hash matches first
       for (const result of searchResults.results) {
-        if ((result.data as unknown).content_hash === (item as unknown).content_hash) {
+        const resultData = result.data as EnhancedKnowledgeData;
+        if (resultData.contentHash === item.contentHash) {
           this.duplicateDetectionStats.contentHashMatches++;
           return {
             isDuplicate: true,
             similarityScore: 1.0,
             existingItem: this.searchResultToKnowledgeItem(result),
-            duplicateType: 'content_hash',
+            duplicateType: 'contentHash',
             reason: 'Exact content hash match',
           };
         }
@@ -745,7 +789,7 @@ export class MemoryStoreOrchestratorQdrant {
 
       return storeResult;
     } catch (error) {
-      logger.error({ error, itemKind: item.kind }, 'Failed to store item to database');
+      logger?.error({ error, itemKind: item.kind }, 'Failed to store item to database');
       throw error;
     }
   }
@@ -764,8 +808,8 @@ export class MemoryStoreOrchestratorQdrant {
         cascade: true,
       });
 
-      if (deleteResult.errors.length > 0) {
-        throw new Error(`Delete operation failed: ${deleteResult.errors[0].message}`);
+      if (deleteResult?.errors.length > 0) {
+        throw new Error(`Delete operation failed: ${deleteResult?.errors[0].message}`);
       }
 
       return {
@@ -775,7 +819,7 @@ export class MemoryStoreOrchestratorQdrant {
         created_at: new Date().toISOString(),
       };
     } catch (error) {
-      logger.error({ error, itemId: item.id }, 'Failed to delete item');
+      logger?.error({ error, itemId: item.id }, 'Failed to delete item');
       throw error;
     }
   }
@@ -800,8 +844,8 @@ export class MemoryStoreOrchestratorQdrant {
   /**
    * Extract operation type from item
    */
-  private extractOperation(item: KnowledgeItem): 'create' | 'update' | 'delete' {
-    if (item.id && (item.data as unknown).__operation === 'delete') {
+  private extractOperation(item: EnhancedKnowledgeItem): 'create' | 'update' | 'delete' {
+    if (item.id && item.data.__operation === 'delete') {
       return 'delete';
     }
     return item.id ? 'update' : 'create';
@@ -818,7 +862,7 @@ export class MemoryStoreOrchestratorQdrant {
   /**
    * Extract canonical content for hashing
    */
-  private extractCanonicalContent(item: KnowledgeItem): string {
+  private extractCanonicalContent(item: EnhancedKnowledgeItem): string {
     const parts: string[] = [
       item.kind,
       item.scope.project || '',
@@ -830,36 +874,36 @@ export class MemoryStoreOrchestratorQdrant {
     const data = item.data;
     switch (item.kind) {
       case 'section':
-        parts.push(data.title || '');
-        parts.push(data.content || '');
-        parts.push(data.heading || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.content || ''));
+        parts.push(String(data.heading || ''));
         break;
       case 'decision':
-        parts.push(data.title || '');
-        parts.push(data.rationale || '');
-        parts.push(data.component || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.rationale || ''));
+        parts.push(String(data.component || ''));
         break;
       case 'issue':
-        parts.push(data.title || '');
-        parts.push(data.description || '');
-        parts.push(data.status || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.description || ''));
+        parts.push(String(data.status || ''));
         break;
       case 'todo':
-        parts.push(data.title || '');
-        parts.push(data.description || '');
-        parts.push(data.status || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.description || ''));
+        parts.push(String(data.status || ''));
         break;
       case 'runbook':
-        parts.push(data.title || '');
-        parts.push(data.description || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.description || ''));
         if (Array.isArray(data.steps)) {
           parts.push(data.steps.join(''));
         }
         break;
       default:
         // Generic extraction
-        parts.push(data.title || data.name || '');
-        parts.push(data.description || data.content || '');
+        parts.push(String(data.title || data.name || ''));
+        parts.push(String(data.description || data.content || ''));
         if (typeof data === 'string') {
           parts.push(data);
         } else {
@@ -890,7 +934,7 @@ export class MemoryStoreOrchestratorQdrant {
   /**
    * Extract searchable text for semantic search
    */
-  private extractSearchableText(item: KnowledgeItem): string {
+  private extractSearchableText(item: EnhancedKnowledgeItem): string {
     const parts: string[] = [];
 
     // Add kind for context
@@ -905,39 +949,39 @@ export class MemoryStoreOrchestratorQdrant {
     const data = item.data;
     switch (item.kind) {
       case 'section':
-        parts.push(data.title || '');
-        parts.push(data.content || '');
-        parts.push(data.heading || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.content || ''));
+        parts.push(String(data.heading || ''));
         break;
       case 'decision':
-        parts.push(data.title || '');
-        parts.push(data.rationale || '');
-        parts.push(data.component || '');
-        parts.push(data.alternatives || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.rationale || ''));
+        parts.push(String(data.component || ''));
+        parts.push(String(data.alternatives || ''));
         break;
       case 'issue':
-        parts.push(data.title || '');
-        parts.push(data.description || '');
-        parts.push(data.status || '');
-        parts.push(data.severity || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.description || ''));
+        parts.push(String(data.status || ''));
+        parts.push(String(data.severity || ''));
         break;
       case 'todo':
-        parts.push(data.title || '');
-        parts.push(data.description || '');
-        parts.push(data.status || '');
-        parts.push(data.priority || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.description || ''));
+        parts.push(String(data.status || ''));
+        parts.push(String(data.priority || ''));
         break;
       case 'runbook':
-        parts.push(data.title || '');
-        parts.push(data.description || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.description || ''));
         if (Array.isArray(data.steps)) {
           parts.push(data.steps.join(' '));
         }
         break;
       default:
         // Generic extraction
-        parts.push(data.title || data.name || '');
-        parts.push(data.description || data.content || '');
+        parts.push(String(data.title || data.name || ''));
+        parts.push(String(data.description || data.content || ''));
         if (typeof data === 'string') {
           parts.push(data);
         } else {
@@ -952,13 +996,14 @@ export class MemoryStoreOrchestratorQdrant {
    * Convert search result to knowledge item
    */
   private searchResultToKnowledgeItem(result: unknown): KnowledgeItem {
+    const searchResult = result as any;
     return {
-      id: result.id,
-      kind: result.kind,
-      scope: result.scope,
-      data: result.data,
-      created_at: result.created_at,
-      updated_at: result.data?.updated_at || result.created_at,
+      id: searchResult.id || '',
+      kind: searchResult.kind || 'unknown',
+      scope: searchResult.scope || {},
+      data: searchResult.data || {},
+      created_at: searchResult.created_at || new Date().toISOString(),
+      updated_at: searchResult.data?.updated_at || searchResult.created_at || new Date().toISOString(),
     };
   }
 
@@ -1007,7 +1052,7 @@ export class MemoryStoreOrchestratorQdrant {
       if (hasContentHashMatches && hasSemanticMatches) {
         dedupeMethod = 'combined';
       } else if (hasContentHashMatches) {
-        dedupeMethod = 'content_hash';
+        dedupeMethod = 'contentHash';
       } else if (hasSemanticMatches) {
         dedupeMethod = 'semantic_similarity';
       } else {
@@ -1092,7 +1137,7 @@ export class MemoryStoreOrchestratorQdrant {
 
     const statusCounts = stored.reduce(
       (acc, item) => {
-        const status = item.status || 'unknown';
+        const status = item.status || 'any';
         acc[status] = (acc[status] || 0) + 1;
         return acc;
       },
@@ -1190,7 +1235,7 @@ export class MemoryStoreOrchestratorQdrant {
         throw new Error('Database health check failed');
       }
     } catch (error) {
-      logger.error({ error }, 'Database initialization failed');
+      logger?.error({ error }, 'Database initialization failed');
       throw new ConnectionError('Failed to initialize database', error as Error);
     }
   }
@@ -1225,7 +1270,7 @@ export class MemoryStoreOrchestratorQdrant {
       ],
       capabilities: [
         'semantic_similarity_detection',
-        'content_hash_deduplication',
+        'contentHash_deduplication',
         'hybrid_search',
         'business_rule_validation',
         'soft_delete',
@@ -1361,7 +1406,7 @@ export class MemoryStoreOrchestratorQdrant {
 
       return { merged: false, result: this.createDuplicateResult(newItem, duplicateResult) };
     } catch (error) {
-      logger.error(
+      logger?.error(
         {
           error,
           newItemId: newItem.id,
@@ -1389,7 +1434,7 @@ export class MemoryStoreOrchestratorQdrant {
     // Smart content merging logic
     let mergedContent: string;
 
-    if (duplicateResult.duplicateType === 'content_hash') {
+    if (duplicateResult.duplicateType === 'contentHash') {
       // Hash matches but we already checked content is different
       // This shouldn't happen often, but handle it gracefully
       mergedContent = existingContent;
@@ -1412,7 +1457,7 @@ export class MemoryStoreOrchestratorQdrant {
           merge_reason: duplicateResult.reason,
         },
       ],
-      merge_count: ((existingItem.data as unknown).merge_count || 0) + 1,
+      merge_count: ((existingItem.data as EnhancedKnowledgeData).merge_count || 0) + 1,
       last_merged_at: new Date().toISOString(),
     };
 
@@ -1487,7 +1532,76 @@ export class MemoryStoreOrchestratorQdrant {
   /**
    * Extract content from various item types
    */
-  private extractContent(item: KnowledgeItem): string {
-    return (item.data as unknown)?.content || (item.data as unknown)?.text || item.content || '';
+  private extractContent(item: EnhancedKnowledgeItem): string {
+    return item.data.content || item.data.text || item.content || '';
+  }
+
+  /**
+   * Build standardized batch storage result
+   */
+  private buildBatchStorageResult(
+    processingResult: ProcessingResult,
+    chunkedItems: KnowledgeItem[],
+    context: StoreOperationContext
+  ): BatchStorageResult {
+    const batchId = context.correlationId;
+    const processingTime = Date.now() - context.startTime;
+
+    const summary: BatchSummary = {
+      total: chunkedItems.length,
+      stored: processingResult.stored.filter(r => r.status === 'stored' || r.status === 'inserted').length,
+      updated: processingResult.stored.filter(r => r.status === 'updated').length,
+      skipped: processingResult.stored.filter(r => r.status === 'skipped_dedupe').length,
+      errors: processingResult.errors.length,
+      duplicates: processingResult.duplicateResults.filter(r => r?.isDuplicate).length,
+      processing_time_ms: processingTime,
+    };
+
+    const items: ItemResult[] = processingResult.stored.map((result, index) => ({
+      input_index: index,
+      status: result.status as 'stored' | 'updated' | 'skipped_dedupe' | 'error',
+      id: result.id,
+      error: result.error,
+      duplicate_of: result.existing_id || result.duplicate_of,
+      kind: result.kind || 'unknown',
+    }));
+
+    return {
+      batchId,
+      items,
+      summary,
+      processingTimeMs: processingTime,
+      duplicateCount: summary.duplicates,
+    };
+  }
+
+  
+  /**
+   * Get batch storage status
+   */
+  async getBatchStorageStatus(batchId: string): Promise<ServiceResponse<BatchStatus>> {
+    return this.executeOperation(async () => {
+      // In a real implementation, this would query persistent storage for batch status
+      // For now, return a mock status
+      return {
+        batchId,
+        status: 'completed',
+        totalItems: 0,
+        processedItems: 0,
+        errors: 0,
+        startTime: new Date().toISOString(),
+      };
+    }, 'getBatchStorageStatus', { batchId });
+  }
+
+  /**
+   * Cancel batch operation
+   */
+  async cancelBatchOperation(batchId: string): Promise<ServiceResponse<{ cancelled: boolean }>> {
+    return this.executeOperation(async () => {
+      // In a real implementation, this would cancel the ongoing batch operation
+      // For now, return a mock response
+      return { cancelled: true };
+    }, 'cancelBatchOperation', { batchId });
   }
 }

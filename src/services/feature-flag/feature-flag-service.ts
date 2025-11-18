@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Feature Flag Service with Cohort Limiting
  *
@@ -20,7 +16,6 @@
 import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
-
 
 // ============================================================================
 // Types and Interfaces
@@ -132,7 +127,15 @@ export interface FeatureFlag {
  */
 export interface FlagCondition {
   type: 'attribute' | 'cohort' | 'percentage' | 'custom';
-  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'in' | 'not_in';
+  operator:
+    | 'equals'
+    | 'not_equals'
+    | 'contains'
+    | 'not_contains'
+    | 'greater_than'
+    | 'less_than'
+    | 'in'
+    | 'not_in';
   field: string;
   value: unknown;
   weight?: number;
@@ -352,7 +355,7 @@ export class FeatureFlagService extends EventEmitter {
    * Get flags by status
    */
   getFlagsByStatus(status: FlagStatus): FeatureFlag[] {
-    return this.getAllFlags().filter(flag => flag.status === status);
+    return this.getAllFlags().filter((flag) => flag.status === status);
   }
 
   // ============================================================================
@@ -412,7 +415,7 @@ export class FeatureFlagService extends EventEmitter {
     if (this.config.enableMetrics) {
       this.recordCounter('feature_flags_emergency_disabled', 1, {
         flag_name: flag.name,
-        reason: reason || 'unknown'
+        reason: reason || 'unknown',
       });
     }
 
@@ -438,7 +441,15 @@ export class FeatureFlagService extends EventEmitter {
 
     // Check rate limiting
     if (this.config.rateLimitEnabled && !this.checkRateLimit(userContext.userId)) {
-      const result = this.createEvaluationResult(flagId, false, undefined, undefined, 'Rate limited', [], Date.now() - startTime);
+      const result = this.createEvaluationResult(
+        flagId,
+        false,
+        undefined,
+        undefined,
+        'Rate limited',
+        [],
+        Date.now() - startTime
+      );
       return result;
     }
 
@@ -453,31 +464,71 @@ export class FeatureFlagService extends EventEmitter {
 
     const flag = this.flags.get(flagId);
     if (!flag) {
-      const result = this.createEvaluationResult(flagId, false, undefined, undefined, 'Flag not found', [], Date.now() - startTime);
+      const result = this.createEvaluationResult(
+        flagId,
+        false,
+        undefined,
+        undefined,
+        'Flag not found',
+        [],
+        Date.now() - startTime
+      );
       return result;
     }
 
     // Check emergency kill all
     if (this.config.emergencyKillAll) {
-      const result = this.createEvaluationResult(flagId, false, undefined, undefined, 'Emergency kill all active', [], Date.now() - startTime);
+      const result = this.createEvaluationResult(
+        flagId,
+        false,
+        undefined,
+        undefined,
+        'Emergency kill all active',
+        [],
+        Date.now() - startTime
+      );
       return result;
     }
 
     // Check flag emergency disable
     if (flag.emergencyDisabled) {
-      const result = this.createEvaluationResult(flagId, false, undefined, undefined, `Emergency disabled: ${flag.emergencyDisableReason}`, [], Date.now() - startTime);
+      const result = this.createEvaluationResult(
+        flagId,
+        false,
+        undefined,
+        undefined,
+        `Emergency disabled: ${flag.emergencyDisableReason}`,
+        [],
+        Date.now() - startTime
+      );
       return result;
     }
 
     // Check if flag is enabled
     if (flag.status !== FlagStatus.ENABLED) {
-      const result = this.createEvaluationResult(flagId, false, undefined, undefined, `Flag status: ${flag.status}`, [], Date.now() - startTime);
+      const result = this.createEvaluationResult(
+        flagId,
+        false,
+        undefined,
+        undefined,
+        `Flag status: ${flag.status}`,
+        [],
+        Date.now() - startTime
+      );
       return result;
     }
 
     // Check expiration
     if (flag.expiresAt && flag.expiresAt < new Date()) {
-      const result = this.createEvaluationResult(flagId, false, undefined, undefined, 'Flag expired', [], Date.now() - startTime);
+      const result = this.createEvaluationResult(
+        flagId,
+        false,
+        undefined,
+        undefined,
+        'Flag expired',
+        [],
+        Date.now() - startTime
+      );
       return result;
     }
 
@@ -507,7 +558,10 @@ export class FeatureFlagService extends EventEmitter {
   /**
    * Evaluate multiple flags for a user
    */
-  async evaluateMultipleFlags(flagIds: string[], userContext: UserContext): Promise<Map<string, FlagEvaluationResult>> {
+  async evaluateMultipleFlags(
+    flagIds: string[],
+    userContext: UserContext
+  ): Promise<Map<string, FlagEvaluationResult>> {
     const results = new Map<string, FlagEvaluationResult>();
 
     // Evaluate flags in parallel for better performance
@@ -528,7 +582,11 @@ export class FeatureFlagService extends EventEmitter {
   /**
    * Check if a feature is enabled for a user (convenience method)
    */
-  async isEnabled(flagId: string, userId: string, attributes?: Record<string, unknown>): Promise<boolean> {
+  async isEnabled(
+    flagId: string,
+    userId: string,
+    attributes?: Record<string, unknown>
+  ): Promise<boolean> {
     const userContext: UserContext = {
       userId,
       timestamp: new Date(),
@@ -583,7 +641,11 @@ export class FeatureFlagService extends EventEmitter {
   /**
    * Check if user belongs to a cohort
    */
-  isUserInCohort(userId: string, cohortId: string, userAttributes?: Record<string, unknown>): boolean {
+  isUserInCohort(
+    userId: string,
+    cohortId: string,
+    userAttributes?: Record<string, unknown>
+  ): boolean {
     const cohort = this.cohorts.get(cohortId);
     if (!cohort) {
       return false;
@@ -619,78 +681,190 @@ export class FeatureFlagService extends EventEmitter {
   /**
    * Evaluate flag based on strategy
    */
-  private async evaluateByStrategy(flag: FeatureFlag, userContext: UserContext, startTime: number): Promise<FlagEvaluationResult> {
+  private async evaluateByStrategy(
+    flag: FeatureFlag,
+    userContext: UserContext,
+    startTime: number
+  ): Promise<FlagEvaluationResult> {
     const matchedConditions: string[] = [];
 
     switch (flag.strategy) {
       case TargetingStrategy.ALL_USERS:
-        return this.createEvaluationResult(flag.id, true, undefined, undefined, 'All users enabled', matchedConditions, Date.now() - startTime);
+        return this.createEvaluationResult(
+          flag.id,
+          true,
+          undefined,
+          undefined,
+          'All users enabled',
+          matchedConditions,
+          Date.now() - startTime
+        );
 
       case TargetingStrategy.PERCENTAGE:
         if (flag.rolloutPercentage === undefined) {
-          return this.createEvaluationResult(flag.id, false, undefined, undefined, 'Percentage not configured', matchedConditions, Date.now() - startTime);
+          return this.createEvaluationResult(
+            flag.id,
+            false,
+            undefined,
+            undefined,
+            'Percentage not configured',
+            matchedConditions,
+            Date.now() - startTime
+          );
         }
         const hash = this.hashUserForPercentage(userContext.userId, flag.id);
         const enabled = hash < flag.rolloutPercentage;
         matchedConditions.push(`percentage: ${flag.rolloutPercentage}%`);
-        return this.createEvaluationResult(flag.id, enabled, undefined, undefined, `Percentage rollout: ${flag.rolloutPercentage}%`, matchedConditions, Date.now() - startTime);
+        return this.createEvaluationResult(
+          flag.id,
+          enabled,
+          undefined,
+          undefined,
+          `Percentage rollout: ${flag.rolloutPercentage}%`,
+          matchedConditions,
+          Date.now() - startTime
+        );
 
       case TargetingStrategy.COHORT:
         if (!flag.targetCohorts || flag.targetCohorts.length === 0) {
-          return this.createEvaluationResult(flag.id, false, undefined, undefined, 'No target cohorts configured', matchedConditions, Date.now() - startTime);
+          return this.createEvaluationResult(
+            flag.id,
+            false,
+            undefined,
+            undefined,
+            'No target cohorts configured',
+            matchedConditions,
+            Date.now() - startTime
+          );
         }
 
         for (const cohortId of flag.targetCohorts) {
           if (this.isUserInCohort(userContext.userId, cohortId, userContext.attributes)) {
             matchedConditions.push(`cohort: ${cohortId}`);
-            return this.createEvaluationResult(flag.id, true, undefined, undefined, `User in cohort: ${cohortId}`, matchedConditions, Date.now() - startTime);
+            return this.createEvaluationResult(
+              flag.id,
+              true,
+              undefined,
+              undefined,
+              `User in cohort: ${cohortId}`,
+              matchedConditions,
+              Date.now() - startTime
+            );
           }
         }
-        return this.createEvaluationResult(flag.id, false, undefined, undefined, 'User not in target cohorts', matchedConditions, Date.now() - startTime);
+        return this.createEvaluationResult(
+          flag.id,
+          false,
+          undefined,
+          undefined,
+          'User not in target cohorts',
+          matchedConditions,
+          Date.now() - startTime
+        );
 
       case TargetingStrategy.USER_LIST:
         if (!flag.targetUsers || flag.targetUsers.length === 0) {
-          return this.createEvaluationResult(flag.id, false, undefined, undefined, 'No target users configured', matchedConditions, Date.now() - startTime);
+          return this.createEvaluationResult(
+            flag.id,
+            false,
+            undefined,
+            undefined,
+            'No target users configured',
+            matchedConditions,
+            Date.now() - startTime
+          );
         }
 
         const inUserList = flag.targetUsers.includes(userContext.userId);
         if (inUserList) {
           matchedConditions.push('user_list_match');
         }
-        return this.createEvaluationResult(flag.id, inUserList, undefined, undefined, inUserList ? 'User in target list' : 'User not in target list', matchedConditions, Date.now() - startTime);
+        return this.createEvaluationResult(
+          flag.id,
+          inUserList,
+          undefined,
+          undefined,
+          inUserList ? 'User in target list' : 'User not in target list',
+          matchedConditions,
+          Date.now() - startTime
+        );
 
       case TargetingStrategy.ATTRIBUTE_BASED:
         if (!flag.conditions || flag.conditions.length === 0) {
-          return this.createEvaluationResult(flag.id, false, undefined, undefined, 'No attribute conditions configured', matchedConditions, Date.now() - startTime);
+          return this.createEvaluationResult(
+            flag.id,
+            false,
+            undefined,
+            undefined,
+            'No attribute conditions configured',
+            matchedConditions,
+            Date.now() - startTime
+          );
         }
 
         const allConditionsMet = this.evaluateAttributeConditions(flag.conditions, userContext);
         if (allConditionsMet) {
           matchedConditions.push('attribute_conditions_met');
         }
-        return this.createEvaluationResult(flag.id, allConditionsMet, undefined, undefined, allConditionsMet ? 'All attribute conditions met' : 'Attribute conditions not met', matchedConditions, Date.now() - startTime);
+        return this.createEvaluationResult(
+          flag.id,
+          allConditionsMet,
+          undefined,
+          undefined,
+          allConditionsMet ? 'All attribute conditions met' : 'Attribute conditions not met',
+          matchedConditions,
+          Date.now() - startTime
+        );
 
       case TargetingStrategy.A_B_TEST:
         if (!flag.abTestConfig) {
-          return this.createEvaluationResult(flag.id, false, undefined, undefined, 'A/B test configuration missing', matchedConditions, Date.now() - startTime);
+          return this.createEvaluationResult(
+            flag.id,
+            false,
+            undefined,
+            undefined,
+            'A/B test configuration missing',
+            matchedConditions,
+            Date.now() - startTime
+          );
         }
 
         const abHash = this.hashUserForPercentage(userContext.userId, flag.id);
         const variant = abHash < flag.abTestConfig.trafficSplit ? 'A' : 'B';
-        const variantConfig = variant === 'A' ? flag.abTestConfig.variantA : flag.abTestConfig.variantB;
+        const variantConfig =
+          variant === 'A' ? flag.abTestConfig.variantA : flag.abTestConfig.variantB;
 
         matchedConditions.push(`ab_test_variant_${variant}`);
-        return this.createEvaluationResult(flag.id, true, variant, variantConfig.config, `A/B test variant ${variant}`, matchedConditions, Date.now() - startTime);
+        return this.createEvaluationResult(
+          flag.id,
+          true,
+          variant,
+          variantConfig.config,
+          `A/B test variant ${variant}`,
+          matchedConditions,
+          Date.now() - startTime
+        );
 
       default:
-        return this.createEvaluationResult(flag.id, false, undefined, undefined, `Unknown strategy: ${flag.strategy}`, matchedConditions, Date.now() - startTime);
+        return this.createEvaluationResult(
+          flag.id,
+          false,
+          undefined,
+          undefined,
+          `Unknown strategy: ${flag.strategy}`,
+          matchedConditions,
+          Date.now() - startTime
+        );
     }
   }
 
   /**
    * Evaluate attribute conditions
    */
-  private evaluateAttributeConditions(conditions: FlagCondition[], userContext: UserContext): boolean {
+  private evaluateAttributeConditions(
+    conditions: FlagCondition[],
+    userContext: UserContext
+  ): boolean {
     for (const condition of conditions) {
       if (!this.evaluateSingleCondition(condition, userContext)) {
         return false;
@@ -762,9 +936,11 @@ export class FeatureFlagService extends EventEmitter {
     // User ID range
     if (criteria.userIdRange) {
       const userIdNum = parseInt(userContext.userId, 10);
-      if (isNaN(userIdNum) ||
-          userIdNum < criteria.userIdRange.start ||
-          userIdNum > criteria.userIdRange.end) {
+      if (
+        isNaN(userIdNum) ||
+        userIdNum < criteria.userIdRange.start ||
+        userIdNum > criteria.userIdRange.end
+      ) {
         return false;
       }
     }
@@ -792,7 +968,7 @@ export class FeatureFlagService extends EventEmitter {
         logger.error('Error evaluating custom cohort criteria', {
           cohortId: cohort.id,
           userId: userContext.userId,
-          error
+          error,
         });
         return false;
       }
@@ -810,7 +986,7 @@ export class FeatureFlagService extends EventEmitter {
     let hash = 0;
     for (let i = 0; i < combined.length; i++) {
       const char = combined.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash) % 100;
@@ -831,7 +1007,7 @@ export class FeatureFlagService extends EventEmitter {
     const timestamps = this.evaluationCounters.get(userId)!;
 
     // Remove old timestamps
-    const validTimestamps = timestamps.filter(timestamp => now - timestamp < windowMs);
+    const validTimestamps = timestamps.filter((timestamp) => now - timestamp < windowMs);
 
     if (validTimestamps.length >= maxRequests) {
       return false;
@@ -921,7 +1097,7 @@ export class FeatureFlagService extends EventEmitter {
       }
     }
 
-    keysToDelete.forEach(key => this.evaluationCache.delete(key));
+    keysToDelete.forEach((key) => this.evaluationCache.delete(key));
   }
 
   /**
@@ -941,7 +1117,7 @@ export class FeatureFlagService extends EventEmitter {
     // Cleanup rate limiting counters
     const windowMs = 1000; // 1 second window
     for (const [userId, timestamps] of this.evaluationCounters.entries()) {
-      const validTimestamps = timestamps.filter(timestamp => now - timestamp < windowMs);
+      const validTimestamps = timestamps.filter((timestamp) => now - timestamp < windowMs);
       if (validTimestamps.length === 0) {
         this.evaluationCounters.delete(userId);
       } else {
@@ -976,7 +1152,7 @@ export class FeatureFlagService extends EventEmitter {
   } {
     return {
       totalFlags: this.flags.size,
-      enabledFlags: this.getAllFlags().filter(flag => flag.status === FlagStatus.ENABLED).length,
+      enabledFlags: this.getAllFlags().filter((flag) => flag.status === FlagStatus.ENABLED).length,
       totalCohorts: this.cohorts.size,
       cacheSize: this.evaluationCache.size,
       emergencyKillActive: this.isEmergencyKillActive(),
@@ -993,7 +1169,7 @@ export class FeatureFlagService extends EventEmitter {
     let totalEvaluations = 0;
 
     for (const timestamps of this.evaluationCounters.values()) {
-      const recentEvaluations = timestamps.filter(timestamp => now - timestamp < windowMs);
+      const recentEvaluations = timestamps.filter((timestamp) => now - timestamp < windowMs);
       totalEvaluations += recentEvaluations.length;
     }
 

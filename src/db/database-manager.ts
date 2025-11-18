@@ -19,18 +19,19 @@
  * @since 2025
  */
 
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
 // TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
-import { logger } from '@/utils/logger.js';
+import { logger } from '../utils/logger.js';
 
-import { createDatabase,DatabaseFactory } from './database-factory.js';
+import { createDatabase, DatabaseFactory } from './database-factory.js';
 import type { IDatabase } from './database-interface.js';
+import type { KnowledgeItem, SearchQuery } from '../types/core-interfaces.js';
 import {
   circuitBreakerManager,
   type CircuitBreakerStats,
 } from '../services/circuit-breaker.service.js';
+import { asSearchQuery, batchConvert } from '../utils/type-conversion.js';
 
 export interface DatabaseManagerConfig {
   qdrant: {
@@ -83,6 +84,9 @@ export class DatabaseManager {
         logQueries: false,
         maxConnections: 10,
         vectorSize: 1536,
+        size: 1536,
+        embeddingModel: 'text-embedding-3-small',
+        batchSize: 10,
         distance: 'Cosine' as const,
       };
 
@@ -199,7 +203,7 @@ export class DatabaseManager {
 
     try {
       return await this.circuitBreaker.execute(async () => {
-        const result = await this.database!.store(items, options);
+        const result = await this.database!.store(items as KnowledgeItem[], options);
         this.logCircuitBreakerEvent('store_success', { itemCount: items.length });
         return result;
       }, 'database_store');
@@ -220,13 +224,13 @@ export class DatabaseManager {
 
     try {
       return await this.circuitBreaker.execute(async () => {
-        const result = await this.database!.search(query, options);
-        this.logCircuitBreakerEvent('search_success', { queryType: query?.type || 'unknown' });
+        const result = await this.database!.search(query as SearchQuery, options);
+        this.logCircuitBreakerEvent('search_success', { queryType: (query as any)?.type || 'unknown' });
         return result;
       }, 'database_search');
     } catch (error) {
       logger.error({ error, query }, 'Database search operation failed');
-      this.logCircuitBreakerEvent('search_failure', error, { queryType: query?.type || 'unknown' });
+      this.logCircuitBreakerEvent('search_failure', error, { queryType: (query as any)?.type || 'unknown' });
       throw error;
     }
   }
@@ -240,7 +244,7 @@ export class DatabaseManager {
     }
 
     // Use search with limit 1 to simulate findOne
-    const results = await this.database!.search(filter, { ...options, limit: 1 });
+    const results = await this.database!.search(filter as SearchQuery, { ...(options as Record<string, unknown>), limit: 1 });
     return results.items && results.items.length > 0 ? results.items[0] : null;
   }
 
@@ -267,7 +271,7 @@ export class DatabaseManager {
     }
 
     // Use store to create a single item
-    const result = await this.database!.store([item], options);
+    const result = await this.database!.store([item as KnowledgeItem], options);
     return result.items && result.items.length > 0 ? result.items[0] : null;
   }
 
@@ -353,7 +357,7 @@ export class DatabaseManager {
         failureRate: circuitStats.failureRate,
         totalCalls: circuitStats.totalCalls,
         averageResponseTime: circuitStats.averageResponseTime,
-        error: error?.message || error,
+        error: (error as any)?.message || error,
         metadata,
       },
       `Circuit breaker event: ${event}`

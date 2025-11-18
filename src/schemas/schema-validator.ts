@@ -1,6 +1,4 @@
-// @ts-nocheck
 // LAST ABSOLUTE FINAL EMERGENCY ROLLBACK: Complete the systematic rollback
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Cortex Memory MCP - Schema Validation Utilities
@@ -11,7 +9,7 @@
  * @version 2.0.0 - Enhanced with P5-2 schema updates
  */
 
-import { type ZodError,type ZodSchema } from 'zod';
+import { type ZodError, type ZodSchema } from 'zod';
 
 import { ALL_JSON_SCHEMAS } from './json-schemas.js';
 import {
@@ -27,8 +25,9 @@ import {
   type Dict,
   isJSONValue,
   type JSONValue,
+  type JSONArray,
   type MutableDict,
-  toJSONValue
+  toJSONValue,
 } from '../types/base-types.js';
 
 // ============================================================================
@@ -151,7 +150,12 @@ export interface JsonValidationError {
 
 /** Type guard for legacy memory store input */
 export function isLegacyMemoryStoreInput(value: unknown): value is LegacyMemoryStoreInput {
-  if (!isJSONValue(value) || typeof value !== 'object' || value === null || !Array.isArray((value as Dict<JSONValue>).items)) {
+  if (
+    !isJSONValue(value) ||
+    typeof value !== 'object' ||
+    value === null ||
+    !Array.isArray((value as Dict<JSONValue>).items)
+  ) {
     return false;
   }
 
@@ -161,18 +165,25 @@ export function isLegacyMemoryStoreInput(value: unknown): value is LegacyMemoryS
 
 /** Type guard for legacy memory find input */
 export function isLegacyMemoryFindInput(value: unknown): value is LegacyMemoryFindInput {
-  return isJSONValue(value) &&
-         typeof value === 'object' &&
-         value !== null &&
-         (typeof (value as Dict<JSONValue>).query === 'string' || typeof (value as Dict<JSONValue>).mode === 'string' || typeof (value as Dict<JSONValue>).top_k === 'number');
+  return (
+    isJSONValue(value) &&
+    typeof value === 'object' &&
+    value !== null &&
+    (typeof (value as Dict<JSONValue>).query === 'string' ||
+      typeof (value as Dict<JSONValue>).mode === 'string' ||
+      typeof (value as Dict<JSONValue>).top_k === 'number')
+  );
 }
 
 /** Type guard for legacy system status input */
 export function isLegacySystemStatusInput(value: unknown): value is LegacySystemStatusInput {
-  return isJSONValue(value) &&
-         typeof value === 'object' &&
-         value !== null &&
-         (typeof (value as Dict<JSONValue>).operation === 'string' || typeof (value as Dict<JSONValue>).scope === 'object');
+  return (
+    isJSONValue(value) &&
+    typeof value === 'object' &&
+    value !== null &&
+    (typeof (value as Dict<JSONValue>).operation === 'string' ||
+      typeof (value as Dict<JSONValue>).scope === 'object')
+  );
 }
 
 /** Type guard for legacy item */
@@ -182,18 +193,27 @@ export function isLegacyItem(value: unknown): value is LegacyItem {
   }
 
   const item = value as Dict<JSONValue>;
-  return (typeof item.kind === 'string' || typeof item.content === 'string' || typeof item.data === 'object');
+  return (
+    typeof item.kind === 'string' ||
+    typeof item.content === 'string' ||
+    typeof item.data === 'object'
+  );
 }
 
 /** Type guard for migration result */
-export function isMigrationResult<T>(value: unknown, itemGuard?: (item: unknown) => item is T): value is MigrationResult<T> {
+export function isMigrationResult<T>(
+  value: unknown,
+  itemGuard?: (item: unknown) => item is T
+): value is MigrationResult<T> {
   if (!isJSONValue(value) || typeof value !== 'object' || value === null) {
     return false;
   }
 
   const result = value as Dict<JSONValue>;
   const hasMigrated = itemGuard ? itemGuard(result.migrated) : isJSONValue(result.migrated);
-  const hasNotes = Array.isArray(result.notes) && (result.notes as JSONArray).every((note: JSONValue) => typeof note === 'string');
+  const hasNotes =
+    Array.isArray(result.notes) &&
+    (result.notes as JSONArray).every((note: JSONValue) => typeof note === 'string');
 
   return hasMigrated && hasNotes;
 }
@@ -219,7 +239,7 @@ function convertLegacyItemToJSONValue(item: LegacyItem): JSONValue {
 
 /** Convert legacy array to JSONValue array */
 function convertLegacyArrayToJSONValue(items: readonly unknown[]): JSONValue[] {
-  return items.map(item => convertLegacyInputToJSONValue(item));
+  return items.map((item) => convertLegacyInputToJSONValue(item));
 }
 
 // ============================================================================
@@ -255,7 +275,9 @@ class SchemaMigrator {
    * Migrate legacy memory_store input to enhanced format
    */
   static migrateMemoryStore(input: LegacyMemoryStoreInput): MigrationResult<Dict<JSONValue>> {
-    const migrated: MutableDict<JSONValue> = convertLegacyInputToJSONValue(input) as MutableDict<JSONValue>;
+    const migrated: MutableDict<JSONValue> = convertLegacyInputToJSONValue(
+      input
+    ) as MutableDict<JSONValue>;
     const notes: string[] = [];
 
     // Add default processing options if not present
@@ -297,44 +319,47 @@ class SchemaMigrator {
 
     // Convert legacy scope format if needed
     if (migrated.items && Array.isArray(migrated.items)) {
-      migrated.items = convertLegacyArrayToJSONValue(migrated.items).map((item: JSONValue, index: number) => {
-        const legacyItem = input.items[index]; // Get original item for migration logic
-        const migratedItem: MutableDict<JSONValue> = item && typeof item === 'object' ? { ...item } as MutableDict<JSONValue> : {};
+      migrated.items = convertLegacyArrayToJSONValue(migrated.items).map(
+        (item: JSONValue, index: number) => {
+          const legacyItem = input.items[index]; // Get original item for migration logic
+          const migratedItem: MutableDict<JSONValue> =
+            item && typeof item === 'object' ? ({ ...item } as MutableDict<JSONValue>) : {};
 
-        // Ensure scope has all supported fields
-        if (legacyItem.scope && typeof migratedItem.scope === 'object') {
-          const existingScope = legacyItem.scope as Dict<unknown>;
-          migratedItem.scope = {
-            ...existingScope,
-            service: (existingScope as Dict<unknown>).service || undefined,
-            sprint: (existingScope as Dict<unknown>).sprint || undefined,
-            tenant: (existingScope as Dict<unknown>).tenant || undefined,
-            environment: (existingScope as Dict<unknown>).environment || undefined,
-          };
-          notes.push('Enhanced scope fields for item compatibility');
+          // Ensure scope has all supported fields
+          if (legacyItem.scope && typeof migratedItem.scope === 'object') {
+            const existingScope = legacyItem.scope as Dict<unknown>;
+            migratedItem.scope = {
+              ...existingScope,
+              service: (existingScope as Dict<unknown>).service || undefined,
+              sprint: (existingScope as Dict<unknown>).sprint || undefined,
+              tenant: (existingScope as Dict<unknown>).tenant || undefined,
+              environment: (existingScope as Dict<unknown>).environment || undefined,
+            };
+            notes.push('Enhanced scope fields for item compatibility');
+          }
+
+          // Add default TTL config for text-based items
+          if (legacyItem.content && !migratedItem.ttl_config) {
+            migratedItem.ttl_config = {
+              policy: 'default',
+              auto_extend: false,
+            };
+          }
+
+          // Add default truncation config for text-based items
+          if (legacyItem.content && !migratedItem.truncation_config) {
+            migratedItem.truncation_config = {
+              enabled: true,
+              max_chars: 10000,
+              mode: 'intelligent',
+              preserve_structure: true,
+              add_indicators: true,
+            };
+          }
+
+          return migratedItem;
         }
-
-        // Add default TTL config for text-based items
-        if (legacyItem.content && !migratedItem.ttl_config) {
-          migratedItem.ttl_config = {
-            policy: 'default',
-            auto_extend: false,
-          };
-        }
-
-        // Add default truncation config for text-based items
-        if (legacyItem.content && !migratedItem.truncation_config) {
-          migratedItem.truncation_config = {
-            enabled: true,
-            max_chars: 10000,
-            mode: 'intelligent',
-            preserve_structure: true,
-            add_indicators: true,
-          };
-        }
-
-        return migratedItem;
-      });
+      );
     }
 
     return { migrated, notes };
@@ -344,7 +369,9 @@ class SchemaMigrator {
    * Migrate legacy memory_find input to enhanced format
    */
   static migrateMemoryFind(input: LegacyMemoryFindInput): MigrationResult<Dict<JSONValue>> {
-    const migrated: MutableDict<JSONValue> = convertLegacyInputToJSONValue(input) as MutableDict<JSONValue>;
+    const migrated: MutableDict<JSONValue> = convertLegacyInputToJSONValue(
+      input
+    ) as MutableDict<JSONValue>;
     const notes: string[] = [];
 
     // Convert 'mode' to 'search_strategy'
@@ -406,7 +433,9 @@ class SchemaMigrator {
    * Migrate legacy system_status input to enhanced format
    */
   static migrateSystemStatus(input: LegacySystemStatusInput): MigrationResult<Dict<JSONValue>> {
-    const migrated: MutableDict<JSONValue> = convertLegacyInputToJSONValue(input) as MutableDict<JSONValue>;
+    const migrated: MutableDict<JSONValue> = convertLegacyInputToJSONValue(
+      input
+    ) as MutableDict<JSONValue>;
     const notes: string[] = [];
 
     // Add default response formatting if not present
@@ -632,7 +661,9 @@ export class SchemaValidator {
       const valid = validate(input);
 
       if (!valid && this.jsonSchemaValidator.errors) {
-        return this.jsonSchemaValidator.errors.map((err: JsonValidationError) => `${err.instancePath || 'root'}: ${err.message}`);
+        return this.jsonSchemaValidator.errors.map(
+          (err: JsonValidationError) => `${err.instancePath || 'root'}: ${err.message}`
+        );
       }
 
       return [];
@@ -688,12 +719,13 @@ export class SchemaValidator {
     }
 
     // Validate deduplication settings consistency
-    if (data.deduplication && typeof data.deduplication === 'object' && (data.deduplication as unknown).enabled) {
+    if (
+      data.deduplication &&
+      typeof data.deduplication === 'object' &&
+      (data.deduplication as unknown).enabled
+    ) {
       const deduplication = data.deduplication as Dict<JSONValue>;
-      if (
-        deduplication.cross_scope_deduplication &&
-        deduplication.check_within_scope_only
-      ) {
+      if (deduplication.cross_scope_deduplication && deduplication.check_within_scope_only) {
         errors.push(
           new ValidationError(
             'Cannot enable both cross_scope_deduplication and check_within_scope_only',
@@ -707,7 +739,12 @@ export class SchemaValidator {
     // Validate TTL settings
     if (data.items && Array.isArray(data.items)) {
       data.items.forEach((item: unknown, index: number) => {
-        if (item && typeof item === 'object' && (item as unknown).ttl_config && typeof (item as unknown).ttl_config === 'object') {
+        if (
+          item &&
+          typeof item === 'object' &&
+          (item as unknown).ttl_config &&
+          typeof (item as unknown).ttl_config === 'object'
+        ) {
           const ttlConfig = (item as unknown).ttl_config as Dict<JSONValue>;
           if (ttlConfig.expires_at && typeof ttlConfig.expires_at === 'string') {
             const expiryDate = new Date(ttlConfig.expires_at);
@@ -735,7 +772,11 @@ export class SchemaValidator {
     const errors: ValidationError[] = [];
 
     // Validate pagination
-    if (typeof data.limit === 'number' && typeof data.offset === 'number' && data.limit + data.offset > 1000) {
+    if (
+      typeof data.limit === 'number' &&
+      typeof data.offset === 'number' &&
+      data.limit + data.offset > 1000
+    ) {
       errors.push(
         new ValidationError(
           'Cannot request more than 1000 total results (limit + offset)',
@@ -768,7 +809,11 @@ export class SchemaValidator {
     // Validate graph expansion
     if (data.graph_expansion && typeof data.graph_expansion === 'object') {
       const graphExpansion = data.graph_expansion as Dict<JSONValue>;
-      if (graphExpansion.enabled && typeof graphExpansion.max_depth === 'number' && typeof graphExpansion.max_nodes === 'number') {
+      if (
+        graphExpansion.enabled &&
+        typeof graphExpansion.max_depth === 'number' &&
+        typeof graphExpansion.max_nodes === 'number'
+      ) {
         if (graphExpansion.max_depth * graphExpansion.max_nodes > 10000) {
           errors.push(
             new ValidationError(
@@ -883,7 +928,10 @@ export class SchemaValidator {
         }
         if (data.deduplication && typeof data.deduplication === 'object') {
           const deduplication = data.deduplication as Dict<JSONValue>;
-          if (typeof deduplication.max_items_to_check === 'number' && deduplication.max_items_to_check > 1000) {
+          if (
+            typeof deduplication.max_items_to_check === 'number' &&
+            deduplication.max_items_to_check > 1000
+          ) {
             warnings.push('High max_items_to_check value may impact deduplication performance.');
           }
         }
@@ -952,7 +1000,7 @@ export class SchemaValidator {
       return {
         migrated: false,
         input: isJSONValue(input) ? input : {},
-        notes: ['No migration needed or input format not recognized']
+        notes: ['No migration needed or input format not recognized'],
       };
     } catch (error) {
       return {

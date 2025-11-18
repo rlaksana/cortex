@@ -1,7 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
 /**
  * Automatic Environment Configuration for Cortex MCP Server
@@ -85,8 +82,12 @@ export class AutoEnvironmentConfig {
     // 2. Try Windows Registry detection
     if (!openaiApiKey && platform === 'win32') {
       try {
-        const psCommand = 'powershell -NoProfile -Command "(Get-ItemProperty -Path \\"HKCU:\\Environment\\" -Name OPENAI_API_KEY -ErrorAction SilentlyContinue).OPENAI_API_KEY"';
-        const key = execSync(psCommand, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+        const psCommand =
+          'powershell -NoProfile -Command "(Get-ItemProperty -Path \\"HKCU:\\Environment\\" -Name OPENAI_API_KEY -ErrorAction SilentlyContinue).OPENAI_API_KEY"';
+        const key = execSync(psCommand, {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim();
         if (key && key.length > 0) {
           openaiApiKey = key;
           environmentSource = 'windows-registry';
@@ -143,21 +144,25 @@ export class AutoEnvironmentConfig {
       qdrantUrl,
       qdrantApiKey,
       platform,
-      environmentSource
+      environmentSource,
     };
   }
 
   /**
    * Try loading from common .env files
    */
-  private tryLoadFromEnvFiles(): { openaiApiKey?: string; qdrantUrl?: string; qdrantApiKey?: string } {
+  private tryLoadFromEnvFiles(): {
+    openaiApiKey?: string;
+    qdrantUrl?: string;
+    qdrantApiKey?: string;
+  } {
     const envFiles = [
       '.env',
       '.env.local',
       '.env.development',
       '.env.production',
       '../.env',
-      '../../.env'
+      '../../.env',
     ];
 
     for (const envFile of envFiles) {
@@ -171,7 +176,7 @@ export class AutoEnvironmentConfig {
             return {
               openaiApiKey: envVars.OPENAI_API_KEY,
               qdrantUrl: envVars.QDRANT_URL,
-              qdrantApiKey: envVars.QDRANT_API_KEY
+              qdrantApiKey: envVars.QDRANT_API_KEY,
             };
           }
         }
@@ -196,7 +201,7 @@ export class AutoEnvironmentConfig {
           path.join(configDir, 'cortex', 'config.json'),
           path.join(configDir, '.openai', 'config.json'),
           path.join(configDir, 'openai-api-key.txt'),
-          path.join(configDir, 'cortex-env.json')
+          path.join(configDir, 'cortex-env.json'),
         ];
 
         for (const configFile of configFiles) {
@@ -226,7 +231,7 @@ export class AutoEnvironmentConfig {
       fs.existsSync('package.json'),
       fs.existsSync('tsconfig.json'),
       fs.existsSync('src'),
-      process.cwd().includes('workspace') || process.cwd().includes('project')
+      process.cwd().includes('workspace') || process.cwd().includes('project'),
     ];
 
     const isDevEnvironment = devIndicators.some(Boolean);
@@ -282,13 +287,13 @@ export class AutoEnvironmentConfig {
       return [
         path.join(homeDir, 'AppData', 'Local'),
         path.join(homeDir, 'AppData', 'Roaming'),
-        path.join(homeDir, '.config')
+        path.join(homeDir, '.config'),
       ];
     } else {
       return [
         path.join(homeDir, '.config'),
         path.join(homeDir, '.local', 'share'),
-        path.join(homeDir, '.config')
+        path.join(homeDir, '.config'),
       ];
     }
   }
@@ -332,7 +337,7 @@ export class AutoEnvironmentConfig {
     const patterns = [
       /OPENAI_API_KEY\s*[:=]\s*["']?(sk-[a-zA-Z0-9]+)["']?/,
       /api[_-]?key\s*[:=]\s*["']?(sk-[a-zA-Z0-9]+)["']?/,
-      /^(sk-[a-zA-Z0-9]+)$/m
+      /^(sk-[a-zA-Z0-9]+)$/m,
     ];
 
     for (const pattern of patterns) {
@@ -403,7 +408,7 @@ export class AutoEnvironmentConfig {
       isValid: errors.length === 0,
       errors,
       warnings,
-      autoConfigured
+      autoConfigured,
     };
   }
 
@@ -418,7 +423,9 @@ export class AutoEnvironmentConfig {
 
     // Only log in development or debug mode
     if (process.env.NODE_ENV === 'development' || process.env.DEBUG_MODE === 'true') {
-      console.error(`[AUTO-CONFIG] OpenAI API Key: ${hasKey ? '✅ Found' : '❌ Missing'} (${keySource})`);
+      console.error(
+        `[AUTO-CONFIG] OpenAI API Key: ${hasKey ? '✅ Found' : '❌ Missing'} (${keySource})`
+      );
       console.error(`[AUTO-CONFIG] Qdrant URL: ${qdrantUrl}`);
       console.error(`[AUTO-CONFIG] Auto-configured: ${autoConfigured ? '✅ Yes' : '❌ No'}`);
 
@@ -449,7 +456,7 @@ export class AutoEnvironmentConfig {
       qdrantUrl: this.detection.qdrantUrl || 'http://localhost:6333',
       autoConfigured: this.validation.autoConfigured,
       errors: this.validation.errors,
-      warnings: this.validation.warnings
+      warnings: this.validation.warnings,
     };
   }
 
@@ -464,11 +471,13 @@ export class AutoEnvironmentConfig {
     AUTO_CONFIGURED: boolean;
   } {
     return {
-      OPENAI_API_KEY: this.detection.openaiApiKey ? `[${this.detection.openaiApiKey.substring(0, 7)}...]` : undefined,
+      OPENAI_API_KEY: this.detection.openaiApiKey
+        ? `[${this.detection.openaiApiKey.substring(0, 7)}...]`
+        : undefined,
       QDRANT_URL: this.detection.qdrantUrl || 'http://localhost:6333',
       NODE_ENV: process.env.NODE_ENV || 'development',
       LOG_LEVEL: process.env.LOG_LEVEL || 'info',
-      AUTO_CONFIGURED: this.validation.autoConfigured
+      AUTO_CONFIGURED: this.validation.autoConfigured,
     };
   }
 

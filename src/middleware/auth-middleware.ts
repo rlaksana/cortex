@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Authentication Middleware for Cortex MCP
  * Provides JWT token validation, API key authentication, and scope-based authorization
@@ -9,7 +5,7 @@
 
 import * as crypto from 'crypto';
 
-import { type NextFunction,type Request, type Response } from 'express';
+import { type NextFunction, type Request, type Response } from 'express';
 
 import { logger } from '@/utils/logger.js';
 

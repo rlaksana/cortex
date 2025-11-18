@@ -1,6 +1,4 @@
-// @ts-nocheck
 // COMPREHENSIVE EMERGENCY ROLLBACK: Final systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * MCP Authentication Wrapper
@@ -12,7 +10,7 @@
 import { logger } from '@/utils/logger.js';
 
 import { validateToolScope } from './scope-middleware.js';
-import type { AuthContext } from '../types/auth-types.js';
+import type { AuthContext, AuthScope } from '../types/auth-types.js';
 
 /**
  * Configuration for MCP tool authentication
@@ -168,7 +166,7 @@ export class MCPAuthWrapper {
           auditLogging: true,
         },
         _originalHandler,
-        args
+        args as Record<string, unknown> & { auth_token?: string }
       );
     };
   }
@@ -187,7 +185,7 @@ export class MCPAuthWrapper {
           auditLogging: true,
         },
         _originalHandler,
-        args
+        args as Record<string, unknown> & { auth_token?: string }
       );
     };
   }
@@ -206,7 +204,7 @@ export class MCPAuthWrapper {
           auditLogging: false, // Health checks are less sensitive
         },
         _originalHandler,
-        args
+        args as Record<string, unknown> & { auth_token?: string }
       );
     };
   }
@@ -225,7 +223,7 @@ export class MCPAuthWrapper {
           auditLogging: false,
         },
         _originalHandler,
-        args
+        args as Record<string, unknown> & { auth_token?: string }
       );
     };
   }
@@ -273,7 +271,7 @@ export class MCPAuthWrapper {
    * Check if user has specific scope
    */
   userHasScope(authContext: AuthContext, scope: string): boolean {
-    return authContext.scopes.includes(scope as unknown);
+    return authContext.scopes.includes(scope as AuthScope);
   }
 
   /**
@@ -311,8 +309,8 @@ export function withAuth<T extends Record<string, unknown>, R>(
  * Convenience functions for common tool wrapping patterns
  */
 export const authenticatedHandlers = {
-  memoryFind: (handler: unknown) => mcpAuthWrapper.createMemoryFindHandler(handler),
-  memoryStore: (handler: unknown) => mcpAuthWrapper.createMemoryStoreHandler(handler),
-  databaseHealth: (handler: unknown) => mcpAuthWrapper.createDatabaseHealthHandler(handler),
-  databaseStats: (handler: unknown) => mcpAuthWrapper.createDatabaseStatsHandler(handler),
+  memoryFind: (handler: (args: unknown, _authContext?: AuthContext) => Promise<unknown>) => mcpAuthWrapper.createMemoryFindHandler(handler),
+  memoryStore: (handler: (args: unknown, _authContext?: AuthContext) => Promise<unknown>) => mcpAuthWrapper.createMemoryStoreHandler(handler),
+  databaseHealth: (handler: (args: unknown, _authContext?: AuthContext) => Promise<unknown>) => mcpAuthWrapper.createDatabaseHealthHandler(handler),
+  databaseStats: (handler: (args: unknown, _authContext?: AuthContext) => Promise<unknown>) => mcpAuthWrapper.createDatabaseStatsHandler(handler),
 };

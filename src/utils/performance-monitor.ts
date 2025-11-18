@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Performance Monitor Utility
  *
@@ -376,9 +372,9 @@ export class PerformanceMonitor {
     return `${operation}_${timestamp}_${random}`;
   }
 
-  getRecentResponseTimes?: unknown
+  getRecentResponseTimes?: unknown;
 
-  getStats?: unknown
+  getStats?: unknown;
 }
 
 export const performanceMonitor = PerformanceMonitor.getInstance();

@@ -13,10 +13,6 @@
  * @since 2025
  */
 
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 
@@ -406,7 +402,8 @@ export class BackupConfigurationManager {
 
       return this.config;
     } catch (error) {
-      if ((error as unknown).code === 'ENOENT') {
+      const errorObj = error as Record<string, unknown>;
+      if (errorObj.code === 'ENOENT') {
         logger.warn('Configuration file not found, creating default configuration');
         await this.save();
         return this.config;
@@ -435,11 +432,13 @@ export class BackupConfigurationManager {
       const configData = JSON.stringify(this.config, null, 2);
       await writeFile(this.configPath, configData, 'utf-8');
 
-      logger.info({
-        environment: this.config.environment,
-        path: this.configPath
-      }, 'Backup configuration saved');
-
+      logger.info(
+        {
+          environment: this.config.environment,
+          path: this.configPath,
+        },
+        'Backup configuration saved'
+      );
     } catch (error) {
       logger.error({ error }, 'Failed to save backup configuration');
       throw error;
@@ -499,7 +498,10 @@ export class BackupConfigurationManager {
   validateConfiguration(config: BackupConfiguration): boolean {
     try {
       // Validate required fields
-      if (!config.environment || !['development', 'staging', 'production'].includes(config.environment)) {
+      if (
+        !config.environment ||
+        !['development', 'staging', 'production'].includes(config.environment)
+      ) {
         throw new Error('Invalid environment specified');
       }
 
@@ -544,7 +546,6 @@ export class BackupConfigurationManager {
 
       logger.debug('Backup configuration validation passed');
       return true;
-
     } catch (error) {
       logger.error({ error }, 'Backup configuration validation failed');
       throw error;
@@ -669,9 +670,10 @@ export class BackupConfigurationManager {
               archivalRequired: true,
             },
           ],
-          auditRequirements: environment === 'production' ?
-            ['access-logging', 'change-tracking', 'data-integrity'] :
-            ['access-logging'],
+          auditRequirements:
+            environment === 'production'
+              ? ['access-logging', 'change-tracking', 'data-integrity']
+              : ['access-logging'],
         },
       },
 
@@ -748,7 +750,11 @@ export class BackupConfigurationManager {
           },
           corruption: {
             enabled: true,
-            detectionMethods: ['checksum-validation', 'consistency-checks', 'integrity-verification'],
+            detectionMethods: [
+              'checksum-validation',
+              'consistency-checks',
+              'integrity-verification',
+            ],
             rtoTarget: preset.targets.rtoMinutes * 2,
             rpoTarget: preset.targets.rpoMinutes * 2,
           },
@@ -795,9 +801,7 @@ export class BackupConfigurationManager {
             {
               level: 2,
               thresholdMinutes: 30,
-              contacts: [
-                { name: 'Team Lead', role: 'escalation', contact: 'lead@example.com' },
-              ],
+              contacts: [{ name: 'Team Lead', role: 'escalation', contact: 'lead@example.com' }],
             },
             {
               level: 3,

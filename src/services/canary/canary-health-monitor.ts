@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Canary Health Monitor
  *
@@ -23,7 +18,7 @@
 import { EventEmitter } from 'events';
 
 import { metricsService } from '../../monitoring/metrics-service.js';
-import { AlertSeverity,HealthStatus } from '../../types/unified-health-interfaces.js';
+import { AlertSeverity, HealthStatus } from '../../types/unified-health-interfaces.js';
 import { logger } from '../../utils/logger.js';
 
 // ============================================================================
@@ -317,7 +312,10 @@ export class CanaryHealthMonitor extends EventEmitter {
   /**
    * Update health monitoring configuration
    */
-  updateConfig(deploymentId: string, updates: Partial<CanaryHealthConfig>): CanaryHealthConfig | null {
+  updateConfig(
+    deploymentId: string,
+    updates: Partial<CanaryHealthConfig>
+  ): CanaryHealthConfig | null {
     const config = this.configs.get(deploymentId);
     if (!config) {
       logger.warn('Health monitoring configuration not found for update', { deploymentId });
@@ -459,7 +457,10 @@ export class CanaryHealthMonitor extends EventEmitter {
   /**
    * Perform comprehensive health check
    */
-  private async performHealthCheck(deploymentId: string, config: CanaryHealthConfig): Promise<void> {
+  private async performHealthCheck(
+    deploymentId: string,
+    config: CanaryHealthConfig
+  ): Promise<void> {
     const startTime = Date.now();
 
     try {
@@ -533,7 +534,6 @@ export class CanaryHealthMonitor extends EventEmitter {
         issuesCount: issues.length,
         evaluationTime: snapshot.evaluationTime,
       });
-
     } catch (error) {
       logger.error('Error performing canary health check', {
         deploymentId,
@@ -575,7 +575,7 @@ export class CanaryHealthMonitor extends EventEmitter {
           errorsByType: {
             '500': Math.floor(Math.random() * 10),
             '503': Math.floor(Math.random() * 5),
-            'timeout': Math.floor(Math.random() * 15),
+            timeout: Math.floor(Math.random() * 15),
           },
         },
         resources: {
@@ -598,7 +598,6 @@ export class CanaryHealthMonitor extends EventEmitter {
       }
 
       return baseMetrics;
-
     } catch (error) {
       logger.error('Error collecting service metrics', {
         deploymentId,
@@ -609,7 +608,12 @@ export class CanaryHealthMonitor extends EventEmitter {
       // Return default metrics on error
       return {
         availability: { percentage: 0, uptime: 0, downtime: 0 },
-        performance: { averageResponseTime: 0, p95ResponseTime: 0, p99ResponseTime: 0, throughput: 0 },
+        performance: {
+          averageResponseTime: 0,
+          p95ResponseTime: 0,
+          p99ResponseTime: 0,
+          throughput: 0,
+        },
         errors: { errorRate: 100, errorCount: 0, totalRequests: 0, errorsByType: {} },
         resources: { memoryUsage: 0, cpuUsage: 0, activeConnections: 0 },
         customMetrics: {},
@@ -629,7 +633,8 @@ export class CanaryHealthMonitor extends EventEmitter {
 
     const availabilityDelta = canary.availability.percentage - stable.availability.percentage;
     const errorRateDelta = canary.errors.errorRate - stable.errors.errorRate;
-    const responseTimeDelta = canary.performance.averageResponseTime - stable.performance.averageResponseTime;
+    const responseTimeDelta =
+      canary.performance.averageResponseTime - stable.performance.averageResponseTime;
     const throughputDelta = canary.performance.throughput - stable.performance.throughput;
 
     const resourceDelta: ComparisonMetrics['resourceDelta'] = {
@@ -672,7 +677,11 @@ export class CanaryHealthMonitor extends EventEmitter {
     metrics: ServiceHealthMetrics,
     config: CanaryHealthConfig
   ): Array<{ threshold: HealthThreshold; value: number; severity: AlertSeverity }> {
-    const violations: Array<{ threshold: HealthThreshold; value: number; severity: AlertSeverity }> = [];
+    const violations: Array<{
+      threshold: HealthThreshold;
+      value: number;
+      severity: AlertSeverity;
+    }> = [];
 
     for (const threshold of config.thresholds) {
       const value = this.getMetricValue(metrics, threshold.metric);
@@ -871,7 +880,10 @@ export class CanaryHealthMonitor extends EventEmitter {
     let direction: 'improving' | 'degrading' | 'stable';
 
     // Determine direction based on metric type (some metrics are better when lower)
-    if (metricType === HealthMetricType.ERROR_RATE || metricType === HealthMetricType.RESPONSE_TIME) {
+    if (
+      metricType === HealthMetricType.ERROR_RATE ||
+      metricType === HealthMetricType.RESPONSE_TIME
+    ) {
       direction = slope < -0.1 ? 'improving' : slope > 0.1 ? 'degrading' : 'stable';
     } else {
       direction = slope > 0.1 ? 'improving' : slope < -0.1 ? 'degrading' : 'stable';
@@ -889,7 +901,11 @@ export class CanaryHealthMonitor extends EventEmitter {
    * Create health issues from violations and regressions
    */
   private createHealthIssues(
-    thresholdViolations: Array<{ threshold: HealthThreshold; value: number; severity: AlertSeverity }>,
+    thresholdViolations: Array<{
+      threshold: HealthThreshold;
+      value: number;
+      severity: AlertSeverity;
+    }>,
     regressions: Array<{ metric: string; delta: number; significance: number }>,
     trends: HealthTrend[]
   ): HealthIssue[] {
@@ -1120,8 +1136,8 @@ export class CanaryHealthMonitor extends EventEmitter {
     issues: HealthIssue[],
     config: CanaryHealthConfig
   ): Promise<void> {
-    const criticalIssues = issues.filter(issue => issue.severity === AlertSeverity.CRITICAL);
-    const warningIssues = issues.filter(issue => issue.severity === AlertSeverity.WARNING);
+    const criticalIssues = issues.filter((issue) => issue.severity === AlertSeverity.CRITICAL);
+    const warningIssues = issues.filter((issue) => issue.severity === AlertSeverity.WARNING);
 
     // Send critical alerts immediately
     for (const issue of criticalIssues) {
@@ -1131,8 +1147,9 @@ export class CanaryHealthMonitor extends EventEmitter {
     // Send warning alerts if not in cooldown
     if (warningIssues.length > 0) {
       const lastWarningAlert = this.getLastAlertTime(deploymentId, AlertSeverity.WARNING);
-      const cooldownExpired = !lastWarningAlert ||
-        (Date.now() - lastWarningAlert.getTime()) > config.alerting.cooldownPeriodMs;
+      const cooldownExpired =
+        !lastWarningAlert ||
+        Date.now() - lastWarningAlert.getTime() > config.alerting.cooldownPeriodMs;
 
       if (cooldownExpired) {
         for (const issue of warningIssues) {
@@ -1198,7 +1215,7 @@ export class CanaryHealthMonitor extends EventEmitter {
   private getLastAlertTime(deploymentId: string, severity: AlertSeverity): Date | null {
     const alerts = this.activeAlerts.get(deploymentId) || [];
     const severityAlerts = alerts
-      .filter(alert => alert.severity === severity)
+      .filter((alert) => alert.severity === severity)
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     return severityAlerts.length > 0 ? severityAlerts[0].timestamp : null;
@@ -1219,7 +1236,6 @@ export class CanaryHealthMonitor extends EventEmitter {
       this.baselines.set(deploymentId, baseline);
 
       logger.info('Baseline metrics established', { deploymentId });
-
     } catch (error) {
       logger.error('Error establishing baseline', {
         deploymentId,
@@ -1240,8 +1256,10 @@ export class CanaryHealthMonitor extends EventEmitter {
     history.push(snapshot);
 
     // Keep only metrics within retention period
-    const retentionCutoff = new Date(Date.now() - this.configs.get(deploymentId)!.metricsRetentionHours * 60 * 60 * 1000);
-    const filteredHistory = history.filter(m => m.timestamp > retentionCutoff);
+    const retentionCutoff = new Date(
+      Date.now() - this.configs.get(deploymentId)!.metricsRetentionHours * 60 * 60 * 1000
+    );
+    const filteredHistory = history.filter((m) => m.timestamp > retentionCutoff);
 
     this.metricsHistory.set(deploymentId, filteredHistory);
   }
@@ -1255,10 +1273,9 @@ export class CanaryHealthMonitor extends EventEmitter {
 
     // Update existing issues or add new ones
     for (const newIssue of newIssues) {
-      const existingIssue = existingIssues.find(issue =>
-        issue.type === newIssue.type &&
-        issue.metric === newIssue.metric &&
-        !issue.resolved
+      const existingIssue = existingIssues.find(
+        (issue) =>
+          issue.type === newIssue.type && issue.metric === newIssue.metric && !issue.resolved
       );
 
       if (existingIssue) {
@@ -1283,7 +1300,10 @@ export class CanaryHealthMonitor extends EventEmitter {
   /**
    * Get metric value from service metrics
    */
-  private getMetricValue(metrics: ServiceHealthMetrics, metricType: HealthMetricType): number | null {
+  private getMetricValue(
+    metrics: ServiceHealthMetrics,
+    metricType: HealthMetricType
+  ): number | null {
     switch (metricType) {
       case HealthMetricType.AVAILABILITY:
         return metrics.availability.percentage;
@@ -1361,10 +1381,15 @@ export class CanaryHealthMonitor extends EventEmitter {
     averageHealthScore: number;
   } {
     const deployments = Array.from(this.configs.values());
-    const totalAlerts = Array.from(this.activeAlerts.values())
-      .reduce((sum, alerts) => sum + alerts.length, 0);
-    const criticalIssues = Array.from(this.healthIssues.values())
-      .reduce((sum, issues) => sum + issues.filter(issue => issue.severity === AlertSeverity.CRITICAL).length, 0);
+    const totalAlerts = Array.from(this.activeAlerts.values()).reduce(
+      (sum, alerts) => sum + alerts.length,
+      0
+    );
+    const criticalIssues = Array.from(this.healthIssues.values()).reduce(
+      (sum, issues) =>
+        sum + issues.filter((issue) => issue.severity === AlertSeverity.CRITICAL).length,
+      0
+    );
 
     let totalHealthScore = 0;
     let healthScoreCount = 0;

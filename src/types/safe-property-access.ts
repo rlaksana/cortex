@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Safe Property Access Helpers with Type Safety
  *
@@ -9,10 +5,7 @@
  * with full type safety and comprehensive error handling.
  */
 
-import type {
-  Config,
-  Validator} from './base-types.js';
-
+import type { Config, Validator } from './base-types.js';
 
 // ============================================================================
 // Core Property Access Types
@@ -156,7 +149,7 @@ export function safeGetProperty<T = unknown>(
     errorMessage,
     createPath = false,
     objectFactory = () => ({}),
-    arrayFactory = () => []
+    arrayFactory = () => [],
   } = options;
 
   const path: PropertyPath = [key];
@@ -166,10 +159,11 @@ export function safeGetProperty<T = unknown>(
   if (obj === null || obj === undefined) {
     const error: IPropertyAccessError = {
       type: 'UNDEFINED_PARENT',
-      message: errorMessage || `Cannot access property '${key}' on ${obj === null ? 'null' : 'undefined'}`,
+      message:
+        errorMessage || `Cannot access property '${key}' on ${obj === null ? 'null' : 'undefined'}`,
       path,
       object: obj,
-      key
+      key,
     };
 
     if (throwOnError) {
@@ -184,7 +178,7 @@ export function safeGetProperty<T = unknown>(
         parent: obj,
         key,
         hadUndefinedTraversal: true,
-        usedDefault: true
+        usedDefault: true,
       };
     }
 
@@ -195,7 +189,7 @@ export function safeGetProperty<T = unknown>(
       parent: obj,
       key,
       hadUndefinedTraversal: true,
-      usedDefault: false
+      usedDefault: false,
     };
   }
 
@@ -206,7 +200,7 @@ export function safeGetProperty<T = unknown>(
       message: errorMessage || `Cannot access property '${key}' on non-object type: ${typeof obj}`,
       path,
       object: obj,
-      key
+      key,
     };
 
     if (throwOnError) {
@@ -221,7 +215,7 @@ export function safeGetProperty<T = unknown>(
         parent: obj,
         key,
         hadUndefinedTraversal: false,
-        usedDefault: true
+        usedDefault: true,
       };
     }
 
@@ -232,7 +226,7 @@ export function safeGetProperty<T = unknown>(
       parent: obj,
       key,
       hadUndefinedTraversal: false,
-      usedDefault: false
+      usedDefault: false,
     };
   }
 
@@ -260,7 +254,7 @@ export function safeGetProperty<T = unknown>(
       parent: obj,
       key,
       hadUndefinedTraversal: false,
-      usedDefault: true
+      usedDefault: true,
     };
   }
 
@@ -271,7 +265,7 @@ export function safeGetProperty<T = unknown>(
       message: errorMessage || `Property '${key}' not found`,
       path,
       object: obj,
-      key
+      key,
     };
 
     if (throwOnError) {
@@ -285,7 +279,7 @@ export function safeGetProperty<T = unknown>(
       parent: obj,
       key,
       hadUndefinedTraversal: false,
-      usedDefault: false
+      usedDefault: false,
     };
   }
 
@@ -297,7 +291,7 @@ export function safeGetProperty<T = unknown>(
       path,
       object: obj,
       key,
-      cause: new Error(`Value ${JSON.stringify(value)} does not match expected type`)
+      cause: new Error(`Value ${JSON.stringify(value)} does not match expected type`),
     };
 
     if (throwOnError) {
@@ -312,7 +306,7 @@ export function safeGetProperty<T = unknown>(
         parent: obj,
         key,
         hadUndefinedTraversal: false,
-        usedDefault: true
+        usedDefault: true,
       };
     }
 
@@ -323,7 +317,7 @@ export function safeGetProperty<T = unknown>(
       parent: obj,
       key,
       hadUndefinedTraversal: false,
-      usedDefault: false
+      usedDefault: false,
     };
   }
 
@@ -339,7 +333,7 @@ export function safeGetProperty<T = unknown>(
           parent: obj,
           key,
           hadUndefinedTraversal: false,
-          usedDefault: false
+          usedDefault: false,
         };
       }
     } catch (coercionError) {
@@ -349,7 +343,7 @@ export function safeGetProperty<T = unknown>(
         path,
         object: obj,
         key,
-        cause: coercionError instanceof Error ? coercionError : undefined
+        cause: coercionError instanceof Error ? coercionError : undefined,
       });
     }
   }
@@ -361,7 +355,7 @@ export function safeGetProperty<T = unknown>(
     parent: obj,
     key,
     hadUndefinedTraversal: false,
-    usedDefault: false
+    usedDefault: false,
   };
 }
 
@@ -373,13 +367,7 @@ export function safeGetArrayElement<T = unknown>(
   index: number,
   options: PropertyAccessOptions<T> = {}
 ): PropertyAccessResult<T> {
-  const {
-    defaultValue,
-    validator,
-    throwOnError = false,
-    coerce = true,
-    errorMessage
-  } = options;
+  const { defaultValue, validator, throwOnError = false, coerce = true, errorMessage } = options;
 
   const path: PropertyPath = [index];
 
@@ -387,10 +375,11 @@ export function safeGetArrayElement<T = unknown>(
   if (arr === null || arr === undefined) {
     const error: IPropertyAccessError = {
       type: 'UNDEFINED_PARENT',
-      message: errorMessage || `Cannot access index ${index} on ${arr === null ? 'null' : 'undefined'}`,
+      message:
+        errorMessage || `Cannot access index ${index} on ${arr === null ? 'null' : 'undefined'}`,
       path,
       object: arr,
-      key: index
+      key: index,
     };
 
     if (throwOnError) {
@@ -405,7 +394,7 @@ export function safeGetArrayElement<T = unknown>(
         parent: arr,
         key: index,
         hadUndefinedTraversal: true,
-        usedDefault: true
+        usedDefault: true,
       };
     }
 
@@ -416,7 +405,7 @@ export function safeGetArrayElement<T = unknown>(
       parent: arr,
       key: index,
       hadUndefinedTraversal: true,
-      usedDefault: false
+      usedDefault: false,
     };
   }
 
@@ -427,7 +416,7 @@ export function safeGetArrayElement<T = unknown>(
       message: errorMessage || `Cannot access index ${index} on non-array type: ${typeof arr}`,
       path,
       object: arr,
-      key: index
+      key: index,
     };
 
     if (throwOnError) {
@@ -442,7 +431,7 @@ export function safeGetArrayElement<T = unknown>(
         parent: arr,
         key: index,
         hadUndefinedTraversal: false,
-        usedDefault: true
+        usedDefault: true,
       };
     }
 
@@ -453,7 +442,7 @@ export function safeGetArrayElement<T = unknown>(
       parent: arr,
       key: index,
       hadUndefinedTraversal: false,
-      usedDefault: false
+      usedDefault: false,
     };
   }
 
@@ -464,7 +453,7 @@ export function safeGetArrayElement<T = unknown>(
       message: errorMessage || `Invalid array index: ${index}`,
       path,
       object: arr,
-      key: index
+      key: index,
     };
 
     if (throwOnError) {
@@ -479,7 +468,7 @@ export function safeGetArrayElement<T = unknown>(
         parent: arr,
         key: index,
         hadUndefinedTraversal: false,
-        usedDefault: true
+        usedDefault: true,
       };
     }
 
@@ -490,7 +479,7 @@ export function safeGetArrayElement<T = unknown>(
       parent: arr,
       key: index,
       hadUndefinedTraversal: false,
-      usedDefault: false
+      usedDefault: false,
     };
   }
 
@@ -505,7 +494,7 @@ export function safeGetArrayElement<T = unknown>(
       path,
       object: arr,
       key: index,
-      cause: new Error(`Value ${JSON.stringify(value)} does not match expected type`)
+      cause: new Error(`Value ${JSON.stringify(value)} does not match expected type`),
     };
 
     if (throwOnError) {
@@ -520,7 +509,7 @@ export function safeGetArrayElement<T = unknown>(
         parent: arr,
         key: index,
         hadUndefinedTraversal: false,
-        usedDefault: true
+        usedDefault: true,
       };
     }
 
@@ -531,7 +520,7 @@ export function safeGetArrayElement<T = unknown>(
       parent: arr,
       key: index,
       hadUndefinedTraversal: false,
-      usedDefault: false
+      usedDefault: false,
     };
   }
 
@@ -547,7 +536,7 @@ export function safeGetArrayElement<T = unknown>(
           parent: arr,
           key: index,
           hadUndefinedTraversal: false,
-          usedDefault: false
+          usedDefault: false,
         };
       }
     } catch (coercionError) {
@@ -562,7 +551,7 @@ export function safeGetArrayElement<T = unknown>(
     parent: arr,
     key: index,
     hadUndefinedTraversal: false,
-    usedDefault: false
+    usedDefault: false,
   };
 }
 
@@ -582,7 +571,7 @@ export function safeGetNestedProperty<T = unknown>(
     errorMessage,
     createPath = false,
     objectFactory = () => ({}),
-    arrayFactory = () => []
+    arrayFactory = () => [],
   } = options;
 
   const traversal: TraversalStep[] = [];
@@ -604,14 +593,14 @@ export function safeGetNestedProperty<T = unknown>(
             message: `Expected numeric index for array access, got: ${typeof segment}`,
             path: currentPath,
             object: current,
-            key: segment
+            key: segment,
           };
           errors.push(error);
           traversal.push({
             segment,
             object: current,
             success: false,
-            error
+            error,
           });
           break;
         }
@@ -622,14 +611,14 @@ export function safeGetNestedProperty<T = unknown>(
           throwOnError,
           coerce,
           createPath: createPath && i === path.length - 1,
-          arrayFactory
+          arrayFactory,
         });
 
         traversal.push({
           segment,
           object: current,
           success: result.found,
-          value: result.value
+          value: result.value,
         });
 
         if (result.found) {
@@ -641,7 +630,7 @@ export function safeGetNestedProperty<T = unknown>(
               path,
               traversal,
               usedDefault: result.usedDefault,
-              errors
+              errors,
             };
           }
         } else {
@@ -656,14 +645,14 @@ export function safeGetNestedProperty<T = unknown>(
             message: `Expected string key for object access, got: ${typeof segment}`,
             path: currentPath,
             object: current,
-            key: segment
+            key: segment,
           };
           errors.push(error);
           traversal.push({
             segment,
             object: current,
             success: false,
-            error
+            error,
           });
           break;
         }
@@ -674,14 +663,14 @@ export function safeGetNestedProperty<T = unknown>(
           throwOnError,
           coerce,
           createPath: createPath && i === path.length - 1,
-          objectFactory
+          objectFactory,
         });
 
         traversal.push({
           segment,
           object: current,
           success: result.found,
-          value: result.value
+          value: result.value,
         });
 
         if (result.found) {
@@ -693,7 +682,7 @@ export function safeGetNestedProperty<T = unknown>(
               path,
               traversal,
               usedDefault: result.usedDefault,
-              errors
+              errors,
             };
           }
         } else {
@@ -704,18 +693,20 @@ export function safeGetNestedProperty<T = unknown>(
     } catch (error) {
       const accessError: IPropertyAccessError = {
         type: 'TYPE_MISMATCH',
-        message: errorMessage || `Error accessing property at ${currentPath.join('.')}: ${error instanceof Error ? error.message : String(error)}`,
+        message:
+          errorMessage ||
+          `Error accessing property at ${currentPath.join('.')}: ${error instanceof Error ? error.message : String(error)}`,
         path: currentPath,
         object: current,
         key: segment,
-        cause: error instanceof Error ? error : undefined
+        cause: error instanceof Error ? error : undefined,
       };
       errors.push(accessError);
       traversal.push({
         segment,
         object: current,
         success: false,
-        error: accessError
+        error: accessError,
       });
       break;
     }
@@ -729,7 +720,7 @@ export function safeGetNestedProperty<T = unknown>(
       path,
       traversal,
       usedDefault: true,
-      errors
+      errors,
     };
   }
 
@@ -743,7 +734,7 @@ export function safeGetNestedProperty<T = unknown>(
     path,
     traversal,
     usedDefault,
-    errors
+    errors,
   };
 }
 
@@ -767,7 +758,7 @@ export function safeSetProperty<T = unknown>(
     createPath = false,
     objectFactory = () => ({}),
     overwrite = true,
-    readOnly = false
+    readOnly = false,
   } = options;
 
   // Handle read-only check
@@ -824,12 +815,7 @@ export function safeSetArrayElement<T = unknown>(
     expandArray?: boolean;
   } = {}
 ): boolean {
-  const {
-    validator,
-    createPath = false,
-    arrayFactory = () => [],
-    expandArray = true
-  } = options;
+  const { validator, createPath = false, arrayFactory = () => [], expandArray = true } = options;
 
   // Validate the value
   if (validator && !validator(value)) {
@@ -886,7 +872,7 @@ export function safeSetNestedProperty<T = unknown>(
     createPath = false,
     objectFactory = () => ({}),
     arrayFactory = () => [],
-    overwrite = true
+    overwrite = true,
   } = options;
 
   if (path.length === 0) {
@@ -1127,22 +1113,18 @@ export function createCustomValidator<T>(
 /**
  * Combine multiple validators with AND logic
  */
-export function combineValidators<T>(
-  ...validators: Validator<T>[]
-): Validator<T> {
+export function combineValidators<T>(...validators: Validator<T>[]): Validator<T> {
   return (value: unknown): value is T => {
-    return validators.every(validator => validator(value));
+    return validators.every((validator) => validator(value));
   };
 }
 
 /**
  * Combine multiple validators with OR logic
  */
-export function combineValidatorsOr<T>(
-  ...validators: Validator<T>[]
-): Validator<T> {
+export function combineValidatorsOr<T>(...validators: Validator<T>[]): Validator<T> {
   return (value: unknown): value is T => {
-    return validators.some(validator => validator(value));
+    return validators.some((validator) => validator(value));
   };
 }
 
@@ -1303,11 +1285,7 @@ export class PropertyAccessError extends Error {
    * Check if this error is recoverable
    */
   isRecoverable(): boolean {
-    const recoverableTypes: PropertyErrorType[] = [
-      'NOT_FOUND',
-      'TYPE_MISMATCH',
-      'COERCION_FAILED'
-    ];
+    const recoverableTypes: PropertyErrorType[] = ['NOT_FOUND', 'TYPE_MISMATCH', 'COERCION_FAILED'];
     return recoverableTypes.includes(this.type);
   }
 
@@ -1320,25 +1298,25 @@ export class PropertyAccessError extends Error {
         return [
           'Check if the property name is correct',
           'Verify the object structure',
-          'Consider providing a default value'
+          'Consider providing a default value',
         ];
       case 'TYPE_MISMATCH':
         return [
           'Ensure the target is an object or array as expected',
           'Check the type of the parent object',
-          'Verify the path is correct for the data structure'
+          'Verify the path is correct for the data structure',
         ];
       case 'VALIDATION_FAILED':
         return [
           'Check the expected type for this property',
           'Verify the value meets the validation criteria',
-          'Consider type coercion if enabled'
+          'Consider type coercion if enabled',
         ];
       case 'INVALID_INDEX':
         return [
           'Ensure the index is a non-negative integer',
           'Check array bounds',
-          'Verify the target is actually an array'
+          'Verify the target is actually an array',
         ];
       default:
         return ['Review the access path and object structure'];
@@ -1353,11 +1331,7 @@ export class PropertyAccessError extends Error {
 /**
  * Get property with a simple string path
  */
-export function get<T = unknown>(
-  obj: unknown,
-  path: string,
-  defaultValue?: T
-): T | undefined {
+export function get<T = unknown>(obj: unknown, path: string, defaultValue?: T): T | undefined {
   const pathSegments = path.split('.');
   const result = safeGetNestedProperty(obj, pathSegments, { defaultValue });
   return result.value;
@@ -1388,10 +1362,7 @@ export function has(obj: unknown, path: string): boolean {
 /**
  * Delete a property safely
  */
-export function safeDeleteProperty(
-  obj: unknown,
-  path: string
-): boolean {
+export function safeDeleteProperty(obj: unknown, path: string): boolean {
   const pathSegments = path.split('.');
 
   if (pathSegments.length === 0) {

@@ -100,6 +100,84 @@ export class MockQdrantClient {
     return path.split('.').reduce((current, key) => current?.[key], obj);
   }
 
+async retrieve(collectionName: string, params: any) {
+    const collectionPoints = this.points.get(collectionName) || [];
+    const ids = params.ids || params.points?.map((p: any) => p.id) || [];
+    
+    const results = collectionPoints
+      .filter((point: any) => ids.includes(point.id))
+      .map((point: any) => ({
+        id: point.id,
+        payload: params.with_payload ? point.payload : undefined
+      }));
+
+    return results;
+  }
+
+  async scroll(collectionName: string, params: any) {
+    const collectionPoints = this.points.get(collectionName) || [];
+    let filteredPoints = collectionPoints;
+
+    if (params.filter) {
+      filteredPoints = collectionPoints.filter((point: any) => {
+        return this.matchesFilter(point.payload, params.filter);
+      });
+    }
+
+    const results = filteredPoints
+      .slice(params.offset || 0, (params.offset || 0) + (params.limit || 10))
+      .map((point: any) => ({
+        id: point.id,
+        payload: point.payload
+      }));
+
+    return {
+      result: {
+        points: results,
+        next_page_offset: ((params.offset || 0) + (params.limit || 10) < filteredPoints.length) 
+          ? (params.offset || 0) + (params.limit || 10) 
+          : null
+      }
+    };
+  }
+
+  async recommend(collectionName: string, params: any) {
+    // Mock recommend - similar to search but with different mock logic
+    const collectionPoints = this.points.get(collectionName) || [];
+    const results = collectionPoints
+      .slice(0, params.limit || 10)
+      .map((point: any) => ({
+        id: point.id,
+        score: Math.random() * 0.9 + 0.1, // Mock recommendation score
+        payload: params.with_payload ? point.payload : undefined
+      }));
+
+    return results;
+  }
+
+  async facet(collectionName: string, params: any) {
+    const collectionPoints = this.points.get(collectionName) || [];
+    const key = params.key;
+    
+    if (!key) {
+      throw new Error('Facet key is required');
+    }
+
+    // Simple facet implementation - count values for the given key
+    const counts = new Map<string, number>();
+    collectionPoints.forEach((point: any) => {
+      const value = this.getNestedValue(point.payload, key);
+      if (value !== undefined && value !== null) {
+        counts.set(String(value), (counts.get(String(value)) || 0) + 1);
+      }
+    });
+
+    return Array.from(counts.entries()).map(([value, count]) => ({
+      value,
+      count
+    }));
+  }
+
   async deleteCollection(collectionName: string) {
     this.collections.delete(collectionName);
     this.points.delete(collectionName);

@@ -1,11 +1,6 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-import { logger } from '@/utils/logger.js';
-
 import { coreMemoryFind } from './core-memory-find.js';
-import { type SanitizationLevel,sanitizeQuery } from '../utils/query-sanitizer.js';
+import { logger } from '../utils/logger.js';
+import { type SanitizationLevel, sanitizeQuery } from '../utils/query-sanitizer.js';
 
 /**
  * Smart Memory Find - Auto-correcting query wrapper with feedback

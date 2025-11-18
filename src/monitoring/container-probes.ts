@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Monitoring system type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Container-Ready Probes for Kubernetes/Docker Orchestration
@@ -17,11 +15,9 @@ import { type Request, type Response } from 'express';
 
 import { logger } from '@/utils/logger.js';
 
-import {
-  mcpServerHealthMonitor} from './mcp-server-health-monitor.js';
+import { mcpServerHealthMonitor } from './mcp-server-health-monitor.js';
 import { circuitBreakerManager } from '../services/circuit-breaker.service.js';
-import {
-  HealthStatus} from '../types/unified-health-interfaces.js';
+import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**
  * Probe configuration
@@ -90,16 +86,22 @@ export interface ProbeResult {
     uptime: number;
     memoryUsage: number;
     responseTime: number;
-    componentHealth: Record<string, {
-      status: HealthStatus;
-      responseTime: number;
-      error?: string;
-    }>;
-    circuitBreakerStates: Record<string, {
-      state: string;
-      isOpen: boolean;
-      failureRate: number;
-    }>;
+    componentHealth: Record<
+      string,
+      {
+        status: HealthStatus;
+        responseTime: number;
+        error?: string;
+      }
+    >;
+    circuitBreakerStates: Record<
+      string,
+      {
+        state: string;
+        isOpen: boolean;
+        failureRate: number;
+      }
+    >;
   };
 }
 
@@ -246,7 +248,6 @@ export class ContainerProbesHandler {
           consecutiveFailures: this.healthState.consecutiveReadinessFailures,
         });
       }
-
     } catch (error) {
       const duration = Date.now() - startTime;
       this.healthState.isReady = false;
@@ -332,7 +333,6 @@ export class ContainerProbesHandler {
           consecutiveFailures: this.healthState.consecutiveLivenessFailures,
         });
       }
-
     } catch (error) {
       const duration = Date.now() - startTime;
       this.healthState.isAlive = false;
@@ -395,7 +395,6 @@ export class ContainerProbesHandler {
           message: result.message,
         });
       }
-
     } catch (error) {
       const duration = Date.now() - startTime;
 
@@ -418,11 +417,14 @@ export class ContainerProbesHandler {
     const memUsage = process.memoryUsage();
     const memoryUsagePercent = (memUsage.heapUsed / memUsage.heapTotal) * 100;
 
-    const componentHealth: Record<string, {
-      status: HealthStatus;
-      responseTime: number;
-      error?: string;
-    }> = {};
+    const componentHealth: Record<
+      string,
+      {
+        status: HealthStatus;
+        responseTime: number;
+        error?: string;
+      }
+    > = {};
 
     const issues: string[] = [];
     let isReady = true;
@@ -479,10 +481,14 @@ export class ContainerProbesHandler {
     }
 
     // Check minimum healthy components
-    const healthyComponents = Object.values(componentHealth).filter(c => c.status === HealthStatus.HEALTHY).length;
+    const healthyComponents = Object.values(componentHealth).filter(
+      (c) => c.status === HealthStatus.HEALTHY
+    ).length;
     if (healthyComponents < this.config.readiness.minHealthyComponents) {
       isReady = false;
-      issues.push(`Insufficient healthy components: ${healthyComponents}/${this.config.readiness.minHealthyComponents}`);
+      issues.push(
+        `Insufficient healthy components: ${healthyComponents}/${this.config.readiness.minHealthyComponents}`
+      );
     }
 
     // Additional checks
@@ -513,7 +519,7 @@ export class ContainerProbesHandler {
     }
 
     if (this.config.additionalChecks.eventLoopCheck) {
-      const eventLoopCheck = this.checkEventLoopHealth();
+      const eventLoopCheck = await this.checkEventLoopHealth();
       if (eventLoopCheck.status !== HealthStatus.HEALTHY) {
         isReady = false;
         issues.push(`Event loop: ${eventLoopCheck.error}`);
@@ -576,7 +582,7 @@ export class ContainerProbesHandler {
 
     // Check event loop
     if (this.config.additionalChecks.eventLoopCheck) {
-      const eventLoopCheck = this.checkEventLoopHealth();
+      const eventLoopCheck = await this.checkEventLoopHealth();
       if (eventLoopCheck.status === HealthStatus.CRITICAL) {
         isAlive = false;
         issues.push(`Event loop critical: ${eventLoopCheck.error}`);
@@ -663,16 +669,22 @@ export class ContainerProbesHandler {
       }
 
       return { status: HealthStatus.HEALTHY };
-
     } catch (error) {
-      return { status: HealthStatus.UNHEALTHY, error: error instanceof Error ? error.message : 'Unknown error' };
+      return {
+        status: HealthStatus.UNHEALTHY,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   }
 
   /**
    * Check disk space
    */
-  private async checkDiskSpace(): Promise<{ status: HealthStatus; responseTime: number; error?: string }> {
+  private async checkDiskSpace(): Promise<{
+    status: HealthStatus;
+    responseTime: number;
+    error?: string;
+  }> {
     const startTime = Date.now();
 
     try {
@@ -684,7 +696,6 @@ export class ContainerProbesHandler {
         responseTime: Date.now() - startTime,
         error: hasSpace ? undefined : 'Insufficient disk space',
       };
-
     } catch (error) {
       return {
         status: HealthStatus.UNHEALTHY,
@@ -697,7 +708,11 @@ export class ContainerProbesHandler {
   /**
    * Check memory pressure
    */
-  private checkMemoryPressure(memoryUsagePercent: number): { status: HealthStatus; responseTime: number; error?: string } {
+  private checkMemoryPressure(memoryUsagePercent: number): {
+    status: HealthStatus;
+    responseTime: number;
+    error?: string;
+  } {
     const startTime = Date.now();
 
     if (memoryUsagePercent > 95) {
@@ -723,7 +738,7 @@ export class ContainerProbesHandler {
   /**
    * Check event loop health
    */
-  private checkEventLoopHealth(): { status: HealthStatus; responseTime: number; error?: string } {
+  private async checkEventLoopHealth(): Promise<{ status: HealthStatus; responseTime: number; error?: string }> {
     const startTime = Date.now();
     const start = process.hrtime.bigint();
 
@@ -750,7 +765,7 @@ export class ContainerProbesHandler {
           });
         }
       });
-    }) as unknown;
+    });
   }
 
   /**
@@ -798,44 +813,52 @@ export class ContainerProbesHandler {
    */
   getKubernetesPodSpec(): unknown {
     return {
-      containers: [{
-        name: 'cortex-mcp',
-        image: 'cortex-mcp:latest',
-        ports: [{ containerPort: 3000 }],
-        livenessProbe: this.config.liveness.enabled ? {
-          httpGet: {
-            path: this.config.liveness.path,
-            port: 3000,
-          },
-          initialDelaySeconds: this.config.liveness.initialDelaySeconds,
-          periodSeconds: this.config.liveness.periodSeconds,
-          timeoutSeconds: this.config.liveness.timeoutSeconds,
-          failureThreshold: this.config.liveness.failureThreshold,
-          successThreshold: this.config.liveness.successThreshold,
-        } : undefined,
-        readinessProbe: this.config.readiness.enabled ? {
-          httpGet: {
-            path: this.config.readiness.path,
-            port: 3000,
-          },
-          initialDelaySeconds: this.config.readiness.initialDelaySeconds,
-          periodSeconds: this.config.readiness.periodSeconds,
-          timeoutSeconds: this.config.readiness.timeoutSeconds,
-          failureThreshold: this.config.readiness.failureThreshold,
-          successThreshold: this.config.readiness.successThreshold,
-        } : undefined,
-        startupProbe: this.config.startup.enabled ? {
-          httpGet: {
-            path: this.config.startup.path,
-            port: 3000,
-          },
-          initialDelaySeconds: this.config.startup.initialDelaySeconds,
-          periodSeconds: this.config.startup.periodSeconds,
-          timeoutSeconds: this.config.startup.timeoutSeconds,
-          failureThreshold: this.config.startup.failureThreshold,
-          successThreshold: this.config.startup.successThreshold,
-        } : undefined,
-      }],
+      containers: [
+        {
+          name: 'cortex-mcp',
+          image: 'cortex-mcp:latest',
+          ports: [{ containerPort: 3000 }],
+          livenessProbe: this.config.liveness.enabled
+            ? {
+                httpGet: {
+                  path: this.config.liveness.path,
+                  port: 3000,
+                },
+                initialDelaySeconds: this.config.liveness.initialDelaySeconds,
+                periodSeconds: this.config.liveness.periodSeconds,
+                timeoutSeconds: this.config.liveness.timeoutSeconds,
+                failureThreshold: this.config.liveness.failureThreshold,
+                successThreshold: this.config.liveness.successThreshold,
+              }
+            : undefined,
+          readinessProbe: this.config.readiness.enabled
+            ? {
+                httpGet: {
+                  path: this.config.readiness.path,
+                  port: 3000,
+                },
+                initialDelaySeconds: this.config.readiness.initialDelaySeconds,
+                periodSeconds: this.config.readiness.periodSeconds,
+                timeoutSeconds: this.config.readiness.timeoutSeconds,
+                failureThreshold: this.config.readiness.failureThreshold,
+                successThreshold: this.config.readiness.successThreshold,
+              }
+            : undefined,
+          startupProbe: this.config.startup.enabled
+            ? {
+                httpGet: {
+                  path: this.config.startup.path,
+                  port: 3000,
+                },
+                initialDelaySeconds: this.config.startup.initialDelaySeconds,
+                periodSeconds: this.config.startup.periodSeconds,
+                timeoutSeconds: this.config.startup.timeoutSeconds,
+                failureThreshold: this.config.startup.failureThreshold,
+                successThreshold: this.config.startup.successThreshold,
+              }
+            : undefined,
+        },
+      ],
     };
   }
 

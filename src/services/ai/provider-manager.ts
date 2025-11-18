@@ -1,11 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * AI Provider Manager
  *
@@ -21,7 +13,7 @@ import { randomUUID } from 'crypto';
 
 import { logger } from '@/utils/logger.js';
 
-import { type ZAIClientService,zaiClientService } from './zai-client.service';
+import { type ZAIClientService, zaiClientService } from './zai-client.service';
 import type {
   AIProvider,
   ZAIChatRequest,
@@ -39,9 +31,9 @@ import { embeddingService } from '../embeddings/embedding-service.js';
 class OpenAIProvider implements AIProvider {
   public readonly name = 'openai';
   public readonly model: string;
-  private config: unknown;
+  private config: { model?: string; [key: string]: unknown };
 
-  constructor(config: unknown) {
+  constructor(config: { model?: string; [key: string]: unknown }) {
     this.config = config;
     this.model = config.model || 'gpt-4-turbo-preview';
   }
@@ -140,21 +132,27 @@ class ZAIProviderWrapper implements AIProvider {
   public readonly model: string;
   private client: ZAIClientService;
 
-  constructor(client: ZAIClientService, config: unknown) {
+  constructor(client: ZAIClientService, config: { model: string; [key: string]: unknown }) {
     this.client = client;
     this.model = config.model;
   }
 
   async isAvailable(): Promise<boolean> {
-    return await this.client.isAvailable();
+    const response = await this.client.isAvailable();
+    return response.success ? response.data.available : false;
   }
 
   async generateCompletion(request: ZAIChatRequest): Promise<ZAIChatResponse> {
-    return await this.client.generateCompletion(request);
+    const response = await this.client.generateCompletion(request);
+    if (!response.success) {
+      throw new Error(response.error?.message || 'Failed to generate completion');
+    }
+    return response.data;
   }
 
   async *generateStreamingCompletion(request: ZAIChatRequest): AsyncGenerator<ZAIStreamChunk> {
-    yield* this.client.generateStreamingCompletion(request);
+    const streamGenerator = await this.client.generateStreamingCompletion(request);
+    yield* streamGenerator;
   }
 
   getMetrics(): ZAIMetrics {
@@ -190,7 +188,14 @@ export class AIProviderManager {
     uptime: Date.now(),
   };
 
-  constructor(config: unknown) {
+  constructor(config: {
+    primaryProvider: 'zai' | 'openai';
+    fallbackProvider: 'zai' | 'openai';
+    providerConfigs: {
+      zai: { model: string; [key: string]: unknown };
+      openai: { model?: string; [key: string]: unknown };
+    };
+  }) {
     this.initializeProviders(config);
     this.primaryProvider = this.providers.get(config.primaryProvider)!;
     this.fallbackProvider = this.providers.get(config.fallbackProvider)!;
@@ -362,7 +367,14 @@ export class AIProviderManager {
   /**
    * Initialize providers
    */
-  private initializeProviders(config: unknown): void {
+  private initializeProviders(config: {
+    primaryProvider: 'zai' | 'openai';
+    fallbackProvider: 'zai' | 'openai';
+    providerConfigs: {
+      zai: { model: string; [key: string]: unknown };
+      openai: { model?: string; [key: string]: unknown };
+    };
+  }): void {
     // Initialize ZAI provider
     const zaiProvider = new ZAIProviderWrapper(zaiClientService, config.providerConfigs.zai);
     this.providers.set('zai', zaiProvider);

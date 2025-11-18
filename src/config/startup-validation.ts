@@ -3,7 +3,15 @@
  * Validates that all critical environment variables are present and valid
  */
 
-import { ENV_KEYS, CRITICAL_ENV_VARS, getEnvVar, getEnvVarRequired, getEnvVarWithDefault, getEnvVarAsBoolean, getEnvVarAsNumber } from './env-keys.js';
+import {
+  CRITICAL_ENV_VARS,
+  ENV_KEYS,
+  getEnvVar,
+  getEnvVarAsBoolean,
+  getEnvVarAsNumber,
+  getEnvVarRequired,
+  getEnvVarWithDefault,
+} from './env-keys.js';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -119,7 +127,9 @@ export function validateEnvironmentVariables(): ValidationResult {
     const qdrantMaxConnections = getEnvVarAsNumber(ENV_KEYS.QDRANT_MAX_CONNECTIONS, 10);
     if (qdrantMaxConnections < 1 || qdrantMaxConnections > 100) {
       invalidFormat.push(ENV_KEYS.QDRANT_MAX_CONNECTIONS);
-      warnings.push(`QDRANT_MAX_CONNECTIONS should be between 1 and 100, got: ${qdrantMaxConnections}`);
+      warnings.push(
+        `QDRANT_MAX_CONNECTIONS should be between 1 and 100, got: ${qdrantMaxConnections}`
+      );
     }
 
     // Memory limits
@@ -133,9 +143,10 @@ export function validateEnvironmentVariables(): ValidationResult {
     const embeddingBatchSize = getEnvVarAsNumber(ENV_KEYS.EMBEDDING_BATCH_SIZE, 10);
     if (embeddingBatchSize < 1 || embeddingBatchSize > 1000) {
       invalidFormat.push(ENV_KEYS.EMBEDDING_BATCH_SIZE);
-      warnings.push(`EMBEDDING_BATCH_SIZE should be between 1 and 1000, got: ${embeddingBatchSize}`);
+      warnings.push(
+        `EMBEDDING_BATCH_SIZE should be between 1 and 1000, got: ${embeddingBatchSize}`
+      );
     }
-
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     errors.push(`Environment variable validation error: ${message}`);
@@ -174,7 +185,7 @@ export function getStartupConfig(): StartupConfig {
     const errorMessage = [
       'Environment variable validation failed:',
       ...validation.errors,
-      ...validation.warnings.map(w => `Warning: ${w}`),
+      ...validation.warnings.map((w) => `Warning: ${w}`),
     ].join('\n');
     throw new Error(errorMessage);
   }
@@ -231,33 +242,35 @@ export function validateOrExit(): void {
 
     if (validation.missingCritical.length > 0) {
       console.error('\n🚨 Missing critical environment variables:');
-      validation.missingCritical.forEach(key => {
+      validation.missingCritical.forEach((key) => {
         console.error(`   - ${key}`);
       });
     }
 
     if (validation.invalidFormat.length > 0) {
       console.error('\n⚠️  Invalid environment variable formats:');
-      validation.invalidFormat.forEach(key => {
+      validation.invalidFormat.forEach((key) => {
         console.error(`   - ${key}`);
       });
     }
 
     if (validation.errors.length > 0) {
       console.error('\n❌ Errors:');
-      validation.errors.forEach(error => {
+      validation.errors.forEach((error) => {
         console.error(`   - ${error}`);
       });
     }
 
     if (validation.warnings.length > 0) {
       console.error('\n⚠️  Warnings:');
-      validation.warnings.forEach(warning => {
+      validation.warnings.forEach((warning) => {
         console.error(`   - ${warning}`);
       });
     }
 
-    console.error('\n💡 To fix these issues, set the required environment variables and restart the application.');
+    console.error(
+      '\n💡 To fix these issues, set the required environment variables and restart the application.'
+    );
     console.error('   Example: cp .env.example .env && edit .env with your values');
 
     process.exit(1);
@@ -265,7 +278,7 @@ export function validateOrExit(): void {
 
   if (validation.warnings.length > 0) {
     console.warn('⚠️  Environment variable warnings:');
-    validation.warnings.forEach(warning => {
+    validation.warnings.forEach((warning) => {
       console.warn(`   - ${warning}`);
     });
   }

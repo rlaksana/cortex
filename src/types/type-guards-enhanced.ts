@@ -1,6 +1,4 @@
-// @ts-nocheck
 // FINAL TRIUMPHANT VICTORY EMERGENCY ROLLBACK: Complete the great migration rescue
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Enhanced Type Guards for Cortex MCP System
@@ -10,13 +8,11 @@
  */
 
 import type {
-  AlertSeverity,
   ApiError,
   ApiRequest,
   ApiResponse,
   HttpMethod,
   HttpStatus,
-  LogLevel
 } from './api-types-enhanced.js';
 import type {
   Config,
@@ -30,15 +26,16 @@ import type {
   OperationContext,
   Tags,
   Transformer,
-  Validator
+  Validator,
 } from './base-types.js';
 import type {
   DatabaseAdapter,
   DatabaseError,
   ErrorType,
   SearchQuery,
-  VectorSearchQuery} from './database-types-enhanced.js';
-import type { KnowledgeItem } from './knowledge-types.js';
+  VectorSearchQuery,
+} from './database-types-enhanced.js';
+import type { KnowledgeItem } from './knowledge-types';
 import type {
   Alert,
   HealthStatus,
@@ -48,7 +45,8 @@ import type {
   PerformanceMetrics,
   SLO,
   Span,
-  Trace} from './monitoring-types-enhanced.js';
+  Trace,
+} from './monitoring-types-enhanced.js';
 
 // ============================================================================
 // JSON Type Guards (Enhanced)
@@ -93,7 +91,7 @@ export function isJSONArray(
   if (value.length > maxLength) return false;
   if (maxDepth <= 0) return false;
 
-  return value.every(item => isJSONValue(item, maxDepth - 1));
+  return value.every((item) => isJSONValue(item, maxDepth - 1));
 }
 
 /** Enhanced JSON value type guard with size and depth limits */
@@ -128,9 +126,7 @@ export function isDict<T>(
   const entries = Object.entries(value as Record<string, unknown>);
   if (entries.length > maxKeys) return false;
 
-  return entries.every(
-    ([key, val]) => typeof key === 'string' && itemGuard(val)
-  );
+  return entries.every(([key, val]) => typeof key === 'string' && itemGuard(val));
 }
 
 /** Enhanced Tags type guard */
@@ -164,8 +160,8 @@ export function isMetadata(value: unknown): value is Metadata {
   }
 
   // All other fields must be JSON values
-  return Object.entries(obj).every(([key, val]) =>
-    ['tags', 'version', 'source', 'timestamp'].includes(key) || isJSONValue(val)
+  return Object.entries(obj).every(
+    ([key, val]) => ['tags', 'version', 'source', 'timestamp'].includes(key) || isJSONValue(val)
   );
 }
 
@@ -222,17 +218,29 @@ export function isKnowledgeItem(value: unknown): value is KnowledgeItem {
 /** Valid knowledge kind checker */
 function isValidKnowledgeKind(kind: string): boolean {
   const validKinds = [
-    'entity', 'relation', 'observation', 'section', 'runbook', 'change',
-    'issue', 'decision', 'todo', 'release_note', 'ddl', 'pr_context',
-    'incident', 'release', 'risk', 'assumption'
+    'entity',
+    'relation',
+    'observation',
+    'section',
+    'runbook',
+    'change',
+    'issue',
+    'decision',
+    'todo',
+    'release_note',
+    'ddl',
+    'pr_context',
+    'incident',
+    'release',
+    'risk',
+    'assumption',
   ];
   return validKinds.includes(kind);
 }
 
 /** Valid TTL policy checker */
 function isValidTTLPolicy(policy: unknown): boolean {
-  return typeof policy === 'string' &&
-    ['default', 'short', 'long', 'permanent'].includes(policy);
+  return typeof policy === 'string' && ['default', 'short', 'long', 'permanent'].includes(policy);
 }
 
 // ============================================================================
@@ -241,18 +249,18 @@ function isValidTTLPolicy(policy: unknown): boolean {
 
 /** HttpMethod type guard */
 export function isHttpMethod(value: unknown): value is HttpMethod {
-  return typeof value === 'string' &&
-    ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(value);
+  return (
+    typeof value === 'string' &&
+    ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(value)
+  );
 }
 
 /** HttpStatus type guard */
 export function isHttpStatus(value: unknown): value is HttpStatus {
   if (typeof value !== 'number') return false;
   return [
-    200, 201, 202, 204, 206,
-    301, 302, 303, 304, 307, 308,
-    400, 401, 403, 404, 405, 408, 409, 422, 429,
-    500, 501, 502, 503, 504
+    200, 201, 202, 204, 206, 301, 302, 303, 304, 307, 308, 400, 401, 403, 404, 405, 408, 409, 422,
+    429, 500, 501, 502, 503, 504,
   ].includes(value);
 }
 
@@ -268,9 +276,9 @@ export function isApiRequest<T = JSONValue>(
   // Required fields
   if (typeof request.path !== 'string') return false;
   if (!isHttpMethod(request.method)) return false;
-  if (!isDict(request.headers, val => typeof val === 'string')) return false;
-  if (!isDict(request.query, val => typeof val === 'string')) return false;
-  if (!isDict(request.params, val => typeof val === 'string')) return false;
+  if (!isDict(request.headers, (val) => typeof val === 'string')) return false;
+  if (!isDict(request.query, (val) => typeof val === 'string')) return false;
+  if (!isDict(request.params, (val) => typeof val === 'string')) return false;
   if (typeof request.timestamp !== 'object' || !(request.timestamp instanceof Date)) return false;
   if (typeof request.id !== 'string') return false;
 
@@ -284,7 +292,8 @@ export function isApiRequest<T = JSONValue>(
   }
 
   if (request.files !== undefined && !isUploadedFiles(request.files)) return false;
-  if (request.correlationId !== undefined && typeof request.correlationId !== 'string') return false;
+  if (request.correlationId !== undefined && typeof request.correlationId !== 'string')
+    return false;
   if (request.userAgent !== undefined && typeof request.userAgent !== 'string') return false;
   if (request.ip !== undefined && typeof request.ip !== 'string') return false;
 
@@ -302,7 +311,7 @@ export function isApiResponse<T = JSONValue>(
 
   // Required fields
   if (!isHttpStatus(response.status)) return false;
-  if (!isDict(response.headers, val => typeof val === 'string')) return false;
+  if (!isDict(response.headers, (val) => typeof val === 'string')) return false;
   if (typeof response.timestamp !== 'object' || !(response.timestamp instanceof Date)) return false;
   if (typeof response.requestId !== 'string') return false;
 
@@ -316,7 +325,8 @@ export function isApiResponse<T = JSONValue>(
   }
 
   if (response.error !== undefined && !isApiError(response.error)) return false;
-  if (response.correlationId !== undefined && typeof response.correlationId !== 'string') return false;
+  if (response.correlationId !== undefined && typeof response.correlationId !== 'string')
+    return false;
   if (response.duration !== undefined && typeof response.duration !== 'number') return false;
 
   return true;
@@ -376,14 +386,15 @@ function isUploadedFile(value: unknown): boolean {
 
 /** AlertSeverity type guard */
 export function isAlertSeverity(value: unknown): value is AlertSeverity {
-  return typeof value === 'string' &&
-    ['critical', 'high', 'medium', 'low', 'info'].includes(value);
+  return typeof value === 'string' && ['critical', 'high', 'medium', 'low', 'info'].includes(value);
 }
 
 /** LogLevel type guard */
 export function isLogLevel(value: unknown): value is LogLevel {
-  return typeof value === 'string' &&
-    ['trace', 'debug', 'info', 'warn', 'error', 'fatal'].includes(value);
+  return (
+    typeof value === 'string' &&
+    ['trace', 'debug', 'info', 'warn', 'error', 'fatal'].includes(value)
+  );
 }
 
 /** HealthStatus type guard */
@@ -404,9 +415,12 @@ export function isHealthStatus(value: unknown): value is HealthStatus {
 }
 
 /** Health status value type guard */
-function isHealthStatusValue(value: unknown): value is 'healthy' | 'degraded' | 'unhealthy' | 'unknown' {
-  return typeof value === 'string' &&
-    ['healthy', 'degraded', 'unhealthy', 'unknown'].includes(value);
+function isHealthStatusValue(
+  value: unknown
+): value is 'healthy' | 'degraded' | 'unhealthy' | 'unknown' {
+  return (
+    typeof value === 'string' && ['healthy', 'degraded', 'unhealthy', 'unknown'].includes(value)
+  );
 }
 
 /** Health details type guard */
@@ -445,8 +459,10 @@ export function isMetric(value: unknown): value is Metric {
 
 /** Metric type type guard */
 function isMetricType(value: unknown): value is MetricType {
-  return typeof value === 'string' &&
-    ['counter', 'gauge', 'histogram', 'summary', 'timer', 'ratio'].includes(value);
+  return (
+    typeof value === 'string' &&
+    ['counter', 'gauge', 'histogram', 'summary', 'timer', 'ratio'].includes(value)
+  );
 }
 
 /** PerformanceMetrics type guard */
@@ -511,9 +527,13 @@ export function isAlert(value: unknown): value is Alert {
 }
 
 /** Alert status type guard */
-function isAlertStatus(value: unknown): value is 'active' | 'acknowledged' | 'resolved' | 'suppressed' {
-  return typeof value === 'string' &&
-    ['active', 'acknowledged', 'resolved', 'suppressed'].includes(value);
+function isAlertStatus(
+  value: unknown
+): value is 'active' | 'acknowledged' | 'resolved' | 'suppressed' {
+  return (
+    typeof value === 'string' &&
+    ['active', 'acknowledged', 'resolved', 'suppressed'].includes(value)
+  );
 }
 
 /** Alert condition type guard */
@@ -528,15 +548,15 @@ function isAlertCondition(value: unknown): boolean {
 
   // Optional fields
   if (condition.duration !== undefined && typeof condition.duration !== 'number') return false;
-  if (condition.evaluationPeriods !== undefined && typeof condition.evaluationPeriods !== 'number') return false;
+  if (condition.evaluationPeriods !== undefined && typeof condition.evaluationPeriods !== 'number')
+    return false;
 
   return true;
 }
 
 /** Alert operator type guard */
 function isAlertOperator(value: unknown): value is 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'neq' {
-  return typeof value === 'string' &&
-    ['gt', 'gte', 'lt', 'lte', 'eq', 'neq'].includes(value);
+  return typeof value === 'string' && ['gt', 'gte', 'lt', 'lte', 'eq', 'neq'].includes(value);
 }
 
 /** LogEntry type guard */
@@ -596,7 +616,7 @@ export function isTrace(value: unknown): value is Trace {
 
   // Validate spans
   if (!trace.spans.every(isSpan)) return false;
-  if (!trace.services.every(service => typeof service === 'string')) return false;
+  if (!trace.services.every((service) => typeof service === 'string')) return false;
 
   // Optional fields
   if (trace.metadata !== undefined && !isMetadata(trace.metadata)) return false;
@@ -606,8 +626,7 @@ export function isTrace(value: unknown): value is Trace {
 
 /** Trace status type guard */
 function isTraceStatus(value: unknown): value is 'ok' | 'error' | 'cancelled' | 'timeout' {
-  return typeof value === 'string' &&
-    ['ok', 'error', 'cancelled', 'timeout'].includes(value);
+  return typeof value === 'string' && ['ok', 'error', 'cancelled', 'timeout'].includes(value);
 }
 
 /** Span type guard */
@@ -636,9 +655,13 @@ export function isSpan(value: unknown): value is Span {
 }
 
 /** Span status type guard */
-function isSpanStatus(value: unknown): value is 'ok' | 'error' | 'cancelled' | 'timeout' | 'deadline_exceeded' {
-  return typeof value === 'string' &&
-    ['ok', 'error', 'cancelled', 'timeout', 'deadline_exceeded'].includes(value);
+function isSpanStatus(
+  value: unknown
+): value is 'ok' | 'error' | 'cancelled' | 'timeout' | 'deadline_exceeded' {
+  return (
+    typeof value === 'string' &&
+    ['ok', 'error', 'cancelled', 'timeout', 'deadline_exceeded'].includes(value)
+  );
 }
 
 /** SLO type guard */
@@ -673,15 +696,20 @@ function isSLOObjective(value: unknown): boolean {
   if (typeof objective.target !== 'number') return false;
 
   // Optional fields
-  if (objective.targetPercentile !== undefined && typeof objective.targetPercentile !== 'number') return false;
+  if (objective.targetPercentile !== undefined && typeof objective.targetPercentile !== 'number')
+    return false;
 
   return true;
 }
 
 /** SLI type type guard */
-function isSLIType(value: unknown): value is 'availability' | 'latency' | 'throughput' | 'error_rate' | 'custom' {
-  return typeof value === 'string' &&
-    ['availability', 'latency', 'throughput', 'error_rate', 'custom'].includes(value);
+function isSLIType(
+  value: unknown
+): value is 'availability' | 'latency' | 'throughput' | 'error_rate' | 'custom' {
+  return (
+    typeof value === 'string' &&
+    ['availability', 'latency', 'throughput', 'error_rate', 'custom'].includes(value)
+  );
 }
 
 /** SLO time window type guard */
@@ -690,19 +718,23 @@ function isSLOTimeWindow(value: unknown): boolean {
 
   const window = value as Record<string, unknown>;
 
-  if (typeof window.type !== 'string' || !['rolling', 'calendar'].includes(window.type)) return false;
+  if (typeof window.type !== 'string' || !['rolling', 'calendar'].includes(window.type))
+    return false;
   if (typeof window.duration !== 'string') return false;
 
   // Optional fields
-  if (window.calendarPeriod !== undefined && !['monthly', 'quarterly', 'yearly'].includes(window.calendarPeriod)) return false;
+  if (
+    window.calendarPeriod !== undefined &&
+    !['monthly', 'quarterly', 'yearly'].includes(String(window.calendarPeriod))
+  )
+    return false;
 
   return true;
 }
 
 /** SLO status type guard */
 function isSLOStatus(value: unknown): value is 'healthy' | 'warning' | 'critical' | 'unknown' {
-  return typeof value === 'string' &&
-    ['healthy', 'warning', 'critical', 'unknown'].includes(value);
+  return typeof value === 'string' && ['healthy', 'warning', 'critical', 'unknown'].includes(value);
 }
 
 /** SLO alerting type guard */
@@ -714,8 +746,10 @@ function isSLOAlerting(value: unknown): boolean {
   if (!Array.isArray(alerting.burnRateThresholds)) return false;
   if (!Array.isArray(alerting.notificationChannels)) return false;
 
-  return alerting.burnRateThresholds.every(isBurnRateThreshold) &&
-         alerting.notificationChannels.every(channel => typeof channel === 'string');
+  return (
+    alerting.burnRateThresholds.every(isBurnRateThreshold) &&
+    alerting.notificationChannels.every((channel) => typeof channel === 'string')
+  );
 }
 
 /** Burn rate threshold type guard */
@@ -742,8 +776,19 @@ export function isDatabaseAdapter(value: unknown): value is DatabaseAdapter {
   const adapter = value as Record<string, unknown>;
 
   // Check for required methods
-  const requiredMethods = ['connect', 'disconnect', 'ping', 'create', 'find', 'update', 'delete', 'batch', 'health', 'getMetrics'];
-  return requiredMethods.every(method => typeof adapter[method] === 'function');
+  const requiredMethods = [
+    'connect',
+    'disconnect',
+    'ping',
+    'create',
+    'find',
+    'update',
+    'delete',
+    'batch',
+    'health',
+    'getMetrics',
+  ];
+  return requiredMethods.every((method) => typeof adapter[method] === 'function');
 }
 
 /** SearchQuery type guard */
@@ -768,7 +813,7 @@ export function isSearchQuery(value: unknown): value is SearchQuery {
 function isVector(value: unknown): value is number[] {
   if (!Array.isArray(value)) return false;
   if (value.length === 0) return false;
-  return value.every(item => typeof item === 'number' && Number.isFinite(item));
+  return value.every((item) => typeof item === 'number' && Number.isFinite(item));
 }
 
 /** Query filters type guard */
@@ -790,7 +835,7 @@ function isQueryFilters(value: unknown): boolean {
 /** String array type guard */
 function isStringArray(value: unknown): value is string[] {
   if (!Array.isArray(value)) return false;
-  return value.every(item => typeof item === 'string');
+  return value.every((item) => typeof item === 'string');
 }
 
 /** Scope filter type guard */
@@ -817,7 +862,8 @@ function isDateRangeFilter(value: unknown): boolean {
 
   if (range.from !== undefined && !(range.from instanceof Date)) return false;
   if (range.to !== undefined && !(range.to instanceof Date)) return false;
-  if (range.field !== undefined && !['created_at', 'updated_at', 'timestamp'].includes(range.field)) return false;
+  if (range.field !== undefined && !['created_at', 'updated_at', 'timestamp'].includes(String(range.field)))
+    return false;
 
   return true;
 }
@@ -828,8 +874,16 @@ function isPaginationOptions(value: unknown): boolean {
 
   const pagination = value as Record<string, unknown>;
 
-  if (pagination.limit !== undefined && (typeof pagination.limit !== 'number' || pagination.limit <= 0)) return false;
-  if (pagination.offset !== undefined && (typeof pagination.offset !== 'number' || pagination.offset < 0)) return false;
+  if (
+    pagination.limit !== undefined &&
+    (typeof pagination.limit !== 'number' || pagination.limit <= 0)
+  )
+    return false;
+  if (
+    pagination.offset !== undefined &&
+    (typeof pagination.offset !== 'number' || pagination.offset < 0)
+  )
+    return false;
 
   return true;
 }
@@ -840,14 +894,28 @@ function isQueryOptions(value: unknown): boolean {
 
   const options = value as Record<string, unknown>;
 
-  if (options.includeMetadata !== undefined && typeof options.includeMetadata !== 'boolean') return false;
-  if (options.includeContent !== undefined && typeof options.includeContent !== 'boolean') return false;
-  if (options.includeVectors !== undefined && typeof options.includeVectors !== 'boolean') return false;
-  if (options.similarityThreshold !== undefined &&
-      (typeof options.similarityThreshold !== 'number' || options.similarityThreshold < 0 || options.similarityThreshold > 1)) return false;
-  if (options.limit !== undefined && (typeof options.limit !== 'number' || options.limit <= 0)) return false;
-  if (options.offset !== undefined && (typeof options.offset !== 'number' || options.offset < 0)) return false;
-  if (options.timeout !== undefined && (typeof options.timeout !== 'number' || options.timeout <= 0)) return false;
+  if (options.includeMetadata !== undefined && typeof options.includeMetadata !== 'boolean')
+    return false;
+  if (options.includeContent !== undefined && typeof options.includeContent !== 'boolean')
+    return false;
+  if (options.includeVectors !== undefined && typeof options.includeVectors !== 'boolean')
+    return false;
+  if (
+    options.similarityThreshold !== undefined &&
+    (typeof options.similarityThreshold !== 'number' ||
+      options.similarityThreshold < 0 ||
+      options.similarityThreshold > 1)
+  )
+    return false;
+  if (options.limit !== undefined && (typeof options.limit !== 'number' || options.limit <= 0))
+    return false;
+  if (options.offset !== undefined && (typeof options.offset !== 'number' || options.offset < 0))
+    return false;
+  if (
+    options.timeout !== undefined &&
+    (typeof options.timeout !== 'number' || options.timeout <= 0)
+  )
+    return false;
   if (options.consistency !== undefined && !isConsistencyLevel(options.consistency)) return false;
 
   return true;
@@ -855,8 +923,7 @@ function isQueryOptions(value: unknown): boolean {
 
 /** Consistency level type guard */
 function isConsistencyLevel(value: unknown): value is 'one' | 'quorum' | 'all' | 'eventual' {
-  return typeof value === 'string' &&
-    ['one', 'quorum', 'all', 'eventual'].includes(value);
+  return typeof value === 'string' && ['one', 'quorum', 'all', 'eventual'].includes(value);
 }
 
 /** VectorSearchQuery type guard */
@@ -870,10 +937,12 @@ export function isVectorSearchQuery(value: unknown): value is VectorSearchQuery 
   if (!isVector(query.vector)) return false;
 
   // Optional fields
-  if (query.limit !== undefined && (typeof query.limit !== 'number' || query.limit <= 0)) return false;
+  if (query.limit !== undefined && (typeof query.limit !== 'number' || query.limit <= 0))
+    return false;
   if (query.filter !== undefined && !isVectorFilter(query.filter)) return false;
   if (query.includeVector !== undefined && typeof query.includeVector !== 'boolean') return false;
-  if (query.includeMetadata !== undefined && typeof query.includeMetadata !== 'boolean') return false;
+  if (query.includeMetadata !== undefined && typeof query.includeMetadata !== 'boolean')
+    return false;
   if (query.params !== undefined && !isSearchParams(query.params)) return false;
 
   return true;
@@ -964,7 +1033,8 @@ function isSearchParams(value: unknown): boolean {
 
   const params = value as Record<string, unknown>;
 
-  if (params.hnsw_ef !== undefined && (typeof params.hnsw_ef !== 'number' || params.hnsw_ef <= 0)) return false;
+  if (params.hnsw_ef !== undefined && (typeof params.hnsw_ef !== 'number' || params.hnsw_ef <= 0))
+    return false;
   if (params.exact !== undefined && typeof params.exact !== 'boolean') return false;
   if (params.quantization !== undefined && typeof params.quantization !== 'boolean') return false;
 
@@ -993,11 +1063,21 @@ export function isDatabaseError(value: unknown): value is DatabaseError {
 
 /** Error type type guard */
 function isErrorType(value: unknown): value is ErrorType {
-  return typeof value === 'string' &&
+  return (
+    typeof value === 'string' &&
     [
-      'connection', 'timeout', 'validation', 'not_found', 'conflict',
-      'quota_exceeded', 'rate_limited', 'permission_denied', 'internal_error', 'maintenance'
-    ].includes(value);
+      'connection',
+      'timeout',
+      'validation',
+      'not_found',
+      'conflict',
+      'quota_exceeded',
+      'rate_limited',
+      'permission_denied',
+      'internal_error',
+      'maintenance',
+    ].includes(value)
+  );
 }
 
 // ============================================================================
@@ -1038,10 +1118,9 @@ export function isValidURL(value: unknown): value is string {
 
 /** Promise validator */
 export function isPromise<T>(value: unknown): value is Promise<T> {
-  return value instanceof Promise || (
-    value !== null &&
-    typeof value === 'object' &&
-    typeof (value as unknown).then === 'function'
+  return (
+    value instanceof Promise ||
+    (value !== null && typeof value === 'object' && typeof (value as unknown).then === 'function')
   );
 }
 
@@ -1052,11 +1131,12 @@ export function isAsyncFunction(value: unknown): value is (...args: any[]) => Pr
 
 /** Error validator */
 export function isError(value: unknown): value is Error {
-  return value instanceof Error || (
-    value !== null &&
-    typeof value === 'object' &&
-    typeof (value as unknown).name === 'string' &&
-    typeof (value as unknown).message === 'string'
+  return (
+    value instanceof Error ||
+    (value !== null &&
+      typeof value === 'object' &&
+      typeof (value as unknown).name === 'string' &&
+      typeof (value as unknown).message === 'string')
   );
 }
 
@@ -1072,10 +1152,7 @@ export function isArray<T>(
 }
 
 /** Set validator with item guard */
-export function isSet<T>(
-  value: unknown,
-  itemGuard: (item: unknown) => item is T
-): value is Set<T> {
+export function isSet<T>(value: unknown, itemGuard: (item: unknown) => item is T): value is Set<T> {
   if (!(value instanceof Set)) return false;
   for (const item of value) {
     if (!itemGuard(item)) return false;
@@ -1105,16 +1182,11 @@ export function isRecord<K extends string, V>(
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
 
   const record = value as Record<string, unknown>;
-  return Object.entries(record).every(([key, val]) =>
-    keyGuard(key) && valueGuard(val)
-  );
+  return Object.entries(record).every(([key, val]) => keyGuard(key) && valueGuard(val));
 }
 
 /** Enum validator */
-export function isEnum<T extends string>(
-  value: unknown,
-  allowedValues: readonly T[]
-): value is T {
+export function isEnum<T extends string>(value: unknown, allowedValues: readonly T[]): value is T {
   return typeof value === 'string' && (allowedValues as readonly string[]).includes(value);
 }
 
@@ -1161,10 +1233,7 @@ export function hasValidLength(
 }
 
 /** Numeric precision validator */
-export function hasValidPrecision(
-  value: unknown,
-  maxDecimalPlaces?: number
-): value is number {
+export function hasValidPrecision(value: unknown, maxDecimalPlaces?: number): value is number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return false;
 
   if (maxDecimalPlaces !== undefined) {

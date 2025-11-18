@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Final batch of type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Performance Metrics Collector for Cortex MCP
@@ -9,40 +7,9 @@
 
 import { EventEmitter } from 'events';
 
-import { logger } from '@/utils/logger.js';
-
-// Define OperationType locally to avoid import issues with @ts-nocheck
-enum OperationType {
-  MEMORY_STORE = 'memory_store',
-  MEMORY_FIND = 'memory_find',
-  EMBEDDING = 'embedding',
-  SEARCH = 'search',
-  VALIDATION = 'validation',
-  AUDIT = 'audit',
-  HEALTH_CHECK = 'health_check',
-  BATCH_OPERATION = 'batch_operation',
-  EXPORT = 'export',
-  PURGE = 'purge',
-  MAINTENANCE = 'maintenance',
-  RATE_LIMIT = 'rate_limit',
-  AUTH = 'auth',
-  CHUNKING = 'chunking',
-  DEDUPLICATION = 'deduplication',
-  DATABASE_HEALTH = 'database_health',
-  DATABASE_STATS = 'database_stats',
-  AUTHENTICATION = 'authentication',
-  SYSTEM = 'system',
-  ERROR = 'error',
-  KILL_SWITCH_TRIGGERED = 'kill_switch_triggered',
-  KILL_SWITCH_DEACTIVATED = 'kill_switch_deactivated',
-  KILL_SWITCH_RECOVERED = 'kill_switch_recovered',
-}
-
-// Re-export OperationType for other files that need it
-export { OperationType };
-
-// import type { OperationType } from './operation-types.js';
+import { OperationType } from './operation-types.js';
 import type { OperationMetadata } from '../types/monitoring-types.js';
+import { logger } from '../utils/logger.js';
 
 export interface PerformanceMetric {
   operation: OperationType;
@@ -281,38 +248,44 @@ export class PerformanceCollector extends EventEmitter {
   /**
    * Get performance trends for dashboard
    */
-  getPerformanceTrends(timeWindowMinutes: number = 60): Record<OperationType, {
-    operation: OperationType;
-    timeWindow: number;
-    totalRequests: number;
-    successfulRequests: number;
-    failedRequests: number;
-    successRate: number;
-    averageDuration: number;
-    p95Duration: number;
-    p99Duration: number;
-    requestsPerMinute: number;
-    errorRate: number;
-    timestamp: number;
-  }> {
+  getPerformanceTrends(timeWindowMinutes: number = 60): Record<
+    OperationType,
+    {
+      operation: OperationType;
+      timeWindow: number;
+      totalRequests: number;
+      successfulRequests: number;
+      failedRequests: number;
+      successRate: number;
+      averageDuration: number;
+      p95Duration: number;
+      p99Duration: number;
+      requestsPerMinute: number;
+      errorRate: number;
+      timestamp: number;
+    }
+  > {
     const now = Date.now();
     const windowStart = now - timeWindowMinutes * 60 * 1000;
-    const trends: Record<OperationType, {
-    operation: OperationType;
-    timeWindow: number;
-    totalRequests: number;
-    successfulRequests: number;
-    failedRequests: number;
-    successRate: number;
-    averageDuration: number;
-    p95Duration: number;
-    p99Duration: number;
-    requestsPerMinute: number;
-    errorRate: number;
-    timestamp: number;
-  }> = {};
+    const trends: Record<
+      string,
+      {
+        operation: OperationType;
+        timeWindow: number;
+        totalRequests: number;
+        successfulRequests: number;
+        failedRequests: number;
+        successRate: number;
+        averageDuration: number;
+        p95Duration: number;
+        p99Duration: number;
+        requestsPerMinute: number;
+        errorRate: number;
+        timestamp: number;
+      }
+    > = {};
 
-    for (const [operation] of Array.from(this.metrics.keys())) {
+      for (const operation of Array.from(this.metrics.keys())) {
       const recentMetrics = this.getMetricsInTimeRange(operation, windowStart, now);
 
       if (recentMetrics.length === 0) continue;
@@ -527,7 +500,7 @@ export class PerformanceCollector extends EventEmitter {
 
     if (memoryUsagePercent > 90) {
       const alert: PerformanceAlert = {
-        operation: 'system',
+        operation: OperationType.SYSTEM,
         alertType: 'memory_usage',
         threshold: 90,
         currentValue: memoryUsagePercent,
@@ -581,7 +554,7 @@ export class PerformanceCollector extends EventEmitter {
   private exportPrometheusMetrics(): string {
     let output = '';
 
-    for (const summary of this.summaries.values()) {
+    for (const summary of Array.from(this.summaries.values())) {
       output += `# HELP cortex_operation_duration_seconds Time taken for operations\n`;
       output += `# TYPE cortex_operation_duration_seconds gauge\n`;
       output += `cortex_operation_duration_seconds{operation="${summary.operation}",quantile="avg"} ${summary.averageDuration / 1000}\n`;

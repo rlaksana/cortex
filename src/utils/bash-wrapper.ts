@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Bash wrapper utility for runbook execution
  * This is a simplified wrapper that uses child_process for command execution
@@ -33,6 +29,8 @@ export async function Bash(options: {
 
     return stdout.trim();
   } catch (error) {
-    throw new Error(`Command execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Command execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }

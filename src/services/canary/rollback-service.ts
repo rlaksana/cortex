@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Rollback Service
  *
@@ -428,8 +423,9 @@ export class RollbackService extends EventEmitter {
     }
 
     // Cancel any active executions for this config
-    const activeExecution = Array.from(this.executions.values())
-      .find(exec => exec.config.id === id && exec.status === RollbackStatus.IN_PROGRESS);
+    const activeExecution = Array.from(this.executions.values()).find(
+      (exec) => exec.config.id === id && exec.status === RollbackStatus.IN_PROGRESS
+    );
 
     if (activeExecution) {
       this.cancelRollback(activeExecution.config.deploymentId, 'Configuration deleted');
@@ -458,8 +454,9 @@ export class RollbackService extends EventEmitter {
    * Get configurations by deployment
    */
   getConfigsByDeployment(deploymentId: string): RollbackConfig[] {
-    return Array.from(this.configs.values())
-      .filter(config => config.deploymentId === deploymentId);
+    return Array.from(this.configs.values()).filter(
+      (config) => config.deploymentId === deploymentId
+    );
   }
 
   // ============================================================================
@@ -493,8 +490,10 @@ export class RollbackService extends EventEmitter {
       }
 
       // Check if rollback is already in progress
-      const existingExecution = Array.from(this.executions.values())
-        .find(exec => exec.config.deploymentId === deploymentId && exec.status === RollbackStatus.IN_PROGRESS);
+      const existingExecution = Array.from(this.executions.values()).find(
+        (exec) =>
+          exec.config.deploymentId === deploymentId && exec.status === RollbackStatus.IN_PROGRESS
+      );
 
       if (existingExecution) {
         logger.warn('Rollback already in progress', {
@@ -568,7 +567,6 @@ export class RollbackService extends EventEmitter {
       await this.startRollbackExecution(executionId, execution);
 
       return executionId;
-
     } catch (error) {
       logger.error('Error executing rollback', {
         deploymentId,
@@ -585,7 +583,10 @@ export class RollbackService extends EventEmitter {
   /**
    * Start rollback execution
    */
-  private async startRollbackExecution(executionId: string, execution: RollbackExecution): Promise<void> {
+  private async startRollbackExecution(
+    executionId: string,
+    execution: RollbackExecution
+  ): Promise<void> {
     execution.status = RollbackStatus.INITIATING;
     execution.startTime = new Date();
 
@@ -623,7 +624,6 @@ export class RollbackService extends EventEmitter {
 
       // Complete rollback
       await this.completeRollback(executionId, execution);
-
     } catch (error) {
       await this.handleRollbackError(executionId, execution, error as Error);
     }
@@ -632,7 +632,10 @@ export class RollbackService extends EventEmitter {
   /**
    * Execute immediate rollback
    */
-  private async executeImmediateRollback(executionId: string, execution: RollbackExecution): Promise<void> {
+  private async executeImmediateRollback(
+    executionId: string,
+    execution: RollbackExecution
+  ): Promise<void> {
     logger.info('Executing immediate rollback', { executionId });
 
     execution.status = RollbackStatus.IN_PROGRESS;
@@ -648,7 +651,10 @@ export class RollbackService extends EventEmitter {
   /**
    * Execute gradual rollback
    */
-  private async executeGradualRollback(executionId: string, execution: RollbackExecution): Promise<void> {
+  private async executeGradualRollback(
+    executionId: string,
+    execution: RollbackExecution
+  ): Promise<void> {
     logger.info('Executing gradual rollback', { executionId });
 
     execution.status = RollbackStatus.IN_PROGRESS;
@@ -664,7 +670,7 @@ export class RollbackService extends EventEmitter {
 
       // Execute critical actions at each step
       const criticalActions = execution.config.actions
-        .filter(action => action.order <= 3)
+        .filter((action) => action.order <= 3)
         .sort((a, b) => a.order - b.order);
 
       for (const action of criticalActions) {
@@ -672,7 +678,7 @@ export class RollbackService extends EventEmitter {
       }
 
       // Wait for traffic to stabilize
-      await new Promise(resolve => setTimeout(resolve, 30000));
+      await new Promise((resolve) => setTimeout(resolve, 30000));
 
       // Check if rollback should continue
       if (await this.shouldContinueRollback(executionId, execution)) {
@@ -682,7 +688,7 @@ export class RollbackService extends EventEmitter {
 
     // Execute remaining actions
     const remainingActions = execution.config.actions
-      .filter(action => action.order > 3)
+      .filter((action) => action.order > 3)
       .sort((a, b) => a.order - b.order);
 
     for (const action of remainingActions) {
@@ -693,7 +699,10 @@ export class RollbackService extends EventEmitter {
   /**
    * Execute phased rollback
    */
-  private async executePhasedRollback(executionId: string, execution: RollbackExecution): Promise<void> {
+  private async executePhasedRollback(
+    executionId: string,
+    execution: RollbackExecution
+  ): Promise<void> {
     logger.info('Executing phased rollback', { executionId });
 
     execution.status = RollbackStatus.IN_PROGRESS;
@@ -720,7 +729,7 @@ export class RollbackService extends EventEmitter {
 
       // Execute phase actions
       const phaseActions = execution.config.actions
-        .filter(action => phase.actions.includes(action.id))
+        .filter((action) => phase.actions.includes(action.id))
         .sort((a, b) => a.order - b.order);
 
       for (const action of phaseActions) {
@@ -737,7 +746,7 @@ export class RollbackService extends EventEmitter {
 
       // Wait for phase duration
       if (phase.durationMs > 0) {
-        await new Promise(resolve => setTimeout(resolve, phase.durationMs));
+        await new Promise((resolve) => setTimeout(resolve, phase.durationMs));
       }
 
       // Check if rollback should continue
@@ -751,7 +760,10 @@ export class RollbackService extends EventEmitter {
   /**
    * Execute blue-green rollback
    */
-  private async executeBlueGreenRollback(executionId: string, execution: RollbackExecution): Promise<void> {
+  private async executeBlueGreenRollback(
+    executionId: string,
+    execution: RollbackExecution
+  ): Promise<void> {
     logger.info('Executing blue-green rollback', { executionId });
 
     execution.status = RollbackStatus.IN_PROGRESS;
@@ -767,13 +779,16 @@ export class RollbackService extends EventEmitter {
     }
 
     // Wait for switch to propagate
-    await new Promise(resolve => setTimeout(resolve, 60000));
+    await new Promise((resolve) => setTimeout(resolve, 60000));
   }
 
   /**
    * Execute custom rollback
    */
-  private async executeCustomRollback(executionId: string, execution: RollbackExecution): Promise<void> {
+  private async executeCustomRollback(
+    executionId: string,
+    execution: RollbackExecution
+  ): Promise<void> {
     logger.info('Executing custom rollback', { executionId });
 
     execution.status = RollbackStatus.IN_PROGRESS;
@@ -826,11 +841,11 @@ export class RollbackService extends EventEmitter {
       });
 
       this.emit('actionCompleted', executionId, action, executedAction);
-
     } catch (error) {
       executedAction.status = 'failed';
       executedAction.endTime = new Date();
-      executedAction.duration = executedAction.endTime.getTime() - executedAction.startTime!.getTime();
+      executedAction.duration =
+        executedAction.endTime.getTime() - executedAction.startTime!.getTime();
       executedAction.error = error instanceof Error ? error.message : String(error);
 
       execution.metrics.failedActions++;
@@ -859,8 +874,9 @@ export class RollbackService extends EventEmitter {
 
       // Check if rollback action has a rollback action
       if (action.rollbackAction) {
-        const rollbackActionConfig = execution.config.actions
-          .find(a => a.id === action.rollbackAction);
+        const rollbackActionConfig = execution.config.actions.find(
+          (a) => a.id === action.rollbackAction
+        );
 
         if (rollbackActionConfig) {
           logger.info('Executing rollback action for failed action', {
@@ -961,13 +977,16 @@ export class RollbackService extends EventEmitter {
   private async drainConnections(deploymentId: string): Promise<void> {
     logger.info('Draining connections', { deploymentId });
     // In a real implementation, this would drain connections from load balancer
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
   }
 
   /**
    * Update feature flags
    */
-  private async updateFeatureFlags(deploymentId: string, config: Record<string, unknown>): Promise<void> {
+  private async updateFeatureFlags(
+    deploymentId: string,
+    config: Record<string, unknown>
+  ): Promise<void> {
     logger.info('Updating feature flags', { deploymentId });
 
     // Get deployment and disable its feature flags
@@ -1008,7 +1027,7 @@ export class RollbackService extends EventEmitter {
   private async scaleDown(deploymentId: string, config: Record<string, unknown>): Promise<void> {
     logger.info('Scaling down canary instances', { deploymentId });
     // In a real implementation, this would scale down canary instances
-    await new Promise(resolve => setTimeout(resolve, 10000));
+    await new Promise((resolve) => setTimeout(resolve, 10000));
   }
 
   /**
@@ -1017,16 +1036,19 @@ export class RollbackService extends EventEmitter {
   private async scaleUp(deploymentId: string, config: Record<string, unknown>): Promise<void> {
     logger.info('Scaling up stable instances', { deploymentId });
     // In a real implementation, this would scale up stable instances
-    await new Promise(resolve => setTimeout(resolve, 10000));
+    await new Promise((resolve) => setTimeout(resolve, 10000));
   }
 
   /**
    * Restart services
    */
-  private async restartServices(deploymentId: string, config: Record<string, unknown>): Promise<void> {
+  private async restartServices(
+    deploymentId: string,
+    config: Record<string, unknown>
+  ): Promise<void> {
     logger.info('Restarting services', { deploymentId });
     // In a real implementation, this would restart affected services
-    await new Promise(resolve => setTimeout(resolve, 15000));
+    await new Promise((resolve) => setTimeout(resolve, 15000));
   }
 
   /**
@@ -1035,25 +1057,31 @@ export class RollbackService extends EventEmitter {
   private async clearCaches(deploymentId: string, config: Record<string, unknown>): Promise<void> {
     logger.info('Clearing caches', { deploymentId });
     // In a real implementation, this would clear relevant caches
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
   }
 
   /**
    * Update deployment configuration
    */
-  private async updateDeploymentConfig(deploymentId: string, config: Record<string, unknown>): Promise<void> {
+  private async updateDeploymentConfig(
+    deploymentId: string,
+    config: Record<string, unknown>
+  ): Promise<void> {
     logger.info('Updating configuration', { deploymentId, config });
     // In a real implementation, this would update service configuration
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
   }
 
   /**
    * Run validation
    */
-  private async runValidation(deploymentId: string, config: Record<string, unknown>): Promise<void> {
+  private async runValidation(
+    deploymentId: string,
+    config: Record<string, unknown>
+  ): Promise<void> {
     logger.info('Running validation', { deploymentId });
     // In a real implementation, this would run validation tests
-    await new Promise(resolve => setTimeout(resolve, 10000));
+    await new Promise((resolve) => setTimeout(resolve, 10000));
   }
 
   /**
@@ -1062,28 +1090,34 @@ export class RollbackService extends EventEmitter {
   private async notifyUsers(deploymentId: string, config: Record<string, unknown>): Promise<void> {
     logger.info('Notifying users', { deploymentId });
     // In a real implementation, this would send user notifications
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
   /**
    * Execute custom action
    */
-  private async executeCustomAction(deploymentId: string, config: Record<string, unknown>): Promise<void> {
+  private async executeCustomAction(
+    deploymentId: string,
+    config: Record<string, unknown>
+  ): Promise<void> {
     logger.info('Executing custom action', { deploymentId, config });
     // In a real implementation, this would execute custom rollback logic
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
   }
 
   /**
    * Update traffic routing
    */
-  private async updateTrafficRouting(deploymentId: string, canaryPercentage: number): Promise<void> {
+  private async updateTrafficRouting(
+    deploymentId: string,
+    canaryPercentage: number
+  ): Promise<void> {
     logger.info('Updating traffic routing', { deploymentId, canaryPercentage });
 
     // Use traffic splitter to update routing
     // This is a simplified implementation
     // In a real implementation, you would integrate with your traffic splitter
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
   // ============================================================================
@@ -1107,7 +1141,8 @@ export class RollbackService extends EventEmitter {
         criteriaResults.push(result);
       }
 
-      const overallScore = criteriaResults.reduce((sum, result) => sum + result.score, 0) / criteriaResults.length;
+      const overallScore =
+        criteriaResults.reduce((sum, result) => sum + result.score, 0) / criteriaResults.length;
 
       execution.validationResult = {
         status: overallScore >= 70 ? 'passed' : 'failed',
@@ -1126,7 +1161,6 @@ export class RollbackService extends EventEmitter {
         score: overallScore,
         duration: execution.validationResult.duration,
       });
-
     } catch (error) {
       execution.validationResult = {
         status: 'failed',
@@ -1171,7 +1205,6 @@ export class RollbackService extends EventEmitter {
       }
 
       return result;
-
     } catch (error) {
       return {
         criteria,
@@ -1363,7 +1396,10 @@ export class RollbackService extends EventEmitter {
   /**
    * Check if rollback should continue
    */
-  private async shouldContinueRollback(executionId: string, execution: RollbackExecution): Promise<boolean> {
+  private async shouldContinueRollback(
+    executionId: string,
+    execution: RollbackExecution
+  ): Promise<boolean> {
     // In a real implementation, this would check various conditions
     // For now, always continue
     return false;
@@ -1378,7 +1414,7 @@ export class RollbackService extends EventEmitter {
     }
 
     const lastRollback = this.executionHistory
-      .filter(exec => exec.config.deploymentId === deploymentId)
+      .filter((exec) => exec.config.deploymentId === deploymentId)
       .sort((a, b) => b.endTime!.getTime() - a.endTime!.getTime())[0];
 
     if (!lastRollback || !lastRollback.endTime) {
@@ -1430,7 +1466,11 @@ export class RollbackService extends EventEmitter {
   /**
    * Approve rollback
    */
-  async approveRollback(executionId: string, approvedBy: string, comments?: string): Promise<boolean> {
+  async approveRollback(
+    executionId: string,
+    approvedBy: string,
+    comments?: string
+  ): Promise<boolean> {
     const execution = this.executions.get(executionId);
     if (!execution) {
       return false;
@@ -1460,8 +1500,10 @@ export class RollbackService extends EventEmitter {
    * Cancel rollback
    */
   async cancelRollback(deploymentId: string, reason?: string): Promise<boolean> {
-    const execution = Array.from(this.executions.values())
-      .find(exec => exec.config.deploymentId === deploymentId && exec.status === RollbackStatus.IN_PROGRESS);
+    const execution = Array.from(this.executions.values()).find(
+      (exec) =>
+        exec.config.deploymentId === deploymentId && exec.status === RollbackStatus.IN_PROGRESS
+    );
 
     if (!execution) {
       return false;
@@ -1561,8 +1603,9 @@ export class RollbackService extends EventEmitter {
    * Get active executions
    */
   getActiveExecutions(): RollbackExecution[] {
-    return Array.from(this.executions.values())
-      .filter(exec => exec.status === RollbackStatus.IN_PROGRESS || exec.status === RollbackStatus.PAUSED);
+    return Array.from(this.executions.values()).filter(
+      (exec) => exec.status === RollbackStatus.IN_PROGRESS || exec.status === RollbackStatus.PAUSED
+    );
   }
 
   /**
@@ -1585,20 +1628,22 @@ export class RollbackService extends EventEmitter {
     rollbacksByStrategy: Record<string, number>;
   } {
     const history = this.executionHistory;
-    const successful = history.filter(exec => exec.status === RollbackStatus.COMPLETED);
-    const failed = history.filter(exec => exec.status === RollbackStatus.FAILED);
+    const successful = history.filter((exec) => exec.status === RollbackStatus.COMPLETED);
+    const failed = history.filter((exec) => exec.status === RollbackStatus.FAILED);
 
     const rollbacksByTrigger: Record<string, number> = {};
     const rollbacksByStrategy: Record<string, number> = {};
 
     for (const exec of history) {
       rollbacksByTrigger[exec.trigger] = (rollbacksByTrigger[exec.trigger] || 0) + 1;
-      rollbacksByStrategy[exec.config.strategy] = (rollbacksByStrategy[exec.config.strategy] || 0) + 1;
+      rollbacksByStrategy[exec.config.strategy] =
+        (rollbacksByStrategy[exec.config.strategy] || 0) + 1;
     }
 
-    const averageExecutionTime = successful.length > 0
-      ? successful.reduce((sum, exec) => sum + exec.metrics.executionTime, 0) / successful.length
-      : 0;
+    const averageExecutionTime =
+      successful.length > 0
+        ? successful.reduce((sum, exec) => sum + exec.metrics.executionTime, 0) / successful.length
+        : 0;
 
     return {
       totalRollbacks: history.length,

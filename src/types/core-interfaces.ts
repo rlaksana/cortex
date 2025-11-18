@@ -1,5 +1,4 @@
 // PHASE 2.1 RECOVERY: Core interface synchronization complete
-// Status: TypeScript recovery in progress - @ts-nocheck removed systematically
 // Recovery Date: 2025-11-14T16:20:00+07:00 (Asia/Jakarta)
 // Recovery Method: Sequential file-by-file approach with quality gates
 
@@ -77,13 +76,19 @@ export interface SearchResult {
   highlight?: string[];
 }
 
+/**
+ * Scope definition for context filtering
+ */
+export interface Scope {
+  project?: string;
+  branch?: string;
+  org?: string;
+  [key: string]: unknown; // Add index signature for Record<string, unknown> compatibility
+}
+
 export interface SearchQuery {
   query: string;
-  scope?: {
-    project?: string;
-    branch?: string;
-    org?: string;
-  };
+  scope?: Scope;
   types?: string[];
   kind?: string; // Add kind property for compatibility
   mode?: 'auto' | 'fast' | 'deep';
@@ -107,7 +112,8 @@ export interface ItemResult {
     | 'batch'
     | 'skipped_dedupe'
     | 'business_rule_blocked'
-    | 'validation_error';
+    | 'validation_error'
+    | 'skipped_invalid';
   kind: string;
   content?: string;
   id?: string;
@@ -333,11 +339,202 @@ export interface SearchService {
  */
 /**
  * Result of business rule validation
+ *
+ * This unified ValidationResult interface provides comprehensive validation
+ * feedback that works across all modules in the MCP Cortex system.
+ *
+ * Multiple property names are supported for backward compatibility:
+ * - `isValid` (preferred): Boolean indicator of overall validation success
+ * - `valid`: Legacy boolean indicator for backward compatibility
+ * - `success`: Alternative boolean indicator for compatibility with runtime type guards
+ *
+ * The interface includes detailed error information, performance metrics,
+ * and contextual information for comprehensive validation reporting.
  */
 export interface ValidationResult {
-  valid: boolean;
-  errors: string[];
-  warnings: string[];
+  /** Primary success indicator (preferred) */
+  isValid: boolean;
+
+  /** Legacy success indicator for backward compatibility */
+  valid?: boolean;
+
+  /** Alternative success indicator for runtime type guard compatibility */
+  success?: boolean;
+
+  /** Detailed validation errors */
+  errors: ValidationError[];
+
+  /** Validation warnings (non-critical issues) */
+  warnings: ValidationWarning[];
+
+  /** Optional suggestions for improvement */
+  suggestions?: ValidationSuggestion[];
+
+  /** Performance metrics for the validation operation */
+  performance?: ValidationPerformance;
+
+  /** Validation context information */
+  context?: ValidationContext;
+
+  /** Optional validated data/value */
+  data?: unknown;
+
+  /** Optional value for runtime type guard compatibility */
+  value?: unknown;
+}
+
+/**
+ * Validation error with detailed information
+ */
+export interface ValidationError {
+  /** Error code for programmatic handling */
+  code: string;
+
+  /** Human-readable error message */
+  message: string;
+
+  /** Field path where the error occurred */
+  field?: string;
+
+  /** The invalid value that caused the error */
+  value?: unknown;
+
+  /** Expected value or constraint */
+  expected?: unknown;
+
+  /** Rule identifier that generated the error */
+  ruleId?: string;
+
+  /** When the error occurred */
+  timestamp: string;
+
+  /** Optional stack trace for debugging */
+  stack?: string;
+
+  /** Recommended action to fix the error */
+  recommendation?: string;
+
+  /** Additional constraint information */
+  constraint?: string;
+
+  /** Path in nested object structure */
+  path?: string;
+}
+
+/**
+ * Validation warning for non-critical issues
+ */
+export interface ValidationWarning {
+  /** Warning code for programmatic handling */
+  code: string;
+
+  /** Human-readable warning message */
+  message: string;
+
+  /** Field path where the warning occurred */
+  field?: string;
+
+  /** The value that triggered the warning */
+  value?: unknown;
+
+  /** Recommended action */
+  recommendation?: string;
+
+  /** Rule identifier that generated the warning */
+  ruleId?: string;
+
+  /** When the warning occurred */
+  timestamp: string;
+
+  /** Optional suggestion for improvement */
+  suggestion?: string;
+}
+
+/**
+ * Validation suggestion for improvements
+ */
+export interface ValidationSuggestion {
+  /** Type of suggestion */
+  type: SuggestionType;
+
+  /** Suggestion message */
+  message: string;
+
+  /** Action to take */
+  action: string;
+
+  /** Priority level (1-10, higher = more important) */
+  priority: number;
+
+  /** Rule identifier that generated the suggestion */
+  ruleId?: string;
+
+  /** When the suggestion was generated */
+  timestamp?: string;
+}
+
+/**
+ * Types of validation suggestions
+ */
+export enum SuggestionType {
+  OPTIMIZATION = 'optimization',
+  BEST_PRACTICE = 'best_practice',
+  SECURITY = 'security',
+  PERFORMANCE = 'performance',
+  COMPLIANCE = 'compliance',
+  MAINTENANCE = 'maintenance',
+}
+
+/**
+ * Validation performance metrics
+ */
+export interface ValidationPerformance {
+  /** Duration of validation in milliseconds */
+  duration: number;
+
+  /** Memory usage during validation in bytes */
+  memoryUsage: number;
+
+  /** Number of validation rules executed */
+  rulesExecuted: number;
+
+  /** Number of cache hits */
+  cacheHits: number;
+
+  /** Number of cache misses */
+  cacheMisses: number;
+
+  /** When the validation completed */
+  timestamp: string;
+}
+
+/**
+ * Validation context information
+ */
+export interface ValidationContext {
+  /** Request identifier for correlation */
+  requestId?: string;
+
+  /** User identifier who triggered validation */
+  userId?: string;
+
+  /** Session identifier */
+  sessionId?: string;
+
+  /** Component being validated */
+  component?: string;
+
+  /** Operation being performed */
+  operation?: string;
+
+  /** When validation occurred */
+  timestamp: string;
+
+  /** Environment context */
+  environment: string;
+
+  /** Version of the validator */
+  version?: string;
 }
 
 /**

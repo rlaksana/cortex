@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Document Reassembly Service
  *
@@ -91,7 +87,7 @@ export async function getDocumentWithChunks(
       searchOptions.scope = scope;
     }
 
-    const chunkResult = await memoryFind(searchOptions);
+    const chunkResult = await memoryFind(searchOptions as unknown);
 
     if (!chunkResult.results) {
       logger.warn({ docId }, 'No chunks found for document');
@@ -114,7 +110,7 @@ export async function getDocumentWithChunks(
     if (verify_similarity && parent.data?.original_content) {
       try {
         similarity_analysis = await verifyContentSimilarity(
-          parent.data.original_content,
+          parent.data?.original_content || '',
           reassembled_content,
           similarity_options
         );

@@ -355,14 +355,10 @@ declare global {
 
 // Attach utilities to test context
 beforeEach(() => {
-  // @ts-ignore - Adding utilities to test context
-  globalThis['T']estUtils = TestUtils;
-  // @ts-ignore
-  globalThis['T']estDataGenerator = TestDataGenerator;
-  // @ts-ignore
-  globalThis['M']ockConfigs = MockConfigs;
-  // @ts-ignore
-  globalThis['C']ustomAssertions = CustomAssertions;
-  // @ts-ignore
-  globalThis.ajv = ajv;
+  // Adding utilities to test context
+  (globalThis as any).TestUtils = TestUtils;
+  (globalThis as any).TestDataGenerator = TestDataGenerator;
+  (globalThis as any).MockConfigs = MockConfigs;
+  (globalThis as any).CustomAssertions = CustomAssertions;
+  (globalThis as any).ajv = ajv;
 });

@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Service Interfaces for Dependency Injection
  *
@@ -19,6 +15,30 @@ import type {
   PerformanceReport,
   PerformanceThresholds,
 } from '../monitoring/performance-monitor.js';
+// Import canonical ServiceResponse from interfaces/service-interfaces to avoid duplication
+import type {
+  ServiceResponse as InterfaceServiceResponse,
+  ServiceError as InterfaceServiceError,
+  ServiceMetadata as InterfaceServiceMetadata
+} from '../interfaces/service-interfaces.js';
+
+// Re-export for backward compatibility
+export type ServiceResponse<T = unknown> = InterfaceServiceResponse<T>;
+export type ServiceError = InterfaceServiceError;
+export type ServiceMetadata = InterfaceServiceMetadata;
+
+export interface IBaseService {
+  healthCheck(): Promise<ServiceResponse<{ status: 'healthy' | 'unhealthy' }>>;
+  getStatus(): Promise<ServiceResponse<ServiceStatus>>;
+  reset?(): Promise<ServiceResponse<void>>;
+}
+
+export interface ServiceStatus {
+  initialized: boolean;
+  uptime: number;
+  lastCheck: string;
+  metrics?: Record<string, unknown>;
+}
 import type {
   KnowledgeItem,
   MemoryFindResponse,
@@ -75,24 +95,24 @@ export interface IPerformanceMonitor {
 /**
  * Memory store orchestrator interface
  */
-export interface IMemoryStoreOrchestrator {
-  store(items: KnowledgeItem[]): Promise<MemoryStoreResponse>;
-  upsert(items: KnowledgeItem[]): Promise<MemoryStoreResponse>;
-  delete(ids: string[]): Promise<{ success: boolean; deleted: number }>;
-  update(items: KnowledgeItem[]): Promise<MemoryStoreResponse>;
+export interface IMemoryStoreOrchestrator extends IBaseService {
+  store(items: KnowledgeItem[]): Promise<ServiceResponse<MemoryStoreResponse>>;
+  upsert(items: KnowledgeItem[]): Promise<ServiceResponse<MemoryStoreResponse>>;
+  delete(ids: string[]): Promise<ServiceResponse<{ success: boolean; deleted: number }>>;
+  update(items: KnowledgeItem[]): Promise<ServiceResponse<MemoryStoreResponse>>;
 }
 
 /**
  * Memory find orchestrator interface
  */
-export interface IMemoryFindOrchestrator {
-  find(query: SearchQuery): Promise<MemoryFindResponse>;
-  search(filters: Record<string, unknown>): Promise<SearchResult[]>;
-  getById(id: string): Promise<KnowledgeItem | null>;
-  getByType(type: string): Promise<KnowledgeItem[]>;
-  findByTags(tags: string[]): Promise<KnowledgeItem[]>;
-  findSimilar(query: string, threshold?: number): Promise<KnowledgeItem[]>;
-  validateQuery(query: SearchQuery): ValidationResult;
+export interface IMemoryFindOrchestrator extends IBaseService {
+  find(query: SearchQuery): Promise<ServiceResponse<MemoryFindResponse>>;
+  search(filters: Record<string, unknown>): Promise<ServiceResponse<SearchResult[]>>;
+  getById(id: string): Promise<ServiceResponse<KnowledgeItem | null>>;
+  getByType(type: string): Promise<ServiceResponse<KnowledgeItem[]>>;
+  findByTags(tags: string[]): Promise<ServiceResponse<KnowledgeItem[]>>;
+  findSimilar(query: string, threshold?: number): Promise<ServiceResponse<KnowledgeItem[]>>;
+  validateQuery(query: SearchQuery): Promise<ServiceResponse<ValidationResult>>;
 }
 
 /**
@@ -118,16 +138,18 @@ export interface IAuthService {
   checkRole(userId: string, role: string): Promise<boolean>;
 }
 
-// Supporting types for authentication
-export interface User {
-  id: string;
-  username: string;
-  email?: string;
-  roles: string[];
-  permissions: string[];
-  isActive: boolean;
-  lastLogin?: Date;
-}
+// Import canonical authentication types from auth-types to avoid duplication
+import type {
+  User as AuthUser,
+  UserRole,
+  AuthScope,
+  AuthContext,
+  AuthenticatedRequest
+} from '../types/auth-types.js';
+
+// Re-export for backward compatibility
+export type User = AuthUser;
+export type { AuthContext, AuthenticatedRequest, UserRole, AuthScope };
 
 export interface AuthResult {
   success: boolean;

@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * JSONValue Conversion Utilities with Error Handling
  *
@@ -9,11 +5,7 @@
  * to JSONValue format with detailed error handling and recovery options.
  */
 
-import type {
-  JSONObject,
-  JSONPrimitive,
-  JSONValue} from './base-types.js';
-
+import type { JSONObject, JSONPrimitive, JSONValue } from './base-types.js';
 
 // ============================================================================
 // Conversion Result Types
@@ -216,16 +208,13 @@ export class JSONConverter {
     customConverters: new Map(),
     collectStats: false,
     onProgress: () => {},
-    bufferSizeLimit: 10 * 1024 * 1024 // 10MB
+    bufferSizeLimit: 10 * 1024 * 1024, // 10MB
   };
 
   /**
    * Convert any value to JSONValue with comprehensive error handling
    */
-  convertToJSON(
-    value: unknown,
-    options: JSONConversionOptions = {}
-  ): JSONConversionResult {
+  convertToJSON(value: unknown, options: JSONConversionOptions = {}): JSONConversionResult {
     const mergedOptions = { ...this.defaultOptions, ...options };
     const startTime = Date.now();
 
@@ -240,7 +229,7 @@ export class JSONConverter {
       maxDepth: 0,
       durationMs: 0,
       inputSizeBytes: this.estimateSize(value),
-      outputSizeBytes: 0
+      outputSizeBytes: 0,
     };
 
     // Track visited objects for circular reference detection
@@ -268,7 +257,7 @@ export class JSONConverter {
         original: value,
         warnings,
         errors,
-        stats
+        stats,
       };
     } catch (error) {
       stats.durationMs = Date.now() - startTime;
@@ -278,15 +267,17 @@ export class JSONConverter {
         success: false,
         original: value,
         warnings,
-        errors: [{
-          code: 'SERIALIZATION_ERROR',
-          message: `Conversion failed: ${error instanceof Error ? error.message : String(error)}`,
-          path: '',
-          value,
-          recoverable: false,
-          cause: error instanceof Error ? error : undefined
-        }],
-        stats
+        errors: [
+          {
+            code: 'SERIALIZATION_ERROR',
+            message: `Conversion failed: ${error instanceof Error ? error.message : String(error)}`,
+            path: '',
+            value,
+            recoverable: false,
+            cause: error instanceof Error ? error : undefined,
+          },
+        ],
+        stats,
       };
     }
   }
@@ -315,7 +306,7 @@ export class JSONConverter {
         path,
         value,
         recoverable: true,
-        suggestion: 'Consider restructuring your data or increasing maxDepth limit'
+        suggestion: 'Consider restructuring your data or increasing maxDepth limit',
       };
       errors.push(error);
       stats.failedConversions++;
@@ -325,7 +316,18 @@ export class JSONConverter {
         original: value,
         warnings: [],
         errors: [error],
-        stats: { ...stats, totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+        stats: {
+          ...stats,
+          totalProcessed: 0,
+          successfulConversions: 0,
+          failedConversions: 0,
+          warningsGenerated: 0,
+          circularReferences: 0,
+          maxDepth: 0,
+          durationMs: 0,
+          inputSizeBytes: 0,
+          outputSizeBytes: 0,
+        },
       };
     }
 
@@ -342,7 +344,7 @@ export class JSONConverter {
             path,
             value,
             recoverable: true,
-            suggestion: 'Use circularRefStrategy: "replace" to handle circular references'
+            suggestion: 'Use circularRefStrategy: "replace" to handle circular references',
           };
           errors.push(error);
           stats.failedConversions++;
@@ -352,22 +354,46 @@ export class JSONConverter {
             original: value,
             warnings: [],
             errors: [error],
-            stats: { ...stats, totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+            stats: {
+              ...stats,
+              totalProcessed: 0,
+              successfulConversions: 0,
+              failedConversions: 0,
+              warningsGenerated: 0,
+              circularReferences: 0,
+              maxDepth: 0,
+              durationMs: 0,
+              inputSizeBytes: 0,
+              outputSizeBytes: 0,
+            },
           };
         } else if (options.circularRefStrategy === 'replace') {
           return {
             value: options.circularRefReplacement,
             success: true,
             original: value,
-            warnings: [{
-              code: 'CIRCULAR_REFERENCE',
-              message: `Circular reference replaced: ${path} -> ${existingPath}`,
-              path,
-              value,
-              suggestion: 'Original circular structure was replaced with placeholder'
-            }],
+            warnings: [
+              {
+                code: 'CIRCULAR_REFERENCE',
+                message: `Circular reference replaced: ${path} -> ${existingPath}`,
+                path,
+                value,
+                suggestion: 'Original circular structure was replaced with placeholder',
+              },
+            ],
             errors: [],
-            stats: { ...stats, totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+            stats: {
+              ...stats,
+              totalProcessed: 0,
+              successfulConversions: 0,
+              failedConversions: 0,
+              warningsGenerated: 0,
+              circularReferences: 0,
+              maxDepth: 0,
+              durationMs: 0,
+              inputSizeBytes: 0,
+              outputSizeBytes: 0,
+            },
           };
         } else {
           // Ignore strategy
@@ -375,15 +401,28 @@ export class JSONConverter {
             value: null,
             success: true,
             original: value,
-            warnings: [{
-              code: 'CIRCULAR_REFERENCE',
-              message: `Circular reference ignored: ${path} -> ${existingPath}`,
-              path,
-              value,
-              suggestion: 'Circular reference was ignored and not included in output'
-            }],
+            warnings: [
+              {
+                code: 'CIRCULAR_REFERENCE',
+                message: `Circular reference ignored: ${path} -> ${existingPath}`,
+                path,
+                value,
+                suggestion: 'Circular reference was ignored and not included in output',
+              },
+            ],
             errors: [],
-            stats: { ...stats, totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+            stats: {
+              ...stats,
+              totalProcessed: 0,
+              successfulConversions: 0,
+              failedConversions: 0,
+              warningsGenerated: 0,
+              circularReferences: 0,
+              maxDepth: 0,
+              durationMs: 0,
+              inputSizeBytes: 0,
+              outputSizeBytes: 0,
+            },
           };
         }
       }
@@ -400,7 +439,18 @@ export class JSONConverter {
         original: value,
         warnings: [],
         errors: [],
-        stats: { ...stats, totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+        stats: {
+          ...stats,
+          totalProcessed: 0,
+          successfulConversions: 0,
+          failedConversions: 0,
+          warningsGenerated: 0,
+          circularReferences: 0,
+          maxDepth: 0,
+          durationMs: 0,
+          inputSizeBytes: 0,
+          outputSizeBytes: 0,
+        },
       };
     }
 
@@ -411,15 +461,28 @@ export class JSONConverter {
           value: null,
           success: true,
           original: value,
-          warnings: [{
-            code: 'TYPE_COERCION',
-            message: `Undefined value converted to null at path: ${path}`,
-            path,
-            value,
-            suggestion: 'Consider filtering out undefined values before conversion'
-          }],
+          warnings: [
+            {
+              code: 'TYPE_COERCION',
+              message: `Undefined value converted to null at path: ${path}`,
+              path,
+              value,
+              suggestion: 'Consider filtering out undefined values before conversion',
+            },
+          ],
           errors: [],
-          stats: { ...stats, totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+          stats: {
+            ...stats,
+            totalProcessed: 0,
+            successfulConversions: 0,
+            failedConversions: 0,
+            warningsGenerated: 0,
+            circularReferences: 0,
+            maxDepth: 0,
+            durationMs: 0,
+            inputSizeBytes: 0,
+            outputSizeBytes: 0,
+          },
         };
       } else {
         stats.successfulConversions++;
@@ -429,7 +492,18 @@ export class JSONConverter {
           original: value,
           warnings: [],
           errors: [],
-          stats: { ...stats, totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+          stats: {
+            ...stats,
+            totalProcessed: 0,
+            successfulConversions: 0,
+            failedConversions: 0,
+            warningsGenerated: 0,
+            circularReferences: 0,
+            maxDepth: 0,
+            durationMs: 0,
+            inputSizeBytes: 0,
+            outputSizeBytes: 0,
+          },
         };
       }
     }
@@ -443,7 +517,18 @@ export class JSONConverter {
         original: value,
         warnings: [],
         errors: [],
-        stats: { ...stats, totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+        stats: {
+          ...stats,
+          totalProcessed: 0,
+          successfulConversions: 0,
+          failedConversions: 0,
+          warningsGenerated: 0,
+          circularReferences: 0,
+          maxDepth: 0,
+          durationMs: 0,
+          inputSizeBytes: 0,
+          outputSizeBytes: 0,
+        },
       };
     }
 
@@ -471,7 +556,7 @@ export class JSONConverter {
       path,
       value,
       recoverable: false,
-      suggestion: 'Convert or remove unsupported values before JSON serialization'
+      suggestion: 'Convert or remove unsupported values before JSON serialization',
     };
     errors.push(error);
     stats.failedConversions++;
@@ -482,7 +567,18 @@ export class JSONConverter {
       original: value,
       warnings: [],
       errors: [error],
-      stats: { ...stats, totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+      stats: {
+        ...stats,
+        totalProcessed: 0,
+        successfulConversions: 0,
+        failedConversions: 0,
+        warningsGenerated: 0,
+        circularReferences: 0,
+        maxDepth: 0,
+        durationMs: 0,
+        inputSizeBytes: 0,
+        outputSizeBytes: 0,
+      },
     };
   }
 
@@ -534,7 +630,18 @@ export class JSONConverter {
       original: array,
       warnings: arrayWarnings,
       errors: arrayErrors,
-      stats: { ...stats, totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+      stats: {
+        ...stats,
+        totalProcessed: 0,
+        successfulConversions: 0,
+        failedConversions: 0,
+        warningsGenerated: 0,
+        circularReferences: 0,
+        maxDepth: 0,
+        durationMs: 0,
+        inputSizeBytes: 0,
+        outputSizeBytes: 0,
+      },
     };
   }
 
@@ -578,7 +685,7 @@ export class JSONConverter {
           message: `Symbol property converted to string key: ${propertyKey}`,
           path: propertyPath,
           value: propertyName,
-          suggestion: 'Symbol properties will lose their unique identity'
+          suggestion: 'Symbol properties will lose their unique identity',
         });
       } else {
         propertyKey = propertyName;
@@ -595,7 +702,7 @@ export class JSONConverter {
             message: `Non-enumerable property skipped: ${propertyKey}`,
             path: propertyPath,
             value: descriptor.value,
-            suggestion: 'Consider using custom converters for non-enumerable properties'
+            suggestion: 'Consider using custom converters for non-enumerable properties',
           });
           continue;
         }
@@ -640,7 +747,7 @@ export class JSONConverter {
           path: propertyPath,
           value: propertyName,
           recoverable: true,
-          cause: error instanceof Error ? error : undefined
+          cause: error instanceof Error ? error : undefined,
         };
         objectErrors.push(conversionError);
         result[propertyKey] = null;
@@ -656,7 +763,18 @@ export class JSONConverter {
       original: obj,
       warnings: objectWarnings,
       errors: objectErrors,
-      stats: { ...stats, totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+      stats: {
+        ...stats,
+        totalProcessed: 0,
+        successfulConversions: 0,
+        failedConversions: 0,
+        warningsGenerated: 0,
+        circularReferences: 0,
+        maxDepth: 0,
+        durationMs: 0,
+        inputSizeBytes: 0,
+        outputSizeBytes: 0,
+      },
     };
   }
 
@@ -671,23 +789,33 @@ export class JSONConverter {
     // Date objects
     if (value instanceof Date) {
       if (options.preserveDates) {
-        const dateString = options.dateFormat === 'iso'
-          ? value.toISOString()
-          : value.toString();
+        const dateString = options.dateFormat === 'iso' ? value.toISOString() : value.toString();
 
         return {
           value: dateString,
           success: true,
           original: value,
-          warnings: [{
-            code: 'DATE_FORMAT',
-            message: `Date object converted to string: ${dateString}`,
-            path,
-            value,
-            suggestion: 'Date objects are serialized as ISO strings'
-          }],
+          warnings: [
+            {
+              code: 'DATE_FORMAT',
+              message: `Date object converted to string: ${dateString}`,
+              path,
+              value,
+              suggestion: 'Date objects are serialized as ISO strings',
+            },
+          ],
           errors: [],
-          stats: { totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+          stats: {
+            totalProcessed: 0,
+            successfulConversions: 0,
+            failedConversions: 0,
+            warningsGenerated: 0,
+            circularReferences: 0,
+            maxDepth: 0,
+            durationMs: 0,
+            inputSizeBytes: 0,
+            outputSizeBytes: 0,
+          },
         };
       }
     }
@@ -701,15 +829,27 @@ export class JSONConverter {
           value: stringValue,
           success: true,
           original: value,
-          warnings: [{
-            code: 'PRECISION_LOSS',
-            message: `BigInt converted to string: ${stringValue}`,
-            path,
-            value,
-            suggestion: 'BigInt values lose precision when converted to strings'
-          }],
+          warnings: [
+            {
+              code: 'PRECISION_LOSS',
+              message: `BigInt converted to string: ${stringValue}`,
+              path,
+              value,
+              suggestion: 'BigInt values lose precision when converted to strings',
+            },
+          ],
           errors: [],
-          stats: { totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+          stats: {
+            totalProcessed: 0,
+            successfulConversions: 0,
+            failedConversions: 0,
+            warningsGenerated: 0,
+            circularReferences: 0,
+            maxDepth: 0,
+            durationMs: 0,
+            inputSizeBytes: 0,
+            outputSizeBytes: 0,
+          },
         };
       }
     }
@@ -723,15 +863,27 @@ export class JSONConverter {
           value: functionString,
           success: true,
           original: value,
-          warnings: [{
-            code: 'FUNCTION_LOSS',
-            message: `Function converted to string representation`,
-            path,
-            value: functionString,
-            suggestion: 'Functions cannot be serialized to JSON'
-          }],
+          warnings: [
+            {
+              code: 'FUNCTION_LOSS',
+              message: `Function converted to string representation`,
+              path,
+              value: functionString,
+              suggestion: 'Functions cannot be serialized to JSON',
+            },
+          ],
           errors: [],
-          stats: { totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+          stats: {
+            totalProcessed: 0,
+            successfulConversions: 0,
+            failedConversions: 0,
+            warningsGenerated: 0,
+            circularReferences: 0,
+            maxDepth: 0,
+            durationMs: 0,
+            inputSizeBytes: 0,
+            outputSizeBytes: 0,
+          },
         };
       }
     }
@@ -744,15 +896,27 @@ export class JSONConverter {
         value: regexString,
         success: true,
         original: value,
-        warnings: [{
-          code: 'REGEXP_LOSS',
-          message: `RegExp converted to string: ${regexString}`,
-          path,
-          value,
-          suggestion: 'RegExp objects lose their behavior when converted to strings'
-        }],
+        warnings: [
+          {
+            code: 'REGEXP_LOSS',
+            message: `RegExp converted to string: ${regexString}`,
+            path,
+            value,
+            suggestion: 'RegExp objects lose their behavior when converted to strings',
+          },
+        ],
         errors: [],
-        stats: { totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+        stats: {
+          totalProcessed: 0,
+          successfulConversions: 0,
+          failedConversions: 0,
+          warningsGenerated: 0,
+          circularReferences: 0,
+          maxDepth: 0,
+          durationMs: 0,
+          inputSizeBytes: 0,
+          outputSizeBytes: 0,
+        },
       };
     }
 
@@ -764,15 +928,27 @@ export class JSONConverter {
         value: base64String,
         success: true,
         original: value,
-        warnings: [{
-          code: 'TYPE_COERCION',
-          message: `Buffer converted to base64 string`,
-          path,
-          value: base64String,
-          suggestion: 'Buffer objects are serialized as base64 strings'
-        }],
+        warnings: [
+          {
+            code: 'TYPE_COERCION',
+            message: `Buffer converted to base64 string`,
+            path,
+            value: base64String,
+            suggestion: 'Buffer objects are serialized as base64 strings',
+          },
+        ],
         errors: [],
-        stats: { totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+        stats: {
+          totalProcessed: 0,
+          successfulConversions: 0,
+          failedConversions: 0,
+          warningsGenerated: 0,
+          circularReferences: 0,
+          maxDepth: 0,
+          durationMs: 0,
+          inputSizeBytes: 0,
+          outputSizeBytes: 0,
+        },
       };
     }
 
@@ -788,15 +964,27 @@ export class JSONConverter {
         value: obj,
         success: true,
         original: value,
-        warnings: [{
-          code: 'TYPE_COERCION',
-          message: `Map converted to object with string keys`,
-          path,
-          value: obj,
-          suggestion: 'Map keys are converted to strings'
-        }],
+        warnings: [
+          {
+            code: 'TYPE_COERCION',
+            message: `Map converted to object with string keys`,
+            path,
+            value: obj,
+            suggestion: 'Map keys are converted to strings',
+          },
+        ],
         errors: [],
-        stats: { totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+        stats: {
+          totalProcessed: 0,
+          successfulConversions: 0,
+          failedConversions: 0,
+          warningsGenerated: 0,
+          circularReferences: 0,
+          maxDepth: 0,
+          durationMs: 0,
+          inputSizeBytes: 0,
+          outputSizeBytes: 0,
+        },
       };
     }
 
@@ -808,15 +996,27 @@ export class JSONConverter {
         value: array,
         success: true,
         original: value,
-        warnings: [{
-          code: 'TYPE_COERCION',
-          message: `Set converted to array`,
-          path,
-          value: array,
-          suggestion: 'Set objects are serialized as arrays'
-        }],
+        warnings: [
+          {
+            code: 'TYPE_COERCION',
+            message: `Set converted to array`,
+            path,
+            value: array,
+            suggestion: 'Set objects are serialized as arrays',
+          },
+        ],
         errors: [],
-        stats: { totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+        stats: {
+          totalProcessed: 0,
+          successfulConversions: 0,
+          failedConversions: 0,
+          warningsGenerated: 0,
+          circularReferences: 0,
+          maxDepth: 0,
+          durationMs: 0,
+          inputSizeBytes: 0,
+          outputSizeBytes: 0,
+        },
       };
     }
 
@@ -862,14 +1062,26 @@ export const dateConverter: TypeConverter = (value, path, options) => {
       success: false,
       original: value,
       warnings: [],
-      errors: [{
-        code: 'INVALID_SERIALIZATION',
-        message: `Expected Date object at ${path}, got ${typeof value}`,
-        path,
-        value,
-        recoverable: false
-      }],
-      stats: { totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+      errors: [
+        {
+          code: 'INVALID_SERIALIZATION',
+          message: `Expected Date object at ${path}, got ${typeof value}`,
+          path,
+          value,
+          recoverable: false,
+        },
+      ],
+      stats: {
+        totalProcessed: 0,
+        successfulConversions: 0,
+        failedConversions: 0,
+        warningsGenerated: 0,
+        circularReferences: 0,
+        maxDepth: 0,
+        durationMs: 0,
+        inputSizeBytes: 0,
+        outputSizeBytes: 0,
+      },
     };
   }
 
@@ -879,15 +1091,27 @@ export const dateConverter: TypeConverter = (value, path, options) => {
     value: dateString,
     success: true,
     original: value,
-    warnings: [{
-      code: 'DATE_FORMAT',
-      message: `Date converted to ${options.dateFormat} format`,
-      path,
-      value: dateString,
-      suggestion: 'Use Date.parse() to reconstruct Date objects'
-    }],
+    warnings: [
+      {
+        code: 'DATE_FORMAT',
+        message: `Date converted to ${options.dateFormat} format`,
+        path,
+        value: dateString,
+        suggestion: 'Use Date.parse() to reconstruct Date objects',
+      },
+    ],
     errors: [],
-    stats: { totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+    stats: {
+      totalProcessed: 0,
+      successfulConversions: 0,
+      failedConversions: 0,
+      warningsGenerated: 0,
+      circularReferences: 0,
+      maxDepth: 0,
+      durationMs: 0,
+      inputSizeBytes: 0,
+      outputSizeBytes: 0,
+    },
   };
 };
 
@@ -901,14 +1125,26 @@ export const bigIntConverter: TypeConverter = (value, path) => {
       success: false,
       original: value,
       warnings: [],
-      errors: [{
-        code: 'INVALID_SERIALIZATION',
-        message: `Expected BigInt at ${path}, got ${typeof value}`,
-        path,
-        value,
-        recoverable: false
-      }],
-      stats: { totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+      errors: [
+        {
+          code: 'INVALID_SERIALIZATION',
+          message: `Expected BigInt at ${path}, got ${typeof value}`,
+          path,
+          value,
+          recoverable: false,
+        },
+      ],
+      stats: {
+        totalProcessed: 0,
+        successfulConversions: 0,
+        failedConversions: 0,
+        warningsGenerated: 0,
+        circularReferences: 0,
+        maxDepth: 0,
+        durationMs: 0,
+        inputSizeBytes: 0,
+        outputSizeBytes: 0,
+      },
     };
   }
 
@@ -918,15 +1154,27 @@ export const bigIntConverter: TypeConverter = (value, path) => {
     value: stringValue,
     success: true,
     original: value,
-    warnings: [{
-      code: 'PRECISION_LOSS',
-      message: `BigInt converted to string with full precision`,
-      path,
-      value: stringValue,
-      suggestion: 'Use BigInt() to reconstruct BigInt values'
-    }],
+    warnings: [
+      {
+        code: 'PRECISION_LOSS',
+        message: `BigInt converted to string with full precision`,
+        path,
+        value: stringValue,
+        suggestion: 'Use BigInt() to reconstruct BigInt values',
+      },
+    ],
     errors: [],
-    stats: { totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+    stats: {
+      totalProcessed: 0,
+      successfulConversions: 0,
+      failedConversions: 0,
+      warningsGenerated: 0,
+      circularReferences: 0,
+      maxDepth: 0,
+      durationMs: 0,
+      inputSizeBytes: 0,
+      outputSizeBytes: 0,
+    },
   };
 };
 
@@ -940,36 +1188,60 @@ export const errorConverter: TypeConverter = (value, path) => {
       success: false,
       original: value,
       warnings: [],
-      errors: [{
-        code: 'INVALID_SERIALIZATION',
-        message: `Expected Error object at ${path}, got ${typeof value}`,
-        path,
-        value,
-        recoverable: false
-      }],
-      stats: { totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+      errors: [
+        {
+          code: 'INVALID_SERIALIZATION',
+          message: `Expected Error object at ${path}, got ${typeof value}`,
+          path,
+          value,
+          recoverable: false,
+        },
+      ],
+      stats: {
+        totalProcessed: 0,
+        successfulConversions: 0,
+        failedConversions: 0,
+        warningsGenerated: 0,
+        circularReferences: 0,
+        maxDepth: 0,
+        durationMs: 0,
+        inputSizeBytes: 0,
+        outputSizeBytes: 0,
+      },
     };
   }
 
   const errorObj: JSONObject = {
     name: value.name,
     message: value.message,
-    stack: value.stack
+    stack: value.stack,
   };
 
   return {
     value: errorObj,
     success: true,
     original: value,
-    warnings: [{
-      code: 'TYPE_COERCION',
-      message: `Error object converted to serializable representation`,
-      path,
-      value: errorObj,
-      suggestion: 'Error objects are serialized with name, message, and stack properties'
-    }],
+    warnings: [
+      {
+        code: 'TYPE_COERCION',
+        message: `Error object converted to serializable representation`,
+        path,
+        value: errorObj,
+        suggestion: 'Error objects are serialized with name, message, and stack properties',
+      },
+    ],
     errors: [],
-    stats: { totalProcessed: 0, successfulConversions: 0, failedConversions: 0, warningsGenerated: 0, circularReferences: 0, maxDepth: 0, durationMs: 0, inputSizeBytes: 0, outputSizeBytes: 0 }
+    stats: {
+      totalProcessed: 0,
+      successfulConversions: 0,
+      failedConversions: 0,
+      warningsGenerated: 0,
+      circularReferences: 0,
+      maxDepth: 0,
+      durationMs: 0,
+      inputSizeBytes: 0,
+      outputSizeBytes: 0,
+    },
   };
 };
 
@@ -1013,8 +1285,8 @@ export function toJSONString(
     return {
       success: false,
       json: null,
-      error: result.errors.map(e => e.message).join('; '),
-      warnings: result.warnings.map(w => w.message)
+      error: result.errors.map((e) => e.message).join('; '),
+      warnings: result.warnings.map((w) => w.message),
     };
   }
 
@@ -1023,14 +1295,14 @@ export function toJSONString(
     return {
       success: true,
       json: jsonString,
-      warnings: result.warnings.map(w => w.message)
+      warnings: result.warnings.map((w) => w.message),
     };
   } catch (error) {
     return {
       success: false,
       json: null,
       error: `JSON.stringify failed: ${error instanceof Error ? error.message : String(error)}`,
-      warnings: result.warnings.map(w => w.message)
+      warnings: result.warnings.map((w) => w.message),
     };
   }
 }
@@ -1074,7 +1346,7 @@ export function parseJSON(
     return {
       success: false,
       value: null,
-      error: `JSON.parse failed: ${error instanceof Error ? error.message : String(error)}`
+      error: `JSON.parse failed: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 }
@@ -1092,7 +1364,7 @@ export function safeJSONClone<T>(
     return {
       success: false,
       clone: null,
-      error: jsonResult.errors.map(e => e.message).join('; ')
+      error: jsonResult.errors.map((e) => e.message).join('; '),
     };
   }
 
@@ -1102,13 +1374,13 @@ export function safeJSONClone<T>(
     return {
       success: false,
       clone: null,
-      error: parseResult.error
+      error: parseResult.error,
     };
   }
 
   return {
     success: true,
-    clone: parseResult.value as T
+    clone: parseResult.value as T,
   };
 }
 
@@ -1123,8 +1395,8 @@ export function validateJSONConvertible(
 
   return {
     valid: result.success,
-    errors: result.errors.map(e => e.message),
-    warnings: result.warnings.map(w => w.message)
+    errors: result.errors.map((e) => e.message),
+    warnings: result.warnings.map((w) => w.message),
   };
 }
 
@@ -1136,19 +1408,19 @@ export function formatConversionResult(result: JSONConversionResult): string {
     `JSON Conversion ${result.success ? 'succeeded' : 'failed'}`,
     `Original type: ${typeof result.original}`,
     `Converted type: ${typeof result.value}`,
-    `Stats: ${result.stats.totalProcessed} processed, ${result.stats.successfulConversions} successful, ${result.stats.failedConversions} failed`
+    `Stats: ${result.stats.totalProcessed} processed, ${result.stats.successfulConversions} successful, ${result.stats.failedConversions} failed`,
   ];
 
   if (result.warnings.length > 0) {
     lines.push('Warnings:');
-    result.warnings.forEach(warning => {
+    result.warnings.forEach((warning) => {
       lines.push(`  - ${warning.path}: ${warning.message} (${warning.code})`);
     });
   }
 
   if (result.errors.length > 0) {
     lines.push('Errors:');
-    result.errors.forEach(error => {
+    result.errors.forEach((error) => {
       lines.push(`  - ${error.path}: ${error.message} (${error.code})`);
     });
   }
@@ -1162,7 +1434,9 @@ export function formatConversionResult(result: JSONConversionResult): string {
   }
 
   lines.push(`Conversion duration: ${result.stats.durationMs}ms`);
-  lines.push(`Size change: ${result.stats.inputSizeBytes} -> ${result.stats.outputSizeBytes} bytes`);
+  lines.push(
+    `Size change: ${result.stats.inputSizeBytes} -> ${result.stats.outputSizeBytes} bytes`
+  );
 
   return lines.join('\n');
 }

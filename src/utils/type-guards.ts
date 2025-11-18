@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Runtime Type Guards for Safe Base Types
  *
@@ -30,6 +26,13 @@ import type {
   Result,
   Tags,
 } from '../types/base-types.js';
+import type {
+  DatabaseResponse,
+  IncidentResponse,
+  ReleaseResponse,
+  RiskResponse,
+  AssumptionResponse
+} from '../types/database.js';
 
 // =============================================================================
 // JSON Type Guards (Enhanced versions)
@@ -44,21 +47,16 @@ export function isJSONPrimitiveStrict(value: unknown): value is JSONPrimitive {
     return !isNaN(value) && isFinite(value);
   }
 
-  return (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'boolean'
-  );
+  return value === null || typeof value === 'string' || typeof value === 'boolean';
 }
 
 /**
  * Check if value is a safe integer for JSON serialization
  */
 export function isSafeInteger(value: unknown): value is number {
-  return typeof value === 'number' &&
-         Number.isSafeInteger(value) &&
-         !isNaN(value) &&
-         isFinite(value);
+  return (
+    typeof value === 'number' && Number.isSafeInteger(value) && !isNaN(value) && isFinite(value)
+  );
 }
 
 /**
@@ -78,9 +76,10 @@ export function isJSONObjectStrict(
     typeof value === 'object' &&
     !Array.isArray(value) &&
     Object.getPrototypeOf(value) === Object.prototype &&
-    Object.keys(value).every(key =>
-      typeof key === 'string' &&
-      isJSONValueStrict((value as Record<string, unknown>)[key], maxDepth, currentDepth + 1)
+    Object.keys(value).every(
+      (key) =>
+        typeof key === 'string' &&
+        isJSONValueStrict((value as Record<string, unknown>)[key], maxDepth, currentDepth + 1)
     )
   );
 }
@@ -97,8 +96,10 @@ export function isJSONArrayStrict(
     return false; // Prevent infinite recursion
   }
 
-  return Array.isArray(value) &&
-         value.every(item => isJSONValueStrict(item, maxDepth, currentDepth + 1));
+  return (
+    Array.isArray(value) &&
+    value.every((item) => isJSONValueStrict(item, maxDepth, currentDepth + 1))
+  );
 }
 
 /**
@@ -109,9 +110,11 @@ export function isJSONValueStrict(
   maxDepth = 10,
   currentDepth = 0
 ): value is JSONValue {
-  return isJSONPrimitiveStrict(value) ||
-         isJSONObjectStrict(value, maxDepth, currentDepth) ||
-         isJSONArrayStrict(value, maxDepth, currentDepth);
+  return (
+    isJSONPrimitiveStrict(value) ||
+    isJSONObjectStrict(value, maxDepth, currentDepth) ||
+    isJSONArrayStrict(value, maxDepth, currentDepth)
+  );
 }
 
 // =============================================================================
@@ -150,12 +153,12 @@ export function isDictStrict<T>(
   }
 
   // Check key pattern if provided
-  if (keyPattern && !keys.every(key => keyPattern.test(key))) {
+  if (keyPattern && !keys.every((key) => keyPattern.test(key))) {
     return false;
   }
 
   // Validate all values
-  return keys.every(key => itemGuard(obj[key]));
+  return keys.every((key) => itemGuard(obj[key]));
 }
 
 /**
@@ -196,7 +199,7 @@ export function isTagsStrict(
     maxTagLength = 200,
     allowedTagKeys,
     tagKeyPattern = /^[a-zA-Z0-9_-]+$/,
-    tagValuePattern = /^[a-zA-Z0-9._\s-]+$/
+    tagValuePattern = /^[a-zA-Z0-9._\s-]+$/,
   } = options;
 
   if (!isDictStrict(value, isString, { maxKeys: maxTags, keyPattern: tagKeyPattern })) {
@@ -206,8 +209,8 @@ export function isTagsStrict(
   const tags = value as Tags;
 
   // Check tag value constraints
-  return Object.values(tags).every(val =>
-    val.length <= maxTagLength && tagValuePattern.test(val)
+  return Object.values(tags).every(
+    (val) => val.length <= maxTagLength && tagValuePattern.test(val)
   );
 }
 
@@ -220,9 +223,7 @@ export function isCategorizedTags(value: unknown): value is CategorizedTags {
   }
 
   return Object.entries(value as Record<string, unknown>).every(
-    ([category, tags]) =>
-      typeof category === 'string' &&
-      isTagsStrict(tags, { maxTagLength: 100 })
+    ([category, tags]) => typeof category === 'string' && isTagsStrict(tags, { maxTagLength: 100 })
   );
 }
 
@@ -240,7 +241,7 @@ export function isMetadataStrict(
   const {
     allowedTopLevelKeys,
     requireTimestamp = false,
-    maxMetadataSize = 10240 // 10KB
+    maxMetadataSize = 10240, // 10KB
   } = options;
 
   if (value === null || typeof value !== 'object') {
@@ -256,7 +257,7 @@ export function isMetadataStrict(
   }
 
   // Check allowed keys if specified
-  if (allowedTopLevelKeys && !Object.keys(obj).every(key => allowedTopLevelKeys.has(key))) {
+  if (allowedTopLevelKeys && !Object.keys(obj).every((key) => allowedTopLevelKeys.has(key))) {
     return false;
   }
 
@@ -282,9 +283,9 @@ export function isMetadataStrict(
   }
 
   // All other fields must be JSON values
-  return Object.entries(obj).every(([key, val]) =>
-    ['tags', 'version', 'source', 'timestamp'].includes(key) ||
-    isJSONValueStrict(val)
+  return Object.entries(obj).every(
+    ([key, val]) =>
+      ['tags', 'version', 'source', 'timestamp'].includes(key) || isJSONValueStrict(val)
   );
 }
 
@@ -352,8 +353,8 @@ export function isEnvironmentConfig(value: unknown): value is EnvironmentConfig 
   const obj = value as Record<string, unknown>;
   const environments = ['development', 'staging', 'production', 'test'];
 
-  return Object.entries(obj).every(([env, config]) =>
-    environments.includes(env) && isConfig(config)
+  return Object.entries(obj).every(
+    ([env, config]) => environments.includes(env) && isConfig(config)
   );
 }
 
@@ -590,9 +591,7 @@ export function isArray<T>(
     return false;
   }
 
-  return value.every(item =>
-    allowNullItems && item === null ? true : itemGuard(item)
-  );
+  return value.every((item) => (allowNullItems && item === null ? true : itemGuard(item)));
 }
 
 // =============================================================================
@@ -664,7 +663,7 @@ export function and<T>(
   ...guards: Array<(value: unknown) => value is T>
 ): (value: unknown) => value is T {
   return (value: unknown): value is T => {
-    return guards.every(guard => guard(value));
+    return guards.every((guard) => guard(value));
   };
 }
 
@@ -675,7 +674,7 @@ export function or<T>(
   ...guards: Array<(value: unknown) => value is T>
 ): (value: unknown) => value is T {
   return (value: unknown): value is T => {
-    return guards.some(guard => guard(value));
+    return guards.some((guard) => guard(value));
   };
 }
 
@@ -780,11 +779,21 @@ export function hasProperty<K extends string | number | symbol, T>(
 }
 
 /**
+ * Simple property existence checker - the core utility for P1 systematic implementation
+ */
+export function hasPropertySimple(obj: unknown, propertyName: string): boolean {
+  return (
+    obj != null &&
+    typeof obj === 'object' &&
+    !Array.isArray(obj) &&
+    propertyName in (obj as Record<string, unknown>)
+  );
+}
+
+/**
  * Create a guard that validates an object has multiple specific properties
  */
-export function hasProperties<
-  T extends Record<string, (value: unknown) => boolean>
->(
+export function hasProperties<T extends Record<string, (value: unknown) => boolean>>(
   propertyGuards: T
 ): (obj: unknown) => obj is Record<string, unknown> {
   return (obj: unknown): obj is Record<string, unknown> => {
@@ -843,7 +852,7 @@ export function exactShape<T extends Record<string, (value: unknown) => boolean>
     const actualKeys = Object.keys(record);
 
     // Check that all required keys are present
-    if (requiredKeys.length !== actualKeys.length || !requiredKeys.every(key => key in record)) {
+    if (requiredKeys.length !== actualKeys.length || !requiredKeys.every((key) => key in record)) {
       return false;
     }
 
@@ -1082,7 +1091,10 @@ export function isSuccessResponse<T>(
 export function isErrorResponse(
   value: unknown,
   errorCodeGuard?: (code: unknown) => boolean
-): value is { readonly success: false; readonly error: { readonly code: string; readonly message: string; readonly details?: unknown } } {
+): value is {
+  readonly success: false;
+  readonly error: { readonly code: string; readonly message: string; readonly details?: unknown };
+} {
   if (value === null || typeof value !== 'object') {
     return false;
   }
@@ -1113,14 +1125,29 @@ export function isErrorResponse(
 export function isStandardApiResponse<T>(
   value: unknown,
   dataGuard?: (data: unknown) => data is T
-): value is ({ readonly success: true; readonly data: T; readonly message?: string } | { readonly success: false; readonly error: { readonly code: string; readonly message: string; readonly details?: unknown } }) {
+): value is
+  | { readonly success: true; readonly data: T; readonly message?: string }
+  | {
+      readonly success: false;
+      readonly error: {
+        readonly code: string;
+        readonly message: string;
+        readonly details?: unknown;
+      };
+    } {
   return isSuccessResponse(value, dataGuard) || isErrorResponse(value);
 }
 
 /**
  * Check if value is an MCP tool response
  */
-export function isMCPToolResponse(value: unknown): value is { readonly content: readonly unknown[]; readonly isError?: boolean; readonly _meta?: Record<string, unknown> } {
+export function isMCPToolResponse(
+  value: unknown
+): value is {
+  readonly content: readonly unknown[];
+  readonly isError?: boolean;
+  readonly _meta?: Record<string, unknown>;
+} {
   if (value === null || typeof value !== 'object') {
     return false;
   }
@@ -1137,7 +1164,10 @@ export function isMCPToolResponse(value: unknown): value is { readonly content: 
   }
 
   // _meta is optional, but if present must be object
-  if (response._meta !== undefined && (response._meta === null || typeof response._meta !== 'object' || Array.isArray(response._meta))) {
+  if (
+    response._meta !== undefined &&
+    (response._meta === null || typeof response._meta !== 'object' || Array.isArray(response._meta))
+  ) {
     return false;
   }
 
@@ -1151,7 +1181,9 @@ export function isMCPToolResponse(value: unknown): value is { readonly content: 
 /**
  * Check if value is a KnowledgeItem scope
  */
-export function isKnowledgeScope(value: unknown): value is { readonly project?: string; readonly branch?: string; readonly org?: string } {
+export function isKnowledgeScope(
+  value: unknown
+): value is { readonly project?: string; readonly branch?: string; readonly org?: string } {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
@@ -1176,7 +1208,19 @@ export function isKnowledgeScope(value: unknown): value is { readonly project?: 
 /**
  * Check if value is a KnowledgeItem
  */
-export function isKnowledgeItem(value: unknown): value is { readonly id?: string; readonly kind: string; readonly content?: string; readonly scope: { readonly project?: string; readonly branch?: string; readonly org?: string }; readonly data: Record<string, unknown>; readonly metadata?: Record<string, unknown>; readonly created_at?: string; readonly updated_at?: string; readonly expiry_at?: string } {
+export function isKnowledgeItem(
+  value: unknown
+): value is {
+  readonly id?: string;
+  readonly kind: string;
+  readonly content?: string;
+  readonly scope: { readonly project?: string; readonly branch?: string; readonly org?: string };
+  readonly data: Record<string, unknown>;
+  readonly metadata?: Record<string, unknown>;
+  readonly created_at?: string;
+  readonly updated_at?: string;
+  readonly expiry_at?: string;
+} {
   if (value === null || typeof value !== 'object') {
     return false;
   }
@@ -1205,19 +1249,31 @@ export function isKnowledgeItem(value: unknown): value is { readonly id?: string
     return false;
   }
 
-  if (item.metadata !== undefined && (item.metadata === null || typeof item.metadata !== 'object' || Array.isArray(item.metadata))) {
+  if (
+    item.metadata !== undefined &&
+    (item.metadata === null || typeof item.metadata !== 'object' || Array.isArray(item.metadata))
+  ) {
     return false;
   }
 
-  if (item.created_at !== undefined && (typeof item.created_at !== 'string' || !isValidISODate(item.created_at))) {
+  if (
+    item.created_at !== undefined &&
+    (typeof item.created_at !== 'string' || !isValidISODate(item.created_at))
+  ) {
     return false;
   }
 
-  if (item.updated_at !== undefined && (typeof item.updated_at !== 'string' || !isValidISODate(item.updated_at))) {
+  if (
+    item.updated_at !== undefined &&
+    (typeof item.updated_at !== 'string' || !isValidISODate(item.updated_at))
+  ) {
     return false;
   }
 
-  if (item.expiry_at !== undefined && (typeof item.expiry_at !== 'string' || !isValidISODate(item.expiry_at))) {
+  if (
+    item.expiry_at !== undefined &&
+    (typeof item.expiry_at !== 'string' || !isValidISODate(item.expiry_at))
+  ) {
     return false;
   }
 
@@ -1227,7 +1283,20 @@ export function isKnowledgeItem(value: unknown): value is { readonly id?: string
 /**
  * Check if value is a SearchQuery
  */
-export function isSearchQuery(value: unknown): value is { readonly query: string; readonly scope?: { readonly project?: string; readonly branch?: string; readonly org?: string }; readonly types?: string[]; readonly kind?: string; readonly mode?: 'auto' | 'fast' | 'deep'; readonly limit?: number; readonly top_k?: number; readonly expand?: 'relations' | 'parents' | 'children' | 'none'; readonly text?: unknown; readonly filters?: unknown } {
+export function isSearchQuery(
+  value: unknown
+): value is {
+  readonly query: string;
+  readonly scope?: { readonly project?: string; readonly branch?: string; readonly org?: string };
+  readonly types?: string[];
+  readonly kind?: string;
+  readonly mode?: 'auto' | 'fast' | 'deep';
+  readonly limit?: number;
+  readonly top_k?: number;
+  readonly expand?: 'relations' | 'parents' | 'children' | 'none';
+  readonly text?: unknown;
+  readonly filters?: unknown;
+} {
   if (value === null || typeof value !== 'object') {
     return false;
   }
@@ -1248,7 +1317,10 @@ export function isSearchQuery(value: unknown): value is { readonly query: string
     return false;
   }
 
-  if (query.types !== undefined && !(query.types as unknown[]).every((type) => typeof type === 'string')) {
+  if (
+    query.types !== undefined &&
+    !(query.types as unknown[]).every((type) => typeof type === 'string')
+  ) {
     return false;
   }
 
@@ -1268,7 +1340,10 @@ export function isSearchQuery(value: unknown): value is { readonly query: string
     return false;
   }
 
-  if (query.expand !== undefined && !['relations', 'parents', 'children', 'none'].includes(query.expand as string)) {
+  if (
+    query.expand !== undefined &&
+    !['relations', 'parents', 'children', 'none'].includes(query.expand as string)
+  ) {
     return false;
   }
 
@@ -1278,7 +1353,18 @@ export function isSearchQuery(value: unknown): value is { readonly query: string
 /**
  * Check if value is a SearchResult
  */
-export function isSearchResult(value: unknown): value is { readonly id: string; readonly kind: string; readonly scope: Record<string, unknown>; readonly data: Record<string, unknown>; readonly created_at: string; readonly confidence_score: number; readonly match_type: 'exact' | 'fuzzy' | 'semantic' | 'keyword' | 'hybrid' | 'expanded' | 'graph'; readonly highlight?: string[] } {
+export function isSearchResult(
+  value: unknown
+): value is {
+  readonly id: string;
+  readonly kind: string;
+  readonly scope: Record<string, unknown>;
+  readonly data: Record<string, unknown>;
+  readonly created_at: string;
+  readonly confidence_score: number;
+  readonly match_type: 'exact' | 'fuzzy' | 'semantic' | 'keyword' | 'hybrid' | 'expanded' | 'graph';
+  readonly highlight?: string[];
+} {
   if (value === null || typeof value !== 'object') {
     return false;
   }
@@ -1306,11 +1392,20 @@ export function isSearchResult(value: unknown): value is { readonly id: string; 
     return false;
   }
 
-  if (typeof result.confidence_score !== 'number' || result.confidence_score < 0 || result.confidence_score > 1) {
+  if (
+    typeof result.confidence_score !== 'number' ||
+    result.confidence_score < 0 ||
+    result.confidence_score > 1
+  ) {
     return false;
   }
 
-  if (typeof result.match_type !== 'string' || !['exact', 'fuzzy', 'semantic', 'keyword', 'hybrid', 'expanded', 'graph'].includes(result.match_type as string)) {
+  if (
+    typeof result.match_type !== 'string' ||
+    !['exact', 'fuzzy', 'semantic', 'keyword', 'hybrid', 'expanded', 'graph'].includes(
+      result.match_type as string
+    )
+  ) {
     return false;
   }
 
@@ -1319,7 +1414,10 @@ export function isSearchResult(value: unknown): value is { readonly id: string; 
     return false;
   }
 
-  if (result.highlight !== undefined && !(result.highlight as unknown[]).every((highlight) => typeof highlight === 'string')) {
+  if (
+    result.highlight !== undefined &&
+    !(result.highlight as unknown[]).every((highlight) => typeof highlight === 'string')
+  ) {
     return false;
   }
 
@@ -1333,7 +1431,22 @@ export function isSearchResult(value: unknown): value is { readonly id: string; 
 /**
  * Check if value is a Qdrant configuration
  */
-export function isQdrantConfig(value: unknown): value is { readonly host: string; readonly port: number; readonly apiKey?: string; readonly timeout: number; readonly maxRetries: number; readonly retryDelay: number; readonly useHttps: boolean; readonly collectionPrefix?: string; readonly enableHealthChecks: boolean; readonly connectionPoolSize: number; readonly requestTimeout: number; readonly connectTimeout: number } {
+export function isQdrantConfig(
+  value: unknown
+): value is {
+  readonly host: string;
+  readonly port: number;
+  readonly apiKey?: string;
+  readonly timeout: number;
+  readonly maxRetries: number;
+  readonly retryDelay: number;
+  readonly useHttps: boolean;
+  readonly collectionPrefix?: string;
+  readonly enableHealthChecks: boolean;
+  readonly connectionPoolSize: number;
+  readonly requestTimeout: number;
+  readonly connectTimeout: number;
+} {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
@@ -1396,7 +1509,27 @@ export function isQdrantConfig(value: unknown): value is { readonly host: string
 /**
  * Check if value is a Database configuration
  */
-export function isDatabaseConfig(value: unknown): value is { readonly qdrant: { readonly host: string; readonly port: number; readonly apiKey?: string; readonly timeout: number; readonly maxRetries: number; readonly retryDelay: number; readonly useHttps: boolean; readonly collectionPrefix?: string; readonly enableHealthChecks: boolean; readonly connectionPoolSize: number; readonly requestTimeout: number; readonly connectTimeout: number }; readonly fallbackEnabled: boolean; readonly backupEnabled: boolean; readonly migrationEnabled: boolean } {
+export function isDatabaseConfig(
+  value: unknown
+): value is {
+  readonly qdrant: {
+    readonly host: string;
+    readonly port: number;
+    readonly apiKey?: string;
+    readonly timeout: number;
+    readonly maxRetries: number;
+    readonly retryDelay: number;
+    readonly useHttps: boolean;
+    readonly collectionPrefix?: string;
+    readonly enableHealthChecks: boolean;
+    readonly connectionPoolSize: number;
+    readonly requestTimeout: number;
+    readonly connectTimeout: number;
+  };
+  readonly fallbackEnabled: boolean;
+  readonly backupEnabled: boolean;
+  readonly migrationEnabled: boolean;
+} {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
@@ -1425,7 +1558,15 @@ export function isDatabaseConfig(value: unknown): value is { readonly qdrant: { 
 /**
  * Check if value is a JWT configuration
  */
-export function isJWTConfig(value: unknown): value is { readonly secret: string; readonly expiresIn: string; readonly issuer: string; readonly audience: string; readonly algorithm: 'HS256' | 'HS384' | 'HS512' | 'RS256' | 'RS384' | 'RS512' } {
+export function isJWTConfig(
+  value: unknown
+): value is {
+  readonly secret: string;
+  readonly expiresIn: string;
+  readonly issuer: string;
+  readonly audience: string;
+  readonly algorithm: 'HS256' | 'HS384' | 'HS512' | 'RS256' | 'RS384' | 'RS512';
+} {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
@@ -1448,7 +1589,10 @@ export function isJWTConfig(value: unknown): value is { readonly secret: string;
     return false;
   }
 
-  if (typeof config.algorithm !== 'string' || !['HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512'].includes(config.algorithm)) {
+  if (
+    typeof config.algorithm !== 'string' ||
+    !['HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512'].includes(config.algorithm)
+  ) {
     return false;
   }
 
@@ -1458,7 +1602,14 @@ export function isJWTConfig(value: unknown): value is { readonly secret: string;
 /**
  * Check if value is an API Key configuration
  */
-export function isApiKeyConfig(value: unknown): value is { readonly headerName: string; readonly queryParam?: string; readonly validationEnabled: boolean; readonly rateLimitEnabled: boolean } {
+export function isApiKeyConfig(
+  value: unknown
+): value is {
+  readonly headerName: string;
+  readonly queryParam?: string;
+  readonly validationEnabled: boolean;
+  readonly rateLimitEnabled: boolean;
+} {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
@@ -1487,7 +1638,27 @@ export function isApiKeyConfig(value: unknown): value is { readonly headerName: 
 /**
  * Check if value is an Authentication configuration
  */
-export function isAuthConfig(value: unknown): value is { readonly jwt: { readonly secret: string; readonly expiresIn: string; readonly issuer: string; readonly audience: string; readonly algorithm: 'HS256' | 'HS384' | 'HS512' | 'RS256' | 'RS384' | 'RS512' }; readonly apiKey: { readonly headerName: string; readonly queryParam?: string; readonly validationEnabled: boolean; readonly rateLimitEnabled: boolean }; readonly enabled: boolean; readonly sessionTimeout: number; readonly refreshTokenEnabled: boolean; readonly passwordPolicyEnabled: boolean } {
+export function isAuthConfig(
+  value: unknown
+): value is {
+  readonly jwt: {
+    readonly secret: string;
+    readonly expiresIn: string;
+    readonly issuer: string;
+    readonly audience: string;
+    readonly algorithm: 'HS256' | 'HS384' | 'HS512' | 'RS256' | 'RS384' | 'RS512';
+  };
+  readonly apiKey: {
+    readonly headerName: string;
+    readonly queryParam?: string;
+    readonly validationEnabled: boolean;
+    readonly rateLimitEnabled: boolean;
+  };
+  readonly enabled: boolean;
+  readonly sessionTimeout: number;
+  readonly refreshTokenEnabled: boolean;
+  readonly passwordPolicyEnabled: boolean;
+} {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
@@ -1524,7 +1695,15 @@ export function isAuthConfig(value: unknown): value is { readonly jwt: { readonl
 /**
  * Check if value is a Rate Limit configuration
  */
-export function isRateLimitConfig(value: unknown): value is { readonly windowMs: number; readonly maxRequests: number; readonly skipSuccessfulRequests: boolean; readonly skipFailedRequests: boolean; readonly enableHeaders: boolean } {
+export function isRateLimitConfig(
+  value: unknown
+): value is {
+  readonly windowMs: number;
+  readonly maxRequests: number;
+  readonly skipSuccessfulRequests: boolean;
+  readonly skipFailedRequests: boolean;
+  readonly enableHeaders: boolean;
+} {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
@@ -1557,18 +1736,36 @@ export function isRateLimitConfig(value: unknown): value is { readonly windowMs:
 /**
  * Check if value is a CORS configuration
  */
-export function isCorsConfig(value: unknown): value is { readonly origin: string | string[] | boolean; readonly credentials: boolean; readonly methods: string[]; readonly allowedHeaders: string[]; readonly exposedHeaders?: string[]; readonly maxAge?: number; readonly preflightContinue?: boolean; readonly optionsSuccessStatus?: number } {
+export function isCorsConfig(
+  value: unknown
+): value is {
+  readonly origin: string | string[] | boolean;
+  readonly credentials: boolean;
+  readonly methods: string[];
+  readonly allowedHeaders: string[];
+  readonly exposedHeaders?: string[];
+  readonly maxAge?: number;
+  readonly preflightContinue?: boolean;
+  readonly optionsSuccessStatus?: number;
+} {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
 
   const config = value as Record<string, unknown>;
 
-  if (typeof config.origin !== 'string' && !Array.isArray(config.origin) && typeof config.origin !== 'boolean') {
+  if (
+    typeof config.origin !== 'string' &&
+    !Array.isArray(config.origin) &&
+    typeof config.origin !== 'boolean'
+  ) {
     return false;
   }
 
-  if (Array.isArray(config.origin) && !config.origin.every((origin) => typeof origin === 'string')) {
+  if (
+    Array.isArray(config.origin) &&
+    !config.origin.every((origin) => typeof origin === 'string')
+  ) {
     return false;
   }
 
@@ -1576,15 +1773,25 @@ export function isCorsConfig(value: unknown): value is { readonly origin: string
     return false;
   }
 
-  if (!Array.isArray(config.methods) || !config.methods.every((method) => typeof method === 'string')) {
+  if (
+    !Array.isArray(config.methods) ||
+    !config.methods.every((method) => typeof method === 'string')
+  ) {
     return false;
   }
 
-  if (!Array.isArray(config.allowedHeaders) || !config.allowedHeaders.every((header) => typeof header === 'string')) {
+  if (
+    !Array.isArray(config.allowedHeaders) ||
+    !config.allowedHeaders.every((header) => typeof header === 'string')
+  ) {
     return false;
   }
 
-  if (config.exposedHeaders !== undefined && (!Array.isArray(config.exposedHeaders) || !config.exposedHeaders.every((header) => typeof header === 'string'))) {
+  if (
+    config.exposedHeaders !== undefined &&
+    (!Array.isArray(config.exposedHeaders) ||
+      !config.exposedHeaders.every((header) => typeof header === 'string'))
+  ) {
     return false;
   }
 
@@ -1596,7 +1803,12 @@ export function isCorsConfig(value: unknown): value is { readonly origin: string
     return false;
   }
 
-  if (config.optionsSuccessStatus !== undefined && (typeof config.optionsSuccessStatus !== 'number' || config.optionsSuccessStatus < 100 || config.optionsSuccessStatus >= 600)) {
+  if (
+    config.optionsSuccessStatus !== undefined &&
+    (typeof config.optionsSuccessStatus !== 'number' ||
+      config.optionsSuccessStatus < 100 ||
+      config.optionsSuccessStatus >= 600)
+  ) {
     return false;
   }
 
@@ -1606,7 +1818,13 @@ export function isCorsConfig(value: unknown): value is { readonly origin: string
 /**
  * Check if value is a Service configuration
  */
-export function isServiceConfig(value: unknown): value is { readonly timeout?: number; readonly retries?: number; readonly enableLogging?: boolean } {
+export function isServiceConfig(
+  value: unknown
+): value is {
+  readonly timeout?: number;
+  readonly retries?: number;
+  readonly enableLogging?: boolean;
+} {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
@@ -1635,7 +1853,14 @@ export function isServiceConfig(value: unknown): value is { readonly timeout?: n
 /**
  * Check if value is a Validation Error
  */
-export function isValidationError(value: unknown): value is { readonly code: string; readonly message: string; readonly path?: string; readonly value?: unknown } {
+export function isValidationError(
+  value: unknown
+): value is {
+  readonly code: string;
+  readonly message: string;
+  readonly path?: string;
+  readonly value?: unknown;
+} {
   if (value === null || typeof value !== 'object') {
     return false;
   }
@@ -1662,7 +1887,25 @@ export function isValidationError(value: unknown): value is { readonly code: str
 /**
  * Check if value is a System Error
  */
-export function isSystemError(value: unknown): value is { readonly code: string; readonly message: string; readonly category: 'network' | 'database' | 'filesystem' | 'memory' | 'security' | 'performance' | 'configuration' | 'unknown'; readonly severity: 'low' | 'medium' | 'high' | 'critical'; readonly timestamp?: string; readonly retryable: boolean; readonly details?: Record<string, unknown> } {
+export function isSystemError(
+  value: unknown
+): value is {
+  readonly code: string;
+  readonly message: string;
+  readonly category:
+    | 'network'
+    | 'database'
+    | 'filesystem'
+    | 'memory'
+    | 'security'
+    | 'performance'
+    | 'configuration'
+    | 'unknown';
+  readonly severity: 'low' | 'medium' | 'high' | 'critical';
+  readonly timestamp?: string;
+  readonly retryable: boolean;
+  readonly details?: Record<string, unknown>;
+} {
   if (value === null || typeof value !== 'object') {
     return false;
   }
@@ -1677,11 +1920,26 @@ export function isSystemError(value: unknown): value is { readonly code: string;
     return false;
   }
 
-  if (typeof error.category !== 'string' || !['network', 'database', 'filesystem', 'memory', 'security', 'performance', 'configuration', 'unknown'].includes(error.category)) {
+  if (
+    typeof error.category !== 'string' ||
+    ![
+      'network',
+      'database',
+      'filesystem',
+      'memory',
+      'security',
+      'performance',
+      'configuration',
+      'unknown',
+    ].includes(error.category)
+  ) {
     return false;
   }
 
-  if (typeof error.severity !== 'string' || !['low', 'medium', 'high', 'critical'].includes(error.severity)) {
+  if (
+    typeof error.severity !== 'string' ||
+    !['low', 'medium', 'high', 'critical'].includes(error.severity)
+  ) {
     return false;
   }
 
@@ -1689,11 +1947,17 @@ export function isSystemError(value: unknown): value is { readonly code: string;
     return false;
   }
 
-  if (error.timestamp !== undefined && (typeof error.timestamp !== 'string' || !isValidISODate(error.timestamp))) {
+  if (
+    error.timestamp !== undefined &&
+    (typeof error.timestamp !== 'string' || !isValidISODate(error.timestamp))
+  ) {
     return false;
   }
 
-  if (error.details !== undefined && (error.details === null || typeof error.details !== 'object' || Array.isArray(error.details))) {
+  if (
+    error.details !== undefined &&
+    (error.details === null || typeof error.details !== 'object' || Array.isArray(error.details))
+  ) {
     return false;
   }
 
@@ -1703,7 +1967,19 @@ export function isSystemError(value: unknown): value is { readonly code: string;
 /**
  * Check if value is a Database Error
  */
-export function isDatabaseError(value: unknown): value is { readonly code: string; readonly message: string; readonly database: string; readonly table?: string; readonly operation?: string; readonly query?: string; readonly retryable: boolean; readonly timeout?: boolean; readonly connectionLost?: boolean } {
+export function isDatabaseError(
+  value: unknown
+): value is {
+  readonly code: string;
+  readonly message: string;
+  readonly database: string;
+  readonly table?: string;
+  readonly operation?: string;
+  readonly query?: string;
+  readonly retryable: boolean;
+  readonly timeout?: boolean;
+  readonly connectionLost?: boolean;
+} {
   if (value === null || typeof value !== 'object') {
     return false;
   }
@@ -1752,7 +2028,18 @@ export function isDatabaseError(value: unknown): value is { readonly code: strin
 /**
  * Check if value is a Network Error
  */
-export function isNetworkError(value: unknown): value is { readonly code: string; readonly message: string; readonly url?: string; readonly method?: string; readonly statusCode?: number; readonly timeout?: boolean; readonly retryable: boolean; readonly headers?: Record<string, string> } {
+export function isNetworkError(
+  value: unknown
+): value is {
+  readonly code: string;
+  readonly message: string;
+  readonly url?: string;
+  readonly method?: string;
+  readonly statusCode?: number;
+  readonly timeout?: boolean;
+  readonly retryable: boolean;
+  readonly headers?: Record<string, string>;
+} {
   if (value === null || typeof value !== 'object') {
     return false;
   }
@@ -1775,7 +2062,10 @@ export function isNetworkError(value: unknown): value is { readonly code: string
     return false;
   }
 
-  if (error.statusCode !== undefined && (typeof error.statusCode !== 'number' || error.statusCode < 100 || error.statusCode >= 600)) {
+  if (
+    error.statusCode !== undefined &&
+    (typeof error.statusCode !== 'number' || error.statusCode < 100 || error.statusCode >= 600)
+  ) {
     return false;
   }
 
@@ -1797,7 +2087,9 @@ export function isNetworkError(value: unknown): value is { readonly code: string
 /**
  * Check if value is an MCP Error
  */
-export function isMCPError(value: unknown): value is { readonly code: number; readonly message: string; readonly data?: unknown } {
+export function isMCPError(
+  value: unknown
+): value is { readonly code: number; readonly message: string; readonly data?: unknown } {
   if (value === null || typeof value !== 'object') {
     return false;
   }
@@ -1869,16 +2161,17 @@ export function nestedObject<T extends Record<string, Schema | ((value: unknown)
 
     // Validate each property according to schema
     for (const [key, schemaOrGuard] of Object.entries(schema)) {
-      const hasProperty = key in obj;
+      const hasPropertySimple = key in obj;
 
-      if (!hasProperty && !allowPartial) {
+      if (!hasPropertySimple && !allowPartial) {
         return false;
       }
 
-      if (hasProperty) {
-        const validator = typeof schemaOrGuard === 'function' && schemaOrGuard.length === 1
-          ? schemaOrGuard as (value: unknown) => boolean
-          : (schemaOrGuard as Schema).validate;
+      if (hasPropertySimple) {
+        const validator =
+          typeof schemaOrGuard === 'function' && schemaOrGuard.length === 1
+            ? (schemaOrGuard as (value: unknown) => boolean)
+            : (schemaOrGuard as Schema).validate;
 
         if (!validator(obj[key])) {
           return false;
@@ -1903,9 +2196,10 @@ export function collectionSchema<T>(
   } = {}
 ): (value: unknown) => value is unknown[] {
   const { minLength, maxLength, uniqueKey, sortBy } = options;
-  const itemValidator = typeof itemSchema === 'function' && itemSchema.length === 1
-    ? itemSchema as (value: unknown) => boolean
-    : (itemSchema as Schema).validate;
+  const itemValidator =
+    typeof itemSchema === 'function' && itemSchema.length === 1
+      ? (itemSchema as (value: unknown) => boolean)
+      : (itemSchema as Schema).validate;
 
   return (value: unknown): value is unknown[] => {
     if (!Array.isArray(value)) {
@@ -1944,7 +2238,7 @@ export function collectionSchema<T>(
       for (let i = 1; i < value.length; i++) {
         const prev = (value[i - 1] as Record<string, unknown>)[sortBy];
         const curr = (value[i] as Record<string, unknown>)[sortBy];
-          if (typeof prev === 'string' && typeof curr === 'string' && prev > curr) {
+        if (typeof prev === 'string' && typeof curr === 'string' && prev > curr) {
           return false;
         } else if (typeof prev === 'number' && typeof curr === 'number' && prev > curr) {
           return false;
@@ -2008,7 +2302,9 @@ export function circularSchema<T>(
 /**
  * Guard for database query results with created_at timestamp
  */
-export function isDatabaseResult(value: unknown): value is Record<string, unknown> & { created_at: Date | string } {
+export function isDatabaseResult(
+  value: unknown
+): value is Record<string, unknown> & { created_at: Date | string } {
   if (value === null || typeof value !== 'object') {
     return false;
   }
@@ -2017,7 +2313,10 @@ export function isDatabaseResult(value: unknown): value is Record<string, unknow
 
   // Check for created_at field
   const createdAt = result.created_at;
-  if (!(createdAt instanceof Date) && (typeof createdAt !== 'string' || !isValidISODate(createdAt))) {
+  if (
+    !(createdAt instanceof Date) &&
+    (typeof createdAt !== 'string' || !isValidISODate(createdAt))
+  ) {
     return false;
   }
 
@@ -2050,7 +2349,7 @@ export function isWhereClause(value: unknown): value is Record<string, unknown> 
           return false;
         }
         // Each item should be a valid where clause
-        if (!val.every(item => isWhereClause(item))) {
+        if (!val.every((item) => isWhereClause(item))) {
           return false;
         }
         break;
@@ -2099,7 +2398,7 @@ export function isWhereClause(value: unknown): value is Record<string, unknown> 
  * Guard for search results array
  */
 export function isSearchResults(value: unknown): value is unknown[] {
-  return Array.isArray(value) && value.every(item => isDatabaseResult(item));
+  return Array.isArray(value) && value.every((item) => isDatabaseResult(item));
 }
 
 /**
@@ -2122,7 +2421,9 @@ export function isDatabaseRow(value: unknown): value is Record<string, unknown> 
 /**
  * Guard for strategy objects with common properties
  */
-export function isStrategyObject(value: unknown): value is Record<string, unknown> & { name: string; type?: string } {
+export function isStrategyObject(
+  value: unknown
+): value is Record<string, unknown> & { name: string; type?: string } {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
@@ -2160,12 +2461,19 @@ export function isMetricObject(value: unknown): value is Record<string, unknown>
     return false;
   }
 
-  if (metric.value !== undefined && typeof metric.value !== 'number' && typeof metric.value !== 'string') {
+  if (
+    metric.value !== undefined &&
+    typeof metric.value !== 'number' &&
+    typeof metric.value !== 'string'
+  ) {
     return false;
   }
 
   if (metric.timestamp !== undefined) {
-    if (!(metric.timestamp instanceof Date) && (typeof metric.timestamp !== 'string' || !isValidISODate(metric.timestamp))) {
+    if (
+      !(metric.timestamp instanceof Date) &&
+      (typeof metric.timestamp !== 'string' || !isValidISODate(metric.timestamp))
+    ) {
       return false;
     }
   }
@@ -2198,11 +2506,13 @@ export function isConfigObject(value: unknown): value is Record<string, unknown>
     }
 
     // Allow common config value types
-    if (val !== null &&
-        typeof val !== 'string' &&
-        typeof val !== 'number' &&
-        typeof val !== 'boolean' &&
-        typeof val !== 'object') {
+    if (
+      val !== null &&
+      typeof val !== 'string' &&
+      typeof val !== 'number' &&
+      typeof val !== 'boolean' &&
+      typeof val !== 'object'
+    ) {
       return false;
     }
 
@@ -2256,13 +2566,19 @@ export function isIssueObject(value: unknown): value is Record<string, unknown> 
   }
 
   if (issue.created_at !== undefined) {
-    if (!(issue.created_at instanceof Date) && (typeof issue.created_at !== 'string' || !isValidISODate(issue.created_at))) {
+    if (
+      !(issue.created_at instanceof Date) &&
+      (typeof issue.created_at !== 'string' || !isValidISODate(issue.created_at))
+    ) {
       return false;
     }
   }
 
   if (issue.updated_at !== undefined) {
-    if (!(issue.updated_at instanceof Date) && (typeof issue.updated_at !== 'string' || !isValidISODate(issue.updated_at))) {
+    if (
+      !(issue.updated_at instanceof Date) &&
+      (typeof issue.updated_at !== 'string' || !isValidISODate(issue.updated_at))
+    ) {
       return false;
     }
   }
@@ -2289,7 +2605,10 @@ export function isComplianceObject(value: unknown): value is Record<string, unkn
     return false;
   }
 
-  if (compliance.score !== undefined && (typeof compliance.score !== 'number' || compliance.score < 0 || compliance.score > 100)) {
+  if (
+    compliance.score !== undefined &&
+    (typeof compliance.score !== 'number' || compliance.score < 0 || compliance.score > 100)
+  ) {
     return false;
   }
 
@@ -2315,7 +2634,10 @@ export function isComplianceObject(value: unknown): value is Record<string, unkn
   }
 
   if (compliance.timestamp !== undefined) {
-    if (!(compliance.timestamp instanceof Date) && (typeof compliance.timestamp !== 'string' || !isValidISODate(compliance.timestamp))) {
+    if (
+      !(compliance.timestamp instanceof Date) &&
+      (typeof compliance.timestamp !== 'string' || !isValidISODate(compliance.timestamp))
+    ) {
       return false;
     }
   }
@@ -2394,10 +2716,7 @@ export function safeNestedAccess<T>(
 /**
  * Memoization cache for guard functions
  */
-const guardMemoCache = new WeakMap<
-  (value: unknown) => boolean,
-  Map<unknown, boolean>
->();
+const guardMemoCache = new WeakMap<(value: unknown) => boolean, Map<unknown, boolean>>();
 
 /**
  * Create a memoized version of a guard function
@@ -2440,7 +2759,17 @@ export function memoized<T>(
  */
 export function fastFail<T>(
   guard: (value: unknown) => value is T,
-  invalidTypes: Array<'null' | 'undefined' | 'string' | 'number' | 'boolean' | 'symbol' | 'function' | 'object' | 'array'>
+  invalidTypes: Array<
+    | 'null'
+    | 'undefined'
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | 'symbol'
+    | 'function'
+    | 'object'
+    | 'array'
+  >
 ): (value: unknown) => value is T {
   return (value: unknown): value is T => {
     // Fast fail checks for common invalid types
@@ -2515,7 +2844,7 @@ export function timeoutGuard<T>(
 
     // Override time-consuming operations if needed
     const originalJSONStringify = JSON.stringify;
-    JSON.stringify = function(this: unknown, ...args: Parameters<typeof JSON.stringify>) {
+    JSON.stringify = function (this: unknown, ...args: Parameters<typeof JSON.stringify>) {
       if (isTimedOut()) {
         throw new Error('Guard validation timeout');
       }
@@ -2557,12 +2886,15 @@ export function sampled<T>(
  * Performance metrics collector for guards
  */
 export class GuardPerformance {
-  private static metrics = new Map<string, {
-    calls: number;
-    totalTime: number;
-    averageTime: number;
-    errors: number;
-  }>();
+  private static metrics = new Map<
+    string,
+    {
+      calls: number;
+      totalTime: number;
+      averageTime: number;
+      errors: number;
+    }
+  >();
 
   static wrap<T>(
     name: string,
@@ -2587,7 +2919,7 @@ export class GuardPerformance {
           calls: 0,
           totalTime: 0,
           averageTime: 0,
-          errors: 0
+          errors: 0,
         };
 
         metrics.calls++;
@@ -2614,4 +2946,568 @@ export class GuardPerformance {
       this.metrics.clear();
     }
   }
+}
+
+// ============================================================================
+// Basic Utility Type Guards (Missing Exports)
+// ============================================================================
+
+/**
+ * Type guard for Date objects
+ */
+export function isDate(value: unknown): value is Date {
+  return value instanceof Date && !isNaN(value.getTime());
+}
+
+/**
+ * Type guard for empty values (null, undefined, empty string, empty array, empty object)
+ */
+export function isEmpty(value: unknown): boolean {
+  if (value == null) return true;
+  if (typeof value === 'string') return value.length === 0;
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === 'object') {
+    return Object.keys(value as Record<string, unknown>).length === 0;
+  }
+  return false;
+}
+
+/**
+ * Type guard for functions
+ */
+export function isFunction(value: unknown): value is Function {
+  return typeof value === 'function';
+}
+
+/**
+ * Type guard for non-null values
+ */
+export function isNonNull<T>(value: T | null | undefined): value is T {
+  return value != null;
+}
+
+/**
+ * Type guard for non-null values (alternative name)
+ */
+export function isNotNull<T>(value: T | null | undefined): value is T {
+  return value != null;
+}
+
+/**
+ * Type guard for objects (excluding arrays and null)
+ */
+export function isObject(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Type guard for plain objects (object with no custom prototype)
+ */
+export function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (!isObject(value)) return false;
+
+  const obj = value as Record<string, unknown>;
+  const proto = Object.getPrototypeOf(obj);
+
+  return proto === null || proto === Object.prototype;
+}
+
+/**
+ * Type guard for primitive values (string, number, boolean, symbol, bigint, null, undefined)
+ */
+export function isPrimitive(
+  value: unknown
+): value is string | number | boolean | symbol | bigint | null | undefined {
+  return (
+    value === null ||
+    value === undefined ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'symbol' ||
+    typeof value === 'bigint'
+  );
+}
+
+/**
+ * Type guard for symbol values
+ */
+export function isSymbol(value: unknown): value is symbol {
+  return typeof value === 'symbol';
+}
+
+/**
+ * Type guard for undefined values
+ */
+export function isUndefined(value: unknown): value is undefined {
+  return value === undefined;
+}
+
+/**
+ * Type guard for valid URLs (alias for isValidURL to match import)
+ */
+export function isValidUrl(value: unknown): value is string {
+  return isValidURL(value);
+}
+
+// ============================================================================
+// Systematic Type Guard Utilities for P1 Implementation
+// ============================================================================
+
+/**
+ * Simple property existence checker - the core utility for P1 systematic implementation
+ */
+export function hasPropertySimpleSimple(obj: unknown, propertyName: string): boolean {
+  return (
+    obj != null &&
+    typeof obj === 'object' &&
+    !Array.isArray(obj) &&
+    propertyName in (obj as Record<string, unknown>)
+  );
+}
+
+/**
+ * Type-safe property checker with value type guard
+ */
+export function hasPropertySimpleOfType<T>(
+  obj: unknown,
+  propertyName: string,
+  typeGuard: (value: unknown) => value is T
+): obj is Record<string, T> & { [K in string]: K extends typeof propertyName ? T : unknown } {
+  if (!hasPropertySimpleSimple(obj, propertyName)) {
+    return false;
+  }
+
+  const value = (obj as Record<string, unknown>)[propertyName];
+  return typeGuard(value);
+}
+
+/**
+ * Generic type guard with property checking
+ */
+export function isOfType<T>(
+  obj: unknown,
+  properties: Array<{ key: string; typeGuard: (value: unknown) => boolean }>
+): obj is T {
+  if (obj == null || typeof obj !== 'object' || Array.isArray(obj)) {
+    return false;
+  }
+
+  const record = obj as Record<string, unknown>;
+
+  return properties.every(({ key, typeGuard }) => {
+    const value = record[key];
+    return typeGuard(value);
+  });
+}
+
+/**
+ * Enhanced safe property access with default value
+ */
+export function safePropertyAccessEnhanced<T>(
+  obj: unknown,
+  property: string,
+  typeGuard: (value: unknown) => value is T,
+  defaultValue?: T
+): T | undefined {
+  if (!hasPropertySimpleSimple(obj, property)) {
+    return defaultValue;
+  }
+
+  const value = (obj as Record<string, unknown>)[property];
+  return typeGuard(value) ? value : defaultValue;
+}
+
+/**
+ * Safe property access with required return (throws if property missing or wrong type)
+ */
+export function requirePropertyAccess<T>(
+  obj: unknown,
+  property: string,
+  typeGuard: (value: unknown) => value is T,
+  errorMessage?: string
+): T {
+  if (!hasPropertySimpleSimple(obj, property)) {
+    throw new Error(errorMessage || `Required property '${property}' is missing`);
+  }
+
+  const value = (obj as Record<string, unknown>)[property];
+  if (!typeGuard(value)) {
+    throw new Error(errorMessage || `Property '${property}' has incorrect type`);
+  }
+
+  return value;
+}
+
+/**
+ * Safe array property access with type checking
+ */
+export function safeArrayPropertyAccess<T>(
+  obj: unknown,
+  property: string,
+  itemGuard: (value: unknown) => value is T,
+  defaultValue: T[] = []
+): T[] {
+  if (!hasPropertySimple(obj, property)) {
+    return defaultValue;
+  }
+
+  const value = (obj as Record<string, unknown>)[property];
+  if (!Array.isArray(value)) {
+    return defaultValue;
+  }
+
+  return value.filter(itemGuard);
+}
+
+/**
+ * Safe string property access with validation
+ */
+export function safeStringPropertyAccess(
+  obj: unknown,
+  property: string,
+  options: {
+    defaultValue?: string;
+    allowEmpty?: boolean;
+    trim?: boolean;
+    minLength?: number;
+    maxLength?: number;
+  } = {}
+): string | undefined {
+  const { defaultValue, allowEmpty = true, trim = true, minLength, maxLength } = options;
+
+  if (!hasPropertySimple(obj, property)) {
+    return defaultValue;
+  }
+
+  const value = (obj as Record<string, unknown>)[property];
+  if (typeof value !== 'string') {
+    return defaultValue;
+  }
+
+  const result = trim ? value.trim() : value;
+
+  if (!allowEmpty && result.length === 0) {
+    return defaultValue;
+  }
+
+  if (minLength !== undefined && result.length < minLength) {
+    return defaultValue;
+  }
+
+  if (maxLength !== undefined && result.length > maxLength) {
+    return defaultValue;
+  }
+
+  return result;
+}
+
+/**
+ * Safe number property access with validation
+ */
+export function safeNumberPropertyAccess(
+  obj: unknown,
+  property: string,
+  options: {
+    defaultValue?: number;
+    min?: number;
+    max?: number;
+    integer?: boolean;
+  } = {}
+): number | undefined {
+  const { defaultValue, min, max, integer = false } = options;
+
+  if (!hasPropertySimple(obj, property)) {
+    return defaultValue;
+  }
+
+  const value = (obj as Record<string, unknown>)[property];
+  if (typeof value !== 'number' || !isFinite(value)) {
+    return defaultValue;
+  }
+
+  if (integer && !Number.isInteger(value)) {
+    return defaultValue;
+  }
+
+  if (min !== undefined && value < min) {
+    return defaultValue;
+  }
+
+  if (max !== undefined && value > max) {
+    return defaultValue;
+  }
+
+  return value;
+}
+
+/**
+ * Safe boolean property access
+ */
+export function safeBooleanPropertyAccess(
+  obj: unknown,
+  property: string,
+  defaultValue: boolean = false
+): boolean {
+  if (!hasPropertySimple(obj, property)) {
+    return defaultValue;
+  }
+
+  const value = (obj as Record<string, unknown>)[property];
+  return typeof value === 'boolean' ? value : defaultValue;
+}
+
+/**
+ * Safe object property access with structure validation
+ */
+export function safeObjectPropertyAccess(
+  obj: unknown,
+  property: string,
+  structureGuard?: (value: unknown) => boolean
+): Record<string, unknown> | undefined {
+  if (!hasPropertySimple(obj, property)) {
+    return undefined;
+  }
+
+  const value = (obj as Record<string, unknown>)[property];
+  if (value == null || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+
+  if (structureGuard && !structureGuard(value)) {
+    return undefined;
+  }
+
+  return value as Record<string, unknown>;
+}
+
+/**
+ * Batch property access for multiple properties
+ */
+export function batchPropertyAccess<T extends Record<string, unknown>>(
+  obj: unknown,
+  propertyMap: Array<{
+    key: keyof T;
+    required?: boolean;
+    typeGuard: (value: unknown) => boolean;
+    defaultValue?: unknown;
+  }>
+): Partial<T> {
+  const result: Partial<T> = {};
+
+  if (obj == null || typeof obj !== 'object' || Array.isArray(obj)) {
+    // Return default values for required properties
+    propertyMap.forEach(({ key, defaultValue }) => {
+      if (defaultValue !== undefined) {
+        result[key] = defaultValue as T[keyof T];
+      }
+    });
+    return result;
+  }
+
+  const record = obj as Record<string, unknown>;
+
+  propertyMap.forEach(({ key, required, typeGuard, defaultValue }) => {
+    const value = record[key as string];
+
+    if (typeGuard(value)) {
+      result[key] = value as T[keyof T];
+    } else if (required && defaultValue !== undefined) {
+      result[key] = defaultValue as T[keyof T];
+    }
+  });
+
+  return result;
+}
+
+/**
+ * Type guard for unknown error objects
+ */
+export function isErrorLike(obj: unknown): obj is Error & { code?: unknown; details?: unknown } {
+  return (
+    obj instanceof Error ||
+    (obj != null &&
+      typeof obj === 'object' &&
+      'message' in obj &&
+      typeof (obj as Record<string, unknown>).message === 'string')
+  );
+}
+
+/**
+ * Type guard for objects with message property (common error pattern)
+ */
+export function hasMessage(obj: unknown): obj is { message: string } {
+  return hasPropertySimpleOfType(obj, 'message', isString);
+}
+
+/**
+ * Type guard for objects with code property (common error/result pattern)
+ */
+export function hasCode(obj: unknown): obj is { code: string | number } {
+  return (
+    hasPropertySimple(obj, 'code') &&
+    (typeof (obj as Record<string, unknown>).code === 'string' ||
+      typeof (obj as Record<string, unknown>).code === 'number')
+  );
+}
+
+/**
+ * Type guard for objects with status property
+ */
+export function hasStatus(obj: unknown): obj is { status: string } {
+  return hasPropertySimpleOfType(obj, 'status', isString);
+}
+
+/**
+ * Type guard for objects with data property
+ */
+export function hasData<T>(
+  obj: unknown,
+  dataGuard?: (value: unknown) => value is T
+): obj is { data: T } {
+  return (
+    hasPropertySimple(obj, 'data') &&
+    (dataGuard ? dataGuard((obj as Record<string, unknown>).data) : true)
+  );
+}
+
+/**
+ * Type guard for result objects with success property
+ */
+export function hasSuccess(obj: unknown): obj is { success: boolean } {
+  return hasPropertySimpleOfType(obj, 'success', isBoolean);
+}
+
+/**
+ * Type guard for API response objects
+ */
+export function isApiResponse<T>(
+  obj: unknown,
+  dataGuard?: (value: unknown) => value is T
+): obj is {
+  success: boolean;
+  data?: T;
+  error?: { message: string; code?: string | number };
+  message?: string;
+} {
+  if (!hasSuccess(obj)) {
+    return false;
+  }
+
+  const response = obj as { success: boolean; data?: unknown; error?: unknown; message?: unknown };
+
+  if (response.success) {
+    return response.data === undefined || (dataGuard ? dataGuard(response.data) : true);
+  } else {
+    return response.error != null && hasMessage(response.error);
+  }
+}
+
+/**
+ * Type guard for MCP tool call responses
+ */
+export function isMcpToolResponse(obj: unknown): obj is {
+  content: unknown[];
+  isError?: boolean;
+  _meta?: Record<string, unknown>;
+} {
+  return (
+    hasPropertySimple(obj, 'content') &&
+    Array.isArray((obj as Record<string, unknown>).content) &&
+    (!hasPropertySimple(obj, 'isError') ||
+      typeof (obj as Record<string, unknown>).isError === 'boolean') &&
+    (!hasPropertySimple(obj, '_meta') ||
+      (obj as Record<string, unknown>)._meta == null ||
+      typeof (obj as Record<string, unknown>)._meta === 'object')
+  );
+}
+
+// Basic type guards already exist in this file - no duplicates needed
+
+// ============================================================================
+// Type Assertions
+// ============================================================================
+
+/**
+ * Generic type assertion function
+ */
+export function assertType<T>(
+  value: unknown,
+  guard: (value: unknown) => value is T,
+  message?: string
+): asserts value is T {
+  if (!guard(value)) {
+    throw new TypeError(message || `Type assertion failed`);
+  }
+}
+
+/**
+ * Type guard helper functions for database responses
+ */
+
+export function isDatabaseResponse(obj: unknown): obj is DatabaseResponse {
+  return (
+    obj != null &&
+    typeof obj === 'object' &&
+    !Array.isArray(obj) &&
+    hasPropertySimple(obj, 'id') &&
+    typeof (obj as Record<string, unknown>).id === 'string'
+  );
+}
+
+export function isIncidentResponse(obj: unknown): obj is IncidentResponse {
+  return (
+    isDatabaseResponse(obj) &&
+    hasPropertySimple(obj, 'title') &&
+    hasPropertySimple(obj, 'severity') &&
+    typeof (obj as Record<string, unknown>).title === 'string' &&
+    typeof (obj as Record<string, unknown>).severity === 'string'
+  );
+}
+
+export function isReleaseResponse(obj: unknown): obj is ReleaseResponse {
+  return (
+    isDatabaseResponse(obj) &&
+    hasPropertySimple(obj, 'version') &&
+    typeof (obj as Record<string, unknown>).version === 'string'
+  );
+}
+
+export function isRiskResponse(obj: unknown): obj is RiskResponse {
+  return (
+    isDatabaseResponse(obj) &&
+    hasPropertySimple(obj, 'title') &&
+    hasPropertySimple(obj, 'category') &&
+    typeof (obj as Record<string, unknown>).title === 'string' &&
+    typeof (obj as Record<string, unknown>).category === 'string'
+  );
+}
+
+export function isAssumptionResponse(obj: unknown): obj is AssumptionResponse {
+  return (
+    isDatabaseResponse(obj) &&
+    hasPropertySimple(obj, 'title') &&
+    hasPropertySimple(obj, 'description') &&
+    hasPropertySimple(obj, 'category') &&
+    typeof (obj as Record<string, unknown>).title === 'string' &&
+    typeof (obj as Record<string, unknown>).description === 'string' &&
+    typeof (obj as Record<string, unknown>).category === 'string'
+  );
+}
+
+/**
+ * Type guard for database criteria objects
+ */
+export function isDatabaseCriteria(obj: unknown): obj is Record<string, unknown> {
+  return obj != null && typeof obj === 'object' && !Array.isArray(obj);
+}
+
+/**
+ * Type guard for query result arrays
+ */
+export function isQueryResultArray<T>(
+  arr: unknown,
+  itemGuard: (item: unknown) => item is T
+): arr is T[] {
+  return Array.isArray(arr) && arr.every(itemGuard);
 }

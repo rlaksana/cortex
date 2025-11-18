@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Enhanced monitoring type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Qdrant Graceful Degradation Manager
@@ -19,10 +17,14 @@ import { EventEmitter } from 'events';
 import { logger } from '@/utils/logger.js';
 
 import { CircuitBreakerMonitor } from './circuit-breaker-monitor.js';
-import { type DegradationEvent,DegradationLevel, QdrantDegradationDetector } from './degradation-detector.js';
+import {
+  type DegradationEvent,
+  DegradationLevel,
+  QdrantDegradationDetector,
+} from './degradation-detector.js';
 import { QdrantDegradationNotifier } from './degradation-notifier.js';
 import { QdrantErrorBudgetTracker } from './error-budget-tracker.js';
-import { QdrantConnectionStatus,QdrantHealthMonitor } from './qdrant-health-monitor.js';
+import { QdrantConnectionStatus, QdrantHealthMonitor } from './qdrant-health-monitor.js';
 import { InMemoryFallbackStorage } from '../db/adapters/in-memory-fallback-storage.js';
 import type {
   BatchSummary,
@@ -144,13 +146,30 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
   private recoveryInterval: NodeJS.Timeout | null = null;
 
   // Operation interceptors
-  private originalQdrantAdapter: unknown;
+  private originalQdrantAdapter: {
+    store: (items: KnowledgeItem[]) => Promise<{
+      items: ItemResult[];
+      summary: BatchSummary;
+    }>;
+    search: (query: SearchQuery) => Promise<{
+      results: SearchResult[];
+      items: SearchResult[];
+      total_count: number;
+    }>;
+  };
   private interceptorsEnabled = false;
 
-  constructor(
-    qdrantAdapter: unknown,
-    config?: Partial<GracefulDegradationManagerConfig>
-  ) {
+  constructor(qdrantAdapter: {
+    store: (items: KnowledgeItem[]) => Promise<{
+      items: ItemResult[];
+      summary: BatchSummary;
+    }>;
+    search: (query: SearchQuery) => Promise<{
+      results: SearchResult[];
+      items: SearchResult[];
+      total_count: number;
+    }>;
+  }, config?: Partial<GracefulDegradationManagerConfig>) {
     super();
 
     this.originalQdrantAdapter = qdrantAdapter;
@@ -309,10 +328,12 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
       });
 
       this.emit('started');
-
     } catch (error) {
-      logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to start graceful degradation manager');
-      throw (error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Failed to start graceful degradation manager'
+      );
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -351,20 +372,24 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
 
       logger.info('Graceful degradation manager stopped');
       this.emit('stopped');
-
     } catch (error) {
-      logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Error during graceful degradation manager shutdown');
-      throw (error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Error during graceful degradation manager shutdown'
+      );
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
   /**
    * Store items with graceful degradation
    */
-  async store(items: KnowledgeItem[]): Promise<DegradedOperationResponse<{
-    items: ItemResult[];
-    summary: BatchSummary;
-  }>> {
+  async store(items: KnowledgeItem[]): Promise<
+    DegradedOperationResponse<{
+      items: ItemResult[];
+      summary: BatchSummary;
+    }>
+  > {
     const startTime = Date.now();
 
     try {
@@ -390,16 +415,16 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
               errorBudget: this.errorBudgetTracker.getCurrentStatus(),
             },
           };
-
-    } catch (error) {
-      logger.warn({ error: error instanceof Error ? error.message : String(error) }, 'Qdrant store failed, attempting fallback');
-      return await this.performFallbackStore(items, startTime);
-    }
-
+        } catch (error) {
+          logger.warn(
+            { error: error instanceof Error ? error.message : String(error) },
+            'Qdrant store failed, attempting fallback'
+          );
+          return await this.performFallbackStore(items, startTime);
+        }
       } else {
         return await this.performFallbackStore(items, startTime);
       }
-
     } catch (error) {
       this.recordOperationFailure('store', Date.now() - startTime);
       this.statistics.fallbackErrors++;
@@ -414,7 +439,11 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
         meta: {
           level: this.state.currentLevel,
           notifications: this.getActiveNotifications(),
-          recommendations: ['Retry operation', 'Check system status', 'Contact support if issue persists'],
+          recommendations: [
+            'Retry operation',
+            'Check system status',
+            'Contact support if issue persists',
+          ],
         },
       };
     }
@@ -423,11 +452,13 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
   /**
    * Search items with graceful degradation
    */
-  async search(query: SearchQuery): Promise<DegradedOperationResponse<{
-    results: SearchResult[];
-    items: SearchResult[];
-    total_count: number;
-  }>> {
+  async search(query: SearchQuery): Promise<
+    DegradedOperationResponse<{
+      results: SearchResult[];
+      items: SearchResult[];
+      total_count: number;
+    }>
+  > {
     const startTime = Date.now();
 
     try {
@@ -453,16 +484,16 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
               errorBudget: this.errorBudgetTracker.getCurrentStatus(),
             },
           };
-
-    } catch (error) {
-      logger.warn({ error: error instanceof Error ? error.message : String(error) }, 'Qdrant search failed, attempting fallback');
-      return await this.performFallbackSearch(query, startTime);
-    }
-
+        } catch (error) {
+          logger.warn(
+            { error: error instanceof Error ? error.message : String(error) },
+            'Qdrant search failed, attempting fallback'
+          );
+          return await this.performFallbackSearch(query, startTime);
+        }
       } else {
         return await this.performFallbackSearch(query, startTime);
       }
-
     } catch (error) {
       this.recordOperationFailure('search', Date.now() - startTime);
       this.statistics.fallbackErrors++;
@@ -477,7 +508,11 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
         meta: {
           level: this.state.currentLevel,
           notifications: this.getActiveNotifications(),
-          recommendations: ['Retry with simpler query', 'Check connection', 'Use alternative search terms'],
+          recommendations: [
+            'Retry with simpler query',
+            'Check connection',
+            'Use alternative search terms',
+          ],
         },
       };
     }
@@ -517,7 +552,10 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
       await this.performFailover(DegradationLevel.CRITICAL, 'manual', reason);
       return true;
     } catch (error) {
-      logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Manual failover failed');
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Manual failover failed'
+      );
       return false;
     }
   }
@@ -537,7 +575,10 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
       await this.performFailback('manual');
       return true;
     } catch (error) {
-      logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Manual failback failed');
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Manual failback failed'
+      );
       return false;
     }
   }
@@ -687,10 +728,7 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
     }
 
     try {
-      logger.info(
-        { level, trigger, description },
-        'Performing failover to in-memory storage'
-      );
+      logger.info({ level, trigger, description }, 'Performing failover to in-memory storage');
 
       // Update state
       this.state.isInFailover = true;
@@ -741,12 +779,18 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
 
       this.statistics.successfulFailovers++;
       this.emit('failover_completed', { level, trigger, description });
-
     } catch (error) {
-      logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failover failed');
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Failover failed'
+      );
       this.statistics.failedFailovers++;
-      this.emit('failover_failed', { error: error instanceof Error ? error.message : String(error), level, trigger });
-      throw (error instanceof Error ? error : new Error(String(error)));
+      this.emit('failover_failed', {
+        error: error instanceof Error ? error.message : String(error),
+        level,
+        trigger,
+      });
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -772,7 +816,8 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
       this.statistics.totalFailback++;
       this.statistics.lastFailbackTime = new Date();
       this.statistics.averageFailoverDuration =
-        (this.statistics.averageFailoverDuration * (this.statistics.totalFailback - 1) + failoverDuration) /
+        (this.statistics.averageFailoverDuration * (this.statistics.totalFailback - 1) +
+          failoverDuration) /
         this.statistics.totalFailback;
 
       // Sync data from fallback storage if enabled
@@ -808,11 +853,16 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
       this.state.currentLevel = DegradationLevel.HEALTHY;
 
       this.emit('failback_completed', { reason, duration: failoverDuration });
-
     } catch (error) {
-      logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failback failed');
-      this.emit('failback_failed', { error: error instanceof Error ? error.message : String(error), reason });
-      throw (error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Failback failed'
+      );
+      this.emit('failback_failed', {
+        error: error instanceof Error ? error.message : String(error),
+        reason,
+      });
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -834,7 +884,10 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
         if (isHealthy) {
           consecutiveHealthChecks++;
           logger.debug(
-            { consecutiveHealthChecks, required: this.config.failover.consecutiveHealthChecksRequired },
+            {
+              consecutiveHealthChecks,
+              required: this.config.failover.consecutiveHealthChecksRequired,
+            },
             'Recovery health check passed'
           );
 
@@ -846,10 +899,12 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
         } else {
           consecutiveHealthChecks = 0;
         }
-
       } catch (error) {
         consecutiveHealthChecks = 0;
-        logger.debug?.({ error: error instanceof Error ? error.message : String(error) }, 'Recovery health check failed');
+        logger.debug?.(
+          { error: error instanceof Error ? error.message : String(error) },
+          'Recovery health check failed'
+        );
       }
     }, this.config.failover.healthCheckIntervalMs);
   }
@@ -879,10 +934,12 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
   private async performFallbackStore(
     items: KnowledgeItem[],
     startTime: number
-  ): Promise<DegradedOperationResponse<{
-    items: ItemResult[];
-    summary: BatchSummary;
-  }>> {
+  ): Promise<
+    DegradedOperationResponse<{
+      items: ItemResult[];
+      summary: BatchSummary;
+    }>
+  > {
     try {
       const result = await this.fallbackStorage.store(items);
       this.statistics.fallbackOperations++;
@@ -902,10 +959,9 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
           errorBudget: this.errorBudgetTracker.getCurrentStatus(),
         },
       };
-
     } catch (error) {
       this.recordOperationFailure('store', Date.now() - startTime, true);
-      throw (error instanceof Error ? error : new Error(String(error)));
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -915,11 +971,13 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
   private async performFallbackSearch(
     query: SearchQuery,
     startTime: number
-  ): Promise<DegradedOperationResponse<{
-    results: SearchResult[];
-    items: SearchResult[];
-    total_count: number;
-  }>> {
+  ): Promise<
+    DegradedOperationResponse<{
+      results: SearchResult[];
+      items: SearchResult[];
+      total_count: number;
+    }>
+  > {
     try {
       const result = await this.fallbackStorage.search(query);
       this.statistics.fallbackOperations++;
@@ -935,14 +993,16 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
         meta: {
           level: this.state.currentLevel,
           notifications: ['Operating in fallback mode - limited search results'],
-          recommendations: ['Try simpler search terms', 'Results may be limited during degradation'],
+          recommendations: [
+            'Try simpler search terms',
+            'Results may be limited during degradation',
+          ],
           errorBudget: this.errorBudgetTracker.getCurrentStatus(),
         },
       };
-
     } catch (error) {
       this.recordOperationFailure('search', Date.now() - startTime, true);
-      throw (error instanceof Error ? error : new Error(String(error)));
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -985,7 +1045,7 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
     if (this.config.errorBudget.enabled) {
       this.errorBudgetTracker.recordOperation({
         timestamp: Date.now(),
-        operationType: operation as unknown,
+        operationType: this.mapOperationType(operation),
         success: false, // Will be updated on completion
         responseTime: 0,
         degraded: this.state.currentLevel !== DegradationLevel.HEALTHY,
@@ -997,11 +1057,15 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
   /**
    * Record operation success
    */
-  private recordOperationSuccess(operation: string, responseTime: number, fallback: boolean = false): void {
+  private recordOperationSuccess(
+    operation: string,
+    responseTime: number,
+    fallback: boolean = false
+  ): void {
     if (this.config.errorBudget.enabled) {
       this.errorBudgetTracker.recordOperation({
         timestamp: Date.now(),
-        operationType: operation as unknown,
+        operationType: this.mapOperationType(operation),
         success: true,
         responseTime,
         degraded: this.state.currentLevel !== DegradationLevel.HEALTHY,
@@ -1013,11 +1077,15 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
   /**
    * Record operation failure
    */
-  private recordOperationFailure(operation: string, responseTime: number, fallback: boolean = false): void {
+  private recordOperationFailure(
+    operation: string,
+    responseTime: number,
+    fallback: boolean = false
+  ): void {
     if (this.config.errorBudget.enabled) {
       this.errorBudgetTracker.recordOperation({
         timestamp: Date.now(),
-        operationType: operation as unknown,
+        operationType: this.mapOperationType(operation),
         success: false,
         responseTime,
         degraded: true,
@@ -1082,6 +1150,25 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
   }
 
   /**
+   * Map operation string to error budget operation type
+   */
+  private mapOperationType(operation: string): 'read' | 'write' | 'search' | 'health_check' | 'other' {
+    switch (operation.toLowerCase()) {
+      case 'search':
+        return 'search';
+      case 'store':
+        return 'write';
+      case 'get':
+      case 'find':
+        return 'read';
+      case 'health_check':
+        return 'health_check';
+      default:
+        return 'other';
+    }
+  }
+
+  /**
    * Type guard for degradation events
    */
   private isValidDegradationEvent(event: unknown): event is {
@@ -1089,15 +1176,21 @@ export class QdrantGracefulDegradationManager extends EventEmitter {
     newLevel: DegradationLevel;
     levelChangeEvent: DegradationEvent;
   } {
+    if (
+      event === null ||
+      typeof event !== 'object' ||
+      !('previousLevel' in event) ||
+      !('newLevel' in event) ||
+      !('levelChangeEvent' in event)
+    ) {
+      return false;
+    }
+
+    const typedEvent = event as Record<string, unknown>;
     return (
-      event !== null &&
-      typeof event === 'object' &&
-      'previousLevel' in event &&
-      'newLevel' in event &&
-      'levelChangeEvent' in event &&
-      Object.values(DegradationLevel).includes((event as unknown).previousLevel) &&
-      Object.values(DegradationLevel).includes((event as unknown).newLevel) &&
-      typeof (event as unknown).levelChangeEvent === 'object'
+      Object.values(DegradationLevel).includes(typedEvent.previousLevel as DegradationLevel) &&
+      Object.values(DegradationLevel).includes(typedEvent.newLevel as DegradationLevel) &&
+      typeof typedEvent.levelChangeEvent === 'object'
     );
   }
 }

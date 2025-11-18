@@ -1,6 +1,4 @@
-// @ts-nocheck
 // COMPREHENSIVE EMERGENCY ROLLBACK: Final systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Rate Limiting Service for Cortex MCP
@@ -211,10 +209,10 @@ export class RateLimitService extends EventEmitter {
    * Get singleton instance
    */
   public static getInstance(): RateLimitService {
-    if (!(RateLimitService as unknown).instance) {
-      (RateLimitService as unknown).instance = new RateLimitService();
+    if (!(RateLimitService as any).instance) {
+      (RateLimitService as any).instance = new RateLimitService();
     }
-    return (RateLimitService as unknown).instance;
+    return (RateLimitService as any).instance;
   }
 
   /**

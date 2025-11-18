@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Enhanced monitoring type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Health Check Service for Cortex MCP
@@ -19,6 +17,7 @@ import { logger } from '@/utils/logger.js';
 
 import { metricsService } from './metrics-service.js';
 import { performanceCollector } from './performance-collector.js';
+import { OperationType } from './operation-types.js';
 import { DependencyType } from '../services/deps-registry.js';
 import { EmbeddingService } from '../services/embeddings/embedding-service.js';
 import {
@@ -300,7 +299,7 @@ export class HealthCheckService extends EventEmitter {
     try {
       // This would need to be adapted based on your database implementation
       // For now, we'll simulate with performance collector metrics
-      const dbSummary = performanceCollector.getSummary('database_query');
+      const dbSummary = performanceCollector.getSummary(OperationType.DATABASE_QUERY);
       const latency = Date.now() - startTime;
 
       if (!dbSummary) {
@@ -384,7 +383,7 @@ export class HealthCheckService extends EventEmitter {
 
     try {
       // This would need to be adapted based on your Qdrant implementation
-      const qdrantSummary = performanceCollector.getSummary('vector_search');
+      const qdrantSummary = performanceCollector.getSummary(OperationType.VECTOR_SEARCH);
       const latency = Date.now() - startTime;
 
       if (!qdrantSummary) {
@@ -472,7 +471,7 @@ export class HealthCheckService extends EventEmitter {
       const isHealthy = await this.embeddingService.healthCheck();
       const latency = Date.now() - startTime;
 
-      const embeddingSummary = performanceCollector.getSummary('embedding_generation');
+      const embeddingSummary = performanceCollector.getSummary(OperationType.EMBEDDING_GENERATION);
       const errorThreshold = this.config.error_rate_thresholds.embedding;
       const latencyThreshold = this.config.latency_thresholds.embedding_ms;
 

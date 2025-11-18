@@ -1,15 +1,15 @@
-// @ts-nocheck
-// ABSOLUTELY FINAL EMERGENCY ROLLBACK: Complete ALL systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
+// P4 MCP INTEGRATION RESOLUTION: Fixed MCP SDK v1.22.0 compatibility
 
 /**
  * MCP 2025 Compliance Utilities
  *
  * Standardized error handling and response formatting for Claude Code,
  * Gemini, and Codex compatibility according to MCP 2025 standards.
+ * Updated for MCP SDK v1.22.0 compatibility.
  */
 
 import { logger } from '@/utils/logger.js';
+import type { ContentBlock } from '@modelcontextprotocol/sdk/types.js';
 
 /**
  * Standard MCP Error Codes (2025 specification)
@@ -61,12 +61,7 @@ export interface MCPSuccessResponse {
  * Standard MCP Tool Handler Response
  */
 export interface MCPToolResponse {
-  content: Array<{
-    type: 'text' | 'image' | 'resource';
-    text?: string;
-    data?: string;
-    mimeType?: string;
-  }>;
+  content: ContentBlock[];
   isError?: boolean;
 }
 
@@ -176,21 +171,31 @@ export function validateToolInput(
 ): { isValid: boolean; errors?: string[] } {
   const errors: string[] = [];
 
+  // Validate schema structure
+  if (!schema || typeof schema !== 'object') {
+    errors.push('Schema must be an object');
+    return { isValid: false, errors };
+  }
+
+  const schemaObj = schema as Record<string, unknown>;
+
   // Basic validation logic
-  if (schema.type === 'object') {
-    if (schema.required && typeof input === 'object' && input !== null) {
-      for (const requiredField of schema.required) {
-        if (!(requiredField in input)) {
+  if (schemaObj.type === 'object') {
+    if (schemaObj.required && typeof input === 'object' && input !== null) {
+      const inputObj = input as Record<string, unknown>;
+      for (const requiredField of schemaObj.required as string[]) {
+        if (!(requiredField in inputObj)) {
           errors.push(`Missing required field: ${requiredField}`);
         }
       }
     }
 
-    if (schema.properties && typeof input === 'object' && input !== null) {
-      for (const [fieldName, fieldSchema] of Object.entries(schema.properties)) {
-        if (fieldName in input) {
-          const value = input[fieldName];
-          const fieldDef = fieldSchema as unknown;
+    if (schemaObj.properties && typeof input === 'object' && input !== null) {
+      const inputObj = input as Record<string, unknown>;
+      for (const [fieldName, fieldSchema] of Object.entries(schemaObj.properties as Record<string, unknown>)) {
+        if (fieldName in inputObj) {
+          const value = inputObj[fieldName];
+          const fieldDef = fieldSchema as Record<string, unknown>;
 
           // Type validation
           if (fieldDef.type && typeof value !== fieldDef.type) {
@@ -200,9 +205,9 @@ export function validateToolInput(
           }
 
           // Enum validation
-          if (fieldDef.enum && !fieldDef.enum.includes(value)) {
+          if (Array.isArray(fieldDef.enum) && !fieldDef.enum.includes(value)) {
             errors.push(
-              `Field '${fieldName}' must be one of: ${fieldDef.enum.join(', ')}, got ${value}`
+              `Field '${fieldName}' must be one of: ${(fieldDef.enum as unknown[]).join(', ')}, got ${value}`
             );
           }
 
@@ -223,15 +228,13 @@ export function validateToolInput(
  */
 export function createToolResponse(
   content: string,
-  isError: boolean = false,
-  mimeType: string = 'text/plain'
+  isError: boolean = false
 ): MCPToolResponse {
   return {
     content: [
       {
         type: 'text',
         text: content,
-        ...(mimeType !== 'text/plain' && { mimeType }),
       },
     ],
     isError,

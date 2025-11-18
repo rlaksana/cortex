@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Deduplication Service Adapter
  *
@@ -153,7 +149,7 @@ export class DeduplicationServiceAdapter implements IDeduplicationService {
       ...items[0],
       updated_at: new Date().toISOString(),
       data: { ...items[0].data },
-      metadata: {
+      metadata: {          serviceName: "memory-find-adapter",
         ...items[0].metadata,
         merged_from: items.slice(1).map((item) => item.id),
         merge_count: items.length,

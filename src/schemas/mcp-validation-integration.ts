@@ -1,6 +1,4 @@
-// @ts-nocheck
 // LAST ABSOLUTE FINAL EMERGENCY ROLLBACK: Complete the systematic rollback
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * MCP Validation Integration Layer
@@ -14,7 +12,11 @@
 
 import { logger } from '@/utils/logger.js';
 
-import type { JSONValue,ValidationErrorDetail,ValidationResult } from './unified-knowledge-validator.js';
+import type {
+  JSONValue,
+  ValidationErrorDetail,
+  ValidationResult,
+} from './unified-knowledge-validator.js';
 import { mcpToolValidator } from '../services/validation/enhanced-validation-service.js';
 import type { Dict } from '../types/index.js';
 
@@ -84,7 +86,9 @@ export interface MCPValidationResult<T = JSONValue> {
 /**
  * Validate memory store MCP tool input with enhanced error handling
  */
-export async function validateMemoryStoreInput(input: MemoryStoreInput): Promise<MCPValidationResult> {
+export async function validateMemoryStoreInput(
+  input: MemoryStoreInput
+): Promise<MCPValidationResult> {
   const startTime = Date.now();
 
   try {
@@ -147,7 +151,9 @@ export async function validateMemoryStoreInput(input: MemoryStoreInput): Promise
 /**
  * Validate memory find MCP tool input with enhanced error handling
  */
-export async function validateMemoryFindInput(input: MemoryFindInput): Promise<MCPValidationResult> {
+export async function validateMemoryFindInput(
+  input: MemoryFindInput
+): Promise<MCPValidationResult> {
   const startTime = Date.now();
 
   try {
@@ -213,7 +219,9 @@ export async function validateMemoryFindInput(input: MemoryFindInput): Promise<M
 /**
  * Validate system status MCP tool input with enhanced error handling
  */
-export async function validateSystemStatusInput(input: Dict<JSONValue>): Promise<MCPValidationResult> {
+export async function validateSystemStatusInput(
+  input: Dict<JSONValue>
+): Promise<MCPValidationResult> {
   const startTime = Date.now();
 
   try {
@@ -322,7 +330,8 @@ export async function validateAndTransformItemsEnhanced(items: JSONValue[]): Pro
     detailedValidations.forEach(({ index, validation }) => {
       if (!validation.valid) {
         const itemErrors = validation.errors.map(
-          (error: ValidationErrorDetail) => `Item ${index}: ${error.field ? `${error.field}: ` : ''}${error.message}`
+          (error: ValidationErrorDetail) =>
+            `Item ${index}: ${error.field ? `${error.field}: ` : ''}${error.message}`
         );
         validationErrors.push(...itemErrors);
       }

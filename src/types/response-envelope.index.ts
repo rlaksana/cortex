@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * MCP Response Envelope System - Index
  *
@@ -21,11 +17,13 @@ export type {
   PaginatedEnvelope,
   ResponseEnvelope,
   StreamingEnvelope,
-  SuccessEnvelope} from './response-envelope.types';
+  SuccessEnvelope,
+} from './response-envelope.types';
 export type {
   ExtractErrorData,
   ExtractPaginatedData,
-  ExtractSuccessData} from './response-envelope.types';
+  ExtractSuccessData,
+} from './response-envelope.types';
 
 // Response data types
 export type {
@@ -34,36 +32,33 @@ export type {
   MemoryStoreResult,
   RateLimitErrorDetails,
   SystemStatusResult,
-  ValidationErrorDetails} from './mcp-response-data.types';
+  ValidationErrorDetails,
+} from './mcp-response-data.types';
 
 // Type guards
 export {
   isErrorEnvelope,
   isPaginatedEnvelope,
   isStreamingEnvelope,
-  isSuccessEnvelope} from './response-envelope.types';
+  isSuccessEnvelope,
+} from './response-envelope.types';
 
 // Response builders
-export {
-  ErrorCode,
-  ResponseEnvelopeBuilder} from '../utils/response-envelope-builder';
+export { ErrorCode, ResponseEnvelopeBuilder } from '../utils/response-envelope-builder';
 export {
   createResponseEnvelopeBuilder,
   extractErrorInfo,
   extractSuccessData,
   isErrorResponse,
-  isSuccessfulResponse} from '../utils/response-envelope-builder';
+  isSuccessfulResponse,
+} from '../utils/response-envelope-builder';
 
 // Response validators
-export type {
-  ValidationResult
-} from '../utils/response-envelope-validator';
-export {
-  ResponseEnvelopeValidator
-} from '../utils/response-envelope-validator';
+export type { ValidationResult } from '../utils/response-envelope-validator';
+export { ResponseEnvelopeValidator } from '../utils/response-envelope-validator';
 export {
   validateEnvelopeOrThrow,
-  validateOperationResponseOrThrow
+  validateOperationResponseOrThrow,
 } from '../utils/response-envelope-validator';
 
 // Response type guards
@@ -85,13 +80,13 @@ export {
   isSystemStatusResponse,
   isValidationErrorResponse,
   ResponseProcessor,
-  safeExtractResponseData} from '../utils/mcp-response-guards';
+  safeExtractResponseData,
+} from '../utils/mcp-response-guards';
 
 // Re-export unified response interface for compatibility
 export type {
   SearchStrategy,
   UnifiedResponseMeta,
-  UnifiedToolResponse} from './unified-response.interface';
-export {
-  createMcpResponse,
-  createResponseMeta} from './unified-response.interface';
+  UnifiedToolResponse,
+} from './unified-response.interface';
+export { createMcpResponse, createResponseMeta } from './unified-response.interface';

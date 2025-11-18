@@ -1,6 +1,7 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Utility type guard compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
+// PHASE 2.2A RECOVERY: Configuration type guard synchronization complete
+// Recovery Date: 2025-11-14T17:25:00+07:00 (Asia/Jakarta)
+// Recovery Method: Sequential file-by-file approach with quality gates
+// Dependencies: Type safety foundation for configuration management
 
 /**
  * Configuration Type Guards
@@ -18,7 +19,7 @@
  * @version 1.0.0
  */
 
-import type { Dict, JSONValue, MutableDict } from '@/types/index.js';
+import type { Dict, JSONValue, MutableDict } from '../types/index.js';
 
 // ============================================================================
 // Type Guard Utilities
@@ -28,10 +29,12 @@ import type { Dict, JSONValue, MutableDict } from '@/types/index.js';
  * Type guard to check if a value is a plain object (not null, not array, not function)
  */
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return value !== null &&
-         typeof value === 'object' &&
-         !Array.isArray(value) &&
-         Object.prototype.toString.call(value) === '[object Object]';
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.prototype.toString.call(value) === '[object Object]'
+  );
 }
 
 /**
@@ -46,14 +49,18 @@ export function isJSONObject(value: unknown): value is Record<string, JSONValue>
     if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') continue;
     if (typeof val === 'object' && !Array.isArray(val) && isJSONObject(val)) continue;
     if (Array.isArray(val)) {
-      if (!val.every(item =>
-        item === null ||
-        item === undefined ||
-        typeof item === 'string' ||
-        typeof item === 'number' ||
-        typeof item === 'boolean' ||
-        (typeof item === 'object' && !Array.isArray(item) && isJSONObject(item))
-      )) return false;
+      if (
+        !val.every(
+          (item) =>
+            item === null ||
+            item === undefined ||
+            typeof item === 'string' ||
+            typeof item === 'number' ||
+            typeof item === 'boolean' ||
+            (typeof item === 'object' && !Array.isArray(item) && isJSONObject(item))
+        )
+      )
+        return false;
       continue;
     }
     return false;
@@ -103,14 +110,16 @@ export function isSecurityConfig(value: unknown): value is {
   if (!isPlainObject(value)) return false;
 
   const config = value as Record<string, unknown>;
-  return Array.isArray(config.corsOrigin) &&
-         typeof config.rateLimitEnabled === 'boolean' &&
-         typeof config.rateLimitWindowMs === 'number' &&
-         typeof config.rateLimitMaxRequests === 'number' &&
-         typeof config.helmetEnabled === 'boolean' &&
-         typeof config.requireApiKey === 'boolean' &&
-         typeof config.maxRequestSizeMb === 'number' &&
-         typeof config.enableCompression === 'boolean';
+  return (
+    Array.isArray(config.corsOrigin) &&
+    typeof config.rateLimitEnabled === 'boolean' &&
+    typeof config.rateLimitWindowMs === 'number' &&
+    typeof config.rateLimitMaxRequests === 'number' &&
+    typeof config.helmetEnabled === 'boolean' &&
+    typeof config.requireApiKey === 'boolean' &&
+    typeof config.maxRequestSizeMb === 'number' &&
+    typeof config.enableCompression === 'boolean'
+  );
 }
 
 export function isHealthConfig(value: unknown): value is {
@@ -123,11 +132,13 @@ export function isHealthConfig(value: unknown): value is {
   if (!isPlainObject(value)) return false;
 
   const config = value as Record<string, unknown>;
-  return typeof config.enabled === 'boolean' &&
-         typeof config.detailedEndpoints === 'boolean' &&
-         typeof config.metricsEndpoint === 'boolean' &&
-         typeof config.authenticationRequired === 'boolean' &&
-         Array.isArray(config.allowedIPs);
+  return (
+    typeof config.enabled === 'boolean' &&
+    typeof config.detailedEndpoints === 'boolean' &&
+    typeof config.metricsEndpoint === 'boolean' &&
+    typeof config.authenticationRequired === 'boolean' &&
+    Array.isArray(config.allowedIPs)
+  );
 }
 
 export function isShutdownConfig(value: unknown): value is {
@@ -139,10 +150,12 @@ export function isShutdownConfig(value: unknown): value is {
   if (!isPlainObject(value)) return false;
 
   const config = value as Record<string, unknown>;
-  return typeof config.timeout === 'number' &&
-         typeof config.forceTimeout === 'number' &&
-         typeof config.enableDrainMode === 'boolean' &&
-         typeof config.drainTimeout === 'number';
+  return (
+    typeof config.timeout === 'number' &&
+    typeof config.forceTimeout === 'number' &&
+    typeof config.enableDrainMode === 'boolean' &&
+    typeof config.drainTimeout === 'number'
+  );
 }
 
 export function isLoggingConfig(value: unknown): value is {
@@ -155,11 +168,13 @@ export function isLoggingConfig(value: unknown): value is {
   if (!isPlainObject(value)) return false;
 
   const config = value as Record<string, unknown>;
-  return typeof config.level === 'string' &&
-         (config.format === 'json' || config.format === 'text') &&
-         typeof config.structured === 'boolean' &&
-         typeof config.includeTimestamp === 'boolean' &&
-         typeof config.includeRequestId === 'boolean';
+  return (
+    typeof config.level === 'string' &&
+    (config.format === 'json' || config.format === 'text') &&
+    typeof config.structured === 'boolean' &&
+    typeof config.includeTimestamp === 'boolean' &&
+    typeof config.includeRequestId === 'boolean'
+  );
 }
 
 export function isPerformanceConfig(value: unknown): value is {
@@ -172,11 +187,13 @@ export function isPerformanceConfig(value: unknown): value is {
   if (!isPlainObject(value)) return false;
 
   const config = value as Record<string, unknown>;
-  return typeof config.enableMetrics === 'boolean' &&
-         typeof config.enablePerformanceMonitoring === 'boolean' &&
-         typeof config.nodeOptions === 'string' &&
-         typeof config.maxOldSpaceSize === 'number' &&
-         typeof config.maxHeapSize === 'number';
+  return (
+    typeof config.enableMetrics === 'boolean' &&
+    typeof config.enablePerformanceMonitoring === 'boolean' &&
+    typeof config.nodeOptions === 'string' &&
+    typeof config.maxOldSpaceSize === 'number' &&
+    typeof config.maxHeapSize === 'number'
+  );
 }
 
 export function isMonitoringConfig(value: unknown): value is {
@@ -188,10 +205,12 @@ export function isMonitoringConfig(value: unknown): value is {
   if (!isPlainObject(value)) return false;
 
   const config = value as Record<string, unknown>;
-  return typeof config.enableSystemMetrics === 'boolean' &&
-         typeof config.enableHealthChecks === 'boolean' &&
-         typeof config.metricsInterval === 'number' &&
-         typeof config.healthCheckInterval === 'number';
+  return (
+    typeof config.enableSystemMetrics === 'boolean' &&
+    typeof config.enableHealthChecks === 'boolean' &&
+    typeof config.metricsInterval === 'number' &&
+    typeof config.healthCheckInterval === 'number'
+  );
 }
 
 // ============================================================================
@@ -257,10 +276,7 @@ export function getStringValue(value: unknown, defaultValue: string): string {
 /**
  * Type-safe deep merge for configuration objects
  */
-export function safeDeepMerge<T extends Record<string, unknown>>(
-  target: T,
-  source: Partial<T>
-): T {
+export function safeDeepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
   const result = { ...target } as MutableDict<unknown>;
 
   for (const key in source) {
@@ -363,12 +379,14 @@ export function isProductionConfig(value: unknown): value is {
 
   const config = value as Record<string, unknown>;
 
-  return isSecurityConfig(config.security) &&
-         isHealthConfig(config.health) &&
-         isShutdownConfig(config.shutdown) &&
-         isLoggingConfig(config.logging) &&
-         isPerformanceConfig(config.performance) &&
-         isMonitoringConfig(config.monitoring);
+  return (
+    isSecurityConfig(config.security) &&
+    isHealthConfig(config.health) &&
+    isShutdownConfig(config.shutdown) &&
+    isLoggingConfig(config.logging) &&
+    isPerformanceConfig(config.performance) &&
+    isMonitoringConfig(config.monitoring)
+  );
 }
 
 /**
@@ -409,12 +427,24 @@ export function safeMergeProductionConfig(
   // Safely merge each section
   return {
     ...validatedBase,
-    security: safeDeepMerge(validatedBase.security, validatedUpdates.security) as unknown as JSONValue,
+    security: safeDeepMerge(
+      validatedBase.security,
+      validatedUpdates.security
+    ) as unknown as JSONValue,
     health: safeDeepMerge(validatedBase.health, validatedUpdates.health) as unknown as JSONValue,
-    shutdown: safeDeepMerge(validatedBase.shutdown, validatedUpdates.shutdown) as unknown as JSONValue,
+    shutdown: safeDeepMerge(
+      validatedBase.shutdown,
+      validatedUpdates.shutdown
+    ) as unknown as JSONValue,
     logging: safeDeepMerge(validatedBase.logging, validatedUpdates.logging) as unknown as JSONValue,
-    performance: safeDeepMerge(validatedBase.performance, validatedUpdates.performance) as unknown as JSONValue,
-    monitoring: safeDeepMerge(validatedBase.monitoring, validatedUpdates.monitoring) as unknown as JSONValue,
+    performance: safeDeepMerge(
+      validatedBase.performance,
+      validatedUpdates.performance
+    ) as unknown as JSONValue,
+    monitoring: safeDeepMerge(
+      validatedBase.monitoring,
+      validatedUpdates.monitoring
+    ) as unknown as JSONValue,
   };
 }
 
@@ -450,14 +480,23 @@ export function validateMigrationConfig(configData: unknown): {
   };
 
   return {
-    mode: getStringValue(data.mode, '') as 'pg-to-qdrant' | 'qdrant-to-pg' | 'sync' | 'validate' | 'cleanup' | undefined,
+    mode: getStringValue(data.mode, '') as
+      | 'pg-to-qdrant'
+      | 'qdrant-to-pg'
+      | 'sync'
+      | 'validate'
+      | 'cleanup'
+      | undefined,
     batchSize: getNumberValue(getWithDefault(['dataTransformation', 'batchSize'], 100), 100),
     concurrency: getNumberValue(getWithDefault(['performance', 'maxConcurrency'], 4), 4),
     dryRun: getBooleanValue(getWithDefault(['safety', 'dryRun'], false), false),
     preservePg: getBooleanValue(getWithDefault(['safety', 'preserveSource'], false), false),
     validationEnabled: getBooleanValue(getWithDefault(['validation', 'enabled'], false), false),
     skipValidation: !getBooleanValue(getWithDefault(['validation', 'enabled'], false), false),
-    progressFile: getStringValue(getWithDefault(['progressTracking', 'filePath'], 'migration-progress.json'), 'migration-progress.json'),
+    progressFile: getStringValue(
+      getWithDefault(['progressTracking', 'filePath'], 'migration-progress.json'),
+      'migration-progress.json'
+    ),
   };
 }
 
@@ -485,10 +524,7 @@ export function safePropertyAccess<T>(
 /**
  * Safe array access with type validation
  */
-export function safeArrayAccess<T>(
-  value: unknown,
-  validator: (item: unknown) => item is T
-): T[] {
+export function safeArrayAccess<T>(value: unknown, validator: (item: unknown) => item is T): T[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -513,17 +549,20 @@ export function safeStringToEnum<T extends string>(
 /**
  * Enhanced type guard for migration mode
  */
-export function isMigrationMode(value: unknown): value is 'pg-to-qdrant' | 'qdrant-to-pg' | 'sync' | 'validate' | 'cleanup' {
-  return typeof value === 'string' &&
-         ['pg-to-qdrant', 'qdrant-to-pg', 'sync', 'validate', 'cleanup'].includes(value);
+export function isMigrationMode(
+  value: unknown
+): value is 'pg-to-qdrant' | 'qdrant-to-pg' | 'sync' | 'validate' | 'cleanup' {
+  return (
+    typeof value === 'string' &&
+    ['pg-to-qdrant', 'qdrant-to-pg', 'sync', 'validate', 'cleanup'].includes(value)
+  );
 }
 
 /**
  * Enhanced type guard for environment
  */
 export function isEnvironment(value: unknown): value is 'development' | 'production' | 'test' {
-  return typeof value === 'string' &&
-         ['development', 'production', 'test'].includes(value);
+  return typeof value === 'string' && ['development', 'production', 'test'].includes(value);
 }
 
 /**
@@ -621,10 +660,12 @@ export async function safeAsyncExecution<T>(
  */
 export function isJSONCompatible(value: unknown): value is JSONValue {
   // Primitives
-  if (value === null ||
-      typeof value === 'string' ||
-      typeof value === 'number' ||
-      typeof value === 'boolean') {
+  if (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
     return true;
   }
 
@@ -655,7 +696,10 @@ export function safeJSONStringify(value: unknown, defaultValue: string = '{}'): 
 /**
  * Safe JSON parsing with type validation
  */
-export function safeJSONParse<T>(json: string, validator: (value: unknown) => value is T): T | null {
+export function safeJSONParse<T>(
+  json: string,
+  validator: (value: unknown) => value is T
+): T | null {
   try {
     const parsed = JSON.parse(json);
     return validator(parsed) ? parsed : null;
@@ -674,15 +718,16 @@ export function safeJSONParse<T>(json: string, validator: (value: unknown) => va
 export function safeConvertToStringArray(value: unknown, defaultValue: string[] = []): string[] {
   if (Array.isArray(value)) {
     return value
-      .filter(item => item !== null && item !== undefined)
-      .map(item => String(item))
-      .filter(str => str.length > 0);
+      .filter((item) => item !== null && item !== undefined)
+      .map((item) => String(item))
+      .filter((str) => str.length > 0);
   }
   if (typeof value === 'string') {
     // Handle comma-separated strings
-    return value.split(',')
-      .map(str => str.trim())
-      .filter(str => str.length > 0);
+    return value
+      .split(',')
+      .map((str) => str.trim())
+      .filter((str) => str.length > 0);
   }
   return defaultValue;
 }
@@ -744,7 +789,7 @@ export function safeConvertToEnum<T extends string>(
  */
 export function safeConvertToTypedSection<T extends Record<string, unknown>>(
   value: unknown,
-  converter: (section: Record<string, unknown>) => T,
+  converter: (_data: Record<string, unknown>) => T,
   defaultValue: T
 ): T {
   if (isPlainObject(value)) {
@@ -771,7 +816,7 @@ export function validateAndConvertSecurityConfig(value: unknown): {
   maxRequestSizeMb: number;
   enableCompression: boolean;
 } {
-  const config = isPlainObject(value) ? value as Record<string, unknown> : {};
+  const config = isPlainObject(value) ? (value as Record<string, unknown>) : {};
 
   return {
     corsOrigin: safeConvertToStringArray(config.corsOrigin, []),
@@ -795,7 +840,7 @@ export function validateAndConvertHealthConfig(value: unknown): {
   authenticationRequired: boolean;
   allowedIPs: string[];
 } {
-  const config = isPlainObject(value) ? value as Record<string, unknown> : {};
+  const config = isPlainObject(value) ? (value as Record<string, unknown>) : {};
 
   return {
     enabled: safeConvertToBoolean(config.enabled, false),
@@ -815,7 +860,7 @@ export function validateAndConvertShutdownConfig(value: unknown): {
   enableDrainMode: boolean;
   drainTimeout: number;
 } {
-  const config = isPlainObject(value) ? value as Record<string, unknown> : {};
+  const config = isPlainObject(value) ? (value as Record<string, unknown>) : {};
 
   const timeout = safeConvertToNumber(config.timeout, 30000, 1000, 300000);
   const forceTimeout = safeConvertToNumber(config.forceTimeout, 60000, 1000, 300000);
@@ -842,14 +887,10 @@ export function validateAndConvertLoggingConfig(value: unknown): {
   includeTimestamp: boolean;
   includeRequestId: boolean;
 } {
-  const config = isPlainObject(value) ? value as Record<string, unknown> : {};
+  const config = isPlainObject(value) ? (value as Record<string, unknown>) : {};
 
   const validLogLevels = ['error', 'warn', 'info', 'debug'] as const;
-  const level = safeConvertToEnum(
-    config.level,
-    validLogLevels,
-    'info'
-  );
+  const level = safeConvertToEnum(config.level, validLogLevels, 'info');
 
   return {
     level,
@@ -870,7 +911,7 @@ export function validateAndConvertPerformanceConfig(value: unknown): {
   maxOldSpaceSize: number;
   maxHeapSize: number;
 } {
-  const config = isPlainObject(value) ? value as Record<string, unknown> : {};
+  const config = isPlainObject(value) ? (value as Record<string, unknown>) : {};
 
   return {
     enableMetrics: safeConvertToBoolean(config.enableMetrics, false),
@@ -890,7 +931,7 @@ export function validateAndConvertMonitoringConfig(value: unknown): {
   metricsInterval: number;
   healthCheckInterval: number;
 } {
-  const config = isPlainObject(value) ? value as Record<string, unknown> : {};
+  const config = isPlainObject(value) ? (value as Record<string, unknown>) : {};
 
   return {
     enableSystemMetrics: safeConvertToBoolean(config.enableSystemMetrics, false),

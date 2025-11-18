@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Logical Contradiction Detection Strategy
  *
@@ -1143,4 +1138,3 @@ Provide detailed logical analysis focusing on formal reasoning and implicit cont
  * Export singleton instance
  */
 export const logicalContradictionStrategy = new LogicalContradictionStrategy();
-

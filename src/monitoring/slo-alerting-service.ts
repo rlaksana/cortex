@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * SLO Alerting Service
  *
@@ -13,9 +9,11 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { metricsService } from './metrics-service.js';
-import { sloTracingService } from './slo-tracing-service.ts';
-import type { AlertSeverity, AlertThreshold, NotificationChannel } from '../types/slo-types.js';
+import { sloTracingService } from './slo-tracing-service.js';
+import { AlertSeverity } from '../types/unified-health-interfaces.js';
+import type { NotificationChannel } from '../types/slo-interfaces.js';
 
 // ============================================================================
 // Alert Rule Definitions
@@ -92,17 +90,17 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       operator: 'lt',
       threshold: 99.8, // 99.9% target - 0.1% tolerance
       evaluationWindow: 2 * 60 * 60 * 1000, // 2 hours
-      aggregation: 'avg'
+      aggregation: 'avg',
     },
-    severity: 'warning',
+    severity: AlertSeverity.WARNING,
     duration: 2 * 60 * 60 * 1000, // 2 hours
     cooldown: 30 * 60 * 1000, // 30 minutes
     notificationChannels: ['email', 'slack'],
     tags: {
       team: 'platform',
       service: 'cortex-mcp',
-      category: 'availability'
-    }
+      category: 'availability',
+    },
   },
   {
     name: 'API Availability - Critical Burn Rate',
@@ -113,9 +111,9 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       operator: 'lt',
       threshold: 99.0, // Significant breach
       evaluationWindow: 15 * 60 * 1000, // 15 minutes
-      aggregation: 'avg'
+      aggregation: 'avg',
     },
-    severity: 'critical',
+    severity: AlertSeverity.CRITICAL,
     duration: 15 * 60 * 1000, // 15 minutes
     cooldown: 15 * 60 * 1000, // 15 minutes
     notificationChannels: ['pagerduty', 'slack', 'email'],
@@ -123,8 +121,8 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       team: 'platform',
       service: 'cortex-mcp',
       category: 'availability',
-      escalation: 'critical'
-    }
+      escalation: 'critical',
+    },
   },
 
   // SLO-002: API Latency (P95)
@@ -138,17 +136,17 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       threshold: 0.4, // 400ms
       evaluationWindow: 60 * 60 * 1000, // 1 hour
       aggregation: 'avg',
-      filters: { quantile: 'p95' }
+      filters: { quantile: 'p95' },
     },
-    severity: 'warning',
+    severity: AlertSeverity.WARNING,
     duration: 60 * 60 * 1000, // 1 hour
     cooldown: 30 * 60 * 1000, // 30 minutes
     notificationChannels: ['slack'],
     tags: {
       team: 'platform',
       service: 'cortex-mcp',
-      category: 'latency'
-    }
+      category: 'latency',
+    },
   },
   {
     name: 'P95 Latency - Critical Threshold',
@@ -160,9 +158,9 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       threshold: 0.75, // 750ms
       evaluationWindow: 15 * 60 * 1000, // 15 minutes
       aggregation: 'avg',
-      filters: { quantile: 'p95' }
+      filters: { quantile: 'p95' },
     },
-    severity: 'critical',
+    severity: AlertSeverity.CRITICAL,
     duration: 15 * 60 * 1000, // 15 minutes
     cooldown: 15 * 60 * 1000, // 15 minutes
     notificationChannels: ['pagerduty', 'slack'],
@@ -170,8 +168,8 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       team: 'platform',
       service: 'cortex-mcp',
       category: 'latency',
-      escalation: 'critical'
-    }
+      escalation: 'critical',
+    },
   },
 
   // SLO-003: API Latency (P99)
@@ -185,17 +183,17 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       threshold: 1.5, // 1500ms
       evaluationWindow: 30 * 60 * 1000, // 30 minutes
       aggregation: 'avg',
-      filters: { quantile: 'p99' }
+      filters: { quantile: 'p99' },
     },
-    severity: 'warning',
+    severity: AlertSeverity.WARNING,
     duration: 30 * 60 * 1000, // 30 minutes
     cooldown: 30 * 60 * 1000, // 30 minutes
     notificationChannels: ['slack'],
     tags: {
       team: 'platform',
       service: 'cortex-mcp',
-      category: 'latency'
-    }
+      category: 'latency',
+    },
   },
   {
     name: 'P99 Latency - Critical Threshold',
@@ -207,9 +205,9 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       threshold: 3.0, // 3000ms
       evaluationWindow: 10 * 60 * 1000, // 10 minutes
       aggregation: 'avg',
-      filters: { quantile: 'p99' }
+      filters: { quantile: 'p99' },
     },
-    severity: 'critical',
+    severity: AlertSeverity.CRITICAL,
     duration: 10 * 60 * 1000, // 10 minutes
     cooldown: 10 * 60 * 1000, // 10 minutes
     notificationChannels: ['pagerduty', 'slack'],
@@ -217,8 +215,8 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       team: 'platform',
       service: 'cortex-mcp',
       category: 'latency',
-      escalation: 'critical'
-    }
+      escalation: 'critical',
+    },
   },
 
   // SLO-004: Error Rate
@@ -231,17 +229,17 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       operator: 'gt',
       threshold: 0.5, // 0.5%
       evaluationWindow: 30 * 60 * 1000, // 30 minutes
-      aggregation: 'avg'
+      aggregation: 'avg',
     },
-    severity: 'warning',
+    severity: AlertSeverity.WARNING,
     duration: 30 * 60 * 1000, // 30 minutes
     cooldown: 30 * 60 * 1000, // 30 minutes
     notificationChannels: ['slack'],
     tags: {
       team: 'platform',
       service: 'cortex-mcp',
-      category: 'error_rate'
-    }
+      category: 'error_rate',
+    },
   },
   {
     name: 'Error Rate - Critical Threshold',
@@ -252,9 +250,9 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       operator: 'gt',
       threshold: 2.0, // 2%
       evaluationWindow: 5 * 60 * 1000, // 5 minutes
-      aggregation: 'avg'
+      aggregation: 'avg',
     },
-    severity: 'critical',
+    severity: AlertSeverity.CRITICAL,
     duration: 5 * 60 * 1000, // 5 minutes
     cooldown: 5 * 60 * 1000, // 5 minutes
     notificationChannels: ['pagerduty', 'slack', 'email'],
@@ -262,8 +260,8 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       team: 'platform',
       service: 'cortex-mcp',
       category: 'error_rate',
-      escalation: 'critical'
-    }
+      escalation: 'critical',
+    },
   },
 
   // SLO-005: Qdrant Operation Latency
@@ -277,9 +275,9 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       threshold: 0.8, // 800ms
       evaluationWindow: 30 * 60 * 1000, // 30 minutes
       aggregation: 'avg',
-      filters: { quantile: 'p95' }
+      filters: { quantile: 'p95' },
     },
-    severity: 'warning',
+    severity: AlertSeverity.WARNING,
     duration: 30 * 60 * 1000, // 30 minutes
     cooldown: 20 * 60 * 1000, // 20 minutes
     notificationChannels: ['slack'],
@@ -287,8 +285,8 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       team: 'platform',
       service: 'cortex-mcp',
       component: 'qdrant',
-      category: 'latency'
-    }
+      category: 'latency',
+    },
   },
   {
     name: 'Qdrant Latency - Critical Threshold',
@@ -300,9 +298,9 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       threshold: 1.5, // 1500ms
       evaluationWindow: 10 * 60 * 1000, // 10 minutes
       aggregation: 'avg',
-      filters: { quantile: 'p95' }
+      filters: { quantile: 'p95' },
     },
-    severity: 'critical',
+    severity: AlertSeverity.CRITICAL,
     duration: 10 * 60 * 1000, // 10 minutes
     cooldown: 10 * 60 * 1000, // 10 minutes
     notificationChannels: ['pagerduty', 'slack'],
@@ -311,8 +309,8 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       service: 'cortex-mcp',
       component: 'qdrant',
       category: 'latency',
-      escalation: 'critical'
-    }
+      escalation: 'critical',
+    },
   },
 
   // SLO-006: Memory Store Throughput
@@ -325,9 +323,9 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       operator: 'lt',
       threshold: 800,
       evaluationWindow: 5 * 60 * 1000, // 5 minutes
-      aggregation: 'avg'
+      aggregation: 'avg',
     },
-    severity: 'warning',
+    severity: AlertSeverity.WARNING,
     duration: 5 * 60 * 1000, // 5 minutes
     cooldown: 10 * 60 * 1000, // 10 minutes
     notificationChannels: ['slack'],
@@ -335,8 +333,8 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       team: 'platform',
       service: 'cortex-mcp',
       component: 'memory-store',
-      category: 'throughput'
-    }
+      category: 'throughput',
+    },
   },
   {
     name: 'Memory Store QPS - Critical Threshold',
@@ -347,9 +345,9 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       operator: 'lt',
       threshold: 500,
       evaluationWindow: 2 * 60 * 1000, // 2 minutes
-      aggregation: 'avg'
+      aggregation: 'avg',
     },
-    severity: 'critical',
+    severity: AlertSeverity.CRITICAL,
     duration: 2 * 60 * 1000, // 2 minutes
     cooldown: 5 * 60 * 1000, // 5 minutes
     notificationChannels: ['pagerduty', 'slack'],
@@ -358,9 +356,9 @@ export const SLO_ALERT_RULES: Partial<SLOAlertRule>[] = [
       service: 'cortex-mcp',
       component: 'memory-store',
       category: 'throughput',
-      escalation: 'critical'
-    }
-  }
+      escalation: 'critical',
+    },
+  },
 ];
 
 // ============================================================================
@@ -391,8 +389,8 @@ export class SLOAlertingService extends EventEmitter {
       metadata: {
         createdAt: new Date(),
         updatedAt: new Date(),
-        triggerCount: 0
-      }
+        triggerCount: 0,
+      },
     };
 
     this.rules.set(id, fullRule);
@@ -415,8 +413,8 @@ export class SLOAlertingService extends EventEmitter {
       ...updates,
       metadata: {
         ...rule.metadata,
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     };
 
     this.rules.set(id, updatedRule);
@@ -435,7 +433,7 @@ export class SLOAlertingService extends EventEmitter {
     }
 
     // Clean up any active alerts for this rule
-    for (const [alertId, alert] of this.activeAlerts.entries()) {
+    for (const [alertId, alert] of Array.from(this.activeAlerts.entries())) {
       if (alert.ruleId === id) {
         this.resolveAlert(alertId, 'system', 'Rule deleted');
       }
@@ -459,13 +457,13 @@ export class SLOAlertingService extends EventEmitter {
 
     if (filter) {
       if (filter.sloId) {
-        rules = rules.filter(rule => rule.sloId === filter.sloId);
+        rules = rules.filter((rule) => rule.sloId === filter.sloId);
       }
       if (filter.severity) {
-        rules = rules.filter(rule => rule.severity === filter.severity);
+        rules = rules.filter((rule) => rule.severity === filter.severity);
       }
       if (filter.enabled !== undefined) {
-        rules = rules.filter(rule => rule.enabled === filter.enabled);
+        rules = rules.filter((rule) => rule.enabled === filter.enabled);
       }
     }
 
@@ -484,13 +482,13 @@ export class SLOAlertingService extends EventEmitter {
 
     if (filter) {
       if (filter.sloId) {
-        alerts = alerts.filter(alert => alert.sloId === filter.sloId);
+        alerts = alerts.filter((alert) => alert.sloId === filter.sloId);
       }
       if (filter.severity) {
-        alerts = alerts.filter(alert => alert.severity === filter.severity);
+        alerts = alerts.filter((alert) => alert.severity === filter.severity);
       }
       if (filter.status) {
-        alerts = alerts.filter(alert => alert.status === filter.status);
+        alerts = alerts.filter((alert) => alert.status === filter.status);
       }
     }
 
@@ -512,12 +510,12 @@ export class SLOAlertingService extends EventEmitter {
       evaluatedRules: 0,
       newAlerts: 0,
       resolvedAlerts: 0,
-      errors: [] as string[]
+      errors: [] as string[],
     };
 
     const now = Date.now();
 
-    for (const rule of this.rules.values()) {
+    for (const rule of Array.from(this.rules.values())) {
       if (!rule.enabled) {
         continue;
       }
@@ -527,16 +525,18 @@ export class SLOAlertingService extends EventEmitter {
         results.evaluatedRules++;
 
         if (evaluation.shouldAlert) {
-          const existingAlert = Array.from(this.activeAlerts.values())
-            .find(alert => alert.ruleId === rule.id && alert.status === 'firing');
+          const existingAlert = Array.from(this.activeAlerts.values()).find(
+            (alert) => alert.ruleId === rule.id && alert.status === 'firing'
+          );
 
           if (!existingAlert) {
             this.createAlert(rule, evaluation);
             results.newAlerts++;
           }
         } else {
-          const existingAlerts = Array.from(this.activeAlerts.values())
-            .filter(alert => alert.ruleId === rule.id && alert.status === 'firing');
+          const existingAlerts = Array.from(this.activeAlerts.values()).filter(
+            (alert) => alert.ruleId === rule.id && alert.status === 'firing'
+          );
 
           for (const alert of existingAlerts) {
             this.resolveAlert(alert.id, 'system', 'Condition resolved');
@@ -605,15 +605,16 @@ export class SLOAlertingService extends EventEmitter {
     topAlertingRules: Array<{ ruleId: string; ruleName: string; count: number }>;
     mttr: number; // Mean Time To Resolution in minutes
   } {
-    const cutoff = Date.now() - (timeWindowMinutes * 60 * 1000);
-    const recentAlerts = Array.from(this.activeAlerts.values())
-      .filter(alert => alert.startTime.getTime() >= cutoff);
+    const cutoff = Date.now() - timeWindowMinutes * 60 * 1000;
+    const recentAlerts = Array.from(this.activeAlerts.values()).filter(
+      (alert) => alert.startTime.getTime() >= cutoff
+    );
 
     const alertsBySeverity: Record<AlertSeverity, number> = {
-      info: 0,
-      warning: 0,
-      critical: 0,
-      error: 0
+      [AlertSeverity.INFO]: 0,
+      [AlertSeverity.WARNING]: 0,
+      [AlertSeverity.CRITICAL]: 0,
+      [AlertSeverity.EMERGENCY]: 0,
     };
 
     const alertsBySLO: Record<string, number> = {};
@@ -630,7 +631,7 @@ export class SLOAlertingService extends EventEmitter {
       if (rule) {
         ruleCounts[alert.ruleId] = {
           ruleName: rule.name,
-          count: (ruleCounts[alert.ruleId]?.count || 0) + 1
+          count: (ruleCounts[alert.ruleId]?.count || 0) + 1,
         };
       }
     }
@@ -641,21 +642,25 @@ export class SLOAlertingService extends EventEmitter {
       .map(([ruleId, data]) => ({ ruleId, ...data }));
 
     // Calculate MTTR
-    const resolvedAlerts = recentAlerts.filter(alert => alert.status === 'resolved' && alert.endTime);
-    const mttr = resolvedAlerts.length > 0
-      ? resolvedAlerts.reduce((sum, alert) => {
-          const resolutionTime = (alert.endTime!.getTime() - alert.startTime.getTime()) / (1000 * 60); // minutes
-          return sum + resolutionTime;
-        }, 0) / resolvedAlerts.length
-      : 0;
+    const resolvedAlerts = recentAlerts.filter(
+      (alert) => alert.status === 'resolved' && alert.endTime
+    );
+    const mttr =
+      resolvedAlerts.length > 0
+        ? resolvedAlerts.reduce((sum, alert) => {
+            const resolutionTime =
+              (alert.endTime!.getTime() - alert.startTime.getTime()) / (1000 * 60); // minutes
+            return sum + resolutionTime;
+          }, 0) / resolvedAlerts.length
+        : 0;
 
     return {
       totalAlerts: recentAlerts.length,
-      activeAlerts: recentAlerts.filter(alert => alert.status === 'firing').length,
+      activeAlerts: recentAlerts.filter((alert) => alert.status === 'firing').length,
       alertsBySeverity,
       alertsBySLO,
       topAlertingRules,
-      mttr
+      mttr,
     };
   }
 
@@ -696,7 +701,10 @@ export class SLOAlertingService extends EventEmitter {
     }, 60 * 1000);
   }
 
-  private evaluateRule(rule: SLOAlertRule, now: number): {
+  private evaluateRule(
+    rule: SLOAlertRule,
+    now: number
+  ): {
     shouldAlert: boolean;
     currentValue: number;
     evaluationTime: Date;
@@ -723,8 +731,8 @@ export class SLOAlertingService extends EventEmitter {
     }
 
     // Calculate aggregated value over the evaluation window
-    let aggregatedValue = this.calculateAggregation(
-      history.map(h => h.value),
+    const aggregatedValue = this.calculateAggregation(
+      history.map((h) => h.value),
       rule.condition.aggregation || 'avg'
     );
 
@@ -799,11 +807,14 @@ export class SLOAlertingService extends EventEmitter {
     }
   }
 
-  private createAlert(rule: SLOAlertRule, evaluation: {
-    shouldAlert: boolean;
-    currentValue: number;
-    evaluationTime: Date;
-  }): void {
+  private createAlert(
+    rule: SLOAlertRule,
+    evaluation: {
+      shouldAlert: boolean;
+      currentValue: number;
+      evaluationTime: Date;
+    }
+  ): void {
     const alertId = this.generateAlertId();
     const alert: AlertInstance = {
       id: alertId,
@@ -811,16 +822,20 @@ export class SLOAlertingService extends EventEmitter {
       sloId: rule.sloId,
       status: 'firing',
       severity: rule.severity,
-      message: this.generateAlertMessage(rule, evaluation),
+      message: this.generateAlertMessage(rule, {
+        currentValue: evaluation.currentValue,
+        threshold: rule.condition.threshold,
+        evaluationTime: evaluation.evaluationTime,
+      }),
       details: {
         currentValue: evaluation.currentValue,
         threshold: rule.condition.threshold,
         evaluationTime: evaluation.evaluationTime,
-        metricValue: evaluation.currentValue
+        metricValue: evaluation.currentValue,
       },
       startTime: evaluation.evaluationTime,
       acknowledged: false,
-      notificationsSent: []
+      notificationsSent: [],
     };
 
     this.activeAlerts.set(alertId, alert);
@@ -828,11 +843,14 @@ export class SLOAlertingService extends EventEmitter {
     this.emit('alert_fired', alert);
   }
 
-  private generateAlertMessage(rule: SLOAlertRule, evaluation: {
-    currentValue: number;
-    threshold: number;
-    evaluationTime: Date;
-  }): string {
+  private generateAlertMessage(
+    rule: SLOAlertRule,
+    evaluation: {
+      currentValue: number;
+      threshold: number;
+      evaluationTime: Date;
+    }
+  ): string {
     const { currentValue, threshold } = evaluation;
     const operator = this.getOperatorDescription(rule.condition.operator);
 
@@ -841,13 +859,20 @@ export class SLOAlertingService extends EventEmitter {
 
   private getOperatorDescription(operator: string): string {
     switch (operator) {
-      case 'gt': return '>';
-      case 'gte': return '>=';
-      case 'lt': return '<';
-      case 'lte': return '<=';
-      case 'eq': return '=';
-      case 'ne': return '!=';
-      default: return operator;
+      case 'gt':
+        return '>';
+      case 'gte':
+        return '>=';
+      case 'lt':
+        return '<';
+      case 'lte':
+        return '<=';
+      case 'eq':
+        return '=';
+      case 'ne':
+        return '!=';
+      default:
+        return operator;
     }
   }
 
@@ -866,7 +891,7 @@ export class SLOAlertingService extends EventEmitter {
     return `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private convertToYaml(data: any): string {
+  private convertToYaml(data: unknown): string {
     // Simplified YAML conversion
     return JSON.stringify(data, null, 2)
       .replace(/"/g, '')

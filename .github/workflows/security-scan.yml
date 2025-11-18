@@ -1,0 +1,182 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    # Run security scan daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for better analysis
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Configure npm registry
+      run: |
+        npm config set registry https://registry.npmjs.org/
+        npm config set audit false
+        npm config set audit-level moderate
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run npm audit
+      run: |
+        echo "🔍 Running npm audit..."
+        npm audit --audit-level=moderate --json > audit-results.json || true
+
+    - name: Process security audit results
+      run: |
+        echo "📊 Processing security audit results..."
+        npm audit --audit-level=moderate --json | node scripts/security-audit-check.js
+
+    - name: Run ESLint security analysis
+      run: |
+        echo "🔍 Running ESLint security analysis..."
+        npm run lint:security
+
+    - name: Run security tests
+      run: |
+        echo "🧪 Running security tests..."
+        npm run test:security
+
+    - name: Comprehensive security scan
+      run: |
+        echo "🔒 Running comprehensive security scan..."
+        npm run security:scan:ci
+
+    - name: Upload audit results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-audit-results-${{ matrix.node-version }}
+        path: |
+          audit-results.json
+          tmp/
+        retention-days: 30
+
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+
+          try {
+            const auditData = JSON.parse(fs.readFileSync('audit-results.json', 'utf8'));
+            const vulnerabilities = auditData.metadata?.vulnerabilities || {};
+
+            const comment = `
+            ## 🔒 Security Scan Results
+
+            ### Vulnerability Summary:
+            - **Critical**: ${vulnerabilities.critical || 0}
+            - **High**: ${vulnerabilities.high || 0}
+            - **Moderate**: ${vulnerabilities.moderate || 0}
+            - **Low**: ${vulnerabilities.low || 0}
+            - **Info**: ${vulnerabilities.info || 0}
+            - **Total**: ${vulnerabilities.total || 0}
+
+            ### Status: ${vulnerabilities.critical > 0 || vulnerabilities.high > 0 ? '❌ FAILED' : '✅ PASSED'}
+
+            ${vulnerabilities.critical > 0 || vulnerabilities.high > 0 ?
+              '⚠️ **Action Required**: Critical or high severity vulnerabilities detected. Please review and fix before merging.' :
+              '✅ No critical or high severity vulnerabilities found.'}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Could not read audit results:', error.message);
+          }
+
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Check licenses
+      run: |
+        echo "📄 Checking dependency licenses..."
+        npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD' --excludePrivatePackages || true
+
+    - name: Generate license report
+      run: |
+        echo "📊 Generating license report..."
+        npx license-checker --json > license-report.json || true
+
+    - name: Upload license report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: license-report
+        path: license-report.json
+        retention-days: 30
+
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Run TruffleHog OSS
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        extra_args: --debug --only-verified
+
+    - name: Scan for hardcoded secrets
+      run: |
+        echo "🔍 Scanning for hardcoded secrets..."
+        # Scan for common secret patterns
+        grep -r -E --include="*.ts" --include="*.js" --include="*.json" --exclude-dir=node_modules --exclude-dir=.git \
+          -e "password\s*=\s*['\"][^'\"]+['\"]" \
+          -e "api_key\s*=\s*['\"][^'\"]+['\"]" \
+          -e "secret_key\s*=\s*['\"][^'\"]+['\"]" \
+          -e "private_key\s*=\s*['\"][^'\"]+['\"]" \
+          -e "AKIA[0-9A-Z]{16}" \
+          -e "sk-[a-zA-Z0-9]{20,}" \
+          -e "ghp_[a-zA-Z0-9]{36}" \
+          src/ || echo "No obvious secrets detected"

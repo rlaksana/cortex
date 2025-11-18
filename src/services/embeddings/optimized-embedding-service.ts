@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Optimized Embedding Service
  *
@@ -312,8 +307,9 @@ export class OptimizedEmbeddingService {
    * Evict using LRU (Least Recently Used) policy
    */
   private evictLRU(targetSize: number): void {
-    const entries = Array.from(this.cache.entries())
-      .sort(([, a], [, b]) => a.lastAccessed - b.lastAccessed);
+    const entries = Array.from(this.cache.entries()).sort(
+      ([, a], [, b]) => a.lastAccessed - b.lastAccessed
+    );
 
     const toEvict = entries.slice(0, this.cache.size - targetSize);
     toEvict.forEach(([key]) => this.cache.delete(key));
@@ -323,8 +319,9 @@ export class OptimizedEmbeddingService {
    * Evict using LFU (Least Frequently Used) policy
    */
   private evictLFU(targetSize: number): void {
-    const entries = Array.from(this.cache.entries())
-      .sort(([, a], [, b]) => a.accessCount - b.accessCount);
+    const entries = Array.from(this.cache.entries()).sort(
+      ([, a], [, b]) => a.accessCount - b.accessCount
+    );
 
     const toEvict = entries.slice(0, this.cache.size - targetSize);
     toEvict.forEach(([key]) => this.cache.delete(key));
@@ -335,8 +332,9 @@ export class OptimizedEmbeddingService {
    */
   private evictByPriority(targetSize: number): void {
     const priorityOrder = { low: 0, medium: 1, high: 2, critical: 3 };
-    const entries = Array.from(this.cache.entries())
-      .sort(([, a], [, b]) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    const entries = Array.from(this.cache.entries()).sort(
+      ([, a], [, b]) => priorityOrder[a.priority] - priorityOrder[b.priority]
+    );
 
     const toEvict = entries.slice(0, this.cache.size - targetSize);
     toEvict.forEach(([key]) => this.cache.delete(key));
@@ -375,7 +373,10 @@ export class OptimizedEmbeddingService {
   /**
    * Generate embedding with memory optimization
    */
-  async generateEmbedding(text: string, priority: 'critical' | 'high' | 'medium' | 'low' = 'medium'): Promise<{
+  async generateEmbedding(
+    text: string,
+    priority: 'critical' | 'high' | 'medium' | 'low' = 'medium'
+  ): Promise<{
     vector: number[];
     cached: boolean;
     model: string;
@@ -438,12 +439,12 @@ export class OptimizedEmbeddingService {
         model: this.config.model,
         usage: response.usage,
       };
-
     } catch (error) {
       // Open circuit breaker on certain errors
-      if (error instanceof Error &&
-          (error.message.includes('insufficient_quota') ||
-           error.message.includes('rate_limit'))) {
+      if (
+        error instanceof Error &&
+        (error.message.includes('insufficient_quota') || error.message.includes('rate_limit'))
+      ) {
         this.openCircuitBreaker();
       }
 

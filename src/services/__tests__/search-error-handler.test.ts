@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Search Error Handler Test Suite - Phase 3 Enhanced
  *
@@ -14,22 +9,22 @@
  * - User-friendly error messages
  */
 
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ErrorCategory,
   ErrorSeverity,
   RecoveryStrategy,
   SearchErrorHandler,
-} from '../search/search-error-handler.js';
+} from '../search/search-error-handler';
 
 // Mock the logger to avoid noise in tests
-jest.mock('../../utils/logger.js', () => ({
+vi.mock('../../utils/logger', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
@@ -182,7 +177,7 @@ describe('SearchErrorHandler', () => {
         const context = { operation: 'retry_test' };
 
         let attemptCount = 0;
-        const retryFunction = jest.fn(() => {
+        const retryFunction = vi.fn(() => {
           attemptCount++;
           if (attemptCount < 3) {
             throw retryableError;
@@ -203,7 +198,7 @@ describe('SearchErrorHandler', () => {
         const persistentError = new Error('Persistent failure');
         const context = { operation: 'max_retry_test' };
 
-        const retryFunction = jest.fn(() => {
+        const retryFunction = vi.fn(() => {
           throw persistentError;
         });
 
@@ -220,7 +215,7 @@ describe('SearchErrorHandler', () => {
         const nonRetryableError = new Error('Invalid format');
         const context = { operation: 'no_retry_test' };
 
-        const retryFunction = jest.fn(() => {
+        const retryFunction = vi.fn(() => {
           throw nonRetryableError;
         });
 
@@ -240,7 +235,7 @@ describe('SearchErrorHandler', () => {
         const startTime = Date.now();
         const delays: number[] = [];
 
-        const retryFunction = jest.fn(() => {
+        const retryFunction = vi.fn(() => {
           if (retryFunction.mock.calls.length > 0) {
             delays.push(Date.now() - startTime);
           }
@@ -268,7 +263,7 @@ describe('SearchErrorHandler', () => {
         const originalError = new Error('Primary service failed');
         const context = {
           operation: 'fallback_test',
-          fallbackFunction: jest.fn(() => ({ fallback: true })),
+          fallbackFunction: vi.fn(() => ({ fallback: true })),
         };
 
         const searchError = await errorHandler.handleError(originalError, context);
@@ -301,7 +296,7 @@ describe('SearchErrorHandler', () => {
         const fallbackError = new Error('Fallback also failed');
         const context = {
           operation: 'fallback_fail_test',
-          fallbackFunction: jest.fn(() => {
+          fallbackFunction: vi.fn(() => {
             throw fallbackError;
           }),
         };
@@ -322,7 +317,7 @@ describe('SearchErrorHandler', () => {
         const originalError = new Error('Advanced features unavailable');
         const context = {
           operation: 'degradation_test',
-          degradeFunction: jest.fn(() => ({ degraded: true, simple: true })),
+          degradeFunction: vi.fn(() => ({ degraded: true, simple: true })),
         };
 
         const searchError = await errorHandler.handleError(originalError, context);
@@ -343,10 +338,10 @@ describe('SearchErrorHandler', () => {
         const originalError = new Error('Degradation failed');
         const context = {
           operation: 'degrade_fallback_test',
-          degradeFunction: jest.fn(() => {
+          degradeFunction: vi.fn(() => {
             throw new Error('Degradation implementation failed');
           }),
-          fallbackFunction: jest.fn(() => ({ basic_fallback: true })),
+          fallbackFunction: vi.fn(() => ({ basic_fallback: true })),
         };
 
         const searchError = await errorHandler.handleError(originalError, context);
@@ -467,7 +462,7 @@ describe('SearchErrorHandler', () => {
       const context = { operation: 'recovery_metrics_test' };
 
       let attemptCount = 0;
-      const retryFunction = jest.fn(() => {
+      const retryFunction = vi.fn(() => {
         attemptCount++;
         if (attemptCount < 2) {
           throw retryableError;
@@ -601,7 +596,7 @@ describe('SearchErrorHandler', () => {
 
       expect(searchErrors).toHaveLength(20);
       searchErrors.forEach((error, index) => {
-        expect(error.message).toBe(`Concurrent error ${index}`);
+        expect((error as Error).message).toBe(`Concurrent error ${index}`);
         expect(error.code).toMatch(/^SRCH_[A-Z]{3}_[A-Z]_[a-z0-9]+$/);
       });
 
@@ -611,7 +606,7 @@ describe('SearchErrorHandler', () => {
 
     it('should handle concurrent recovery attempts', async () => {
       const retryableError = new Error('Concurrent retry test');
-      const retryFunction = jest.fn(() => {
+      const retryFunction = vi.fn(() => {
         return { success: true, timestamp: Date.now() };
       });
 

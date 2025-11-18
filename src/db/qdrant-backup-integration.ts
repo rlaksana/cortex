@@ -14,22 +14,40 @@
  * @since 2025
  */
 
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 import { type QdrantClient } from '@qdrant/js-client-rest';
 
-import { logger } from '@/utils/logger.js';
+import { logger } from '../utils/logger.js';
+import { type MetricOperation, isMetricOperation } from '../types/database-types-enhanced.js';
 
-import { type BackupConfiguration,BackupConfigurationManager } from './qdrant-backup-config.js';
-import { type Alert, BackupRecoveryMonitoringService, type MonitoringConfiguration } from './qdrant-backup-monitoring.js';
+import {
+  hasPerformanceDetails,
+  hasDataIntegrity,
+  isPerformanceMetric,
+  isAlertData,
+  isIncidentDeclaration,
+  isBackupConfig,
+} from '../utils/property-access-guards.js';
+import { asPerformanceMetric, asAlertBase } from '../utils/type-conversion.js';
+import { type BackupConfiguration, BackupConfigurationManager } from './qdrant-backup-config.js';
+import {
+  type Alert,
+  type PerformanceMetric,
+  BackupRecoveryMonitoringService,
+  type MonitoringConfiguration,
+} from './qdrant-backup-monitoring.js';
 import { BackupRetentionManager } from './qdrant-backup-retention.js';
-import { type BackupConfig, type BackupMetadata, QdrantBackupService } from './qdrant-backup-service.js';
-import { QdrantConsistencyValidator, type ValidationConfiguration } from './qdrant-consistency-validator.js';
+import {
+  type BackupConfig,
+  type BackupMetadata,
+  QdrantBackupService,
+} from './qdrant-backup-service.js';
+import {
+  QdrantConsistencyValidator,
+  type ValidationConfiguration,
+} from './qdrant-consistency-validator.js';
 import { DisasterRecoveryManager, type IncidentDeclaration } from './qdrant-disaster-recovery.js';
 import { AutomatedRestoreTestingService } from './qdrant-restore-testing.js';
-import { type RPORTOComplianceReport,RPORTOManager } from './qdrant-rpo-rto-manager.js';
+import { type RPORTOComplianceReport, RPORTOManager } from './qdrant-rpo-rto-manager.js';
 
 /**
  * Backup system status
@@ -217,10 +235,10 @@ export class QdrantBackupIntegrationService {
       // Initialize backup service - convert BackupConfiguration to BackupConfig
       const backupConfig: BackupConfig = {
         schedule: {
-          fullBackup: this.config.schedule.fullBackup as unknown,
-          incrementalBackup: this.config.schedule.incrementalBackup as unknown,
-          restoreTest: this.config.schedule.restoreTest as unknown,
-          consistencyCheck: this.config.schedule.consistencyCheck as unknown,
+          fullBackup: this.config.schedule.fullBackup as string,
+          incrementalBackup: this.config.schedule.incrementalBackup as string,
+          restoreTest: this.config.schedule.restoreTest as string,
+          consistencyCheck: this.config.schedule.consistencyCheck as string,
         },
         retention: {
           fullBackups: this.config.retention.fullBackups,
@@ -329,11 +347,12 @@ export class QdrantBackupIntegrationService {
       this.status.health.lastHealthCheck = new Date().toISOString();
 
       logger.info('Qdrant backup and disaster recovery integration initialized successfully');
-
     } catch (error) {
       logger.error({ error }, 'Failed to initialize backup and disaster recovery integration');
       this.status.health.overall = 'critical';
-      this.status.health.issues.push(`Initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.status.health.issues.push(
+        `Initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       throw error;
     }
   }
@@ -345,11 +364,14 @@ export class QdrantBackupIntegrationService {
     this.ensureInitialized();
 
     try {
-      logger.info({
-        type: request.type,
-        priority: request.priority,
-        description: request.description,
-      }, 'Creating backup');
+      logger.info(
+        {
+          type: request.type,
+          priority: request.priority,
+          description: request.description,
+        },
+        'Creating backup'
+      );
 
       let backupMetadata: BackupMetadata;
 
@@ -364,8 +386,8 @@ export class QdrantBackupIntegrationService {
         });
       }
 
-      // Record metric
-      this.monitoring!.recordMetric({
+      // Record metric with proper typing
+      const performanceMetric = asPerformanceMetric({
         timestamp: new Date().toISOString(),
         operation: 'backup',
         operationType: request.type,
@@ -385,14 +407,21 @@ export class QdrantBackupIntegrationService {
         },
       });
 
+      if (performanceMetric) {
+        this.monitoring!.recordMetric(performanceMetric as PerformanceMetric);
+      }
+
       // Update status
       this.status.operations.lastBackup = backupMetadata.timestamp;
 
-      logger.info({
-        backupId: backupMetadata.id,
-        type: backupMetadata.type,
-        size: backupMetadata.size,
-      }, 'Backup created successfully');
+      logger.info(
+        {
+          backupId: backupMetadata.id,
+          type: backupMetadata.type,
+          size: backupMetadata.size,
+        },
+        'Backup created successfully'
+      );
 
       return {
         backupId: backupMetadata.id,
@@ -402,12 +431,11 @@ export class QdrantBackupIntegrationService {
         status: 'completed',
         estimatedDuration: 0, // Would be estimated based on historical data
       };
-
     } catch (error) {
       logger.error({ error, request }, 'Failed to create backup');
 
       // Record failure metric
-      this.monitoring!.recordMetric({
+      const failureMetric = asPerformanceMetric({
         timestamp: new Date().toISOString(),
         operation: 'backup',
         operationType: request.type,
@@ -427,6 +455,10 @@ export class QdrantBackupIntegrationService {
         },
       });
 
+      if (failureMetric) {
+        this.monitoring!.recordMetric(failureMetric as PerformanceMetric);
+      }
+
       throw error;
     }
   }
@@ -438,22 +470,28 @@ export class QdrantBackupIntegrationService {
     this.ensureInitialized();
 
     try {
-      logger.info({
-        scenarioId: request.scenarioId,
-        backupId: request.backupId,
-        validationLevel: request.validationLevel,
-      }, 'Performing restore test');
+      logger.info(
+        {
+          scenarioId: request.scenarioId,
+          backupId: request.backupId,
+          validationLevel: request.validationLevel,
+        },
+        'Performing restore test'
+      );
 
-      const testResult = await this.restoreTesting!.executeTest(request.scenarioId || 'default', request.backupId);
+      const testResult = await this.restoreTesting!.executeTest(
+        request.scenarioId || 'default',
+        request.backupId
+      );
 
       // Record metric
-      this.monitoring!.recordMetric({
+      const testMetric = asPerformanceMetric({
         timestamp: new Date().toISOString(),
         operation: 'restore',
         operationType: 'test',
         duration: testResult.duration || 0,
         itemCount: 0, // Would be actual item count
-        throughput: testResult.performanceDetails?.throughput?.itemsPerSecond || 0,
+        throughput: hasPerformanceDetails(testResult) ? testResult.performanceDetails.throughput || 0 : 0,
         success: testResult.status === 'passed',
         resourceUsage: {
           cpu: 0,
@@ -464,16 +502,21 @@ export class QdrantBackupIntegrationService {
         metadata: {
           testId: testResult.id || 'unknown',
           scenarioId: testResult.scenarioId || 'default',
-          dataIntegrityScore: testResult.dataIntegrity?.overall?.score || 0,
+          dataIntegrityScore: hasDataIntegrity(testResult) ?
+            (testResult.dataIntegrity as any).overall?.score || 0 : 0,
         },
       });
+
+      if (testMetric) {
+        this.monitoring!.recordMetric(testMetric as PerformanceMetric);
+      }
 
       // Update status
       this.status.operations.lastRestoreTest = testResult.timestamp.toISOString();
 
       // Create alert if test failed
       if (testResult.status !== 'passed') {
-        await this.monitoring!.createAlert({
+        const alertData = asAlertBase({
           severity: 'error',
           category: 'restore',
           source: 'restore-testing',
@@ -487,14 +530,21 @@ export class QdrantBackupIntegrationService {
           metrics: [],
           tags: ['restore', 'test', 'failed'],
         });
+
+        if (alertData) {
+          await this.monitoring!.createAlert(alertData as Omit<Alert, "timestamp" | "id" | "status" | "escalationLevel" | "channels">);
+        }
       }
 
-      logger.info({
-        testId: testResult.id || 'unknown',
-        success: testResult.status === 'passed',
-        duration: testResult.duration || 0,
-        dataIntegrityScore: testResult.dataIntegrity?.overall?.score || 0,
-      }, 'Restore test completed');
+      logger.info(
+        {
+          testId: testResult.id || 'unknown',
+          success: testResult.status === 'passed',
+          duration: testResult.duration || 0,
+          dataIntegrityScore: testResult.dataIntegrity?.overall?.score || 0,
+        },
+        'Restore test completed'
+      );
 
       return {
         testId: testResult.id || 'unknown',
@@ -502,7 +552,6 @@ export class QdrantBackupIntegrationService {
         status: testResult.status === 'passed' ? 'completed' : 'failed',
         estimatedDuration: testResult.duration || 0,
       };
-
     } catch (error) {
       logger.error({ error, request }, 'Failed to perform restore test');
       throw error;
@@ -512,15 +561,20 @@ export class QdrantBackupIntegrationService {
   /**
    * Generate compliance report
    */
-  async generateComplianceReport(request: ComplianceReportRequest): Promise<RPORTOComplianceReport> {
+  async generateComplianceReport(
+    request: ComplianceReportRequest
+  ): Promise<RPORTOComplianceReport> {
     this.ensureInitialized();
 
     try {
-      logger.info({
-        startDate: request.startDate,
-        endDate: request.endDate,
-        includeTrends: request.includeTrends,
-      }, 'Generating compliance report');
+      logger.info(
+        {
+          startDate: request.startDate,
+          endDate: request.endDate,
+          includeTrends: request.includeTrends,
+        },
+        'Generating compliance report'
+      );
 
       const report = await this.rpoRtoManager!.generateComplianceReport(
         request.startDate ? new Date(request.startDate) : undefined,
@@ -532,7 +586,7 @@ export class QdrantBackupIntegrationService {
 
       // Create alerts for compliance issues
       if (report.summary.overallCompliance !== 'compliant') {
-        await this.monitoring!.createAlert({
+        const complianceAlert = asAlertBase({
           severity: 'warning',
           category: 'rpo-rto',
           source: 'compliance-monitor',
@@ -559,17 +613,23 @@ export class QdrantBackupIntegrationService {
           ],
           tags: ['compliance', 'rpo', 'rto'],
         });
+
+        if (complianceAlert) {
+          await this.monitoring!.createAlert(complianceAlert as Omit<Alert, "timestamp" | "id" | "status" | "escalationLevel" | "channels">);
+        }
       }
 
-      logger.info({
-        reportGeneratedAt: report.generatedAt,
-        overallCompliance: report.summary.overallCompliance,
-        rpoComplianceRate: report.summary.rpoComplianceRate,
-        rtoComplianceRate: report.summary.rtoComplianceRate,
-      }, 'Compliance report generated');
+      logger.info(
+        {
+          reportGeneratedAt: report.generatedAt,
+          overallCompliance: report.summary.overallCompliance,
+          rpoComplianceRate: report.summary.rpoComplianceRate,
+          rtoComplianceRate: report.summary.rtoComplianceRate,
+        },
+        'Compliance report generated'
+      );
 
       return report;
-
     } catch (error) {
       logger.error({ error, request }, 'Failed to generate compliance report');
       throw error;
@@ -587,16 +647,19 @@ export class QdrantBackupIntegrationService {
     this.ensureInitialized();
 
     try {
-      logger.warn({
-        incidentType: request.incidentType,
-        severity: request.severity,
-        description: request.description,
-        affectedSystems: request.affectedSystems,
-      }, 'Declaring disaster incident');
+      logger.warn(
+        {
+          incidentType: request.incidentType,
+          severity: request.severity,
+          description: request.description,
+          affectedSystems: request.affectedSystems,
+        },
+        'Declaring disaster incident'
+      );
 
       const declaration: Omit<IncidentDeclaration, 'incidentId' | 'declaredAt'> = {
         declaredBy: 'system',
-        disasterType: request.incidentType as unknown,
+        disasterType: request.incidentType as 'data-center-failure' | 'network-outage' | 'storage-corruption' | 'cyber-attack' | 'human-error' | 'software-failure' | 'hardware-failure' | 'natural-disaster',
         severity: request.severity,
         description: request.description,
         affectedSystems: request.affectedSystems,
@@ -618,7 +681,7 @@ export class QdrantBackupIntegrationService {
       const result = await this.disasterRecovery!.declareIncident(declaration);
 
       // Create critical alert
-      await this.monitoring!.createAlert({
+      const disasterAlert = asAlertBase({
         severity: 'critical',
         category: 'backup', // Use valid category from monitoring system
         source: 'disaster-recovery',
@@ -634,24 +697,30 @@ export class QdrantBackupIntegrationService {
         tags: ['disaster', 'incident', 'critical'],
       });
 
+      if (disasterAlert) {
+        await this.monitoring!.createAlert(disasterAlert as Omit<Alert, "timestamp" | "id" | "status" | "escalationLevel" | "channels">);
+      }
+
       // Auto-recover if requested
       if (request.autoRecover && result.activatedPlans.length > 0) {
         logger.info({ incidentId: result.incidentId }, 'Initiating automatic disaster recovery');
         // Implementation would trigger automatic recovery
       }
 
-      logger.warn({
-        incidentId: result.incidentId,
-        success: result.success,
-        activatedPlans: result.activatedPlans.length,
-      }, 'Disaster incident declared');
+      logger.warn(
+        {
+          incidentId: result.incidentId,
+          success: result.success,
+          activatedPlans: result.activatedPlans.length,
+        },
+        'Disaster incident declared'
+      );
 
       return {
         incidentId: result.incidentId,
         success: result.success,
         activatedPlans: result.activatedPlans,
       };
-
     } catch (error) {
       logger.error({ error, request }, 'Failed to declare disaster incident');
       throw error;
@@ -669,21 +738,27 @@ export class QdrantBackupIntegrationService {
       // Get current operational status
       if (this.backupService) {
         const drStatus = await this.backupService.getDisasterRecoveryStatus();
-        this.status.operations.lastBackup = drStatus.lastFullBackup || drStatus.lastIncrementalBackup;
+        this.status.operations.lastBackup =
+          drStatus.lastFullBackup || drStatus.lastIncrementalBackup;
       }
 
       if (this.restoreTesting) {
         const testHistory = await this.restoreTesting.getTestHistory(1);
         if (testHistory.recentTests.length > 0) {
-          this.status.operations.lastRestoreTest = testHistory.recentTests[0].timestamp?.toISOString() || new Date().toISOString();
+          this.status.operations.lastRestoreTest =
+            testHistory.recentTests[0].timestamp?.toISOString() || new Date().toISOString();
         }
       }
 
       if (this.rpoRtoManager) {
         try {
           const dashboardData = await this.rpoRtoManager.getDashboardData();
-          this.status.compliance.rpoCompliance = dashboardData.currentStatus.rpo.compliant ? 'compliant' : 'non-compliant';
-          this.status.compliance.rtoCompliance = dashboardData.currentStatus.rto.compliant ? 'compliant' : 'non-compliant';
+          this.status.compliance.rpoCompliance = dashboardData.currentStatus.rpo.compliant
+            ? 'compliant'
+            : 'non-compliant';
+          this.status.compliance.rtoCompliance = dashboardData.currentStatus.rto.compliant
+            ? 'compliant'
+            : 'non-compliant';
         } catch (error) {
           this.status.compliance.rpoCompliance = 'warning';
           this.status.compliance.rtoCompliance = 'warning';
@@ -691,11 +766,12 @@ export class QdrantBackupIntegrationService {
       }
 
       return { ...this.status };
-
     } catch (error) {
       logger.error({ error }, 'Failed to get system status');
       this.status.health.overall = 'degraded';
-      this.status.health.issues.push(`Status check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.status.health.issues.push(
+        `Status check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       return { ...this.status };
     }
   }
@@ -726,7 +802,6 @@ export class QdrantBackupIntegrationService {
           health: this.status.health,
         },
       };
-
     } catch (error) {
       logger.error({ error }, 'Failed to get dashboard data');
       throw error;
@@ -783,7 +858,6 @@ export class QdrantBackupIntegrationService {
       this.status.initialized = false;
 
       logger.info('Qdrant backup and disaster recovery system shutdown completed');
-
     } catch (error) {
       logger.error({ error }, 'Error during system shutdown');
       throw error;
@@ -821,7 +895,10 @@ export class QdrantBackupIntegrationService {
     };
   }
 
-  private updateComponentStatus(component: keyof BackupSystemStatus['components'], status: boolean): void {
+  private updateComponentStatus(
+    component: keyof BackupSystemStatus['components'],
+    status: boolean
+  ): void {
     this.status.components[component] = status;
     logger.debug({ component, status }, 'Component status updated');
   }
@@ -830,19 +907,29 @@ export class QdrantBackupIntegrationService {
     // Set up event handlers for monitoring integration
     if (this.monitoring) {
       this.monitoring.on('alert', (alert: Alert) => {
-        logger.warn({
-          alertId: alert.id,
-          severity: alert.severity,
-          title: alert.title,
-        }, 'Alert received from monitoring system');
+        logger.warn(
+          {
+            alertId: alert.id,
+            severity: alert.severity,
+            title: alert.title,
+          },
+          'Alert received from monitoring system'
+        );
       });
 
       this.monitoring.on('metric', (metric: unknown) => {
         // Handle metric events
-        logger.debug({
-          operation: metric.operation,
-          success: metric.success,
-        }, 'Metric received from monitoring system');
+        const metricData: MetricOperation = isMetricOperation(metric)
+          ? metric
+          : { operation: 'unknown', success: false };
+
+        logger.debug(
+          {
+            operation: metricData.operation,
+            success: metricData.success,
+          },
+          'Metric received from monitoring system'
+        );
       });
     }
   }
@@ -870,15 +957,19 @@ export class QdrantBackupIntegrationService {
       this.status.health.issues = issues;
       this.status.health.lastHealthCheck = new Date().toISOString();
 
-      logger.debug({
-        overall: this.status.health.overall,
-        issues: issues.length,
-      }, 'Health check completed');
-
+      logger.debug(
+        {
+          overall: this.status.health.overall,
+          issues: issues.length,
+        },
+        'Health check completed'
+      );
     } catch (error) {
       logger.error({ error }, 'Health check failed');
       this.status.health.overall = 'critical';
-      this.status.health.issues.push(`Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.status.health.issues.push(
+        `Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -887,43 +978,51 @@ export class QdrantBackupIntegrationService {
       logger.info('Starting automated backup operations...');
 
       // Start automated retention cleanup
-      setInterval(async () => {
-        try {
-          if (this.retentionManager) {
-            const results = await this.retentionManager.evaluateRetentionPolicies();
-            await this.retentionManager.executeRetentionActions(results);
-            this.status.operations.lastRetentionCleanup = new Date().toISOString();
+      setInterval(
+        async () => {
+          try {
+            if (this.retentionManager) {
+              const results = await this.retentionManager.evaluateRetentionPolicies();
+              await this.retentionManager.executeRetentionActions(results);
+              this.status.operations.lastRetentionCleanup = new Date().toISOString();
+            }
+          } catch (error) {
+            logger.error({ error }, 'Automated retention cleanup failed');
           }
-        } catch (error) {
-          logger.error({ error }, 'Automated retention cleanup failed');
-        }
-      }, 60 * 60 * 1000); // Every hour
+        },
+        60 * 60 * 1000
+      ); // Every hour
 
       // Start automated consistency validation
-      setInterval(async () => {
-        try {
-          if (this.consistencyValidator) {
-            await this.consistencyValidator.performQuickValidation();
-            this.status.operations.lastValidation = new Date().toISOString();
+      setInterval(
+        async () => {
+          try {
+            if (this.consistencyValidator) {
+              await this.consistencyValidator.performQuickValidation();
+              this.status.operations.lastValidation = new Date().toISOString();
+            }
+          } catch (error) {
+            logger.error({ error }, 'Automated consistency validation failed');
           }
-        } catch (error) {
-          logger.error({ error }, 'Automated consistency validation failed');
-        }
-      }, 4 * 60 * 60 * 1000); // Every 4 hours
+        },
+        4 * 60 * 60 * 1000
+      ); // Every 4 hours
 
       // Start automated restore testing
-      setInterval(async () => {
-        try {
-          if (this.restoreTesting) {
-            await this.restoreTesting.executeScheduledTests();
+      setInterval(
+        async () => {
+          try {
+            if (this.restoreTesting) {
+              await this.restoreTesting.executeScheduledTests();
+            }
+          } catch (error) {
+            logger.error({ error }, 'Automated restore testing failed');
           }
-        } catch (error) {
-          logger.error({ error }, 'Automated restore testing failed');
-        }
-      }, 24 * 60 * 60 * 1000); // Daily
+        },
+        24 * 60 * 60 * 1000
+      ); // Daily
 
       logger.info('Automated backup operations started');
-
     } catch (error) {
       logger.error({ error }, 'Failed to start automated operations');
     }

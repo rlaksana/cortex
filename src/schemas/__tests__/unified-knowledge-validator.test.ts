@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Unified Knowledge Type Validator Test Suite
  *
@@ -15,7 +11,7 @@
  * @version 2.0.0 - T20 Implementation
  */
 
-import { beforeEach,describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   BaseScopeSchema,
@@ -31,7 +27,7 @@ import {
   ValidationErrorCategory,
   ValidationErrorSeverity,
   ValidationMode,
-} from '../unified-knowledge-validator.js';
+} from '../unified-knowledge-validator';
 
 describe('UnifiedKnowledgeTypeValidator', () => {
   let validator: UnifiedKnowledgeTypeValidator;

@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Error Budget Service
  *
@@ -67,7 +63,6 @@ export class ErrorBudgetService extends EventEmitter {
 
       // Schedule periodic budget calculations
       this.schedulePeriodicCalculations();
-
     } catch (error) {
       this.isStarted = false;
       this.emit('error', `Failed to start Error Budget Service: ${error}`);
@@ -131,7 +126,11 @@ export class ErrorBudgetService extends EventEmitter {
     const consumption = this.calculateBudgetConsumption(periodEvaluations, period);
 
     // Generate projection
-    const projection = this.generateBudgetProjectionInternal(budgetMetrics, consumption, period) as BudgetProjection;
+    const projection = this.generateBudgetProjectionInternal(
+      budgetMetrics,
+      consumption,
+      period
+    ) as BudgetProjection;
 
     const utilization = this.calculateBudgetUtilization(budgetMetrics);
 
@@ -185,12 +184,14 @@ export class ErrorBudgetService extends EventEmitter {
    */
   async getMultipleErrorBudgets(sloIds: string[]): Promise<ErrorBudget[]> {
     const budgets = await Promise.allSettled(
-      sloIds.map(sloId => this.calculateErrorBudget(sloId))
+      sloIds.map((sloId) => this.calculateErrorBudget(sloId))
     );
 
     return budgets
-      .filter((result): result is PromiseFulfilledResult<ErrorBudget> => result.status === 'fulfilled')
-      .map(result => result.value);
+      .filter(
+        (result): result is PromiseFulfilledResult<ErrorBudget> => result.status === 'fulfilled'
+      )
+      .map((result) => result.value);
   }
 
   // ============================================================================
@@ -200,7 +201,10 @@ export class ErrorBudgetService extends EventEmitter {
   /**
    * Calculate burn rate analysis
    */
-  async calculateBurnRateAnalysis(sloId: string, timeWindow?: TimeRange): Promise<BurnRateAnalysis> {
+  async calculateBurnRateAnalysis(
+    sloId: string,
+    timeWindow?: TimeRange
+  ): Promise<BurnRateAnalysis> {
     const slo = this.sloService.getSLO(sloId);
     if (!slo) {
       throw new Error(`SLO ${sloId} not found`);
@@ -254,7 +258,10 @@ export class ErrorBudgetService extends EventEmitter {
       analysisPeriod: period,
       averageRate: burnRates.daily,
       peakRate: Math.max(burnRates.hourly, burnRates.daily, burnRates.weekly, burnRates.monthly),
-      timeToExhaustion: (consumption.currentRate as number) > 0 ? budgetMetrics.remaining / (consumption.currentRate as number) : null,
+      timeToExhaustion:
+        (consumption.currentRate as number) > 0
+          ? budgetMetrics.remaining / (consumption.currentRate as number)
+          : null,
       factors: {
         recentIncidents: 0,
         degradedOperations: budgetMetrics.consumed || 0,
@@ -294,7 +301,7 @@ export class ErrorBudgetService extends EventEmitter {
    */
   async compareBurnRates(sloIds: string[]): Promise<BurnRateComparison> {
     const analyses = await Promise.all(
-      sloIds.map(sloId => this.calculateBurnRateAnalysis(sloId))
+      sloIds.map((sloId) => this.calculateBurnRateAnalysis(sloId))
     );
 
     const defaultPeriod: BudgetPeriod = {
@@ -305,12 +312,20 @@ export class ErrorBudgetService extends EventEmitter {
     };
     const comparison: BurnRateComparison = {
       period: (analyses[0]?.period as BudgetPeriod) || defaultPeriod,
-      sloComparisons: analyses.map(analysis => ({
+      sloComparisons: analyses.map((analysis) => ({
         sloId: analysis.sloId,
         sloName: (analysis.metadata as unknown)?.sloName || 'Unknown SLO',
         burnRate: analysis.currentRate,
-        trend: (analysis.metadata as unknown)?.trendDetails || { direction: BurnRateTrend.UNKNOWN, confidence: 0, slope: 0 },
-        health: (analysis.metadata as unknown)?.healthDetails || { status: 'healthy' as const, score: 100, factors: [] },
+        trend: (analysis.metadata as unknown)?.trendDetails || {
+          direction: BurnRateTrend.UNKNOWN,
+          confidence: 0,
+          slope: 0,
+        },
+        health: (analysis.metadata as unknown)?.healthDetails || {
+          status: 'healthy' as const,
+          score: 100,
+          factors: [],
+        },
       })),
       rankings: this.rankSLOsByBurnRate(analyses),
       insights: this.generateBurnRateInsights(analyses),
@@ -348,7 +363,11 @@ export class ErrorBudgetService extends EventEmitter {
     };
 
     // Generate projection using the existing method
-    const projection = this.generateBudgetProjectionInternal(currentBudget, burnRateAnalysis, projectionPeriod as unknown as BudgetPeriod);
+    const projection = this.generateBudgetProjectionInternal(
+      currentBudget,
+      burnRateAnalysis,
+      projectionPeriod as unknown as BudgetPeriod
+    );
 
     this.emit('projection:generated', projection);
     return projection;
@@ -365,17 +384,16 @@ export class ErrorBudgetService extends EventEmitter {
     const exhaustionDates = [
       scenarios.optimistic,
       scenarios.realistic,
-      scenarios.pessimistic
-    ].filter(date => date !== null);
+      scenarios.pessimistic,
+    ].filter((date) => date !== null);
 
-    const earliestExhaustion = exhaustionDates.length > 0
-      ? new Date(Math.min(...exhaustionDates.map(date => date.getTime())))
-      : null;
+    const earliestExhaustion =
+      exhaustionDates.length > 0
+        ? new Date(Math.min(...exhaustionDates.map((date) => date.getTime())))
+        : null;
 
     // Calculate time to exhaustion
-    const timeToExhaustion = earliestExhaustion
-      ? earliestExhaustion.getTime() - Date.now()
-      : null;
+    const timeToExhaustion = earliestExhaustion ? earliestExhaustion.getTime() - Date.now() : null;
 
     const forecast: ExhaustionForecast = {
       sloId,
@@ -383,7 +401,11 @@ export class ErrorBudgetService extends EventEmitter {
       timeToExhaustion,
       probabilityOfExhaustion: (projection.exhaustionProbability as number) || 0,
       confidence: ((projection.metadata as unknown)?.confidence as number) || 0.5,
-      recommendations: this.generateExhaustionRecommendations(sloId, earliestExhaustion, timeToExhaustion),
+      recommendations: this.generateExhaustionRecommendations(
+        sloId,
+        earliestExhaustion,
+        timeToExhaustion
+      ),
       generatedAt: new Date(),
     };
 
@@ -429,7 +451,7 @@ export class ErrorBudgetService extends EventEmitter {
       automatedResponses: this.checkAutomationCompliance(policy, budget, burnRateAnalysis),
     };
 
-    const overallCompliance = Object.values(compliance).every(result => result.compliant);
+    const overallCompliance = Object.values(compliance).every((result) => result.compliant);
 
     const result: PolicyComplianceResult = {
       sloId,
@@ -454,10 +476,10 @@ export class ErrorBudgetService extends EventEmitter {
    */
   getActiveBudgetAlerts(sloId?: string): BudgetAlert[] {
     const allAlerts = Array.from(this.budgetAlerts.values()).flat();
-    const activeAlerts = allAlerts.filter(alert => !alert.resolved);
+    const activeAlerts = allAlerts.filter((alert) => !alert.resolved);
 
     if (sloId) {
-      return activeAlerts.filter(alert => alert.sloId === sloId);
+      return activeAlerts.filter((alert) => alert.sloId === sloId);
     }
 
     return activeAlerts;
@@ -468,7 +490,7 @@ export class ErrorBudgetService extends EventEmitter {
    */
   async acknowledgeBudgetAlert(alertId: string, acknowledgedBy: string): Promise<boolean> {
     const allAlerts = Array.from(this.budgetAlerts.values()).flat();
-    const alert = allAlerts.find(a => a.id === alertId);
+    const alert = allAlerts.find((a) => a.id === alertId);
 
     if (!alert || alert.resolved) {
       return false;
@@ -485,9 +507,13 @@ export class ErrorBudgetService extends EventEmitter {
   /**
    * Resolve a budget alert
    */
-  async resolveBudgetAlert(alertId: string, resolvedBy: string, resolution?: string): Promise<boolean> {
+  async resolveBudgetAlert(
+    alertId: string,
+    resolvedBy: string,
+    resolution?: string
+  ): Promise<boolean> {
     const allAlerts = Array.from(this.budgetAlerts.values()).flat();
-    const alert = allAlerts.find(a => a.id === alertId);
+    const alert = allAlerts.find((a) => a.id === alertId);
 
     if (!alert) {
       return false;
@@ -572,21 +598,24 @@ export class ErrorBudgetService extends EventEmitter {
    */
   private schedulePeriodicCalculations(): void {
     // Comprehensive calculation every 5 minutes
-    setInterval(async () => {
-      if (!this.isStarted) return;
+    setInterval(
+      async () => {
+        if (!this.isStarted) return;
 
-      try {
-        const slos = this.sloService.getAllSLOs();
-        for (const slo of slos) {
-          if (slo.status === 'active') {
-            await this.calculateErrorBudget(slo.id);
-            await this.calculateBurnRateAnalysis(slo.id);
+        try {
+          const slos = this.sloService.getAllSLOs();
+          for (const slo of slos) {
+            if (slo.status === 'active') {
+              await this.calculateErrorBudget(slo.id);
+              await this.calculateBurnRateAnalysis(slo.id);
+            }
           }
+        } catch (error) {
+          this.emit('error', `Periodic budget calculation failed: ${error}`);
         }
-      } catch (error) {
-        this.emit('error', `Periodic budget calculation failed: ${error}`);
-      }
-    }, 5 * 60 * 1000); // Every 5 minutes
+      },
+      5 * 60 * 1000
+    ); // Every 5 minutes
   }
 
   /**
@@ -631,9 +660,12 @@ export class ErrorBudgetService extends EventEmitter {
   /**
    * Filter evaluations by period
    */
-  private filterEvaluationsByPeriod(evaluations: SLOEvaluation[], period: BudgetPeriod): SLOEvaluation[] {
-    return evaluations.filter(evaluation =>
-      evaluation.timestamp >= period.start && evaluation.timestamp <= period.end
+  private filterEvaluationsByPeriod(
+    evaluations: SLOEvaluation[],
+    period: BudgetPeriod
+  ): SLOEvaluation[] {
+    return evaluations.filter(
+      (evaluation) => evaluation.timestamp >= period.start && evaluation.timestamp <= period.end
     );
   }
 
@@ -685,7 +717,7 @@ export class ErrorBudgetService extends EventEmitter {
     period: BudgetPeriod
   ): BudgetConsumption {
     // Calculate consumption rates
-    const rates = evaluations.map(e => e.budget.burnRate);
+    const rates = evaluations.map((e) => e.budget.burnRate);
     const currentRate = rates[rates.length - 1] || 0;
     const totalConsumption = rates.reduce((sum, rate) => sum + rate, 0);
 
@@ -697,17 +729,19 @@ export class ErrorBudgetService extends EventEmitter {
         byCategory: {
           burn_rate: totalConsumption,
         },
-        byTimeSlot: evaluations.map(e => ({
+        byTimeSlot: evaluations.map((e) => ({
           timeSlot: e.timestamp,
           consumption: e.budget.consumed,
           operations: e.budget.total || 0,
         })),
       },
-      sources: [{
-        type: 'slo_evaluation',
-        contribution: totalConsumption,
-        details: { dataPoints: evaluations.length },
-      }],
+      sources: [
+        {
+          type: 'slo_evaluation',
+          contribution: totalConsumption,
+          details: { dataPoints: evaluations.length },
+        },
+      ],
       currentRate,
     };
   }
@@ -715,7 +749,11 @@ export class ErrorBudgetService extends EventEmitter {
   /**
    * Calculate budget utilization
    */
-  private calculateBudgetUtilization(budgetMetrics: { remaining: number; consumed: number; total: number }): BudgetUtilization {
+  private calculateBudgetUtilization(budgetMetrics: {
+    remaining: number;
+    consumed: number;
+    total: number;
+  }): BudgetUtilization {
     const utilizationPercentage = (budgetMetrics.consumed / budgetMetrics.total) * 100;
 
     return {
@@ -733,7 +771,9 @@ export class ErrorBudgetService extends EventEmitter {
         excludedOperations: 0,
       },
       recommendations: [
-        utilizationPercentage > 80 ? 'Investigate high error budget utilization' : 'Continue monitoring utilization',
+        utilizationPercentage > 80
+          ? 'Investigate high error budget utilization'
+          : 'Continue monitoring utilization',
         'Review recent changes that may affect performance',
       ],
     };
@@ -845,7 +885,7 @@ export class ErrorBudgetService extends EventEmitter {
         break;
     }
 
-    const periodEvaluations = evaluations.filter(e => e.timestamp >= periodStart);
+    const periodEvaluations = evaluations.filter((e) => e.timestamp >= periodStart);
     if (periodEvaluations.length < 2) return 0;
 
     const first = periodEvaluations[0];
@@ -870,8 +910,10 @@ export class ErrorBudgetService extends EventEmitter {
       return { direction: BurnRateTrend.UNKNOWN, confidence: 0, slope: 0 };
     }
 
-    const burnRates = evaluations.map(e => e.budget.burnRate);
-    const regression = this.calculateLinearRegression(burnRates.map((rate, i) => ({ x: i, y: rate })));
+    const burnRates = evaluations.map((e) => e.budget.burnRate);
+    const regression = this.calculateLinearRegression(
+      burnRates.map((rate, i) => ({ x: i, y: rate }))
+    );
 
     let direction: BurnRateTrend;
     if (Math.abs(regression.slope) < 0.01) {
@@ -905,7 +947,7 @@ export class ErrorBudgetService extends EventEmitter {
       return { current: 0, average: 0, acceleration: 0 };
     }
 
-    const burnRates = evaluations.map(e => e.budget.burnRate);
+    const burnRates = evaluations.map((e) => e.budget.burnRate);
     const current = burnRates[burnRates.length - 1];
     const average = burnRates.reduce((sum, rate) => sum + rate, 0) / burnRates.length;
 
@@ -1043,7 +1085,9 @@ export class ErrorBudgetService extends EventEmitter {
     const recommendations: string[] = [];
 
     if (burnRates.daily > 2) {
-      recommendations.push('Investigate cause of high burn rate and implement immediate mitigation');
+      recommendations.push(
+        'Investigate cause of high burn rate and implement immediate mitigation'
+      );
       recommendations.push('Consider traffic throttling or capacity increases');
     }
 
@@ -1098,7 +1142,12 @@ export class ErrorBudgetService extends EventEmitter {
     // Safely access trend direction
     let trendDirection: BurnRateTrend = BurnRateTrend.UNKNOWN;
     const trendData = (analysis as unknown).trend;
-    if (trendData && typeof trendData === 'object' && trendData !== null && 'direction' in trendData) {
+    if (
+      trendData &&
+      typeof trendData === 'object' &&
+      trendData !== null &&
+      'direction' in trendData
+    ) {
       trendDirection = trendData.direction;
     }
 
@@ -1129,12 +1178,12 @@ export class ErrorBudgetService extends EventEmitter {
 
     // Calculate confidence based on data recency and consistency
     const now = Date.now();
-    const recentData = evaluations.filter(e => now - e.timestamp.getTime() < 24 * 60 * 60 * 1000);
+    const recentData = evaluations.filter((e) => now - e.timestamp.getTime() < 24 * 60 * 60 * 1000);
     const recencyFactor = Math.min(recentData.length / evaluations.length, 1);
 
     const consistency = this.calculateConsistency(evaluations);
 
-    return (recencyFactor * 0.6 + consistency * 0.4);
+    return recencyFactor * 0.6 + consistency * 0.4;
   }
 
   /**
@@ -1143,23 +1192,29 @@ export class ErrorBudgetService extends EventEmitter {
   private calculateConsistency(evaluations: SLOEvaluation[]): number {
     if (evaluations.length < 2) return 1;
 
-    const values = evaluations.map(e => e.objective.compliance);
+    const values = evaluations.map((e) => e.objective.compliance);
     const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
     const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
     const stdDev = Math.sqrt(variance);
 
     // Lower standard deviation means higher consistency
-    return Math.max(0, 1 - (stdDev / mean));
+    return Math.max(0, 1 - stdDev / mean);
   }
 
   /**
    * Calculate linear regression
    */
-  private calculateLinearRegression(data: { x: number; y: number }[]): { slope: number; intercept: number } {
+  private calculateLinearRegression(data: { x: number; y: number }[]): {
+    slope: number;
+    intercept: number;
+  } {
     if (data.length < 2) return { slope: 0, intercept: 0 };
 
     const n = data.length;
-    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    let sumX = 0,
+      sumY = 0,
+      sumXY = 0,
+      sumX2 = 0;
 
     for (const point of data) {
       sumX += point.x;
@@ -1194,7 +1249,11 @@ export class ErrorBudgetService extends EventEmitter {
   }
 
   // Placeholder methods for complex functionality
-  private generateBudgetProjectionInternal(budget: unknown, consumption: unknown, period: BudgetPeriod): BudgetProjection {
+  private generateBudgetProjectionInternal(
+    budget: unknown,
+    consumption: unknown,
+    period: BudgetPeriod
+  ): BudgetProjection {
     const currentRate = (consumption.currentRate as number) || 0;
     const remaining = budget.remaining || 0;
 
@@ -1260,27 +1319,50 @@ export class ErrorBudgetService extends EventEmitter {
     return 0.1; // Placeholder
   }
 
-  private generateBudgetRecommendations(slo: unknown, budget: unknown, burnRate: unknown, scenarios: unknown[]): string[] {
+  private generateBudgetRecommendations(
+    slo: unknown,
+    budget: unknown,
+    burnRate: unknown,
+    scenarios: unknown[]
+  ): string[] {
     return ['Budget recommendations placeholder'];
   }
 
-  private generateExhaustionRecommendations(sloId: string, exhaustionDate: Date | null, timeToExhaustion: number | null): string[] {
+  private generateExhaustionRecommendations(
+    sloId: string,
+    exhaustionDate: Date | null,
+    timeToExhaustion: number | null
+  ): string[] {
     return ['Exhaustion recommendations placeholder'];
   }
 
-  private checkBurnRateCompliance(policy: unknown, analysis: unknown): { compliant: boolean; details: string } {
+  private checkBurnRateCompliance(
+    policy: unknown,
+    analysis: unknown
+  ): { compliant: boolean; details: string } {
     return { compliant: true, details: 'Compliant' };
   }
 
-  private checkConsumptionCompliance(policy: unknown, budget: unknown): { compliant: boolean; details: string } {
+  private checkConsumptionCompliance(
+    policy: unknown,
+    budget: unknown
+  ): { compliant: boolean; details: string } {
     return { compliant: true, details: 'Compliant' };
   }
 
-  private checkAlertCompliance(policy: unknown, budget: unknown, analysis: unknown): { compliant: boolean; details: string } {
+  private checkAlertCompliance(
+    policy: unknown,
+    budget: unknown,
+    analysis: unknown
+  ): { compliant: boolean; details: string } {
     return { compliant: true, details: 'Compliant' };
   }
 
-  private checkAutomationCompliance(policy: unknown, budget: unknown, analysis: unknown): { compliant: boolean; details: string } {
+  private checkAutomationCompliance(
+    policy: unknown,
+    budget: unknown,
+    analysis: unknown
+  ): { compliant: boolean; details: string } {
     return { compliant: true, details: 'Compliant' };
   }
 
@@ -1288,7 +1370,11 @@ export class ErrorBudgetService extends EventEmitter {
     return [];
   }
 
-  private generatePolicyRecommendations(policy: unknown, budget: unknown, analysis: unknown): string[] {
+  private generatePolicyRecommendations(
+    policy: unknown,
+    budget: unknown,
+    analysis: unknown
+  ): string[] {
     return ['Policy recommendations placeholder'];
   }
 

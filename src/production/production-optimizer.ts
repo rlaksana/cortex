@@ -1,6 +1,4 @@
-// @ts-nocheck
 // LAST ABSOLUTE FINAL EMERGENCY ROLLBACK: Complete the systematic rollback
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Production Optimizer - Complete Performance Enhancement Integration
@@ -21,12 +19,12 @@
 
 import { EventEmitter } from 'events';
 
-import { DEFAULT_POOL_CONFIG,QdrantPooledClient } from '../db/qdrant-pooled-client.js';
+import { DEFAULT_POOL_CONFIG, QdrantPooledClient } from '../db/qdrant-pooled-client.js';
 import {
   DEFAULT_BENCHMARK_CONFIGS,
   PerformanceBenchmarks,
 } from '../monitoring/performance-benchmarks.js';
-import { DEFAULT_ZAI_CONFIG,ZAIOptimizedClient } from '../services/ai/zai-optimized-client.js';
+import { DEFAULT_ZAI_CONFIG, ZAIOptimizedClient } from '../services/ai/zai-optimized-client.js';
 import {
   DEFAULT_LOAD_TEST_CONFIGS,
   type LoadTestConfig,
@@ -546,7 +544,9 @@ export class ProductionOptimizer extends EventEmitter {
    */
   private async initializeLoadTesting(): Promise<void> {
     try {
-      this.loadTestFramework = new LoadTestFramework(DEFAULT_LOAD_TEST_CONFIGS.smoke as unknown as LoadTestConfig);
+      this.loadTestFramework = new LoadTestFramework(
+        DEFAULT_LOAD_TEST_CONFIGS.smoke as unknown as LoadTestConfig
+      );
 
       this.status.components.loadTesting = 'completed';
       logger.info('Load testing framework initialized', {

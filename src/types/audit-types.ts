@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Comprehensive Type Definitions for Audit System
  *
@@ -130,11 +126,12 @@ export enum AuditEventType {
   DATA_QUALITY_CHECK = 'data_quality_check',
   DATA_MIGRATION = 'data_migration',
   DATA_BACKUP = 'data_backup',
-  DATA_RESTORE = 'data_restore'
+  DATA_RESTORE = 'data_restore',
 }
 
 /**
- * Audit categories for classification
+ * Consolidated audit categories for classification
+ * Merged values from audit-types.ts and audit-metrics-types.ts
  */
 export enum AuditCategory {
   SECURITY = 'security',
@@ -144,47 +141,54 @@ export enum AuditCategory {
   BUSINESS = 'business',
   COMPLIANCE = 'compliance',
   QUALITY = 'quality',
-  NETWORK = 'network'
+  NETWORK = 'network',
+  OPERATION = 'operation',
+  ACCESS = 'access',
 }
 
 /**
- * Audit operations with specific values
+ * Consolidated audit operations with lowercase values for consistency
+ * Merged values from audit-types.ts and audit-metrics-types.ts, standardized to lowercase
  */
 export enum AuditOperation {
-  CREATE = 'CREATE',
-  READ = 'READ',
-  UPDATE = 'UPDATE',
-  DELETE = 'DELETE',
-  EXECUTE = 'EXECUTE',
-  ACCESS = 'ACCESS',
-  MODIFY = 'MODIFY',
-  APPROVE = 'APPROVE',
-  REJECT = 'REJECT',
-  EXPORT = 'EXPORT',
-  IMPORT = 'IMPORT',
-  BACKUP = 'BACKUP',
-  RESTORE = 'RESTORE',
-  MIGRATE = 'MIGRATE',
-  SYNC = 'SYNC',
-  VALIDATE = 'VALIDATE',
-  SCAN = 'SCAN',
-  SEARCH = 'SEARCH',
-  DOWNLOAD = 'DOWNLOAD',
-  UPLOAD = 'UPLOAD'
+  CREATE = 'create',
+  READ = 'read',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  EXECUTE = 'execute',
+  ACCESS = 'access',
+  MODIFY = 'modify',
+  APPROVE = 'approve',
+  REJECT = 'reject',
+  EXPORT = 'export',
+  IMPORT = 'import',
+  BACKUP = 'backup',
+  RESTORE = 'restore',
+  MIGRATE = 'migrate',
+  SYNC = 'sync',
+  VALIDATE = 'validate',
+  SCAN = 'scan',
+  SEARCH = 'search',
+  DOWNLOAD = 'download',
+  UPLOAD = 'upload',
 }
 
 /**
- * Audit source identification
+ * Consolidated audit source identification
+ * Merged values from audit-types.ts and audit-metrics-types.ts, standardized to batch_process
  */
 export enum AuditSource {
   SYSTEM = 'system',
   USER_INTERFACE = 'user_interface',
   API = 'api',
-  BATCH_JOB = 'batch_job',
+  BATCH_PROCESS = 'batch_process', // Standardized from BATCH_JOB and BATCH_PROCESS
   WEBHOOK = 'webhook',
   INTEGRATION = 'integration',
   MOBILE_APP = 'mobile_app',
-  THIRD_PARTY = 'third_party'
+  THIRD_PARTY = 'third_party',
+  AUTOMATION = 'automation',
+  EXTERNAL_SYSTEM = 'external_system',
+  BACKGROUND_SERVICE = 'background_service',
 }
 
 /**
@@ -204,14 +208,16 @@ export interface AuditResult {
 }
 
 /**
- * Sensitivity levels for audit classification
+ * Consolidated sensitivity levels for audit classification
+ * Merged values from audit-types.ts and audit-metrics-types.ts, standardized to top_secret
  */
 export enum SensitivityLevel {
   PUBLIC = 'public',
   INTERNAL = 'internal',
   CONFIDENTIAL = 'confidential',
   RESTRICTED = 'restricted',
-  SECRET = 'secret'
+  SECRET = 'secret',
+  TOP_SECRET = 'top_secret', // Added from audit-metrics-types.ts
 }
 
 /**
@@ -230,7 +236,8 @@ export interface ComplianceInfo {
 }
 
 /**
- * Compliance frameworks
+ * Consolidated compliance frameworks
+ * Merged values from audit-types.ts and audit-metrics-types.ts, standardized to underscore format
  */
 export enum ComplianceFramework {
   SOX = 'sox',
@@ -240,18 +247,23 @@ export enum ComplianceFramework {
   PCI_DSS = 'pci_dss',
   ISO27001 = 'iso27001',
   SOC2 = 'soc2',
-  NIST = 'nist'
+  NIST = 'nist',
 }
 
 /**
- * Compliance regulations
+ * Consolidated compliance regulations
+ * Merged values from audit-types.ts and audit-metrics-types.ts
  */
 export enum ComplianceRegulation {
   GDPR_ARTICLE_17 = 'gdpr_article_17', // Right to erasure
   GDPR_ARTICLE_25 = 'gdpr_article_25', // Data protection by design
+  GDPR_ARTICLE_5 = 'gdpr_article_5', // Added from audit-metrics-types.ts
   HIPAA_SECURITY_RULE = 'hipaa_security_rule',
   SOX_404 = 'sox_404',
-  CCPA_DELETE_REQUEST = 'ccpa_delete_request'
+  SOX_SECTION_404 = 'sox_section_404', // Added from audit-metrics-types.ts
+  CCPA_DELETE_REQUEST = 'ccpa_delete_request',
+  PCI_DSS_3_2 = 'pci_dss_3_2', // Added from audit-metrics-types.ts
+  ISO_27001_A_8_2 = 'iso_27001_a_8_2', // Added from audit-metrics-types.ts
 }
 
 /**
@@ -814,15 +826,21 @@ export function isTypedAuditQueryOptions(value: unknown): value is TypedAuditQue
 
   // Check that if arrays are provided, they contain valid enum values
   if (query.eventType && Array.isArray(query.eventType)) {
-    return query.eventType.every(type => Object.values(AuditEventType).includes(type as AuditEventType));
+    return query.eventType.every((type) =>
+      Object.values(AuditEventType).includes(type as AuditEventType)
+    );
   }
 
   if (query.category && Array.isArray(query.category)) {
-    return query.category.every(cat => Object.values(AuditCategory).includes(cat as AuditCategory));
+    return query.category.every((cat) =>
+      Object.values(AuditCategory).includes(cat as AuditCategory)
+    );
   }
 
   if (query.operation && Array.isArray(query.operation)) {
-    return query.operation.every(op => Object.values(AuditOperation).includes(op as AuditOperation));
+    return query.operation.every((op) =>
+      Object.values(AuditOperation).includes(op as AuditOperation)
+    );
   }
 
   return true;
@@ -839,7 +857,7 @@ export function isAuditMetadata(value: unknown): value is AuditMetadata {
   const metadata = value as AuditMetadata;
 
   // All fields in AuditMetadata should be of valid types
-  for (const [key, val] of Object.entries(metadata)) {
+  for (const [_key, val] of Object.entries(metadata)) {
     const isValidType =
       typeof val === 'string' ||
       typeof val === 'number' ||
@@ -887,11 +905,19 @@ export function validateAuditEvent(event: TypedAuditEvent): AuditValidationResul
   }
 
   // Business logic validation
-  if (event.operation === AuditOperation.DELETE && event.newData && Object.keys(event.newData).length > 0) {
+  if (
+    event.operation === AuditOperation.DELETE &&
+    event.newData &&
+    Object.keys(event.newData).length > 0
+  ) {
     warnings.push('Delete operation should not have new data');
   }
 
-  if (event.operation === AuditOperation.CREATE && event.oldData && Object.keys(event.oldData).length > 0) {
+  if (
+    event.operation === AuditOperation.CREATE &&
+    event.oldData &&
+    Object.keys(event.oldData).length > 0
+  ) {
     warnings.push('Create operation should not have old data');
   }
 
@@ -911,7 +937,7 @@ export function validateAuditEvent(event: TypedAuditEvent): AuditValidationResul
   return {
     isValid: errors.length === 0,
     errors,
-    warnings
+    warnings,
   };
 }
 
@@ -931,9 +957,7 @@ export interface AuditValidationResult {
 /**
  * Creates a properly typed audit event with default values
  */
-export function createTypedAuditEvent(
-  baseEvent: Partial<TypedAuditEvent>
-): TypedAuditEvent {
+export function createTypedAuditEvent(baseEvent: Partial<TypedAuditEvent>): TypedAuditEvent {
   const now = new Date().toISOString();
 
   return {
@@ -953,9 +977,9 @@ export function createTypedAuditEvent(
     compliance: baseEvent.compliance || {
       frameworks: [],
       regulations: [],
-      policies: []
+      policies: [],
     },
-    ...baseEvent
+    ...baseEvent,
   };
 }
 
@@ -967,17 +991,15 @@ export function createDefaultAuditConfig(): AuditSystemConfig {
     enabled: true,
     filter: {
       exclude: {
-        eventTypes: [
-          AuditEventType.SYSTEM_HEALTH_CHECK
-        ],
-        sensitivityBelow: SensitivityLevel.PUBLIC
+        eventTypes: [AuditEventType.SYSTEM_HEALTH_CHECK],
+        sensitivityBelow: SensitivityLevel.PUBLIC,
       },
       performance: {
         batchSize: 100,
         batchTimeoutMs: 5000,
         maxQueueSize: 10000,
-        enableCompression: true
-      }
+        enableCompression: true,
+      },
     },
     storage: {
       type: 'database',
@@ -985,12 +1007,23 @@ export function createDefaultAuditConfig(): AuditSystemConfig {
         tableName: 'audit_events',
         indexFields: ['timestamp', 'eventType', 'entityType', 'entityId', 'userId'],
         compressionEnabled: true,
-        encryptionEnabled: true
-      }
+        encryptionEnabled: true,
+      },
     },
     validation: {
       strictMode: false,
-      requiredFields: ['id', 'eventType', 'category', 'entityType', 'entityId', 'operation', 'source', 'component', 'timestamp', 'success'],
+      requiredFields: [
+        'id',
+        'eventType',
+        'category',
+        'entityType',
+        'entityId',
+        'operation',
+        'source',
+        'component',
+        'timestamp',
+        'success',
+      ],
       validateMetadata: true,
       validateCompliance: false,
       validateGeographic: false,
@@ -1002,13 +1035,13 @@ export function createDefaultAuditConfig(): AuditSystemConfig {
         sessionId: 255,
         requestId: 255,
         correlationId: 255,
-        message: 1000
-      }
+        message: 1000,
+      },
     },
     alerting: {
       enabled: true,
       rules: [],
-      channels: []
+      channels: [],
     },
     compliance: {
       frameworks: [],
@@ -1021,10 +1054,10 @@ export function createDefaultAuditConfig(): AuditSystemConfig {
         recipients: [],
         storage: {
           location: './reports',
-          retention: 365
-        }
-      }
-    }
+          retention: 365,
+        },
+      },
+    },
   };
 }
 
@@ -1071,7 +1104,7 @@ export function getAuditEventDescription(eventType: AuditEventType): string {
     [AuditEventType.DATA_QUALITY_CHECK]: 'Data quality check performed',
     [AuditEventType.DATA_MIGRATION]: 'Data migration performed',
     [AuditEventType.DATA_BACKUP]: 'Data backup performed',
-    [AuditEventType.DATA_RESTORE]: 'Data restore performed'
+    [AuditEventType.DATA_RESTORE]: 'Data restore performed',
   };
 
   return descriptions[eventType] || 'Unknown audit event';

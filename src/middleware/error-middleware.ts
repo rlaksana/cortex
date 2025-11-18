@@ -1,6 +1,4 @@
-// @ts-nocheck
 // COMPREHENSIVE EMERGENCY ROLLBACK: Final systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Error Handling Middleware for Cortex MCP
@@ -12,6 +10,7 @@
  */
 
 import { logger } from '@/utils/logger.js';
+import { safeGetProperty } from '@/utils/property-access-guards.js';
 
 import {
   type BaseError,
@@ -64,7 +63,7 @@ export class ApiErrorHandler {
 
     // Check required fields
     const required = Object.entries(schema)
-      .filter(([, config]) => config.required)
+      .filter(([, config]) => safeGetProperty(config, 'required', false))
       .map(([field]) => field);
 
     const missing = required.filter((field) => !(field in args));
@@ -76,7 +75,7 @@ export class ApiErrorHandler {
     Object.entries(schema).forEach(([field, config]: [string, unknown]) => {
       if (field in args) {
         const value = args[field];
-        const expectedType = config.type;
+        const expectedType = safeGetProperty(config, 'type', '');
 
         if (expectedType && typeof value !== expectedType) {
           throw new ValidationError(
@@ -190,7 +189,10 @@ export class DatabaseErrorHandler {
   /**
    * Handle record not found errors
    */
-  static handleNotFoundError(entityType: string, identifier: string | Record<string, unknown>): never {
+  static handleNotFoundError(
+    entityType: string,
+    identifier: string | Record<string, unknown>
+  ): never {
     const standardError = new DatabaseError(
       `${entityType} not found: ${JSON.stringify(identifier)}`
     );
@@ -202,7 +204,10 @@ export class DatabaseErrorHandler {
   /**
    * Handle duplicate record errors
    */
-  static handleDuplicateError(entityType: string, identifier: string | Record<string, unknown>): never {
+  static handleDuplicateError(
+    entityType: string,
+    identifier: string | Record<string, unknown>
+  ): never {
     const standardError = new DatabaseError(
       `Duplicate ${entityType}: ${JSON.stringify(identifier)}`
     );

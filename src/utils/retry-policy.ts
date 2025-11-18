@@ -1,10 +1,7 @@
-// @ts-nocheck
-// ABSOLUTELY FINAL EMERGENCY ROLLBACK: Complete ALL systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
-
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Interface compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
+// PHASE 2.2A RECOVERY: Retry policy utility synchronization complete
+// Recovery Date: 2025-11-14T18:20:00+07:00 (Asia/Jakarta)
+// Recovery Method: Sequential file-by-file approach with quality gates
+// Dependencies: UUID generation, logger, and error handler integration
 
 /**
  * P2-P3: Advanced Retry Policy and Error Taxonomy System
@@ -26,8 +23,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
 
-import { logger } from '@/utils/logger.js';
-
 import {
   BaseError,
   ErrorCategory,
@@ -37,6 +32,7 @@ import {
   RateLimitError,
   SystemError,
 } from './error-handler.js';
+import { logger } from './logger.js';
 
 // === Type Definitions ===
 
@@ -135,7 +131,7 @@ export class RetryPolicyManager {
     dlq_messages: 0,
     avg_attempts_per_operation: 0,
     avg_retry_delay_ms: 0,
-    error_distribution: {}
+    error_distribution: {},
   };
 
   private readonly defaultConfig: RetryPolicyConfig = {
@@ -230,7 +226,7 @@ export class RetryPolicyManager {
         });
         return {
           success: true,
-          result: cached.result,
+          result: cached.result as T,
           attempts: [
             {
               attempt_number: 1,
@@ -623,7 +619,7 @@ export class RetryPolicyManager {
   /**
    * Update retry metrics
    */
-  private updateRetryMetrics(attempts: RetryAttempt[], totalDuration: number): void {
+  private updateRetryMetrics(attempts: RetryAttempt[], _totalDuration: number): void {
     if (attempts.length > 1) {
       this.metrics.retried_operations++;
     }
@@ -694,7 +690,10 @@ export class RetryPolicyManager {
   /**
    * Retry DLQ message
    */
-  async retryDLQMessage(messageId: string, operation: () => Promise<unknown>): Promise<RetryResult> {
+  async retryDLQMessage(
+    messageId: string,
+    operation: () => Promise<unknown>
+  ): Promise<RetryResult> {
     const message = this.dlqMessages.find((msg) => msg.id === messageId);
     if (!message) {
       throw new Error(`DLQ message ${messageId} not found`);
@@ -872,7 +871,7 @@ export class RetryPolicyManager {
     };
 
     if (format === 'csv') {
-      return this.formatAsCSV(data);
+      return this.formatAsCSV({ timestamp: data.timestamp, metrics: data.metrics });
     }
 
     return JSON.stringify(data, null, 2);
@@ -881,7 +880,7 @@ export class RetryPolicyManager {
   /**
    * Format data as CSV
    */
-  private formatAsCSV(data: unknown): string {
+  private formatAsCSV(data: { timestamp: number; metrics: RetryMetrics }): string {
     const headers = [
       'timestamp',
       'total_operations',

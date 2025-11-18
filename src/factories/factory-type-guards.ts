@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ULTIMATE FINAL EMERGENCY ROLLBACK: Remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Comprehensive type guards for factory validation and runtime type checking
@@ -19,7 +17,8 @@ import type {
   ServiceLifetime,
   StoredItemKind,
   TypedFactory,
-  ValidationResult} from './factory-types';
+  ValidationResult,
+} from './factory-types';
 
 // Basic type guards
 export function isString(value: unknown): value is string {
@@ -70,11 +69,27 @@ export function isServiceLifetime(value: unknown): value is ServiceLifetime {
 
 // Stored item kind validation
 export function isStoredItemKind(value: unknown): value is StoredItemKind {
-  return isString(value) && [
-    'entity', 'relation', 'observation', 'section', 'runbook',
-    'change', 'issue', 'decision', 'todo', 'release_note',
-    'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
-  ].includes(value);
+  return (
+    isString(value) &&
+    [
+      'entity',
+      'relation',
+      'observation',
+      'section',
+      'runbook',
+      'change',
+      'issue',
+      'decision',
+      'todo',
+      'release_note',
+      'ddl',
+      'pr_context',
+      'incident',
+      'release',
+      'risk',
+      'assumption',
+    ].includes(value)
+  );
 }
 
 // Configuration validation guards
@@ -84,7 +99,8 @@ export function isEnhancedLoggerConfig(value: unknown): value is EnhancedLoggerC
   const config = value as Record<string, unknown>;
 
   return (
-    isString(config.level) && ['error', 'warn', 'info', 'debug'].includes(config.level) &&
+    isString(config.level) &&
+    ['error', 'warn', 'info', 'debug'].includes(config.level) &&
     isBoolean(config.silent) &&
     (config.prefix === undefined || isString(config.prefix)) &&
     (config.structured === undefined || isBoolean(config.structured)) &&
@@ -127,9 +143,12 @@ export function isPerformanceConfig(value: unknown): value is PerformanceConfig 
   const config = value as Record<string, unknown>;
 
   return (
-    isNumber(config.connectionTimeout) && config.connectionTimeout > 0 &&
-    isNumber(config.requestTimeout) && config.requestTimeout > 0 &&
-    isNumber(config.maxConcurrentRequests) && config.maxConcurrentRequests > 0 &&
+    isNumber(config.connectionTimeout) &&
+    config.connectionTimeout > 0 &&
+    isNumber(config.requestTimeout) &&
+    config.requestTimeout > 0 &&
+    isNumber(config.maxConcurrentRequests) &&
+    config.maxConcurrentRequests > 0 &&
     isBoolean(config.enableCaching) &&
     (config.cacheTimeout === undefined || isNumber(config.cacheTimeout))
   );
@@ -141,8 +160,10 @@ export function isEnhancedServerConfig(value: unknown): value is EnhancedServerC
   const config = value as Record<string, unknown>;
 
   return (
-    isString(config.name) && config.name.trim().length > 0 &&
-    isString(config.version) && config.version.trim().length > 0 &&
+    isString(config.name) &&
+    config.name.trim().length > 0 &&
+    isString(config.version) &&
+    config.version.trim().length > 0 &&
     isEnhancedLoggerConfig(config.logger) &&
     isServerFeatures(config.features) &&
     isSecurityConfig(config.security) &&
@@ -154,13 +175,16 @@ export function isEnhancedServerConfig(value: unknown): value is EnhancedServerC
 }
 
 // Factory validation guards
-export function isTypedFactory<TInstance, TConfig>(value: unknown): value is TypedFactory<TInstance, TConfig> {
+export function isTypedFactory<TInstance, TConfig>(
+  value: unknown
+): value is TypedFactory<TInstance, TConfig> {
   if (!isObject(value)) return false;
 
   const factory = value as Record<string, unknown>;
 
   return (
-    factory.id !== undefined && (isString(factory.id) || isFactoryId(factory.id)) &&
+    factory.id !== undefined &&
+    (isString(factory.id) || isFactoryId(factory.id)) &&
     isFunction(factory.create) &&
     (factory.validate === undefined || isFunction(factory.validate)) &&
     (factory.test === undefined || isFunction(factory.test)) &&
@@ -170,17 +194,19 @@ export function isTypedFactory<TInstance, TConfig>(value: unknown): value is Typ
 
 // Service registration validation
 export function isValidServiceToken(value: unknown): boolean {
-  return isString(value) || isSymbol(value) || (isFunction(value) && value.name);
+  return isString(value) || isSymbol(value) || (isFunction(value) && Boolean(value.name));
 }
 
 export function isValidDependencyArray(value: unknown): boolean {
   if (!isArray(value)) return false;
 
-  return value.every(dep => isValidServiceToken(dep));
+  return value.every((dep) => isValidServiceToken(dep));
 }
 
 // Memory item validation
-export function isScopeInfo(value: unknown): value is { project?: string; branch?: string; org?: string } {
+export function isScopeInfo(
+  value: unknown
+): value is { project?: string; branch?: string; org?: string } {
   if (!isObject(value)) return false;
 
   const scope = value as Record<string, unknown>;
@@ -195,7 +221,7 @@ export function isScopeInfo(value: unknown): value is { project?: string; branch
 export function isTypedMemoryStoreItem(value: unknown): value is {
   kind: StoredItemKind;
   data: Record<string, unknown>;
-  scope?: { project?: string; branch?: string; org?: string }
+  scope?: { project?: string; branch?: string; org?: string };
 } {
   if (!isObject(value)) return false;
 
@@ -213,23 +239,25 @@ export function isMemoryFindSchema(value: unknown): value is {
   query: string;
   scope?: { project?: string; branch?: string; org?: string };
   types?: StoredItemKind[];
-  limit?: number
+  limit?: number;
 } {
   if (!isObject(value)) return false;
 
   const schema = value as Record<string, unknown>;
 
   return (
-    isString(schema.query) && schema.query.trim().length > 0 &&
+    isString(schema.query) &&
+    schema.query.trim().length > 0 &&
     (schema.scope === undefined || isScopeInfo(schema.scope)) &&
-    (schema.types === undefined || (isArray(schema.types) && schema.types.every(isStoredItemKind))) &&
+    (schema.types === undefined ||
+      (isArray(schema.types) && schema.types.every(isStoredItemKind))) &&
     (schema.limit === undefined || (isNumber(schema.limit) && schema.limit > 0))
   );
 }
 
 // System status schema validation
 export function isSystemStatusSchema(value: unknown): value is {
-  operation?: 'cleanup' | 'health' | 'stats' | 'validate'
+  operation?: 'cleanup' | 'health' | 'stats' | 'validate';
 } {
   if (!isObject(value)) return false;
 
@@ -249,18 +277,21 @@ export function isValidationResult(value: unknown): value is ValidationResult {
 
   return (
     isBoolean(result.valid) &&
-    isArray(result.errors) && result.errors.every(isString) &&
+    isArray(result.errors) &&
+    result.errors.every(isString) &&
     (result.warnings === undefined || (isArray(result.warnings) && result.warnings.every(isString)))
   );
 }
 
 // Comprehensive validation functions
-export function validateAndEnhanceServerConfig(config: unknown): ValidationResult & { config?: EnhancedServerConfig } {
+export function validateAndEnhanceServerConfig(
+  config: unknown
+): ValidationResult & { config?: EnhancedServerConfig } {
   if (!isEnhancedServerConfig(config)) {
     return {
       valid: false,
       errors: ['Invalid server configuration structure'],
-      warnings: []
+      warnings: [],
     };
   }
 
@@ -282,11 +313,17 @@ export function validateAndEnhanceServerConfig(config: unknown): ValidationResul
   }
 
   // Validate performance configuration
-  if (config.performance.connectionTimeout < 1000 || config.performance.connectionTimeout > 300000) {
+  if (
+    config.performance.connectionTimeout < 1000 ||
+    config.performance.connectionTimeout > 300000
+  ) {
     warnings.push('Connection timeout should be between 1000ms and 300000ms');
   }
 
-  if (config.performance.maxConcurrentRequests < 1 || config.performance.maxConcurrentRequests > 1000) {
+  if (
+    config.performance.maxConcurrentRequests < 1 ||
+    config.performance.maxConcurrentRequests > 1000
+  ) {
     warnings.push('Max concurrent requests should be between 1 and 1000');
   }
 
@@ -299,11 +336,13 @@ export function validateAndEnhanceServerConfig(config: unknown): ValidationResul
     valid: errors.length === 0,
     errors,
     warnings,
-    config
+    config,
   };
 }
 
-export function validateMemoryStoreItems(items: unknown[]): ValidationResult & { items?: unknown[] } {
+export function validateMemoryStoreItems(
+  items: unknown[]
+): ValidationResult & { items?: unknown[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
   const validItems: unknown[] = [];
@@ -312,7 +351,7 @@ export function validateMemoryStoreItems(items: unknown[]): ValidationResult & {
     return {
       valid: false,
       errors: ['Items must be an array'],
-      warnings: []
+      warnings: [],
     };
   }
 
@@ -344,7 +383,7 @@ export function validateMemoryStoreItems(items: unknown[]): ValidationResult & {
     valid: errors.length === 0,
     errors,
     warnings,
-    items: validItems
+    items: validItems,
   };
 }
 
@@ -368,8 +407,8 @@ export function validateFactoryRegistration<TInstance, TConfig>(
     warnings.push('Factory validate property should be a function');
   }
 
-  // Optional test method
-  if (factory.test && typeof factory.test !== 'function') {
+  // Optional test method (only for DatabaseFactory)
+  if ('test' in factory && factory.test && typeof factory.test !== 'function') {
     warnings.push('Factory test property should be a function');
   }
 
@@ -393,14 +432,16 @@ export class RuntimeTypeChecker {
     return RuntimeTypeChecker.instance;
   }
 
-  validate<T>(value: unknown, validator: (value: unknown) => value is T, cacheKey?: string): ValidationResult & { value?: T } {
+  validate<T>(
+    value: unknown,
+    validator: (value: unknown) => value is T,
+    cacheKey?: string
+  ): ValidationResult & { value?: T } {
     const key = cacheKey || `${validator.name}-${JSON.stringify(value)}`;
 
     if (this.validationCache.has(key)) {
       const cached = this.validationCache.get(key)!;
-      return cached.valid && validator(value) ?
-        { ...cached, value } :
-        cached;
+      return cached.valid && validator(value) ? { ...cached, value } : cached;
     }
 
     const isValid = validator(value);
@@ -408,13 +449,13 @@ export class RuntimeTypeChecker {
       valid: isValid,
       errors: isValid ? [] : [`Type validation failed for ${validator.name}`],
       warnings: [],
-      value: isValid ? value : undefined
+      value: isValid ? value : undefined,
     };
 
     this.validationCache.set(key, {
       valid: result.valid,
       errors: result.errors,
-      warnings: result.warnings
+      warnings: result.warnings,
     });
 
     return result;
@@ -428,7 +469,7 @@ export class RuntimeTypeChecker {
     // This would require tracking hits/misses in a real implementation
     return {
       size: this.validationCache.size,
-      hitRate: 0 // Placeholder
+      hitRate: 0, // Placeholder
     };
   }
 }
@@ -450,13 +491,17 @@ export const validateSystemStatusSchema = (schema: unknown) =>
   RuntimeTypeChecker.getInstance().validate(schema, isSystemStatusSchema, 'system-status-schema');
 
 // Type assertion helpers with runtime validation
-export function assertIsEnhancedServerConfig(value: unknown): asserts value is EnhancedServerConfig {
+export function assertIsEnhancedServerConfig(
+  value: unknown
+): asserts value is EnhancedServerConfig {
   if (!isEnhancedServerConfig(value)) {
     throw new TypeError(`Expected EnhancedServerConfig, got ${typeof value}`);
   }
 }
 
-export function assertIsTypedFactory<TInstance, TConfig>(value: unknown): asserts value is TypedFactory<TInstance, TConfig> {
+export function assertIsTypedFactory<TInstance, TConfig>(
+  value: unknown
+): asserts value is TypedFactory<TInstance, TConfig> {
   if (!isTypedFactory(value)) {
     throw new TypeError(`Expected TypedFactory, got ${typeof value}`);
   }
@@ -465,7 +510,7 @@ export function assertIsTypedFactory<TInstance, TConfig>(value: unknown): assert
 export function assertIsMemoryStoreItem(value: unknown): asserts value is {
   kind: StoredItemKind;
   data: Record<string, unknown>;
-  scope?: { project?: string; branch?: string; org?: string }
+  scope?: { project?: string; branch?: string; org?: string };
 } {
   if (!isTypedMemoryStoreItem(value)) {
     throw new TypeError(`Expected MemoryStoreItem, got ${typeof value}`);
@@ -476,7 +521,7 @@ export function assertIsMemoryFindSchema(value: unknown): asserts value is {
   query: string;
   scope?: { project?: string; branch?: string; org?: string };
   types?: StoredItemKind[];
-  limit?: number
+  limit?: number;
 } {
   if (!isMemoryFindSchema(value)) {
     throw new TypeError(`Expected MemoryFindSchema, got ${typeof value}`);

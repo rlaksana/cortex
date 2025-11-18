@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Deduplication Strategy Factory
  *
@@ -11,12 +7,10 @@
 
 import { logger } from '@/utils/logger.js';
 
-import type { DeduplicationStrategy,DeduplicationStrategyConfig } from './base-strategy.js';
+import type { DeduplicationStrategy, DeduplicationStrategyConfig } from './base-strategy.js';
 import { CombineStrategy } from './combine-strategy.js';
 import { IntelligentStrategy, type IntelligentStrategyConfig } from './intelligent-strategy.js';
-import {
-  PreferExistingStrategy,
-} from './prefer-existing-strategy.js';
+import { PreferExistingStrategy } from './prefer-existing-strategy.js';
 import { PreferNewerStrategy, type PreferNewerStrategyConfig } from './prefer-newer-strategy.js';
 import { SkipStrategy } from './skip-strategy.js';
 import type { MergeStrategy } from '../../../config/deduplication-config.js';

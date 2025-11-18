@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Semantic Contradiction Detection Strategy
  *
@@ -155,10 +150,7 @@ export class SemanticContradictionStrategy {
 
       return JSON.parse(response.choices[0].message.content) as SemanticAnalysisResult;
     } catch (error) {
-      logger.error(
-        { error, item1Id: item1.id, item2Id: item2.id },
-        'ZAI semantic analysis failed'
-      );
+      logger.error({ error, item1Id: item1.id, item2Id: item2.id }, 'ZAI semantic analysis failed');
       throw error;
     }
   }
@@ -497,4 +489,3 @@ Provide a detailed semantic analysis focusing on the deeper meaning and intent r
  * Export singleton instance
  */
 export const semanticContradictionStrategy = new SemanticContradictionStrategy();
-

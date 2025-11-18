@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ULTIMATE FINAL EMERGENCY ROLLBACK: Remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Performance Test Harness
@@ -18,7 +16,8 @@ import { performance } from 'perf_hooks';
 import {
   type PerformanceTarget,
   PerformanceTargetValidator,
-  type PerformanceTestConfig} from './performance-targets.js';
+  type PerformanceTestConfig,
+} from './performance-targets.js';
 // Define PerformanceMetrics interface needed for the performance module
 export interface PerformanceMetrics {
   /** Latency percentiles */
@@ -208,6 +207,46 @@ export interface PerformanceArtifact {
   };
 }
 
+/**
+ * Storage operation parameters
+ */
+export interface StorageParameters {
+  entityTypes: string[];
+  averageSize: number;
+}
+
+/**
+ * Search operation parameters
+ */
+export interface SearchParameters {
+  queryTypes: string[];
+  queryComplexity: 'simple' | 'medium' | 'complex';
+  resultCount: number;
+}
+
+/**
+ * Circuit breaker operation parameters
+ */
+export interface CircuitBreakerParameters {
+  failureRate: number;
+}
+
+/**
+ * Health check operation parameters
+ */
+export interface HealthCheckParameters {
+  checkTypes: string[];
+  checkInterval: number;
+}
+
+/**
+ * Generic operation parameters
+ */
+export interface GenericParameters {
+  entityType: string;
+  averageSize: number;
+}
+
 export class PerformanceHarness {
   private artifacts: PerformanceArtifact[] = [];
   private memorySnapshots: NodeJS.MemoryUsage[] = [];
@@ -267,8 +306,8 @@ export class PerformanceHarness {
         timestamp: new Date().toISOString(),
         duration,
         environment,
-        systemMetrics
-      }
+        systemMetrics,
+      },
     };
 
     // Generate artifacts
@@ -278,8 +317,10 @@ export class PerformanceHarness {
     console.log(`📈 Validation: ${validation.passed ? 'PASSED' : 'FAILED'}`);
     if (validation.failures.length > 0) {
       console.log(`❌ Failures: ${validation.failures.length}`);
-      validation.failures.forEach(f => {
-        console.log(`   - ${f.target.name}: ${f.actual}${f.target.unit} (target: ${f.target}${f.target.unit})`);
+      validation.failures.forEach((f) => {
+        console.log(
+          `   - ${f.target.name}: ${f.actual}${f.target.unit} (target: ${f.target}${f.target.unit})`
+        );
       });
     }
     if (validation.warnings.length > 0) {
@@ -352,11 +393,11 @@ export class PerformanceHarness {
       metadata: {
         testId: this.testId,
         timestamp: new Date().toISOString(),
-        version: '2.0.1'
+        version: '2.0.1',
       },
       results: result.results,
       validation: result.validation,
-      config: result.config
+      config: result.config,
     };
 
     writeFileSync(baselinePath, JSON.stringify(baseline, null, 2));
@@ -381,7 +422,7 @@ export class PerformanceHarness {
     content += `**Total Tests:** ${results.length}\n\n`;
 
     // Executive summary
-    const passedTests = results.filter(r => r.validation.passed).length;
+    const passedTests = results.filter((r) => r.validation.passed).length;
     const failedTests = results.length - passedTests;
 
     content += `## Executive Summary\n\n`;
@@ -486,9 +527,9 @@ export class PerformanceHarness {
       config: {
         concurrency: config.concurrency,
         operations: config.operationCount,
-        parameters: config.parameters
+        parameters: config.parameters,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -522,10 +563,10 @@ export class PerformanceHarness {
             rss: endMemory.rss - startMemory.rss,
             heapUsed: endMemory.heapUsed - startMemory.heapUsed,
             heapTotal: endMemory.heapTotal - startMemory.heapTotal,
-            external: endMemory.external - startMemory.external
-          }
+            external: endMemory.external - startMemory.external,
+          },
         },
-        result: { operations }
+        result: { operations },
       };
     } catch (error) {
       const endTime = performance.now();
@@ -543,10 +584,10 @@ export class PerformanceHarness {
             rss: endMemory.rss - startMemory.rss,
             heapUsed: endMemory.heapUsed - startMemory.heapUsed,
             heapTotal: endMemory.heapTotal - startMemory.heapTotal,
-            external: endMemory.external - startMemory.external
-          }
+            external: endMemory.external - startMemory.external,
+          },
         },
-        result: null
+        result: null,
       };
     }
   }
@@ -562,36 +603,36 @@ export class PerformanceHarness {
     switch (workload) {
       case 'storage':
       case 'knowledge':
-        await this.simulateStorageOperations(operations, config.parameters);
+        await this.simulateStorageOperations(operations, config.parameters as unknown as StorageParameters);
         break;
       case 'search':
       case 'retrieval':
-        await this.simulateSearchOperations(operations, config.parameters);
+        await this.simulateSearchOperations(operations, config.parameters as unknown as SearchParameters);
         break;
       case 'circuit_breaker':
       case 'resilience':
-        await this.simulateCircuitBreakerOperations(operations, config.parameters);
+        await this.simulateCircuitBreakerOperations(operations, config.parameters as unknown as CircuitBreakerParameters);
         break;
       case 'health':
       case 'monitoring':
-        await this.simulateHealthCheckOperations(operations, config.parameters);
+        await this.simulateHealthCheckOperations(operations, config.parameters as unknown as HealthCheckParameters);
         break;
       default:
-        await this.simulateGenericOperations(operations, config.parameters);
+        await this.simulateGenericOperations(operations, config.parameters as unknown as GenericParameters);
     }
   }
 
   /**
    * Simulate storage operations
    */
-  private async simulateStorageOperations(operations: number, params?: unknown): Promise<void> {
+  private async simulateStorageOperations(operations: number, params?: StorageParameters): Promise<void> {
     for (let i = 0; i < operations; i++) {
       // Simulate entity storage work
       const data = JSON.stringify({
         id: randomUUID(),
         type: params?.entityTypes?.[i % params.entityTypes.length] || 'entity',
         content: 'x'.repeat(params?.averageSize || 1024),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // Simulate processing time
@@ -602,13 +643,13 @@ export class PerformanceHarness {
   /**
    * Simulate search operations
    */
-  private async simulateSearchOperations(operations: number, params?: unknown): Promise<void> {
+  private async simulateSearchOperations(operations: number, params?: SearchParameters): Promise<void> {
     for (let i = 0; i < operations; i++) {
       // Simulate search work
       const query = JSON.stringify({
         type: params?.queryTypes?.[i % params.queryTypes.length] || 'semantic',
         text: `search query ${i}`,
-        limit: params?.resultSize || 50
+        limit: params?.resultCount || 50,
       });
 
       // Simulate search processing time (typically faster than storage)
@@ -619,7 +660,10 @@ export class PerformanceHarness {
   /**
    * Simulate circuit breaker operations
    */
-  private async simulateCircuitBreakerOperations(operations: number, params?: unknown): Promise<void> {
+  private async simulateCircuitBreakerOperations(
+    operations: number,
+    params?: CircuitBreakerParameters
+  ): Promise<void> {
     for (let i = 0; i < operations; i++) {
       // Simulate circuit breaker check (very fast)
       const shouldFail = Math.random() < (params?.failureRate || 0.1);
@@ -635,7 +679,7 @@ export class PerformanceHarness {
   /**
    * Simulate health check operations
    */
-  private async simulateHealthCheckOperations(operations: number, params?: unknown): Promise<void> {
+  private async simulateHealthCheckOperations(operations: number, params?: HealthCheckParameters): Promise<void> {
     for (let i = 0; i < operations; i++) {
       // Simulate health check (fast operation)
       const checkType = params?.checkTypes?.[i % params.checkTypes.length] || 'database';
@@ -661,7 +705,7 @@ export class PerformanceHarness {
   /**
    * Simulate generic operations
    */
-  private async simulateGenericOperations(operations: number, params?: unknown): Promise<void> {
+  private async simulateGenericOperations(operations: number, params?: GenericParameters): Promise<void> {
     for (let i = 0; i < operations; i++) {
       // Generic workload simulation
       await this.delay(Math.random() * 30 + 10);
@@ -685,7 +729,7 @@ export class PerformanceHarness {
       circuit_breaker_throughput: results.metrics.throughput,
       health_check_latency_p95: results.metrics.latencies.p95,
       health_check_throughput: results.metrics.throughput,
-      memory_usage_peak: results.metrics.memoryUsage.peak
+      memory_usage_peak: results.metrics.memoryUsage.peak,
     };
 
     return PerformanceTargetValidator.validateResults(config.name, resultsMap, config.targets);
@@ -694,22 +738,24 @@ export class PerformanceHarness {
   /**
    * Calculate summary statistics
    */
-  private calculateSummary(iterations: unknown[]): unknown {
-    const successful = iterations.filter(i => i.success);
-    const failed = iterations.filter(i => !i.success);
+  private calculateSummary(iterations: IterationResult[]): SummaryStats {
+    const successful = iterations.filter((i) => i.success);
+    const failed = iterations.filter((i) => !i.success);
 
     return {
       totalOperations: iterations.length,
       totalDuration: iterations.reduce((sum, i) => sum + i.duration, 0),
       errors: failed.length,
-      averageDuration: successful.length > 0
-        ? successful.reduce((sum, i) => sum + i.duration, 0) / successful.length
-        : 0,
+      averageDuration:
+        successful.length > 0
+          ? successful.reduce((sum, i) => sum + i.duration, 0) / successful.length
+          : 0,
       successRate: (successful.length / iterations.length) * 100,
-      throughput: successful.length > 0
-        ? (successful.reduce((sum, i) => sum + (i.result?.operations || 1), 0) * 1000) /
-          iterations.reduce((sum, i) => sum + i.duration, 0)
-        : 0
+      throughput:
+        successful.length > 0
+          ? (successful.length * 1000) /
+            iterations.reduce((sum, i) => sum + i.duration, 0)
+          : 0,
     };
   }
 
@@ -717,15 +763,15 @@ export class PerformanceHarness {
    * Calculate performance metrics
    */
   private calculateMetrics(iterations: unknown[]): PerformanceMetrics {
-    const successful = iterations.filter(i => i.success);
-    const durations = successful.map(i => i.duration).sort((a, b) => a - b);
+    const successful = iterations.filter((i) => i.success);
+    const durations = successful.map((i) => i.duration).sort((a, b) => a - b);
 
     if (durations.length === 0) {
       return {
         latencies: { p50: 0, p95: 0, p99: 0, min: 0, max: 0 },
         throughput: 0,
         errorRate: 100,
-        memoryUsage: { peak: 0, average: 0 }
+        memoryUsage: { peak: 0, average: 0 },
       };
     }
 
@@ -733,12 +779,12 @@ export class PerformanceHarness {
     const p95 = this.percentile(durations, 95);
     const p99 = this.percentile(durations, 99);
 
-    const memoryUsages = iterations.map(i => i.memoryUsage.end.rss);
+    const memoryUsages = iterations.map((i) => i.memoryUsage.end.rss);
     const peakMemory = Math.max(...memoryUsages);
     const averageMemory = memoryUsages.reduce((sum, val) => sum + val, 0) / memoryUsages.length;
 
     const totalDuration = iterations.reduce((sum, i) => sum + i.duration, 0);
-    const totalOperations = successful.reduce((sum, i) => sum + (i.result?.operations || 1), 0);
+    const totalOperations = successful.length; // Each successful iteration counts as one operation
     const throughput = (totalOperations * 1000) / totalDuration;
 
     return {
@@ -747,14 +793,14 @@ export class PerformanceHarness {
         p95,
         p99,
         min: durations[0],
-        max: durations[durations.length - 1]
+        max: durations[durations.length - 1],
       },
       throughput,
       errorRate: ((iterations.length - successful.length) / iterations.length) * 100,
       memoryUsage: {
         peak: peakMemory,
-        average: averageMemory
-      }
+        average: averageMemory,
+      },
     };
   }
 
@@ -778,9 +824,10 @@ export class PerformanceHarness {
    * Calculate system metrics
    */
   private calculateSystemMetrics(): SystemMetrics {
-    const memoryUsages = this.memorySnapshots.map(m => m.rss);
+    const memoryUsages = this.memorySnapshots.map((m) => m.rss);
     const peakMemoryUsage = Math.max(...memoryUsages);
-    const averageMemoryUsage = memoryUsages.reduce((sum, val) => sum + val, 0) / memoryUsages.length;
+    const averageMemoryUsage =
+      memoryUsages.reduce((sum, val) => sum + val, 0) / memoryUsages.length;
 
     // Simple memory leak detection
     const memoryLeakDetected = this.detectMemoryLeak();
@@ -794,8 +841,8 @@ export class PerformanceHarness {
       gcStats: this.gcStats,
       cpuUsage: {
         average: 0, // Would need CPU monitoring implementation
-        peak: 0
-      }
+        peak: 0,
+      },
     };
   }
 
@@ -842,8 +889,8 @@ export class PerformanceHarness {
       cpuInfo: {
         model: 'Unknown', // Would need to implement CPU detection
         speed: 0,
-        cores: 0
-      }
+        cores: 0,
+      },
     };
   }
 
@@ -866,7 +913,7 @@ export class PerformanceHarness {
         originalGC();
         const end = performance.now();
         this.gcStats.collections++;
-        this.gcStats.duration += (end - start);
+        this.gcStats.duration += end - start;
       };
     }
   }
@@ -884,7 +931,7 @@ export class PerformanceHarness {
       config: result.config,
       results: result.results,
       validation: result.validation,
-      metadata: result.metadata
+      metadata: result.metadata,
     };
 
     this.artifacts.push({
@@ -896,8 +943,8 @@ export class PerformanceHarness {
         testId: result.metadata.testId,
         timestamp: result.metadata.timestamp,
         size: JSON.stringify(rawLogs).length,
-        format: 'json'
-      }
+        format: 'json',
+      },
     });
 
     // Store artifact
@@ -923,8 +970,8 @@ export class PerformanceHarness {
         testId: this.testId,
         timestamp: new Date().toISOString(),
         size: reportContent.length,
-        format: 'markdown'
-      }
+        format: 'markdown',
+      },
     });
 
     writeFileSync(reportPath, reportContent);
@@ -936,19 +983,19 @@ export class PerformanceHarness {
       timestamp: new Date().toISOString(),
       summary: {
         totalTests: results.length,
-        passedTests: results.filter(r => r.validation.passed).length,
-        failedTests: results.filter(r => !r.validation.passed).length
+        passedTests: results.filter((r) => r.validation.passed).length,
+        failedTests: results.filter((r) => !r.validation.passed).length,
       },
-      results: results.map(r => ({
+      results: results.map((r) => ({
         name: r.config.name,
         passed: r.validation.passed,
         metrics: {
           p95: r.results.metrics.latencies.p95,
           p99: r.results.metrics.latencies.p99,
           throughput: r.results.metrics.throughput,
-          errorRate: r.results.metrics.errorRate
-        }
-      }))
+          errorRate: r.results.metrics.errorRate,
+        },
+      })),
     };
 
     writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
@@ -981,10 +1028,26 @@ export class PerformanceHarness {
 
     // Compare key metrics
     const metrics = [
-      { name: 'p95_latency', current: current.results.metrics.latencies.p95, baseline: baseline.results.metrics.latencies.p95 },
-      { name: 'p99_latency', current: current.results.metrics.latencies.p99, baseline: baseline.results.metrics.latencies.p99 },
-      { name: 'throughput', current: current.results.metrics.throughput, baseline: baseline.results.metrics.throughput },
-      { name: 'error_rate', current: current.results.metrics.errorRate, baseline: baseline.results.metrics.errorRate }
+      {
+        name: 'p95_latency',
+        current: current.results.metrics.latencies.p95,
+        baseline: baseline.results.metrics.latencies.p95,
+      },
+      {
+        name: 'p99_latency',
+        current: current.results.metrics.latencies.p99,
+        baseline: baseline.results.metrics.latencies.p99,
+      },
+      {
+        name: 'throughput',
+        current: current.results.metrics.throughput,
+        baseline: baseline.results.metrics.throughput,
+      },
+      {
+        name: 'error_rate',
+        current: current.results.metrics.errorRate,
+        baseline: baseline.results.metrics.errorRate,
+      },
     ];
 
     for (const metric of metrics) {
@@ -1017,7 +1080,7 @@ export class PerformanceHarness {
           current: metric.current,
           change,
           changePercentage,
-          significance
+          significance,
         });
       }
     }
@@ -1027,14 +1090,20 @@ export class PerformanceHarness {
       detected,
       details,
       impact: {
-        severity: detected ? (details.some(d => d.significance === 'major') ? 'critical' : 'high') : 'low',
+        severity: detected
+          ? details.some((d) => d.significance === 'major')
+            ? 'critical'
+            : 'high'
+          : 'low',
         affectedOperations: [current.config.name],
-        recommendations: detected ? [
-          'Investigate performance regression',
-          'Review recent changes',
-          'Consider rollback if critical'
-        ] : []
-      }
+        recommendations: detected
+          ? [
+              'Investigate performance regression',
+              'Review recent changes',
+              'Consider rollback if critical',
+            ]
+          : [],
+      },
     };
   }
 
@@ -1050,6 +1119,6 @@ export class PerformanceHarness {
    * Utility delay function
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

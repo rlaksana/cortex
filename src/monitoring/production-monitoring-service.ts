@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Production Monitoring Service
  *
@@ -185,11 +180,11 @@ export class ProductionMonitoringService extends EventEmitter {
    */
   async start(): Promise<void> {
     if (this.isRunning) {
-      this.logger.warn('Monitoring service is already running');
+      this.logger.warn({ message: 'Monitoring service is already running' });
       return;
     }
 
-    this.logger.info('Starting production monitoring service');
+    this.logger.info({ message: 'Starting production monitoring service' });
 
     try {
       // Start metrics collection
@@ -218,16 +213,17 @@ export class ProductionMonitoringService extends EventEmitter {
       this.intervals.push(cleanupInterval);
 
       this.isRunning = true;
-      this.logger.info('Production monitoring service started successfully', {
+      this.logger.info({
+        message: 'Production monitoring service started successfully',
         metricsInterval: this.config.intervalMs,
         healthCheckInterval: this.config.healthCheckIntervalMs,
         alertingEnabled: this.config.enableAlerting,
       });
 
       this.emit('started');
-
     } catch (error) {
-      this.logger.error('Failed to start monitoring service', { error: error.message });
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error({ error: errorMsg }, 'Failed to start monitoring service');
       throw error;
     }
   }
@@ -240,14 +236,14 @@ export class ProductionMonitoringService extends EventEmitter {
       return;
     }
 
-    this.logger.info('Stopping production monitoring service');
+    this.logger.info({ message: 'Stopping production monitoring service' });
 
     // Clear all intervals
-    this.intervals.forEach(interval => clearInterval(interval));
+    this.intervals.forEach((interval) => clearInterval(interval));
     this.intervals = [];
 
     this.isRunning = false;
-    this.logger.info('Production monitoring service stopped');
+    this.logger.info({ message: 'Production monitoring service stopped' });
 
     this.emit('stopped');
   }
@@ -281,9 +277,9 @@ export class ProductionMonitoringService extends EventEmitter {
 
       // Emit metrics update
       this.emit('metrics', this.metrics);
-
     } catch (error) {
-      this.logger.error('Error collecting metrics', { error: error.message });
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error({ error: errorMsg }, 'Error collecting metrics');
     }
   }
 
@@ -297,7 +293,7 @@ export class ProductionMonitoringService extends EventEmitter {
       this.metrics.health = {
         lastCheck: new Date().toISOString(),
         status: healthResult.status,
-        checks: healthResult.checks.map(check => ({
+        checks: healthResult.checks.map((check) => ({
           name: check.name,
           status: check.status,
           duration: check.duration,
@@ -306,12 +302,9 @@ export class ProductionMonitoringService extends EventEmitter {
 
       // Check for health-related alerts
       if (healthResult.status === 'unhealthy') {
-        this.createAlert(
-          'critical',
-          'health-check',
-          'System health check failed',
-          { issues: healthResult.issues }
-        );
+        this.createAlert('critical', 'health-check', 'System health check failed', {
+          issues: healthResult.issues,
+        });
       } else if (healthResult.status === 'degraded') {
         this.createAlert(
           'warning',
@@ -322,16 +315,13 @@ export class ProductionMonitoringService extends EventEmitter {
       }
 
       this.emit('health-check', healthResult);
-
     } catch (error) {
-      this.logger.error('Error performing health checks', { error: error.message });
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error({ error: errorMsg }, 'Error performing health checks');
 
-      this.createAlert(
-        'critical',
-        'health-check',
-        'Health check system error',
-        { error: error.message }
-      );
+      this.createAlert('critical', 'health-check', 'Health check system error', {
+        error: errorMsg,
+      });
     }
   }
 
@@ -362,12 +352,10 @@ export class ProductionMonitoringService extends EventEmitter {
 
     // Check for performance alerts
     if (this.config.enableAlerting && duration > this.config.alertThresholds.responseTime) {
-      this.createAlert(
-        'warning',
-        'performance',
-        `Slow request detected: ${duration}ms`,
-        { duration, threshold: this.config.alertThresholds.responseTime }
-      );
+      this.createAlert('warning', 'performance', `Slow request detected: ${duration}ms`, {
+        duration,
+        threshold: this.config.alertThresholds.responseTime,
+      });
     }
   }
 
@@ -407,7 +395,7 @@ export class ProductionMonitoringService extends EventEmitter {
     const timeWindow = 60000; // 1 minute
     const now = Date.now();
     const recentRequests = this.requestMetrics.filter(
-      metric => now - metric.timestamp < timeWindow
+      (metric) => now - metric.timestamp < timeWindow
     );
 
     return (recentRequests.length / timeWindow) * 1000;
@@ -416,12 +404,17 @@ export class ProductionMonitoringService extends EventEmitter {
   /**
    * Calculate response time percentiles
    */
-  private calculateResponseTimePercentiles(): { avg: number; p50: number; p95: number; p99: number } {
+  private calculateResponseTimePercentiles(): {
+    avg: number;
+    p50: number;
+    p95: number;
+    p99: number;
+  } {
     if (this.requestMetrics.length === 0) {
       return { avg: 0, p50: 0, p95: 0, p99: 0 };
     }
 
-    const durations = this.requestMetrics.map(m => m.duration).sort((a, b) => a - b);
+    const durations = this.requestMetrics.map((m) => m.duration).sort((a, b) => a - b);
     const len = durations.length;
 
     return {
@@ -448,7 +441,7 @@ export class ProductionMonitoringService extends EventEmitter {
         {
           used: memUsage.heapUsed,
           total: totalMem,
-          threshold: this.config.alertThresholds.memoryUsage
+          threshold: this.config.alertThresholds.memoryUsage,
         }
       );
     }
@@ -458,30 +451,21 @@ export class ProductionMonitoringService extends EventEmitter {
     const loadPercent = (loadAvg / cpuCount) * 100;
 
     if (loadPercent > this.config.alertThresholds.cpuUsage * 100) {
-      this.createAlert(
-        'warning',
-        'cpu',
-        `High CPU usage: ${loadPercent.toFixed(1)}%`,
-        {
-          loadAverage: loadAvg,
-          cpuCount,
-          threshold: this.config.alertThresholds.cpuUsage
-        }
-      );
+      this.createAlert('warning', 'cpu', `High CPU usage: ${loadPercent.toFixed(1)}%`, {
+        loadAverage: loadAvg,
+        cpuCount,
+        threshold: this.config.alertThresholds.cpuUsage,
+      });
     }
 
-    const errorRate = this.metrics.application.errorCount / Math.max(this.metrics.application.requestCount, 1);
+    const errorRate =
+      this.metrics.application.errorCount / Math.max(this.metrics.application.requestCount, 1);
     if (errorRate > this.config.alertThresholds.errorRate) {
-      this.createAlert(
-        'error',
-        'error-rate',
-        `High error rate: ${(errorRate * 100).toFixed(2)}%`,
-        {
-          errorCount: this.metrics.application.errorCount,
-          requestCount: this.metrics.application.requestCount,
-          threshold: this.config.alertThresholds.errorRate
-        }
-      );
+      this.createAlert('error', 'error-rate', `High error rate: ${(errorRate * 100).toFixed(2)}%`, {
+        errorCount: this.metrics.application.errorCount,
+        requestCount: this.metrics.application.requestCount,
+        threshold: this.config.alertThresholds.errorRate,
+      });
     }
   }
 
@@ -507,7 +491,7 @@ export class ProductionMonitoringService extends EventEmitter {
     };
 
     this.alerts.set(id, alert);
-    this.logger.warn(`Alert created: ${message}`, { id, type, source });
+    this.logger.warn({ message: `Alert created: ${message}`, id, type, source });
 
     this.emit('alert', alert);
   }
@@ -518,16 +502,14 @@ export class ProductionMonitoringService extends EventEmitter {
   private cleanupOldMetrics(): void {
     const cutoffTime = Date.now() - this.config.metricsRetentionMs;
     this.metricsHistory = this.metricsHistory.filter(
-      metrics => metrics.application.startTime > cutoffTime
+      (metrics) => metrics.application.startTime > cutoffTime
     );
 
     // Clean old request metrics
-    this.requestMetrics = this.requestMetrics.filter(
-      metric => metric.timestamp > cutoffTime
-    );
+    this.requestMetrics = this.requestMetrics.filter((metric) => metric.timestamp > cutoffTime);
 
     // Clean old resolved alerts
-    const resolvedAlertCutoff = Date.now() - (this.config.metricsRetentionMs * 2);
+    const resolvedAlertCutoff = Date.now() - this.config.metricsRetentionMs * 2;
     for (const [id, alert] of this.alerts.entries()) {
       if (alert.resolved && new Date(alert.timestamp).getTime() < resolvedAlertCutoff) {
         this.alerts.delete(id);
@@ -556,7 +538,7 @@ export class ProductionMonitoringService extends EventEmitter {
    * Get active alerts
    */
   getActiveAlerts(): Alert[] {
-    return Array.from(this.alerts.values()).filter(alert => !alert.resolved);
+    return Array.from(this.alerts.values()).filter((alert) => !alert.resolved);
   }
 
   /**
@@ -573,7 +555,7 @@ export class ProductionMonitoringService extends EventEmitter {
     const alert = this.alerts.get(alertId);
     if (alert) {
       alert.acknowledged = true;
-      this.logger.info(`Alert acknowledged: ${alertId}`);
+      this.logger.info({ message: `Alert acknowledged: ${alertId}`, alertId });
       this.emit('alert-acknowledged', alert);
       return true;
     }
@@ -587,7 +569,7 @@ export class ProductionMonitoringService extends EventEmitter {
     const alert = this.alerts.get(alertId);
     if (alert) {
       alert.resolved = true;
-      this.logger.info(`Alert resolved: ${alertId}`);
+      this.logger.info({ message: `Alert resolved: ${alertId}`, alertId });
       this.emit('alert-resolved', alert);
       return true;
     }
@@ -630,7 +612,8 @@ export class ProductionMonitoringService extends EventEmitter {
     alerts: Alert[];
   } {
     const activeAlerts = this.getActiveAlerts();
-    const errorRate = this.metrics.application.errorCount / Math.max(this.metrics.application.requestCount, 1);
+    const errorRate =
+      this.metrics.application.errorCount / Math.max(this.metrics.application.requestCount, 1);
 
     return {
       summary: {

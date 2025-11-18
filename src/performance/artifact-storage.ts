@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ULTIMATE FINAL EMERGENCY ROLLBACK: Remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Performance Artifacts Storage System
@@ -13,7 +11,12 @@ import { existsSync, mkdirSync, readFileSync, statSync, unlinkSync, writeFileSyn
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 
-import type { BenchmarkResult,IterationResult,PerformanceArtifact,PerformanceTestResult } from './performance-harness.js';
+import type {
+  BenchmarkResult,
+  IterationResult,
+  PerformanceArtifact,
+  PerformanceTestResult,
+} from './performance-harness.js';
 
 export interface ArtifactStorageConfig {
   /** Base directory for artifact storage */
@@ -149,7 +152,7 @@ export class PerformanceArtifactStorage {
       comparisonsDir: './artifacts/performance/comparisons',
       maxArtifacts: 1000,
       retentionDays: 30,
-      ...config
+      ...config,
     };
 
     this.artifactIndex = this.loadIndex();
@@ -203,7 +206,7 @@ export class PerformanceArtifactStorage {
       results: result.results,
       validation: result.validation,
       metadata: result.metadata,
-      systemMetrics: result.metadata.systemMetrics
+      systemMetrics: result.metadata.systemMetrics,
     };
 
     const content = JSON.stringify(rawLogs, null, 2);
@@ -218,8 +221,8 @@ export class PerformanceArtifactStorage {
         testId,
         timestamp: result.metadata.timestamp,
         size: content.length,
-        format: 'json'
-      }
+        format: 'json',
+      },
     };
 
     return artifact;
@@ -245,7 +248,7 @@ export class PerformanceArtifactStorage {
       summaryStats: result.results.summary,
       validation: result.validation,
       systemMetrics: result.metadata.systemMetrics,
-      environment: result.metadata.environment
+      environment: result.metadata.environment,
     };
 
     const content = JSON.stringify(metrics, null, 2);
@@ -260,8 +263,8 @@ export class PerformanceArtifactStorage {
         testId,
         timestamp: result.metadata.timestamp,
         size: content.length,
-        format: 'json'
-      }
+        format: 'json',
+      },
     };
 
     return artifact;
@@ -313,9 +316,9 @@ export class PerformanceArtifactStorage {
       .sort((a: number, b: number) => a - b);
 
     const percentiles = [10, 25, 50, 75, 90, 95, 99];
-    const percentileData = percentiles.map(p => ({
+    const percentileData = percentiles.map((p) => ({
       x: p,
-      y: this.percentile(latencies, p)
+      y: this.percentile(latencies, p),
     }));
 
     const chartConfig: ChartConfig = {
@@ -323,12 +326,14 @@ export class PerformanceArtifactStorage {
       title: `Latency Distribution - ${result.config.name}`,
       xAxis: 'Percentile (%)',
       yAxis: 'Latency (ms)',
-      series: [{
-        name: 'Latency',
-        data: percentileData,
-        color: '#3b82f6',
-        marker: 'circle'
-      }]
+      series: [
+        {
+          name: 'Latency',
+          data: percentileData,
+          color: '#3b82f6',
+          marker: 'circle',
+        },
+      ],
     };
 
     const htmlContent = this.generateChartHTML(chartConfig);
@@ -343,8 +348,8 @@ export class PerformanceArtifactStorage {
         testId,
         timestamp: result.metadata.timestamp,
         size: htmlContent.length,
-        format: 'html'
-      }
+        format: 'html',
+      },
     };
   }
 
@@ -361,16 +366,19 @@ export class PerformanceArtifactStorage {
 
     // Calculate throughput over time (group iterations into time windows)
     const windowSize = 5000; // 5 second windows
-    const startTime = Math.min(...result.results.iterations.map((i: IterationResult) => i.duration));
+    const startTime = Math.min(
+      ...result.results.iterations.map((i: IterationResult) => i.duration)
+    );
     const endTime = Math.max(...result.results.iterations.map((i: IterationResult) => i.duration));
     const windows = Math.ceil((endTime - startTime) / windowSize);
 
     const throughputData = [];
     for (let i = 0; i < windows; i++) {
-      const windowStart = startTime + (i * windowSize);
+      const windowStart = startTime + i * windowSize;
       const windowEnd = windowStart + windowSize;
       const operationsInWindow = result.results.iterations.filter(
-        (iter: IterationResult) => iter.duration >= windowStart && iter.duration < windowStart + windowSize
+        (iter: IterationResult) =>
+          iter.duration >= windowStart && iter.duration < windowStart + windowSize
       ).length;
       const throughput = (operationsInWindow * 1000) / windowSize;
       throughputData.push({ x: i, y: throughput });
@@ -381,12 +389,14 @@ export class PerformanceArtifactStorage {
       title: `Throughput Over Time - ${result.config.name}`,
       xAxis: 'Time Window',
       yAxis: 'Throughput (ops/s)',
-      series: [{
-        name: 'Throughput',
-        data: throughputData,
-        color: '#10b981',
-        marker: 'square'
-      }]
+      series: [
+        {
+          name: 'Throughput',
+          data: throughputData,
+          color: '#10b981',
+          marker: 'square',
+        },
+      ],
     };
 
     const htmlContent = this.generateChartHTML(chartConfig);
@@ -401,8 +411,8 @@ export class PerformanceArtifactStorage {
         testId,
         timestamp: result.metadata.timestamp,
         size: htmlContent.length,
-        format: 'html'
-      }
+        format: 'html',
+      },
     };
   }
 
@@ -418,7 +428,9 @@ export class PerformanceArtifactStorage {
     const filePath = join(this.config.chartsDir, fileName);
 
     const totalIterations = result.results.iterations.length;
-    const failedIterations = result.results.iterations.filter((i: IterationResult) => !i.success).length;
+    const failedIterations = result.results.iterations.filter(
+      (i: IterationResult) => !i.success
+    ).length;
     const successIterations = totalIterations - failedIterations;
 
     const chartConfig: ChartConfig = {
@@ -426,14 +438,16 @@ export class PerformanceArtifactStorage {
       title: `Success/Error Rate - ${result.config.name}`,
       xAxis: 'Result',
       yAxis: 'Count',
-      series: [{
-        name: 'Operations',
-        data: [
-          { x: 'Success', y: successIterations },
-          { x: 'Error', y: failedIterations }
-        ],
-        color: '#3b82f6'
-      }]
+      series: [
+        {
+          name: 'Operations',
+          data: [
+            { x: 'Success', y: successIterations },
+            { x: 'Error', y: failedIterations },
+          ],
+          color: '#3b82f6',
+        },
+      ],
     };
 
     const htmlContent = this.generateChartHTML(chartConfig);
@@ -448,8 +462,8 @@ export class PerformanceArtifactStorage {
         testId,
         timestamp: result.metadata.timestamp,
         size: htmlContent.length,
-        format: 'html'
-      }
+        format: 'html',
+      },
     };
   }
 
@@ -464,22 +478,26 @@ export class PerformanceArtifactStorage {
     const fileName = `${result.config.name}-${timestamp}-memory-chart.html`;
     const filePath = join(this.config.chartsDir, fileName);
 
-    const memoryData = result.results.iterations.map((iteration: IterationResult, index: number) => ({
-      x: index,
-      y: iteration.memoryUsage.end.rss / 1024 / 1024 // Convert to MB
-    }));
+    const memoryData = result.results.iterations.map(
+      (iteration: IterationResult, index: number) => ({
+        x: index,
+        y: iteration.memoryUsage.end.rss / 1024 / 1024, // Convert to MB
+      })
+    );
 
     const chartConfig: ChartConfig = {
       type: 'line',
       title: `Memory Usage Over Time - ${result.config.name}`,
       xAxis: 'Iteration',
       yAxis: 'Memory Usage (MB)',
-      series: [{
-        name: 'Memory Usage',
-        data: memoryData,
-        color: '#f59e0b',
-        marker: 'triangle'
-      }]
+      series: [
+        {
+          name: 'Memory Usage',
+          data: memoryData,
+          color: '#f59e0b',
+          marker: 'triangle',
+        },
+      ],
     };
 
     const htmlContent = this.generateChartHTML(chartConfig);
@@ -494,8 +512,8 @@ export class PerformanceArtifactStorage {
         testId,
         timestamp: result.metadata.timestamp,
         size: htmlContent.length,
-        format: 'html'
-      }
+        format: 'html',
+      },
     };
   }
 
@@ -522,8 +540,8 @@ export class PerformanceArtifactStorage {
         testId,
         timestamp: result.metadata.timestamp,
         size: reportContent.length,
-        format: 'markdown'
-      }
+        format: 'markdown',
+      },
     };
   }
 
@@ -534,14 +552,14 @@ export class PerformanceArtifactStorage {
     const chartId = randomUUID();
     const { type, title, xAxis, yAxis, series, width = 800, height = 400 } = config;
 
-    const seriesData = series.map(s => ({
+    const seriesData = series.map((s) => ({
       label: s.name,
-      data: s.data.map(d => ({ x: d.x, y: d.y })),
+      data: s.data.map((d) => ({ x: d.x, y: d.y })),
       borderColor: s.color || '#3b82f6',
       backgroundColor: s.color ? s.color + '20' : '#3b82f620',
       tension: 0.1,
       pointStyle: s.marker || 'circle',
-      borderDash: s.lineType === 'dashed' ? [5, 5] : s.lineType === 'dotted' ? [2, 2] : undefined
+      borderDash: s.lineType === 'dashed' ? [5, 5] : s.lineType === 'dotted' ? [2, 2] : undefined,
     }));
 
     return `
@@ -657,7 +675,8 @@ export class PerformanceArtifactStorage {
     for (const target of config.targets) {
       const actualValue = this.getTargetValue(results, target.name);
       const status = actualValue !== null ? (actualValue <= target.max ? '✅' : '❌') : '⚠️';
-      const actualDisplay = actualValue !== null ? `${actualValue.toFixed(2)}${target.unit}` : 'N/A';
+      const actualDisplay =
+        actualValue !== null ? `${actualValue.toFixed(2)}${target.unit}` : 'N/A';
       content += `| ${target.name} | ${actualDisplay} | ${status} |\n`;
     }
 
@@ -705,19 +724,19 @@ export class PerformanceArtifactStorage {
    */
   private getTargetValue(results: BenchmarkResult, targetName: string): number | null {
     const targetMappings: Record<string, string> = {
-      'store_latency_p95': 'metrics.latencies.p95',
-      'store_latency_p99': 'metrics.latencies.p99',
-      'store_throughput': 'metrics.throughput',
-      'store_error_rate': 'metrics.errorRate',
-      'search_latency_p95': 'metrics.latencies.p95',
-      'search_latency_p99': 'metrics.latencies.p99',
-      'search_throughput': 'metrics.throughput',
-      'search_error_rate': 'metrics.errorRate',
-      'circuit_breaker_response_time': 'metrics.latencies.p50',
-      'circuit_breaker_throughput': 'metrics.throughput',
-      'health_check_latency_p95': 'metrics.latencies.p95',
-      'health_check_throughput': 'metrics.throughput',
-      'memory_usage_peak': 'metrics.memoryUsage.peak'
+      store_latency_p95: 'metrics.latencies.p95',
+      store_latency_p99: 'metrics.latencies.p99',
+      store_throughput: 'metrics.throughput',
+      store_error_rate: 'metrics.errorRate',
+      search_latency_p95: 'metrics.latencies.p95',
+      search_latency_p99: 'metrics.latencies.p99',
+      search_throughput: 'metrics.throughput',
+      search_error_rate: 'metrics.errorRate',
+      circuit_breaker_response_time: 'metrics.latencies.p50',
+      circuit_breaker_throughput: 'metrics.throughput',
+      health_check_latency_p95: 'metrics.latencies.p95',
+      health_check_throughput: 'metrics.throughput',
+      memory_usage_peak: 'metrics.memoryUsage.peak',
     };
 
     const path = targetMappings[targetName];
@@ -745,11 +764,15 @@ export class PerformanceArtifactStorage {
     }
 
     if (results.metrics.errorRate > 5) {
-      recommendations.push('Investigate and reduce error rate - current rate exceeds acceptable threshold');
+      recommendations.push(
+        'Investigate and reduce error rate - current rate exceeds acceptable threshold'
+      );
     }
 
     if (results.metrics.latencies.p95 > 1000) {
-      recommendations.push('Consider optimizing critical path to reduce p95 latency below 1 second');
+      recommendations.push(
+        'Consider optimizing critical path to reduce p95 latency below 1 second'
+      );
     }
 
     if (metadata.systemMetrics.memoryLeakDetected) {
@@ -757,7 +780,9 @@ export class PerformanceArtifactStorage {
     }
 
     if (results.metrics.throughput < 50) {
-      recommendations.push('Low throughput detected - consider scaling or performance optimization');
+      recommendations.push(
+        'Low throughput detected - consider scaling or performance optimization'
+      );
     }
 
     if (validation.warnings.length > 3) {
@@ -800,8 +825,8 @@ export class PerformanceArtifactStorage {
         testMetadata: {
           testId: artifact.metadata.testId,
           testName: artifact.name.split('-')[0],
-          timestamp: artifact.metadata.timestamp
-        }
+          timestamp: artifact.metadata.timestamp,
+        },
       };
 
       // Add to appropriate category
@@ -826,8 +851,11 @@ export class PerformanceArtifactStorage {
       // Add to search index
       const searchEntry: SearchIndexEntry = {
         artifactId: entry.id,
-        content: typeof artifact.content === 'string' ? artifact.content : JSON.stringify(artifact.content),
-        keywords: [...entry.tags, entry.name, entry.type]
+        content:
+          typeof artifact.content === 'string'
+            ? artifact.content
+            : JSON.stringify(artifact.content),
+        keywords: [...entry.tags, entry.name, entry.type],
       };
       this.artifactIndex.searchIndex.push(searchEntry);
     }
@@ -884,16 +912,16 @@ export class PerformanceArtifactStorage {
         version: '1.0.0',
         generated: new Date().toISOString(),
         totalArtifacts: 0,
-        totalSize: 0
+        totalSize: 0,
       },
       categories: {
         logs: [],
         charts: [],
         reports: [],
         metrics: [],
-        comparisons: []
+        comparisons: [],
       },
-      searchIndex: []
+      searchIndex: [],
     };
   }
 
@@ -916,7 +944,7 @@ export class PerformanceArtifactStorage {
       this.config.chartsDir,
       this.config.reportsDir,
       this.config.metricsDir,
-      this.config.comparisonsDir
+      this.config.comparisonsDir,
     ];
 
     for (const dir of dirs) {
@@ -933,10 +961,10 @@ export class PerformanceArtifactStorage {
       ...this.artifactIndex.categories.charts,
       ...this.artifactIndex.categories.reports,
       ...this.artifactIndex.categories.metrics,
-      ...this.artifactIndex.categories.comparisons
+      ...this.artifactIndex.categories.comparisons,
     ];
 
-    return allArtifacts.find(a => a.id === artifactId) || null;
+    return allArtifacts.find((a) => a.id === artifactId) || null;
   }
 
   /**
@@ -948,11 +976,11 @@ export class PerformanceArtifactStorage {
 
     for (const entry of this.artifactIndex.searchIndex) {
       const content = entry.content.toLowerCase();
-      const keywords = entry.keywords.map(k => k.toLowerCase());
+      const keywords = entry.keywords.map((k) => k.toLowerCase());
 
       let matches = false;
       for (const term of searchTerms) {
-        if (content.includes(term) || keywords.some(k => k.includes(term))) {
+        if (content.includes(term) || keywords.some((k) => k.includes(term))) {
           matches = true;
           break;
         }
@@ -968,10 +996,10 @@ export class PerformanceArtifactStorage {
       ...this.artifactIndex.categories.charts,
       ...this.artifactIndex.categories.reports,
       ...this.artifactIndex.categories.metrics,
-      ...this.artifactIndex.categories.comparisons
+      ...this.artifactIndex.categories.comparisons,
     ];
 
-    return allArtifacts.filter(a => matchingIds.has(a.id));
+    return allArtifacts.filter((a) => matchingIds.has(a.id));
   }
 
   /**
@@ -986,7 +1014,7 @@ export class PerformanceArtifactStorage {
 
     // Clean each category
     for (const [category, artifacts] of Object.entries(this.artifactIndex.categories)) {
-      const filtered = artifacts.filter(artifact => {
+      const filtered = artifacts.filter((artifact) => {
         const created = new Date(artifact.created);
         if (created < cutoffDate) {
           // Delete file

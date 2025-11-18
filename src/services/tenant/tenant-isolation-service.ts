@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * P8-T8.3: Multi-Tenant Isolation and Governance System
  *
@@ -46,10 +41,13 @@ export interface TenantConfig {
     /** Rate limit window in milliseconds */
     window_ms: number;
     /** Tool-specific limits */
-    tool_limits: Record<string, {
-      requests_per_second: number;
-      burst_capacity: number;
-    }>;
+    tool_limits: Record<
+      string,
+      {
+        requests_per_second: number;
+        burst_capacity: number;
+      }
+    >;
   };
 
   /** Circuit breaker configuration */
@@ -325,7 +323,10 @@ export class TenantRateLimiter {
   /**
    * Check if a request is allowed for a tenant
    */
-  checkRequest(tenantId: string, toolName?: string): {
+  checkRequest(
+    tenantId: string,
+    toolName?: string
+  ): {
     allowed: boolean;
     remaining: number;
     resetTime: number;
@@ -440,7 +441,7 @@ export class TenantRateLimiter {
     if (!tenantWindows) return 0;
 
     for (const timestamps of tenantWindows.values()) {
-      totalRequests += timestamps.filter(ts => ts >= windowStart).length;
+      totalRequests += timestamps.filter((ts) => ts >= windowStart).length;
     }
 
     return totalRequests / (this.config.window_ms / 1000);
@@ -465,7 +466,7 @@ export class TenantRateLimiter {
   private calculateRemainingCapacity(tenantId: string): number {
     const current = this.getCurrentWindowRequests(tenantId);
     const limit = this.config.requests_per_second;
-    return Math.max(0, (limit - current) / limit * 100);
+    return Math.max(0, ((limit - current) / limit) * 100);
   }
 
   /**
@@ -689,32 +690,43 @@ export class ResourceAllocationManager {
     }
 
     // Check CPU limit
-    if (request.cpu_percent &&
-        currentUsage.cpu_usage_percent + request.cpu_percent > allocation.cpu_limit_percent) {
+    if (
+      request.cpu_percent &&
+      currentUsage.cpu_usage_percent + request.cpu_percent > allocation.cpu_limit_percent
+    ) {
       return false;
     }
 
     // Check memory limit
-    if (request.memory_mb &&
-        currentUsage.memory_usage_mb + request.memory_mb > allocation.memory_limit_mb) {
+    if (
+      request.memory_mb &&
+      currentUsage.memory_usage_mb + request.memory_mb > allocation.memory_limit_mb
+    ) {
       return false;
     }
 
     // Check database connections
-    if (request.db_connections &&
-        currentUsage.db_connections_active + request.db_connections > allocation.db_connection_pool_size) {
+    if (
+      request.db_connections &&
+      currentUsage.db_connections_active + request.db_connections >
+        allocation.db_connection_pool_size
+    ) {
       return false;
     }
 
     // Check vector storage quota
-    if (request.vector_count &&
-        currentUsage.vector_storage_used + request.vector_count > allocation.vector_storage_quota) {
+    if (
+      request.vector_count &&
+      currentUsage.vector_storage_used + request.vector_count > allocation.vector_storage_quota
+    ) {
       return false;
     }
 
     // Check network bandwidth
-    if (request.network_mbps &&
-        currentUsage.network_bandwidth_mbps + request.network_mbps > allocation.network_bandwidth_mbps) {
+    if (
+      request.network_mbps &&
+      currentUsage.network_bandwidth_mbps + request.network_mbps > allocation.network_bandwidth_mbps
+    ) {
       return false;
     }
 
@@ -744,7 +756,8 @@ export class ResourceAllocationManager {
     const allocation = this.allocations.get(tenantId);
     if (allocation) {
       current.memory_usage_percent = (current.memory_usage_mb / allocation.memory_limit_mb) * 100;
-      current.vector_storage_percent = (current.vector_storage_used / allocation.vector_storage_quota) * 100;
+      current.vector_storage_percent =
+        (current.vector_storage_used / allocation.vector_storage_quota) * 100;
     }
 
     this.usage.set(tenantId, current);
@@ -813,14 +826,17 @@ export class MultiTenantLoadTestFramework extends EventEmitter {
     });
 
     const results: LoadTestResult[] = [];
-    const tenantIds = Array.from({ length: scenario.config.concurrent_tenants }, (_, i) => `test_tenant_${i}`);
+    const tenantIds = Array.from(
+      { length: scenario.config.concurrent_tenants },
+      (_, i) => `test_tenant_${i}`
+    );
 
     try {
       // Create test tenants
       await this.createTestTenants(tenantIds, scenario);
 
       // Execute concurrent load test
-      const testPromises = tenantIds.map(tenantId =>
+      const testPromises = tenantIds.map((tenantId) =>
         this.runTenantLoadTest(resultId, scenario, tenantId)
       );
 
@@ -836,8 +852,8 @@ export class MultiTenantLoadTestFramework extends EventEmitter {
       logger.info('Multi-tenant load test completed', {
         result_id: resultId,
         total_results: results.length,
-        passed_count: results.filter(r => r.status === 'passed').length,
-        failed_count: results.filter(r => r.status === 'failed').length,
+        passed_count: results.filter((r) => r.status === 'passed').length,
+        failed_count: results.filter((r) => r.status === 'failed').length,
       });
 
       return results;
@@ -1018,7 +1034,7 @@ export class MultiTenantLoadTestFramework extends EventEmitter {
 
         // Wait for next request interval
         if (Date.now() < endTime) {
-          await new Promise(resolve => setTimeout(resolve, interval));
+          await new Promise((resolve) => setTimeout(resolve, interval));
         }
       }
 
@@ -1074,7 +1090,7 @@ export class MultiTenantLoadTestFramework extends EventEmitter {
   private async simulateMemoryOperation(tenantId: string, payloadSize: number): Promise<void> {
     // Simulate some processing time based on payload size
     const processingTime = Math.min(100, payloadSize / 1000);
-    await new Promise(resolve => setTimeout(resolve, processingTime));
+    await new Promise((resolve) => setTimeout(resolve, processingTime));
 
     // Randomly simulate failures (2% failure rate)
     if (Math.random() < 0.02) {
@@ -1085,7 +1101,10 @@ export class MultiTenantLoadTestFramework extends EventEmitter {
   /**
    * Record resource usage during test
    */
-  private async recordResourceUsage(tenantId: string, usage: Partial<TenantMetrics['resource_usage']>): Promise<void> {
+  private async recordResourceUsage(
+    tenantId: string,
+    usage: Partial<TenantMetrics['resource_usage']>
+  ): Promise<void> {
     await this.tenantService.recordResourceUsage(tenantId, usage);
   }
 
@@ -1140,17 +1159,25 @@ export class MultiTenantLoadTestFramework extends EventEmitter {
   /**
    * Validate tenant isolation
    */
-  private async validateTenantIsolation(results: LoadTestResult[], scenario: LoadTestScenario): Promise<void> {
+  private async validateTenantIsolation(
+    results: LoadTestResult[],
+    scenario: LoadTestScenario
+  ): Promise<void> {
     const acceptableVariance = scenario.isolation_validation.acceptable_variance_percent;
 
     // Calculate variance in performance metrics between tenants
-    const throughputs = results.map(r => r.performance.throughput_requests_per_second);
+    const throughputs = results.map((r) => r.performance.throughput_requests_per_second);
     const avgThroughput = throughputs.reduce((a, b) => a + b, 0) / throughputs.length;
-    const maxVariance = Math.max(...throughputs.map(t => Math.abs(t - avgThroughput) / avgThroughput * 100));
+    const maxVariance = Math.max(
+      ...throughputs.map((t) => (Math.abs(t - avgThroughput) / avgThroughput) * 100)
+    );
 
     // Check each result for isolation validation
     for (const result of results) {
-      const variance = Math.abs(result.performance.throughput_requests_per_second - avgThroughput) / avgThroughput * 100;
+      const variance =
+        (Math.abs(result.performance.throughput_requests_per_second - avgThroughput) /
+          avgThroughput) *
+        100;
 
       result.isolation_validation.resource_variance_percent = variance;
       result.isolation_validation.isolation_score = Math.max(0, 100 - variance);
@@ -1179,19 +1206,29 @@ export class MultiTenantLoadTestFramework extends EventEmitter {
   /**
    * Analyze noisy neighbor impact
    */
-  private async analyzeNoisyNeighborImpact(results: LoadTestResult[], scenario: LoadTestScenario): Promise<void> {
+  private async analyzeNoisyNeighborImpact(
+    results: LoadTestResult[],
+    scenario: LoadTestScenario
+  ): Promise<void> {
     const threshold = scenario.isolation_validation.noisy_neighbor_threshold_percent;
 
     // Sort results by resource usage
-    const sortedByCpu = [...results].sort((a, b) => b.resource_usage.peak_cpu_usage_percent - a.resource_usage.peak_cpu_usage_percent);
-    const sortedByMemory = [...results].sort((a, b) => b.resource_usage.peak_memory_usage_percent - a.resource_usage.peak_memory_usage_percent);
+    const sortedByCpu = [...results].sort(
+      (a, b) => b.resource_usage.peak_cpu_usage_percent - a.resource_usage.peak_cpu_usage_percent
+    );
+    const sortedByMemory = [...results].sort(
+      (a, b) =>
+        b.resource_usage.peak_memory_usage_percent - a.resource_usage.peak_memory_usage_percent
+    );
 
     // Check if high resource usage impacts other tenants
     const highestCpuUser = sortedByCpu[0];
     const lowestCpuUser = sortedByCpu[sortedByCpu.length - 1];
 
     if (highestCpuUser && lowestCpuUser && highestCpuUser.tenant_id !== lowestCpuUser.tenant_id) {
-      const cpuVariance = highestCpuUser.resource_usage.peak_cpu_usage_percent - lowestCpuUser.resource_usage.peak_cpu_usage_percent;
+      const cpuVariance =
+        highestCpuUser.resource_usage.peak_cpu_usage_percent -
+        lowestCpuUser.resource_usage.peak_cpu_usage_percent;
 
       if (cpuVariance > threshold) {
         highestCpuUser.isolation_validation.noisy_neighbor_detected = true;
@@ -1252,12 +1289,9 @@ export class TenantMonitoringService extends EventEmitter {
     // Stop existing monitoring if any
     this.stopMonitoring(tenantId);
 
-    const interval = setInterval(
-      () => {
-        this.performHealthCheck(tenantId, config);
-      },
-      config.health_check_interval_ms
-    );
+    const interval = setInterval(() => {
+      this.performHealthCheck(tenantId, config);
+    }, config.health_check_interval_ms);
 
     this.monitoringIntervals.set(tenantId, interval);
 
@@ -1283,7 +1317,10 @@ export class TenantMonitoringService extends EventEmitter {
   /**
    * Perform health check for a tenant
    */
-  private async performHealthCheck(tenantId: string, config: TenantConfig['monitoring']): Promise<void> {
+  private async performHealthCheck(
+    tenantId: string,
+    config: TenantConfig['monitoring']
+  ): Promise<void> {
     try {
       // Collect current metrics
       const metrics = await this.collectMetrics(tenantId);
@@ -1296,7 +1333,6 @@ export class TenantMonitoringService extends EventEmitter {
 
       // Emit metrics event
       this.emit('metrics', { tenant_id: tenantId, metrics });
-
     } catch (error) {
       logger.error('Health check failed', {
         tenant_id: tenantId,
@@ -1377,7 +1413,11 @@ export class TenantMonitoringService extends EventEmitter {
   /**
    * Store metrics history with retention
    */
-  private storeMetricsHistory(tenantId: string, metrics: TenantMetrics, retentionDays: number): void {
+  private storeMetricsHistory(
+    tenantId: string,
+    metrics: TenantMetrics,
+    retentionDays: number
+  ): void {
     if (!this.metricsHistory.has(tenantId)) {
       this.metricsHistory.set(tenantId, []);
     }
@@ -1389,7 +1429,7 @@ export class TenantMonitoringService extends EventEmitter {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
-    const filtered = history.filter(m => new Date(m.timestamp) >= cutoffDate);
+    const filtered = history.filter((m) => new Date(m.timestamp) >= cutoffDate);
     this.metricsHistory.set(tenantId, filtered);
   }
 
@@ -1459,7 +1499,8 @@ export class TenantMonitoringService extends EventEmitter {
         metric: 'queue_depth',
         currentValue: metrics.queue_metrics.queue_depth,
         threshold: thresholds.queue_depth,
-        severity: metrics.queue_metrics.queue_depth > thresholds.queue_depth * 2 ? 'error' : 'warning',
+        severity:
+          metrics.queue_metrics.queue_depth > thresholds.queue_depth * 2 ? 'error' : 'warning',
         title: 'High Queue Depth',
       });
     }
@@ -1546,8 +1587,9 @@ export class TenantMonitoringService extends EventEmitter {
    * Get active alerts for a tenant
    */
   getActiveAlerts(tenantId: string): TenantAlert[] {
-    return Array.from(this.alerts.values())
-      .filter(alert => alert.tenant_id === tenantId && alert.status === 'active');
+    return Array.from(this.alerts.values()).filter(
+      (alert) => alert.tenant_id === tenantId && alert.status === 'active'
+    );
   }
 
   /**
@@ -1646,7 +1688,10 @@ export class TenantIsolationService extends EventEmitter {
   /**
    * Check if a request is allowed for a tenant
    */
-  async checkRequest(tenantId: string, toolName?: string): Promise<{
+  async checkRequest(
+    tenantId: string,
+    toolName?: string
+  ): Promise<{
     allowed: boolean;
     reason?: string;
     rateLimitResult?: Record<string, unknown>;
@@ -1695,7 +1740,7 @@ export class TenantIsolationService extends EventEmitter {
     // Check resource availability
     const resourceAvailable = this.resourceManager.canConsumeResources(tenantId, {
       cpu_percent: 1, // Estimate 1% CPU per request
-      memory_mb: 1,   // Estimate 1MB per request
+      memory_mb: 1, // Estimate 1MB per request
       db_connections: 0,
       vector_count: 0,
       network_mbps: 0.1,
@@ -1751,7 +1796,10 @@ export class TenantIsolationService extends EventEmitter {
   /**
    * Record resource usage
    */
-  async recordResourceUsage(tenantId: string, usage: Partial<TenantMetrics['resource_usage']>): Promise<void> {
+  async recordResourceUsage(
+    tenantId: string,
+    usage: Partial<TenantMetrics['resource_usage']>
+  ): Promise<void> {
     this.resourceManager.recordUsage(tenantId, usage);
   }
 
@@ -1766,7 +1814,9 @@ export class TenantIsolationService extends EventEmitter {
   /**
    * Get circuit breaker metrics for a tenant
    */
-  async getCircuitBreakerMetrics(tenantId: string): Promise<TenantMetrics['circuit_breaker'] | undefined> {
+  async getCircuitBreakerMetrics(
+    tenantId: string
+  ): Promise<TenantMetrics['circuit_breaker'] | undefined> {
     const circuitBreaker = this.circuitBreakers.get(tenantId);
     return circuitBreaker?.getMetrics(tenantId);
   }
@@ -1887,7 +1937,10 @@ export class TenantIsolationService extends EventEmitter {
       throw new Error('Rate limit requests per second must be positive');
     }
 
-    if (config.resource_quotas.cpu_limit_percent <= 0 || config.resource_quotas.cpu_limit_percent > 100) {
+    if (
+      config.resource_quotas.cpu_limit_percent <= 0 ||
+      config.resource_quotas.cpu_limit_percent > 100
+    ) {
       throw new Error('CPU limit must be between 0 and 100');
     }
 
@@ -1906,7 +1959,9 @@ export class TenantIsolationService extends EventEmitter {
     total_circuit_breakers: number;
     monitoring_active_count: number;
   } {
-    const activeTenants = Array.from(this.tenants.values()).filter(t => t.status === 'active').length;
+    const activeTenants = Array.from(this.tenants.values()).filter(
+      (t) => t.status === 'active'
+    ).length;
 
     return {
       total_tenants: this.tenants.size,
@@ -2000,7 +2055,9 @@ export const DEFAULT_TENANT_CONFIG: Partial<TenantConfig> = {
 
 let tenantIsolationServiceInstance: TenantIsolationService | null = null;
 
-export function createTenantIsolationService(vectorAdapter: IVectorAdapter): TenantIsolationService {
+export function createTenantIsolationService(
+  vectorAdapter: IVectorAdapter
+): TenantIsolationService {
   tenantIsolationServiceInstance = new TenantIsolationService(vectorAdapter);
   return tenantIsolationServiceInstance;
 }

@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Memory Optimization Configuration
  *
@@ -13,11 +9,11 @@
 export interface MemoryOptimizationConfig {
   // Memory Manager Configuration
   memoryManager: {
-    warningThreshold: number;    // Percentage (0-100)
-    criticalThreshold: number;   // Percentage (0-100)
-    emergencyThreshold: number;  // Percentage (0-100)
-    checkInterval: number;       // Milliseconds
-    trendWindow: number;         // Milliseconds
+    warningThreshold: number; // Percentage (0-100)
+    criticalThreshold: number; // Percentage (0-100)
+    emergencyThreshold: number; // Percentage (0-100)
+    checkInterval: number; // Milliseconds
+    trendWindow: number; // Milliseconds
     enableAutoCleanup: boolean;
     maxCleanupRetries: number;
   };
@@ -25,27 +21,27 @@ export interface MemoryOptimizationConfig {
   // Embedding Service Configuration
   embeddingService: {
     cacheEnabled: boolean;
-    cacheMaxSize: number;        // Number of entries
-    cacheMaxMemoryMB: number;    // Memory limit in MB
+    cacheMaxSize: number; // Number of entries
+    cacheMaxMemoryMB: number; // Memory limit in MB
     cacheEvictionPolicy: 'lru' | 'lfu' | 'priority';
-    batchSize: number;           // Reduced batch size for memory
+    batchSize: number; // Reduced batch size for memory
     enableCircuitBreaker: boolean;
     circuitBreakerTimeout: number; // Milliseconds
     enableMemoryMonitoring: boolean;
-    memoryThresholdMB: number;   // Memory threshold for cleanup
+    memoryThresholdMB: number; // Memory threshold for cleanup
   };
 
   // Memory Monitor Configuration
   memoryMonitor: {
-    checkInterval: number;       // Milliseconds
-    historySize: number;         // Number of data points
-    trendWindowSize: number;     // Number of points for trend analysis
+    checkInterval: number; // Milliseconds
+    historySize: number; // Number of data points
+    trendWindowSize: number; // Number of points for trend analysis
     enablePredictions: boolean;
     enableAutoCleanup: boolean;
     alertCooldowns: {
-      info: number;      // Milliseconds
-      warning: number;   // Milliseconds
-      critical: number;  // Milliseconds
+      info: number; // Milliseconds
+      warning: number; // Milliseconds
+      critical: number; // Milliseconds
       emergency: number; // Milliseconds
     };
   };
@@ -53,12 +49,12 @@ export interface MemoryOptimizationConfig {
   // Store Orchestrator Configuration
   storeOrchestrator: {
     enableMemoryOptimization: boolean;
-    maxBatchSize: number;        // Maximum batch size
+    maxBatchSize: number; // Maximum batch size
     memoryPressureThresholds: {
-      low: number;       // Percentage
-      medium: number;    // Percentage
-      high: number;      // Percentage
-      critical: number;  // Percentage
+      low: number; // Percentage
+      medium: number; // Percentage
+      high: number; // Percentage
+      critical: number; // Percentage
     };
     poolConfig: {
       itemResultPoolSize: number;
@@ -72,8 +68,8 @@ export interface MemoryOptimizationConfig {
   // Find Orchestrator Configuration
   findOrchestrator: {
     enableMemoryOptimization: boolean;
-    maxResultSize: number;       // Maximum number of results
-    resultCacheSize: number;     // Number of cached results
+    maxResultSize: number; // Maximum number of results
+    resultCacheSize: number; // Number of cached results
     enableResultStreaming: boolean;
     memoryPressureHandling: {
       reduceBatchSize: boolean;
@@ -85,12 +81,12 @@ export interface MemoryOptimizationConfig {
   // Global Memory Settings
   global: {
     enableGarbageCollection: boolean;
-    gcTriggerThreshold: number;  // Percentage
-    maxHeapSizeMB: number;      // Maximum heap size
+    gcTriggerThreshold: number; // Percentage
+    maxHeapSizeMB: number; // Maximum heap size
     enableMemoryProfiling: boolean;
-    profilingInterval: number;   // Milliseconds
+    profilingInterval: number; // Milliseconds
     logMemoryUsage: boolean;
-    memoryLogInterval: number;   // Milliseconds
+    memoryLogInterval: number; // Milliseconds
   };
 }
 
@@ -102,35 +98,35 @@ export const defaultMemoryOptimizationConfig: MemoryOptimizationConfig = {
     warningThreshold: 80,
     criticalThreshold: 90,
     emergencyThreshold: 95,
-    checkInterval: 30000,       // 30 seconds
-    trendWindow: 300000,         // 5 minutes
+    checkInterval: 30000, // 30 seconds
+    trendWindow: 300000, // 5 minutes
     enableAutoCleanup: true,
     maxCleanupRetries: 3,
   },
 
   embeddingService: {
     cacheEnabled: true,
-    cacheMaxSize: 5000,          // Reduced from 10000
-    cacheMaxMemoryMB: 100,       // 100MB limit
+    cacheMaxSize: 5000, // Reduced from 10000
+    cacheMaxMemoryMB: 100, // 100MB limit
     cacheEvictionPolicy: 'lru',
-    batchSize: 50,               // Reduced from 100
+    batchSize: 50, // Reduced from 100
     enableCircuitBreaker: true,
     circuitBreakerTimeout: 30000, // 30 seconds
     enableMemoryMonitoring: true,
-    memoryThresholdMB: 200,      // 200MB threshold
+    memoryThresholdMB: 200, // 200MB threshold
   },
 
   memoryMonitor: {
-    checkInterval: 15000,        // 15 seconds
-    historySize: 240,            // 1 hour at 15-second intervals
-    trendWindowSize: 20,          // 5 minutes for trend analysis
+    checkInterval: 15000, // 15 seconds
+    historySize: 240, // 1 hour at 15-second intervals
+    trendWindowSize: 20, // 5 minutes for trend analysis
     enablePredictions: true,
     enableAutoCleanup: true,
     alertCooldowns: {
-      info: 300000,      // 5 minutes
-      warning: 180000,   // 3 minutes
-      critical: 60000,   // 1 minute
-      emergency: 30000,  // 30 seconds
+      info: 300000, // 5 minutes
+      warning: 180000, // 3 minutes
+      critical: 60000, // 1 minute
+      emergency: 30000, // 30 seconds
     },
   },
 
@@ -138,9 +134,9 @@ export const defaultMemoryOptimizationConfig: MemoryOptimizationConfig = {
     enableMemoryOptimization: true,
     maxBatchSize: 100,
     memoryPressureThresholds: {
-      low: 60,      // 60%
-      medium: 75,   // 75%
-      high: 85,     // 85%
+      low: 60, // 60%
+      medium: 75, // 75%
+      high: 85, // 85%
       critical: 95, // 95%
     },
     poolConfig: {
@@ -166,12 +162,12 @@ export const defaultMemoryOptimizationConfig: MemoryOptimizationConfig = {
 
   global: {
     enableGarbageCollection: true,
-    gcTriggerThreshold: 85,      // 85%
-    maxHeapSizeMB: 2048,        // 2GB
+    gcTriggerThreshold: 85, // 85%
+    maxHeapSizeMB: 2048, // 2GB
     enableMemoryProfiling: true,
-    profilingInterval: 60000,    // 1 minute
+    profilingInterval: 60000, // 1 minute
     logMemoryUsage: true,
-    memoryLogInterval: 60000,    // 1 minute
+    memoryLogInterval: 60000, // 1 minute
   },
 };
 
@@ -183,24 +179,24 @@ export const productionMemoryOptimizationConfig: MemoryOptimizationConfig = {
   ...defaultMemoryOptimizationConfig,
   memoryManager: {
     ...defaultMemoryOptimizationConfig.memoryManager,
-    warningThreshold: 75,        // Lower threshold for production
+    warningThreshold: 75, // Lower threshold for production
     criticalThreshold: 85,
     emergencyThreshold: 92,
-    checkInterval: 15000,        // More frequent checks
+    checkInterval: 15000, // More frequent checks
   },
 
   embeddingService: {
     ...defaultMemoryOptimizationConfig.embeddingService,
-    cacheMaxSize: 3000,          // Smaller cache for production
-    cacheMaxMemoryMB: 75,        // Smaller memory limit
-    batchSize: 25,               // Smaller batches
+    cacheMaxSize: 3000, // Smaller cache for production
+    cacheMaxMemoryMB: 75, // Smaller memory limit
+    batchSize: 25, // Smaller batches
   },
 
   storeOrchestrator: {
     ...defaultMemoryOptimizationConfig.storeOrchestrator,
-    maxBatchSize: 50,            // Smaller batches
+    maxBatchSize: 50, // Smaller batches
     memoryPressureThresholds: {
-      low: 50,      // More conservative
+      low: 50, // More conservative
       medium: 65,
       high: 80,
       critical: 90,
@@ -209,8 +205,8 @@ export const productionMemoryOptimizationConfig: MemoryOptimizationConfig = {
 
   global: {
     ...defaultMemoryOptimizationConfig.global,
-    gcTriggerThreshold: 80,      // Earlier GC trigger
-    maxHeapSizeMB: 1536,        // 1.5GB limit
+    gcTriggerThreshold: 80, // Earlier GC trigger
+    maxHeapSizeMB: 1536, // 1.5GB limit
   },
 };
 
@@ -222,22 +218,22 @@ export const developmentMemoryOptimizationConfig: MemoryOptimizationConfig = {
   ...defaultMemoryOptimizationConfig,
   memoryManager: {
     ...defaultMemoryOptimizationConfig.memoryManager,
-    warningThreshold: 85,        // Higher threshold for development
+    warningThreshold: 85, // Higher threshold for development
     criticalThreshold: 92,
     emergencyThreshold: 97,
-    checkInterval: 60000,        // Less frequent checks
+    checkInterval: 60000, // Less frequent checks
   },
 
   embeddingService: {
     ...defaultMemoryOptimizationConfig.embeddingService,
-    cacheMaxSize: 10000,         // Larger cache for development
-    cacheMaxMemoryMB: 200,       // Larger memory limit
-    batchSize: 100,              // Larger batches
+    cacheMaxSize: 10000, // Larger cache for development
+    cacheMaxMemoryMB: 200, // Larger memory limit
+    batchSize: 100, // Larger batches
   },
 
   storeOrchestrator: {
     ...defaultMemoryOptimizationConfig.storeOrchestrator,
-    maxBatchSize: 200,           // Larger batches
+    maxBatchSize: 200, // Larger batches
     memoryPressureThresholds: {
       low: 70,
       medium: 80,
@@ -248,8 +244,8 @@ export const developmentMemoryOptimizationConfig: MemoryOptimizationConfig = {
 
   global: {
     ...defaultMemoryOptimizationConfig.global,
-    gcTriggerThreshold: 90,      // Later GC trigger
-    maxHeapSizeMB: 4096,        // 4GB limit
+    gcTriggerThreshold: 90, // Later GC trigger
+    maxHeapSizeMB: 4096, // 4GB limit
   },
 };
 
@@ -361,7 +357,8 @@ export function loadMemoryOptimizationConfig(): MemoryOptimizationConfig {
       cacheEnabled: process.env.EMBEDDING_CACHE_ENABLED !== 'false',
       cacheMaxSize: parseInt(process.env.EMBEDDING_CACHE_SIZE || '5000'),
       cacheMaxMemoryMB: parseInt(process.env.EMBEDDING_CACHE_MEMORY_MB || '100'),
-      cacheEvictionPolicy: (process.env.EMBEDDING_CACHE_EVICTION as 'lru' | 'lfu' | 'priority') || 'lru',
+      cacheEvictionPolicy:
+        (process.env.EMBEDDING_CACHE_EVICTION as 'lru' | 'lfu' | 'priority') || 'lru',
       batchSize: parseInt(process.env.EMBEDDING_BATCH_SIZE || '50'),
       enableCircuitBreaker: process.env.EMBEDDING_CIRCUIT_BREAKER !== 'false',
       circuitBreakerTimeout: parseInt(process.env.EMBEDDING_CIRCUIT_BREAKER_TIMEOUT || '30000'),

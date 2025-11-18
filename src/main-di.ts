@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Core entry point type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Main Entry Point with Dependency Injection
@@ -32,6 +30,8 @@ import type {
   IMemoryFindOrchestrator,
   IMemoryStoreOrchestrator,
   IPerformanceMonitor,
+  KnowledgeItem,
+  SearchQuery,
 } from './di/service-interfaces.js';
 import { serviceLocator } from './di/service-locator.js';
 // Import DI components
@@ -39,6 +39,56 @@ import { createServiceRegistry } from './di/service-registry.js';
 // Import schemas and types
 import { ALL_JSON_SCHEMAS } from './schemas/json-schemas.js';
 
+// Import safe property access utilities
+import {
+  safeExtractEventData,
+  safeExtractDataProperty,
+  safeExtractItemsArray,
+  safeExtractResultsArray,
+  safeExtractSearchTime,
+  safeExtractResultsCount,
+  createItemCountResponse,
+  isMemoryStoredEventData,
+  isMemoryFoundEventData,
+  isSystemStatusEventData
+} from './utils/type-safe-access.js';
+
+// Helper functions for safe property access
+const num = (v: unknown, d = 0): number => Number((v as number | undefined) ?? d);
+const str = (v: unknown, d = ''): string => ((v as string | undefined) ?? d).trim();
+
+// Safe extraction functions for MCP arguments
+function safeExtractMemoryStoreArgs(args: unknown): { items: KnowledgeItem[] } {
+  if (!args || typeof args !== 'object') {
+    throw new Error('Invalid memory store arguments: expected object');
+  }
+
+  const argObj = args as Record<string, unknown>;
+  const items = argObj.items;
+
+  if (!Array.isArray(items)) {
+    throw new Error('Invalid memory store arguments: items must be an array');
+  }
+
+  // Basic validation - assume items are already KnowledgeItem typed after schema validation
+  return { items: items as KnowledgeItem[] };
+}
+
+function safeExtractMemoryFindArgs(args: unknown): SearchQuery {
+  if (!args || typeof args !== 'object') {
+    throw new Error('Invalid memory find arguments: expected object');
+  }
+
+  const argObj = args as Record<string, unknown>;
+
+  // Basic validation - assume query is already SearchQuery typed after schema validation
+  const query = argObj.query;
+  if (typeof query !== 'string' && typeof query !== 'object') {
+    throw new Error('Invalid memory find arguments: query must be string or object');
+  }
+
+  return args as SearchQuery;
+}
 
 /**
  * Main application class with dependency injection
@@ -162,30 +212,44 @@ export class CortexMemoryServer {
   private setupEventHandlers(): void {
     // Handle database events
     this.eventService.on('database.error', (event) => {
-      this.logger.error('Database error reported', event.data);
+      const eventData = safeExtractEventData(event);
+      this.logger.error('Database error reported', safeExtractDataProperty(eventData));
     });
 
     this.eventService.on('database.connected', (event) => {
-      this.logger.info('Database connected', event.data);
+      const eventData = safeExtractEventData(event);
+      this.logger.info('Database connected', safeExtractDataProperty(eventData));
     });
 
     // Handle memory events
     this.eventService.on('memory.stored', (event) => {
-      this.logger.debug('Memory stored', { count: event.data.items?.length || 0 });
+      const eventData = safeExtractEventData(event);
+      if (isMemoryStoredEventData(eventData)) {
+        const dataObj = safeExtractDataProperty(eventData);
+        const items = safeExtractItemsArray(dataObj);
+        this.logger.debug('Memory stored', { count: items.length });
+      }
     });
 
     this.eventService.on('memory.found', (event) => {
-      this.logger.debug('Memory search completed', { count: event.data.results?.length || 0 });
+      const eventData = safeExtractEventData(event);
+      if (isMemoryFoundEventData(eventData)) {
+        const dataObj = safeExtractDataProperty(eventData);
+        const results = safeExtractResultsArray(dataObj);
+        this.logger.debug('Memory search completed', { count: results.length });
+      }
     });
 
     // Handle processing events
     this.eventService.on('processing.failed', (event) => {
-      this.logger.error('Processing failed', event.data);
+      const eventData = safeExtractEventData(event);
+      this.logger.error('Processing failed', safeExtractDataProperty(eventData));
     });
 
     // Handle system events
     this.eventService.on('system.error', (event) => {
-      this.logger.error('System error', event.data);
+      const eventData = safeExtractEventData(event);
+      this.logger.error('System error', safeExtractDataProperty(eventData));
     });
   }
 
@@ -293,19 +357,26 @@ export class CortexMemoryServer {
     const timer = this.performanceMonitor.startTimer('memory.store');
 
     try {
-      const result = await this.memoryStoreOrchestrator.store(args.items);
+      // Safely extract arguments
+      const { items } = safeExtractMemoryStoreArgs(args);
+      const result = await this.memoryStoreOrchestrator.store(items);
 
       timer();
       this.eventService.emit('memory.stored', {
-        itemsCount: args.items?.length || 0,
+        itemsCount: items.length,
         result,
       });
+
+      // Extract data safely
+      const dataObj = safeExtractDataProperty(result);
+      const storedCount = typeof dataObj.stored === 'number' ? dataObj.stored : 0;
+      const skippedCount = typeof dataObj.skipped === 'number' ? dataObj.skipped : 0;
 
       return {
         content: [
           {
             type: 'text',
-            text: `Successfully stored ${result.stored} items. Skipped ${result.skipped} duplicates.`,
+            text: `Successfully stored ${storedCount} items. Skipped ${skippedCount} duplicates.`,
           },
         ],
       };
@@ -322,12 +393,16 @@ export class CortexMemoryServer {
     const timer = this.performanceMonitor.startTimer('memory.find');
 
     try {
-      const result = await this.memoryFindOrchestrator.find(args);
+      const query = safeExtractMemoryFindArgs(args);
+      const result = await this.memoryFindOrchestrator.find(query);
 
       timer();
+      const resultsCount = safeExtractResultsCount(result);
+      const searchTime = safeExtractSearchTime(result.metadata);
+
       this.eventService.emit('memory.found', {
         query: args,
-        resultsCount: result.results?.length || 0,
+        resultsCount,
         result,
       });
 
@@ -335,7 +410,7 @@ export class CortexMemoryServer {
         content: [
           {
             type: 'text',
-            text: `Found ${result.results?.length || 0} matching items. Search took ${result.metadata?.searchTime || 0}ms.`,
+            text: `Found ${resultsCount} matching items. Search took ${searchTime}ms.`,
           },
         ],
       };

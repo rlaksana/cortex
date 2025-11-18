@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * ZAI-Enhanced Contradiction Detector
  *
@@ -39,7 +34,7 @@ interface ContradictionMetadata {
   algorithm_version: string;
   processing_time_ms: number;
   comparison_details: Record<string, unknown>;
-  evidence: { item_id: string; evidence_type: string; content: string; confidence: number; }[];
+  evidence: { item_id: string; evidence_type: string; content: string; confidence: number }[];
   [key: string]: unknown;
 }
 
@@ -201,7 +196,9 @@ export class ZAIEnhancedContradictionDetector {
     if (this.config.performance.parallel_processing) {
       // Process strategies in parallel
       const strategyResults = await Promise.allSettled(
-        strategies.map((strategy) => this.processStrategy(strategy as ContradictionStrategyType, items))
+        strategies.map((strategy) =>
+          this.processStrategy(strategy as ContradictionStrategyType, items)
+        )
       );
 
       for (const result of strategyResults) {
@@ -367,10 +364,7 @@ export class ZAIEnhancedContradictionDetector {
 
       return null;
     } catch (error) {
-      logger.error(
-        { error, item1Id: item1.id, item2Id: item2.id },
-        'ZAI semantic analysis failed'
-      );
+      logger.error({ error, item1Id: item1.id, item2Id: item2.id }, 'ZAI semantic analysis failed');
       return null;
     }
   }
@@ -530,10 +524,7 @@ Consider the context and kind of each item when determining if there's a genuine
 
       return null;
     } catch (error) {
-      logger.error(
-        { error, item1Id: item1.id, item2Id: item2.id },
-        'ZAI temporal analysis failed'
-      );
+      logger.error({ error, item1Id: item1.id, item2Id: item2.id }, 'ZAI temporal analysis failed');
       return null;
     }
   }
@@ -1015,8 +1006,22 @@ Consider the procedural implications and potential conflicts in execution.`;
   /**
    * Extract temporal data from an item
    */
-  private extractTemporalData(item: KnowledgeItem): { dates?: string[]; markers?: string[]; sequence?: string[]; created_at?: string; updated_at?: string } | null {
-    const temporalData: { dates?: string[]; markers?: string[]; sequence?: string[]; created_at?: string; updated_at?: string } = {};
+  private extractTemporalData(
+    item: KnowledgeItem
+  ): {
+    dates?: string[];
+    markers?: string[];
+    sequence?: string[];
+    created_at?: string;
+    updated_at?: string;
+  } | null {
+    const temporalData: {
+      dates?: string[];
+      markers?: string[];
+      sequence?: string[];
+      created_at?: string;
+      updated_at?: string;
+    } = {};
     const content = this.extractItemContent(item);
 
     // Extract dates from content
@@ -1150,7 +1155,12 @@ Consider the procedural implications and potential conflicts in execution.`;
         model: 'zai-glm-4.6',
         processing_time_ms: 0,
         comparison_details: {},
-        evidence: params.evidence as { item_id: string; evidence_type: string; content: string; confidence: number; }[],
+        evidence: params.evidence as {
+          item_id: string;
+          evidence_type: string;
+          content: string;
+          confidence: number;
+        }[],
         ...(params.metadata as Record<string, unknown>),
       } as ContradictionMetadata,
       resolution_suggestions: this.generateResolutionSuggestions(params.type, severity),

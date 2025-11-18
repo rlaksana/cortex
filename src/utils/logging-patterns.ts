@@ -1,6 +1,4 @@
-// @ts-nocheck
 // FINAL COMPREHENSIVE EMERGENCY ROLLBACK: Utility layer type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Logging Patterns Guide for Cortex Memory MCP
@@ -10,6 +8,7 @@
  */
 
 import { createRequestLogger, logger as baseLogger } from '@/utils/logger.js';
+import { hasPropertySimple, isObject, safePropertyAccess } from '@/utils/type-guards.js';
 
 /**
  * Log Level Guidelines
@@ -128,7 +127,7 @@ export function logDatabaseOperation(
   duration_ms: number,
   recordCount?: number
 ) {
-  const logData: unknown = {
+  const logData: Record<string, unknown> = {
     operation,
     table,
     sql_duration_ms: duration_ms,
@@ -162,7 +161,7 @@ export function logAuthenticationEvent(
   success: boolean = true,
   reason?: string
 ) {
-  const logData: unknown = {
+  const logData: Record<string, unknown> = {
     auth_event: event,
     success,
   };
@@ -229,9 +228,9 @@ function sanitizeLogParams(params: Record<string, unknown>): Record<string, unkn
   for (const [key, value] of Object.entries(params)) {
     if (sensitiveFields.some((field) => key.toLowerCase().includes(field))) {
       sanitized[key] = '[REDACTED]';
-    } else if (typeof value === 'object' && value !== null) {
+    } else if (isObject(value)) {
       // Recursively sanitize nested objects
-      sanitized[key] = sanitizeLogParams(value);
+      sanitized[key] = sanitizeLogParams(value as Record<string, unknown>);
     } else {
       sanitized[key] = value;
     }
@@ -251,20 +250,23 @@ function summarizeResult(result: unknown): unknown {
     return { type: 'array', count: result.length };
   }
 
-  if (typeof result === 'object' && result !== null) {
-    const summary: unknown = { type: 'object' };
+  if (isObject(result)) {
+    const summary: Record<string, unknown> = { type: 'object' };
 
     // Include specific fields that are useful for logging
     const usefulFields = ['id', 'count', 'affected_rows', 'inserted_id', 'updated_count'];
     for (const field of usefulFields) {
-      if (field in result) {
-        summary[field] = result[field];
+      if (hasPropertySimple(result, field)) {
+        summary[field] = (result as Record<string, unknown>)[field];
       }
     }
 
     // Check if this looks like a database result
-    if ('rows' in result) {
-      summary.row_count = result.rows?.length || 0;
+    const rows = safePropertyAccess(result, 'rows', (value): value is unknown[] =>
+      Array.isArray(value)
+    );
+    if (rows) {
+      summary.row_count = rows.length;
     }
 
     return Object.keys(summary).length > 1 ? summary : { type: 'object' };

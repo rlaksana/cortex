@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Final batch of type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Performance Monitoring System
@@ -15,7 +13,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 import type { OperationType } from './operation-types.js';
-import type { OperationMetadata, PerformanceBaseline,PerformanceThresholds } from '../types/monitoring-types.js';
+import type { OperationMetadata } from '../types/monitoring-types.js';
 
 export interface PerformanceMetrics {
   timestamp: number;
@@ -171,7 +169,7 @@ export class PerformanceMonitor extends EventEmitter {
     } else {
       // Create baseline for all operations
       for (const opName of this.metrics.keys()) {
-        this.createBaselineForOperation(opName as OperationType);
+        this.createBaselineForOperation(opName);
       }
     }
 
@@ -182,7 +180,7 @@ export class PerformanceMonitor extends EventEmitter {
   /**
    * Create baseline for a specific operation
    */
-  private createBaselineForOperation(operation: OperationType): void {
+  private createBaselineForOperation(operation: string | OperationType): void {
     const metrics = this.metrics.get(operation);
     if (!metrics || metrics.length === 0) return;
 
@@ -190,7 +188,7 @@ export class PerformanceMonitor extends EventEmitter {
     const memoryUsages = metrics.map((m) => m.memoryAfter);
 
     const baseline: PerformanceBaseline = {
-      operation,
+      operation: operation as OperationType,
       avgDuration: durations.reduce((a, b) => a + b, 0) / durations.length,
       maxDuration: Math.max(...durations),
       minDuration: Math.min(...durations),
@@ -246,7 +244,7 @@ export class PerformanceMonitor extends EventEmitter {
 
       if (operationRegressions.length > 0) {
         regressions.push({
-          operation,
+          operation: operation as OperationType,
           regressions: operationRegressions,
         });
 
@@ -270,7 +268,13 @@ export class PerformanceMonitor extends EventEmitter {
         regressionCount: 0,
         improvementCount: 0,
       },
-      operations: {},
+      operations: {} as Record<string, {
+        current: PerformanceMetrics[];
+        baseline?: PerformanceBaseline;
+        threshold: PerformanceThresholds;
+        regressions: PerformanceMetrics[];
+        improvements: PerformanceMetrics[];
+      }>,
       generatedAt: Date.now(),
     };
 
@@ -285,8 +289,8 @@ export class PerformanceMonitor extends EventEmitter {
       allDurations = allDurations.concat(durations);
 
       const operationRegressions =
-        regressions.find((r) => r.operation === operation)?.regressions || [];
-      const improvements = this.detectImprovements(operation, baseline, metrics);
+        regressions.find((r) => r.operation === operation as OperationType)?.regressions || [];
+      const improvements = this.detectImprovements(operation as OperationType, baseline, metrics);
 
       report.operations[operation] = {
         current: metrics,
@@ -414,25 +418,34 @@ export const performanceMonitor = new PerformanceMonitor();
  * Performance monitoring decorator
  */
 export function monitorPerformance(operation?: OperationType | string) {
-  return function <T extends object, U extends keyof T, V extends T[U] extends (...args: any[]) => unknown ? T[U] : never>(
-    target: T,
-    propertyKey: U,
-    descriptor: TypedPropertyDescriptor<V>
-  ) {
+  return function <
+    T extends object,
+    U extends keyof T,
+    V extends T[U] extends (...args: any[]) => unknown ? T[U] : never,
+  >(target: T, propertyKey: U, descriptor: TypedPropertyDescriptor<V>) {
     const originalMethod = descriptor.value;
-    const operationName = (operation as OperationType) || `${target.constructor.name}.${String(propertyKey)}`;
+    const operationName =
+      (operation as OperationType) || `${target.constructor.name}.${String(propertyKey)}`;
 
     descriptor.value = function (this: T, ...args: Parameters<V>) {
-      const finish = performanceMonitor.startOperation(operationName as OperationType, {
-        className: target.constructor.name,
-        method: String(propertyKey),
-        args: args.length,
-      } as OperationMetadata);
+      const finish = performanceMonitor.startOperation(
+        operationName as OperationType,
+        {
+          className: target.constructor.name,
+          method: String(propertyKey),
+          args: args.length,
+        } as OperationMetadata
+      );
 
       try {
         const result = originalMethod!.apply(this, args);
 
-        if (result && typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
+        if (
+          result &&
+          typeof result === 'object' &&
+          'then' in result &&
+          typeof result.then === 'function'
+        ) {
           // Async method
           return result
             .then((value: Awaited<ReturnType<V>>) => {

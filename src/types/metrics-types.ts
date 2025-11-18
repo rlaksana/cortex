@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Comprehensive Type Definitions for Metrics System
  *
@@ -15,6 +11,7 @@
 
 import { type LoggableData } from './monitoring-types.js';
 import { type OperationType } from '../monitoring/operation-types.js';
+import type { AlertThreshold } from './slo-interfaces.js';
 
 // ============================================================================
 // Core Metric Types
@@ -59,6 +56,9 @@ export interface TypedMetric {
 
   // Aggregation information
   aggregation?: MetricAggregation;
+
+  // Alert thresholds (convenience access to metadata.thresholds)
+  thresholds?: MetricThreshold[];
 }
 
 /**
@@ -76,7 +76,7 @@ export enum MetricType {
   AVERAGE = 'average',
   SUM = 'sum',
   MIN = 'min',
-  MAX = 'max'
+  MAX = 'max',
 }
 
 /**
@@ -94,7 +94,7 @@ export enum MetricCategory {
   DATABASE = 'database',
   SECURITY = 'security',
   QUALITY = 'quality',
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
 }
 
 /**
@@ -113,7 +113,7 @@ export enum DimensionType {
   STRING = 'string',
   NUMBER = 'number',
   BOOLEAN = 'boolean',
-  ENUM = 'enum'
+  ENUM = 'enum',
 }
 
 /**
@@ -132,7 +132,7 @@ export interface MetricQuality {
 /**
  * Type-safe metric metadata
  */
-export interface MetricMetadata extends LoggableData {
+export interface MetricMetadata {
   // Data source information
   source?: string;
   collectionMethod?: CollectionMethod;
@@ -147,7 +147,7 @@ export interface MetricMetadata extends LoggableData {
   };
 
   // Thresholds and bounds
-  thresholds?: MetricThresholds[];
+  thresholds?: MetricThreshold[];
   bounds?: {
     min?: number;
     max?: number;
@@ -187,7 +187,7 @@ export enum CollectionMethod {
   BATCH = 'batch',
   STREAMING = 'streaming',
   CALCULATED = 'calculated',
-  AGGREGATED = 'aggregated'
+  AGGREGATED = 'aggregated',
 }
 
 /**
@@ -210,7 +210,7 @@ export enum ThresholdType {
   ABSOLUTE = 'absolute',
   PERCENTAGE = 'percentage',
   RATE = 'rate',
-  DELTA = 'delta'
+  DELTA = 'delta',
 }
 
 /**
@@ -226,7 +226,7 @@ export enum ComparisonOperator {
   CONTAINS = 'contains',
   NOT_CONTAINS = 'not_contains',
   REGEX_MATCH = 'regex_match',
-  REGEX_NOT_MATCH = 'regex_not_match'
+  REGEX_NOT_MATCH = 'regex_not_match',
 }
 
 /**
@@ -237,7 +237,7 @@ export enum AlertSeverity {
   INFO = 'info',
   WARNING = 'warning',
   ERROR = 'error',
-  CRITICAL = 'critical'
+  CRITICAL = 'critical',
 }
 
 /**
@@ -261,7 +261,7 @@ export enum CorrelationType {
   LEADING = 'leading',
   LAGGING = 'lagging',
   CAUSAL = 'causal',
-  COINCIDENTAL = 'coincidental'
+  COINCIDENTAL = 'coincidental',
 }
 
 /**
@@ -290,7 +290,7 @@ export enum TransformationType {
   Z_SCORE = 'z_score',
   MOVING_AVERAGE = 'moving_average',
   EXPONENTIAL_SMOOTHING = 'exponential_smoothing',
-  OUTLIER_REMOVAL = 'outlier_removal'
+  OUTLIER_REMOVAL = 'outlier_removal',
 }
 
 /**
@@ -318,7 +318,7 @@ export enum AggregationFunction {
   STDDEV = 'stddev',
   VARIANCE = 'variance',
   RATE = 'rate',
-  INCREASE = 'increase'
+  INCREASE = 'increase',
 }
 
 /**
@@ -340,7 +340,7 @@ export enum TimeUnit {
   DAYS = 'days',
   WEEKS = 'weeks',
   MONTHS = 'months',
-  YEARS = 'years'
+  YEARS = 'years',
 }
 
 /**
@@ -349,7 +349,7 @@ export enum TimeUnit {
 export enum WindowAlignment {
   START = 'start',
   END = 'end',
-  CENTER = 'center'
+  CENTER = 'center',
 }
 
 // ============================================================================
@@ -434,7 +434,7 @@ export enum TrendDirection {
   DECREASING = 'decreasing',
   STABLE = 'stable',
   VOLATILE = 'volatile',
-  UNKNOWN = 'unknown'
+  UNKNOWN = 'unknown',
 }
 
 /**
@@ -518,7 +518,7 @@ export enum MetricField {
   TIMESTAMP = 'timestamp',
   QUALITY = 'quality',
   LABEL = 'label',
-  DIMENSION = 'dimension'
+  DIMENSION = 'dimension',
 }
 
 /**
@@ -538,7 +538,7 @@ export enum OutputFormat {
   PROMETHEUS = 'prometheus',
   INFLUXDB = 'influxdb',
   GRAPHITE = 'graphite',
-  WAVEFRONT = 'wavefront'
+  WAVEFRONT = 'wavefront',
 }
 
 /**
@@ -579,7 +579,7 @@ export interface MetricsCollectorConfig {
 export enum CollectorType {
   PULL = 'pull', // Metrics are pulled from sources
   PUSH = 'push', // Metrics are pushed to the system
-  HYBRID = 'hybrid' // Both pull and push
+  HYBRID = 'hybrid', // Both pull and push
 }
 
 /**
@@ -624,7 +624,7 @@ export enum SamplingStrategy {
   SYSTEMATIC = 'systematic',
   STRATIFIED = 'stratified',
   ADAPTIVE = 'adaptive',
-  PRIORITY = 'priority'
+  PRIORITY = 'priority',
 }
 
 /**
@@ -710,7 +710,7 @@ export enum ExportType {
   HTTP = 'http',
   TCP = 'tcp',
   UDP = 'udp',
-  FILE = 'file'
+  FILE = 'file',
 }
 
 /**
@@ -732,7 +732,7 @@ export enum BackoffType {
   FIXED = 'fixed',
   LINEAR = 'linear',
   EXPONENTIAL = 'exponential',
-  EXPONENTIAL_WITH_JITTER = 'exponential_with_jitter'
+  EXPONENTIAL_WITH_JITTER = 'exponential_with_jitter',
 }
 
 // ============================================================================
@@ -829,7 +829,7 @@ export enum SignificanceLevel {
   LOW = 'low',
   MEDIUM = 'medium',
   HIGH = 'high',
-  VERY_HIGH = 'very_high'
+  VERY_HIGH = 'very_high',
 }
 
 /**
@@ -859,7 +859,7 @@ export enum AnomalyType {
   PATTERN_CHANGE = 'pattern_change',
   MISSING_DATA = 'missing_data',
   STALE_DATA = 'stale_data',
-  CORRELATION_BREAK = 'correlation_break'
+  CORRELATION_BREAK = 'correlation_break',
 }
 
 /**
@@ -935,7 +935,7 @@ export enum EvaluationMethod {
   MAX = 'max',
   MIN = 'min',
   SUM = 'sum',
-  COUNT = 'count'
+  COUNT = 'count',
 }
 
 /**
@@ -946,7 +946,7 @@ export enum MissingDataPolicy {
   TREAT_AS_ZERO = 'treat_as_zero',
   TREAT_AS_NULL = 'treat_as_null',
   TREAT_AS_LAST = 'treat_as_last',
-  TRIGGER_ALERT = 'trigger_alert'
+  TRIGGER_ALERT = 'trigger_alert',
 }
 
 /**
@@ -955,7 +955,7 @@ export enum MissingDataPolicy {
 export enum LogicalOperator {
   AND = 'and',
   OR = 'or',
-  NOT = 'not'
+  NOT = 'not',
 }
 
 /**
@@ -967,7 +967,7 @@ export enum AlertState {
   CRITICAL = 'critical',
   UNKNOWN = 'unknown',
   PAUSED = 'paused',
-  RESOLVED = 'resolved'
+  RESOLVED = 'resolved',
 }
 
 /**
@@ -1024,7 +1024,7 @@ export enum RecurringType {
   DAILY = 'daily',
   WEEKLY = 'weekly',
   MONTHLY = 'monthly',
-  YEARLY = 'yearly'
+  YEARLY = 'yearly',
 }
 
 /**
@@ -1054,7 +1054,7 @@ export enum NotificationType {
   JIRA = 'jira',
   TELEGRAM = 'telegram',
   DISCORD = 'discord',
-  MSTEAMS = 'msteams'
+  MSTEAMS = 'msteams',
 }
 
 /**
@@ -1076,7 +1076,7 @@ export enum NotificationPriority {
   LOW = 'low',
   NORMAL = 'normal',
   HIGH = 'high',
-  URGENT = 'urgent'
+  URGENT = 'urgent',
 }
 
 /**
@@ -1098,7 +1098,7 @@ export enum AttachmentType {
   CSV = 'csv',
   PNG = 'png',
   SVG = 'svg',
-  PDF = 'pdf'
+  PDF = 'pdf',
 }
 
 /**
@@ -1119,7 +1119,7 @@ export enum NotificationField {
   METRIC_NAME = 'metric_name',
   COMPONENT = 'component',
   TIME_OF_DAY = 'time_of_day',
-  DAY_OF_WEEK = 'day_of_week'
+  DAY_OF_WEEK = 'day_of_week',
 }
 
 /**
@@ -1153,7 +1153,7 @@ export enum VariableType {
   BOOLEAN = 'boolean',
   DATE = 'date',
   DURATION = 'duration',
-  PERCENTAGE = 'percentage'
+  PERCENTAGE = 'percentage',
 }
 
 /**
@@ -1319,14 +1319,17 @@ export function validateTypedMetric(metric: TypedMetric): MetricValidationResult
     warnings.push('Counter metrics should have non-negative values');
   }
 
-  if (metric.type === MetricType.PERCENTILE && (typeof metric.value !== 'number' || metric.value < 0 || metric.value > 100)) {
+  if (
+    metric.type === MetricType.PERCENTILE &&
+    (typeof metric.value !== 'number' || metric.value < 0 || metric.value > 100)
+  ) {
     warnings.push('Percentile metrics should be between 0 and 100');
   }
 
   return {
     isValid: errors.length === 0,
     errors,
-    warnings
+    warnings,
   };
 }
 
@@ -1346,9 +1349,7 @@ export interface MetricValidationResult {
 /**
  * Creates a properly typed metric with default values
  */
-export function createTypedMetric(
-  baseMetric: Partial<TypedMetric>
-): TypedMetric {
+export function createTypedMetric(baseMetric: Partial<TypedMetric>): TypedMetric {
   const now = new Date().toISOString();
 
   return {
@@ -1372,12 +1373,12 @@ export function createTypedMetric(
       timeliness: 1.0,
       validity: 1.0,
       reliability: 1.0,
-      lastValidated: now
+      lastValidated: now,
     },
     metadata: baseMetric.metadata || {},
     parentMetricId: baseMetric.parentMetricId,
     childMetricIds: baseMetric.childMetricIds || [],
-    aggregation: baseMetric.aggregation
+    aggregation: baseMetric.aggregation,
   };
 }
 
@@ -1395,24 +1396,24 @@ export function createDefaultCollectorConfig(): MetricsCollectorConfig {
       flushInterval: 30,
       compression: true,
       encryption: false,
-      persistence: false
+      persistence: false,
     },
     filtering: {
       sampling: {
         rate: 1.0,
-        strategy: SamplingStrategy.RANDOM
-      }
+        strategy: SamplingStrategy.RANDOM,
+      },
     },
     aggregation: {
       enabled: true,
-      rules: []
+      rules: [],
     },
     retention: {
       default: {
         duration: 86400 * 7, // 7 days
         resolution: 60, // 1 minute
         compression: true,
-        archive: false
+        archive: false,
       },
       byCategory: {
         [MetricCategory.PERFORMANCE]: {
@@ -1420,24 +1421,24 @@ export function createDefaultCollectorConfig(): MetricsCollectorConfig {
           resolution: 60,
           compression: true,
           archive: true,
-          archiveDuration: 86400 * 365 // 1 year archive
+          archiveDuration: 86400 * 365, // 1 year archive
         },
         [MetricCategory.BUSINESS]: {
           duration: 86400 * 365 * 3, // 3 years
           resolution: 300, // 5 minutes
           compression: true,
           archive: true,
-          archiveDuration: 86400 * 365 * 7 // 7 years archive
-        }
-      }
+          archiveDuration: 86400 * 365 * 7, // 7 years archive
+        },
+      },
     },
     export: {
       enabled: true,
       destinations: [],
       format: OutputFormat.JSON,
       compression: true,
-      encryption: false
-    }
+      encryption: false,
+    },
   };
 }
 
@@ -1457,7 +1458,7 @@ export function getMetricTypeDescription(type: MetricType): string {
     [MetricType.AVERAGE]: 'Average metric calculated from multiple values',
     [MetricType.SUM]: 'Sum metric showing total of multiple values',
     [MetricType.MIN]: 'Minimum metric showing smallest value',
-    [MetricType.MAX]: 'Maximum metric showing largest value'
+    [MetricType.MAX]: 'Maximum metric showing largest value',
   };
 
   return descriptions[type] || 'Unknown metric type';

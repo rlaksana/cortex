@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTELY FINAL EMERGENCY ROLLBACK: Complete ALL systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * MCP-Safe Logger - Windows compatible solution for stdio transport
@@ -10,7 +8,7 @@
  * Enhanced with correlation ID support for request tracing.
  */
 
-import { default as pino } from 'pino';
+import pino from 'pino';
 
 import { getCorrelationId } from './correlation-id.js';
 
@@ -49,11 +47,11 @@ class MCPSafeLogger {
     const logEntry: LogEntry = {
       level,
       time: new Date().toISOString(),
-      service: this.baseContext.service,
-      environment: this.baseContext.environment,
+      service: this.baseContext.service as string,
+      environment: this.baseContext.environment as string,
       msg,
       ...(correlationId && { correlation_id: correlationId }),
-      ...obj,
+      ...(obj as unknown),
     };
 
     const logLine = `${JSON.stringify(logEntry)}\n`;
@@ -66,51 +64,51 @@ class MCPSafeLogger {
     if (typeof msg === 'object' && msg !== null) {
       // Pattern: info(obj, msg)
       const message = args[0] || '';
-      this.writeLog('info', message, msg);
+      this.writeLog('info', message as string, msg);
     } else {
       // Pattern: info(msg, obj)
       const obj = args.length > 0 ? args[0] : undefined;
-      this.writeLog('info', msg, obj);
+      this.writeLog('info', msg as string, obj);
     }
   };
 
   debug = (msg: unknown, ...args: any[]): void => {
     if (typeof msg === 'object' && msg !== null) {
       const message = args[0] || '';
-      this.writeLog('debug', message, msg);
+      this.writeLog('debug', message as string, msg);
     } else {
       const obj = args.length > 0 ? args[0] : undefined;
-      this.writeLog('debug', msg, obj);
+      this.writeLog('debug', msg as string, obj);
     }
   };
 
   warn = (msg: unknown, ...args: any[]): void => {
     if (typeof msg === 'object' && msg !== null) {
       const message = args[0] || '';
-      this.writeLog('warn', message, msg);
+      this.writeLog('warn', message as string, msg);
     } else {
       const obj = args.length > 0 ? args[0] : undefined;
-      this.writeLog('warn', msg, obj);
+      this.writeLog('warn', msg as string, obj);
     }
   };
 
   error = (msg: unknown, ...args: any[]): void => {
     if (typeof msg === 'object' && msg !== null) {
       const message = args[0] || '';
-      this.writeLog('error', message, msg);
+      this.writeLog('error', message as string, msg);
     } else {
       const obj = args.length > 0 ? args[0] : undefined;
-      this.writeLog('error', msg, obj);
+      this.writeLog('error', msg as string, obj);
     }
   };
 
   trace = (msg: unknown, ...args: any[]): void => {
     if (typeof msg === 'object' && msg !== null) {
       const message = args[0] || '';
-      this.writeLog('debug', message, msg); // Map trace to debug level
+      this.writeLog('debug', message as string, msg); // Map trace to debug level
     } else {
       const obj = args.length > 0 ? args[0] : undefined;
-      this.writeLog('debug', msg, obj); // Map trace to debug level
+      this.writeLog('debug', msg as string, obj); // Map trace to debug level
     }
   };
 

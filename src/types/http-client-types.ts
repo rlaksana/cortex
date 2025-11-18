@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Typed HTTP Client Interfaces
  *
@@ -57,16 +53,23 @@ export type SerializableRequestBody =
 /**
  * Type constraint for deserializable response bodies
  */
-export type DeserializableResponseBody<T> =
-  T extends string ? string :
-  T extends number ? number :
-  T extends boolean ? boolean :
-  T extends null ? null :
-  T extends undefined ? undefined :
-  T extends Record<string, unknown> ? T :
-  T extends unknown[] ? T :
-  T extends HttpResponseBody ? T :
-  never;
+export type DeserializableResponseBody<T> = T extends string
+  ? string
+  : T extends number
+    ? number
+    : T extends boolean
+      ? boolean
+      : T extends null
+        ? null
+        : T extends undefined
+          ? undefined
+          : T extends Record<string, unknown>
+            ? T
+            : T extends unknown[]
+              ? T
+              : T extends HttpResponseBody
+                ? T
+                : never;
 
 // ============================================================================
 // Enhanced Request/Response Interfaces
@@ -107,23 +110,38 @@ export interface TypedHttpResponse<TBody = unknown> {
 /**
  * HTTP method type
  */
-export type HttpMethod =
-  | 'GET'
-  | 'POST'
-  | 'PUT'
-  | 'PATCH'
-  | 'DELETE'
-  | 'HEAD'
-  | 'OPTIONS';
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
 
 /**
  * HTTP status code type with specific allowed values
  */
 export type HttpStatus =
-  | 200 | 201 | 202 | 204 | 206
-  | 301 | 302 | 303 | 304 | 307 | 308
-  | 400 | 401 | 403 | 404 | 405 | 406 | 408 | 409 | 422 | 429
-  | 500 | 501 | 502 | 503 | 504;
+  | 200
+  | 201
+  | 202
+  | 204
+  | 206
+  | 301
+  | 302
+  | 303
+  | 304
+  | 307
+  | 308
+  | 400
+  | 401
+  | 403
+  | 404
+  | 405
+  | 406
+  | 408
+  | 409
+  | 422
+  | 429
+  | 500
+  | 501
+  | 502
+  | 503
+  | 504;
 
 // ============================================================================
 // Configuration Interfaces
@@ -196,11 +214,7 @@ export interface InterceptorContext {
 /**
  * Interceptor result
  */
-export type InterceptorResult =
-  | TypedHttpRequest
-  | TypedHttpResponse
-  | TypedHttpError
-  | void;
+export type InterceptorResult = TypedHttpRequest | TypedHttpResponse | TypedHttpError | void;
 
 // ============================================================================
 // Error Types with Discrimination
@@ -286,27 +300,33 @@ export interface HttpStatusError extends TypedHttpError {
 /**
  * Authentication error (401)
  */
-export interface AuthenticationError extends HttpStatusError {
+export interface AuthenticationError extends TypedHttpError {
   readonly type: 'authentication_error';
   readonly statusCode: 401;
+  readonly statusText: string;
+  readonly response: TypedHttpResponse;
   readonly retryable: false;
 }
 
 /**
  * Authorization error (403)
  */
-export interface AuthorizationError extends HttpStatusError {
+export interface AuthorizationError extends TypedHttpError {
   readonly type: 'authorization_error';
   readonly statusCode: 403;
+  readonly statusText: string;
+  readonly response: TypedHttpResponse;
   readonly retryable: false;
 }
 
 /**
  * Rate limit error (429)
  */
-export interface RateLimitError extends HttpStatusError {
+export interface RateLimitError extends TypedHttpError {
   readonly type: 'rate_limit_error';
   readonly statusCode: 429;
+  readonly statusText: string;
+  readonly response: TypedHttpResponse;
   readonly retryAfter?: number;
   readonly retryable: true;
 }
@@ -314,9 +334,11 @@ export interface RateLimitError extends HttpStatusError {
 /**
  * Server error (5xx)
  */
-export interface ServerError extends HttpStatusError {
+export interface ServerError extends TypedHttpError {
   readonly type: 'server_error';
   readonly statusCode: 500 | 501 | 502 | 503 | 504;
+  readonly statusText: string;
+  readonly response: TypedHttpResponse;
   readonly retryable: true;
 }
 
@@ -457,14 +479,15 @@ export type ExtractResponseBody<T> = T extends TypedHttpResponse<infer R> ? R : 
 /**
  * Create typed request options
  */
-export type CreateRequestOptions<TRequest = SerializableRequestBody> =
-  Omit<TypedHttpRequest<TRequest>, 'url' | 'method'>;
+export type CreateRequestOptions<TRequest = SerializableRequestBody> = Omit<
+  TypedHttpRequest<TRequest>,
+  'url' | 'method'
+>;
 
 /**
  * Create typed response wrapper
  */
-export type TypedResponseWrapper<TResponse = unknown> =
-  Promise<TypedHttpResponse<TResponse>>;
+export type TypedResponseWrapper<TResponse = unknown> = Promise<TypedHttpResponse<TResponse>>;
 
 /**
  * API contract type for endpoint definitions
@@ -498,7 +521,19 @@ export function isHttpError(error: unknown): error is HttpError {
   return (
     error instanceof Error &&
     'type' in error &&
-    typeof (error as unknown).type === 'string' &&
+    typeof (error as { type: unknown }).type === 'string' &&
+    [
+      'network_error',
+      'timeout_error',
+      'parse_error',
+      'validation_error',
+      'http_error',
+      'authentication_error',
+      'authorization_error',
+      'rate_limit_error',
+      'server_error',
+      'unknown_error'
+    ].includes((error as { type: string }).type) &&
     'request' in error &&
     'timestamp' in error &&
     'retryable' in error
@@ -530,7 +565,14 @@ export function isValidationError(error: unknown): error is ValidationError {
  * Type guard for HTTP status errors
  */
 export function isHttpStatusError(error: unknown): error is HttpStatusError {
-  return isHttpError(error) && error.type === 'http_error';
+  return (
+    isHttpError(error) &&
+    'statusCode' in error &&
+    'statusText' in error &&
+    'response' in error &&
+    typeof (error as { statusCode: unknown }).statusCode === 'number' &&
+    typeof (error as { statusText: unknown }).statusText === 'string'
+  );
 }
 
 /**

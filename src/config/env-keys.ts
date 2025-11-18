@@ -19,6 +19,10 @@ export const ENV_KEYS = {
   QDRANT_COLLECTION_NAME: 'QDRANT_COLLECTION_NAME',
   QDRANT_TIMEOUT: 'QDRANT_TIMEOUT',
   QDRANT_MAX_CONNECTIONS: 'QDRANT_MAX_CONNECTIONS',
+  QDRANT_HOST: 'QDRANT_HOST',
+  QDRANT_PORT: 'QDRANT_PORT',
+  QDRANT_DATABASE: 'QDRANT_DATABASE',
+  QDRANT_COLLECTION_PREFIX: 'QDRANT_COLLECTION_PREFIX',
 
   // MCP Configuration
   MCP_API_KEY: 'MCP_API_KEY',
@@ -229,7 +233,7 @@ export const ENV_KEYS = {
 } as const;
 
 // Environment variable value types
-export type EnvironmentKey = typeof ENV_KEYS[keyof typeof ENV_KEYS];
+export type EnvironmentKey = (typeof ENV_KEYS)[keyof typeof ENV_KEYS];
 
 // Critical environment variables that must be present for startup
 export const CRITICAL_ENV_VARS = [
@@ -246,6 +250,10 @@ export const OPTIONAL_ENV_VARS = [
   ENV_KEYS.HOST,
   ENV_KEYS.DEBUG_MODE,
   ENV_KEYS.QDRANT_API_KEY,
+  ENV_KEYS.QDRANT_HOST,
+  ENV_KEYS.QDRANT_PORT,
+  ENV_KEYS.QDRANT_DATABASE,
+  ENV_KEYS.QDRANT_COLLECTION_PREFIX,
   ENV_KEYS.VECTOR_SIZE,
   ENV_KEYS.ENABLE_HEALTH_CHECKS,
   ENV_KEYS.ENABLE_METRICS_COLLECTION,

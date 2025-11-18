@@ -45,19 +45,21 @@ import { RuntimeValidator, InstanceValidator, RuntimeTypeChecker } from './runti
 // Example: Config service validator
 const configServiceValidator: RuntimeValidator<IConfigService> = {
   validate(value: unknown): value is IConfigService {
-    return value !== null &&
-           typeof value === 'object' &&
-           'get' in value &&
-           'set' in value &&
-           typeof (value as any).get === 'function' &&
-           typeof (value as any).set === 'function';
+    return (
+      value !== null &&
+      typeof value === 'object' &&
+      'get' in value &&
+      'set' in value &&
+      typeof (value as any).get === 'function' &&
+      typeof (value as any).set === 'function'
+    );
   },
   getExpectedType(): string {
     return 'IConfigService';
   },
   getErrorMessage(value: unknown): string {
     return `Expected IConfigService instance, got ${typeof value}`;
-  }
+  },
 };
 ```
 
@@ -77,7 +79,7 @@ container.register('ConfigService', ConfigService, ServiceLifetime.SINGLETON);
 const container = createTypedDIContainer({
   enableAutoValidation: true,
   enableRuntimeTypeChecking: true,
-  enableMetrics: true
+  enableMetrics: true,
 });
 
 const CONFIG_SERVICE_ID = createServiceId<IConfigService>('ConfigService');
@@ -183,32 +185,28 @@ const requestContext = scopedContainer.resolve(REQUEST_CONTEXT_ID);
 const container = createTypedDIContainer({
   enableAutoValidation: true,
   enableRuntimeTypeChecking: true,
-  enableCircularDependencyDetection: true
+  enableCircularDependencyDetection: true,
 });
 
 // Custom validators
 const strictValidator: RuntimeValidator<MyService> = {
   validate(value: unknown): value is MyService {
     const instance = value as MyService;
-    return instance instanceof MyService &&
-           typeof instance.process === 'function' &&
-           typeof instance.validate === 'function';
+    return (
+      instance instanceof MyService &&
+      typeof instance.process === 'function' &&
+      typeof instance.validate === 'function'
+    );
   },
   getExpectedType(): string {
     return 'MyService';
   },
   getErrorMessage(value: unknown): string {
     return `Expected MyService instance with required methods, got ${typeof value}`;
-  }
+  },
 };
 
-container.register(
-  SERVICE_ID,
-  MyService,
-  ServiceLifetime.SINGLETON,
-  [],
-  strictValidator
-);
+container.register(SERVICE_ID, MyService, ServiceLifetime.SINGLETON, [], strictValidator);
 ```
 
 ### Monitoring and Metrics
@@ -254,7 +252,7 @@ const validationResult = container.validateDependencyGraph();
 
 if (!validationResult.valid) {
   console.error('Dependency graph issues:', validationResult.errors);
-  validationResult.warnings?.forEach(warning => {
+  validationResult.warnings?.forEach((warning) => {
     console.warn('Warning:', warning);
   });
 }
@@ -286,7 +284,11 @@ container.resolve(SERVICE_A);
 ### Enhanced Error Types
 
 ```typescript
-import { ServiceRegistrationError, DependencyResolutionError, ServiceValidationError } from './typed-di-container';
+import {
+  ServiceRegistrationError,
+  DependencyResolutionError,
+  ServiceValidationError,
+} from './typed-di-container';
 
 try {
   const service = container.resolve(SERVICE_ID);
@@ -298,7 +300,7 @@ try {
     console.error(`Resolution path: ${error.dependencyId} <- ${error.dependentService}`);
   } else if (error instanceof ServiceValidationError) {
     console.error(`Service validation failed for ${error.serviceId}:`);
-    error.validationErrors.forEach(err => console.error(`  - ${err}`));
+    error.validationErrors.forEach((err) => console.error(`  - ${err}`));
   }
 }
 ```
@@ -348,7 +350,7 @@ container.register(
 const container = createTypedDIContainer({
   enableAutoValidation: process.env.NODE_ENV === 'development',
   enableRuntimeTypeChecking: process.env.NODE_ENV === 'development',
-  enableDebugLogging: process.env.NODE_ENV === 'development'
+  enableDebugLogging: process.env.NODE_ENV === 'development',
 });
 ```
 
@@ -357,11 +359,7 @@ const container = createTypedDIContainer({
 ```typescript
 // Use scoped services for request-level or context-specific data
 const requestScoped = container.createScope(requestId);
-requestScoped.register(
-  REQUEST_CONTEXT_ID,
-  RequestContext,
-  ServiceLifetime.SCOPED
-);
+requestScoped.register(REQUEST_CONTEXT_ID, RequestContext, ServiceLifetime.SCOPED);
 ```
 
 ## Testing Support
@@ -378,7 +376,7 @@ testContainer.registerInstance(
     get: jest.fn().mockReturnValue('test-value'),
     getSection: jest.fn().mockReturnValue({ key: 'value' }),
     set: jest.fn(),
-    validate: jest.fn().mockReturnValue(true)
+    validate: jest.fn().mockReturnValue(true),
   },
   configServiceValidator
 );
@@ -416,7 +414,7 @@ afterEach(() => {
 const container = createTypedDIContainer({
   enableDebugLogging: true,
   enableAutoValidation: true,
-  enableMetrics: true
+  enableMetrics: true,
 });
 
 // Listen to all container events

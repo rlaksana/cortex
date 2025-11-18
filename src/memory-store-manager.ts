@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Core entry point type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Memory Store Manager - Simplified Memory Store Interface
@@ -23,6 +21,8 @@
  */
 
 import { logger } from '@/utils/logger.js';
+import type { SearchQuery } from './types/core-interfaces.js';
+import { safeGetProperty } from '@/utils/property-access-guards.js';
 
 import { MemoryFindOrchestrator } from './services/orchestrators/memory-find-orchestrator.js';
 import { MemoryStoreOrchestrator } from './services/orchestrators/memory-store-orchestrator.js';
@@ -86,10 +86,15 @@ export class MemoryStoreManager {
 
       return {
         success: true,
-        items: result.items || [],
-        stored: result.stored || items.length,
-        errors: result.errors || [],
-        metadata: result.meta || {},
+        items: result.data?.items || [],
+        stored: result.data?.summary?.stored || items.length,
+        errors: [], // ServiceResponse doesn't have errors in success case
+        metadata: {
+          processingTimeMs: result.metadata?.processingTimeMs || 0,
+          requestId: result.metadata?.requestId,
+          batchId: result.data?.batchId,
+          duplicateCount: result.data?.duplicateCount || 0,
+        },
       };
     } catch (error) {
       logger.error({ error }, 'Failed to store items');
@@ -98,7 +103,10 @@ export class MemoryStoreManager {
         items: [],
         stored: 0,
         errors: [error instanceof Error ? error.message : 'Unknown error'],
-        metadata: {},
+        metadata: {
+          processingTimeMs: 0,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
       };
     }
   }
@@ -112,36 +120,42 @@ export class MemoryStoreManager {
     }
 
     try {
+      // Type guard for query parameter
+      const queryObj = typeof query === 'object' && query !== null ? query as Record<string, unknown> : { query };
+      const optionsObj = typeof options === 'object' && options !== null ? options as Record<string, unknown> : {};
+
       // Use the memory find orchestrator
-      const searchQuery = {
-        query: query.query || query,
-        limit: options?.limit || 20,
-        offset: options?.offset || 0,
-        types: options?.types || [],
-        scope: options?.scope || {},
-        mode: options?.searchStrategy || 'auto',
+      const searchQuery: SearchQuery = {
+        query: (typeof queryObj.query === 'string' ? queryObj.query : String(query)) || String(query),
+        limit: typeof optionsObj.limit === 'number' ? optionsObj.limit : 20,
+        types: Array.isArray(optionsObj.types) ? optionsObj.types as string[] : [],
+        scope: typeof optionsObj.scope === 'object' && optionsObj.scope !== null ? optionsObj.scope as Record<string, unknown> : {},
+        mode: (typeof optionsObj.searchStrategy === 'string' && ['auto', 'fast', 'deep'].includes(optionsObj.searchStrategy))
+          ? optionsObj.searchStrategy as 'auto' | 'fast' | 'deep'
+          : 'auto',
       };
 
       const result = await this.memoryFindOrchestrator.findItems(searchQuery);
 
       // Return enhanced response format that matches test expectations
+      const metadata = result.metadata || {} as Record<string, unknown>;
       return {
         success: true,
-        items: result.items || [],
-        total: result.total_count || 0,
+        items: result.data || [],
+        total: result.data?.length || 0,
         query: searchQuery.query,
-        strategy: result.meta?.strategy || 'auto',
-        metadata: result.meta || {},
+        strategy: safeGetProperty(metadata, 'strategy', 'auto'),
+        metadata: metadata,
         // Enhanced fields for search degrade testing
-        search_metadata: (result.meta as unknown)?.search_metadata || {
-          strategy_used: result.meta?.strategy || 'auto',
-          fallback_triggered: result.meta?.degraded || false,
-          fallback_reason: result.meta?.degraded ? 'quality_threshold' : undefined,
-          execution_time_ms: result.meta?.execution_time_ms || 0,
-          results_count: result.items?.length || 0,
-          query_complexity: 'medium',
-          quality_score: result.meta?.confidence_score || 0,
-        },
+        search_metadata: (safeGetProperty(metadata, 'search_metadata', null) as Record<string, unknown> | null) || {
+              strategy_used: safeGetProperty(metadata, 'strategy', 'auto'),
+              fallback_triggered: safeGetProperty(metadata, 'degraded', false),
+              fallback_reason: safeGetProperty(metadata, 'degraded', false) ? 'quality_threshold' : undefined,
+              execution_time_ms: safeGetProperty(metadata, 'processingTimeMs', 0),
+              results_count: Array.isArray(result.data) ? result.data.length : 0,
+              query_complexity: 'medium',
+              quality_score: safeGetProperty(metadata, 'confidence_score', 0),
+            },
       };
     } catch (error) {
       logger.error({ error }, 'Failed to find items');

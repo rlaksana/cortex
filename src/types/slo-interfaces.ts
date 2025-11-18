@@ -1,5 +1,4 @@
 // PHASE 2.1 RECOVERY: SLO interface synchronization complete
-// Status: TypeScript recovery in progress - @ts-nocheck removed systematically
 // Recovery Date: 2025-11-14T16:30:00+07:00 (Asia/Jakarta)
 // Recovery Method: Sequential file-by-file approach with quality gates
 // Dependencies: 25+ SLO monitoring services depend on these interfaces
@@ -1163,10 +1162,98 @@ export interface CircuitBreakerStats {
   state: 'closed' | 'open' | 'half-open';
   failureCount: number;
   successCount: number;
+  failureRate: number;
   lastFailureTime?: Date;
   lastSuccessTime?: Date;
   threshold: number;
   timeout: number;
+}
+
+// ============================================================================
+// Alert and Event Interfaces for Unknown Type Resolution
+// ============================================================================
+
+/**
+ * Circuit Breaker Alert Event
+ */
+export interface CircuitBreakerAlert {
+  circuitName: string;
+  alertType: 'state_change' | 'failure_rate' | 'timeout';
+  failureRate: number;
+  state: 'closed' | 'open' | 'half-open';
+  timestamp: Date;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Circuit Breaker State Change Event
+ */
+export interface CircuitBreakerStateChangeEvent {
+  circuitName: string;
+  oldState: 'closed' | 'open' | 'half-open';
+  newState: 'closed' | 'open' | 'half-open';
+  timestamp: Date;
+  reason?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * SLO Breach Incident Event
+ */
+export interface SLOBreachIncidentEvent {
+  sloId: string;
+  breachType: 'threshold' | 'budget' | 'availability';
+  severity: 'warning' | 'critical';
+  timestamp: Date;
+  currentValue: number;
+  threshold: number;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * SLO Breach Warning Event
+ */
+export interface SLOBreachWarningEvent {
+  sloId: string;
+  warningType: 'trend' | 'projection' | 'degradation';
+  projectedBreach?: Date;
+  projectedValue?: number;
+  threshold: number;
+  currentValue: number;
+  timestamp: Date;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Retry Budget Alert Event
+ */
+export interface RetryBudgetAlertEvent {
+  serviceName: string;
+  alertType: 'budget_exhausted' | 'rate_exceeded' | 'backoff_triggered';
+  retryRate: number;
+  budgetRemaining: number;
+  timestamp: Date;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Degradation Level Change Event
+ */
+export interface DegradationLevelChangeEvent {
+  component: string;
+  oldLevel: number;
+  newLevel: number;
+  timestamp: Date;
+  reason?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Extended Circuit Breaker Interface with Methods
+ */
+export interface CircuitBreakerWithMethods extends CircuitBreakerStats {
+  broadcastToAll(event: string, data: unknown): void;
+  generateHealthReport(): Promise<{ circuitBreakers: Record<string, CircuitBreakerStats> }>;
 }
 
 /**
@@ -1536,4 +1623,129 @@ export interface AutomatedResponse {
     timeToResolution: number;
     sideEffects: string[];
   };
+}
+
+// ============================================================================
+// Type Guards for Safe Object Validation
+// ============================================================================
+
+/**
+ * Type guard to check if an object is a CircuitBreakerAlert
+ */
+export function isCircuitBreakerAlert(obj: unknown): obj is CircuitBreakerAlert {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'circuitName' in obj &&
+    'alertType' in obj &&
+    'failureRate' in obj &&
+    'state' in obj &&
+    typeof (obj as CircuitBreakerAlert).circuitName === 'string' &&
+    typeof (obj as CircuitBreakerAlert).failureRate === 'number'
+  );
+}
+
+/**
+ * Type guard to check if an object is a CircuitBreakerStateChangeEvent
+ */
+export function isCircuitBreakerStateChangeEvent(obj: unknown): obj is CircuitBreakerStateChangeEvent {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'circuitName' in obj &&
+    'oldState' in obj &&
+    'newState' in obj &&
+    typeof (obj as CircuitBreakerStateChangeEvent).circuitName === 'string' &&
+    ['closed', 'open', 'half-open'].includes((obj as CircuitBreakerStateChangeEvent).oldState) &&
+    ['closed', 'open', 'half-open'].includes((obj as CircuitBreakerStateChangeEvent).newState)
+  );
+}
+
+/**
+ * Type guard to check if an object is a SLOBreachIncidentEvent
+ */
+export function isSLOBreachIncidentEvent(obj: unknown): obj is SLOBreachIncidentEvent {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'sloId' in obj &&
+    'breachType' in obj &&
+    'severity' in obj &&
+    'currentValue' in obj &&
+    'threshold' in obj &&
+    typeof (obj as SLOBreachIncidentEvent).sloId === 'string' &&
+    ['threshold', 'budget', 'availability'].includes((obj as SLOBreachIncidentEvent).breachType) &&
+    ['warning', 'critical'].includes((obj as SLOBreachIncidentEvent).severity) &&
+    typeof (obj as SLOBreachIncidentEvent).currentValue === 'number' &&
+    typeof (obj as SLOBreachIncidentEvent).threshold === 'number'
+  );
+}
+
+/**
+ * Type guard to check if an object is a SLOBreachWarningEvent
+ */
+export function isSLOBreachWarningEvent(obj: unknown): obj is SLOBreachWarningEvent {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'sloId' in obj &&
+    'warningType' in obj &&
+    'currentValue' in obj &&
+    'threshold' in obj &&
+    typeof (obj as SLOBreachWarningEvent).sloId === 'string' &&
+    ['trend', 'projection', 'degradation'].includes((obj as SLOBreachWarningEvent).warningType) &&
+    typeof (obj as SLOBreachWarningEvent).currentValue === 'number' &&
+    typeof (obj as SLOBreachWarningEvent).threshold === 'number'
+  );
+}
+
+/**
+ * Type guard to check if an object is a RetryBudgetAlertEvent
+ */
+export function isRetryBudgetAlertEvent(obj: unknown): obj is RetryBudgetAlertEvent {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'serviceName' in obj &&
+    'alertType' in obj &&
+    'retryRate' in obj &&
+    'budgetRemaining' in obj &&
+    typeof (obj as RetryBudgetAlertEvent).serviceName === 'string' &&
+    ['budget_exhausted', 'rate_exceeded', 'backoff_triggered'].includes((obj as RetryBudgetAlertEvent).alertType) &&
+    typeof (obj as RetryBudgetAlertEvent).retryRate === 'number' &&
+    typeof (obj as RetryBudgetAlertEvent).budgetRemaining === 'number'
+  );
+}
+
+/**
+ * Type guard to check if an object is a DegradationLevelChangeEvent
+ */
+export function isDegradationLevelChangeEvent(obj: unknown): obj is DegradationLevelChangeEvent {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'component' in obj &&
+    'oldLevel' in obj &&
+    'newLevel' in obj &&
+    typeof (obj as DegradationLevelChangeEvent).component === 'string' &&
+    typeof (obj as DegradationLevelChangeEvent).oldLevel === 'number' &&
+    typeof (obj as DegradationLevelChangeEvent).newLevel === 'number'
+  );
+}
+
+/**
+ * Type guard to check if a circuit breaker has extended methods
+ */
+export function isCircuitBreakerWithMethods(obj: unknown): obj is CircuitBreakerWithMethods {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'name' in obj &&
+    'state' in obj &&
+    'failureRate' in obj &&
+    'broadcastToAll' in obj &&
+    'generateHealthReport' in obj &&
+    typeof (obj as CircuitBreakerWithMethods).broadcastToAll === 'function' &&
+    typeof (obj as CircuitBreakerWithMethods).generateHealthReport === 'function'
+  );
 }

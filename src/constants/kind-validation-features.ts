@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Cortex Memory MCP - Knowledge Type Validation Features
  *
@@ -18,7 +14,12 @@
  * @version 1.0.0 - Knowledge type validation utilities
  */
 
-import { type KnowledgeCategory, type KnowledgeTypeMetadata, type SupportedKnowledgeKind,type ValidationFeatures } from './supported-kinds.js';
+import {
+  type KnowledgeCategory,
+  type KnowledgeTypeMetadata,
+  type SupportedKnowledgeKind,
+  type ValidationFeatures,
+} from './supported-kinds.js';
 import { KNOWLEDGE_TYPE_METADATA, SUPPORTED_KINDS } from './supported-kinds.js';
 
 // ============================================================================
@@ -245,7 +246,9 @@ export function getCategoryMetadataSummary(category: KnowledgeCategory): {
   implementedTypes: string[];
 } {
   const types = getKnowledgeTypesByCategory(category);
-  const metadata = types.map((kind) => getKnowledgeTypeMetadata(kind as (typeof SUPPORTED_KINDS)[number]));
+  const metadata = types.map((kind) =>
+    getKnowledgeTypeMetadata(kind as (typeof SUPPORTED_KINDS)[number])
+  );
 
   return {
     category,
@@ -301,7 +304,7 @@ export function getValidationStatistics(): {
 // ============================================================================
 
 // Export core constants from supported-kinds for convenience
-export { KNOWLEDGE_TYPE_METADATA,SUPPORTED_KINDS } from './supported-kinds.js';
+export { KNOWLEDGE_TYPE_METADATA, SUPPORTED_KINDS } from './supported-kinds.js';
 
 // Export derived constants (computed lazily to avoid circular dependencies)
 export const CORE_GRAPH_EXTENSION_TYPES = ['entity', 'relation', 'observation'];

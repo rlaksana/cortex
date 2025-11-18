@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Branded Types for Safe Configuration and Identifiers
  *
@@ -211,7 +207,8 @@ export function unbrand<T, B>(branded: Brand<T, B>): T {
  */
 const CONFIG_KEY_PATTERNS = {
   // Database configuration keys
-  DATABASE: /^(database\.qdrant\.(host|port|apiKey|timeout|maxRetries|retryDelay|useHttps|collectionPrefix|enableHealthChecks|connectionPoolSize|requestTimeout|connectTimeout))$/,
+  DATABASE:
+    /^(database\.qdrant\.(host|port|apiKey|timeout|maxRetries|retryDelay|useHttps|collectionPrefix|enableHealthChecks|connectionPoolSize|requestTimeout|connectTimeout))$/,
 
   // API configuration keys
   API: /^(api\.(port|host|compression|helmet|trustProxy|bodyLimit|timeout))$/,
@@ -220,29 +217,34 @@ const CONFIG_KEY_PATTERNS = {
   AUTH: /^(auth\.(jwt\.(secret|expiresIn|issuer|audience|algorithm)|apiKey\.(headerName|queryParam|validationEnabled|rateLimitEnabled)|enabled|sessionTimeout|refreshTokenEnabled|passwordPolicyEnabled))$/,
 
   // Logging configuration keys
-  LOGGING: /^(logging\.(level|format|colorize|timestamp|file\.(enabled|path|maxSize|maxFiles|rotationInterval)|console\.(enabled|level)))$/,
+  LOGGING:
+    /^(logging\.(level|format|colorize|timestamp|file\.(enabled|path|maxSize|maxFiles|rotationInterval)|console\.(enabled|level)))$/,
 
   // Monitoring configuration keys
-  MONITORING: /^(monitoring\.(metrics\.(enabled|interval|prefix|labels|defaultBuckets)|healthCheck\.(enabled|interval|timeout|retries|endpoints)|tracing\.(enabled|samplingRate|serviceName|version)|alerting\.(enabled|webhookUrl|emailSettings)))$/,
+  MONITORING:
+    /^(monitoring\.(metrics\.(enabled|interval|prefix|labels|defaultBuckets)|healthCheck\.(enabled|interval|timeout|retries|endpoints)|tracing\.(enabled|samplingRate|serviceName|version)|alerting\.(enabled|webhookUrl|emailSettings)))$/,
 
   // Security configuration keys
-  SECURITY: /^(security\.(encryption\.(algorithm|keyLength|ivLength)|hashing\.(algorithm|rounds|saltLength)|validation\.(maxFileSize|allowedMimeTypes|allowedExtensions)|rateLimit|cors))$/,
+  SECURITY:
+    /^(security\.(encryption\.(algorithm|keyLength|ivLength)|hashing\.(algorithm|rounds|saltLength)|validation\.(maxFileSize|allowedMimeTypes|allowedExtensions)|rateLimit|cors))$/,
 
   // Performance configuration keys
-  PERFORMANCE: /^(performance\.(cache\.(enabled|ttl|maxSize|strategy|compressionEnabled)|compression\.(enabled|threshold|algorithm)|clustering\.(enabled|workers|maxMemory)))$/,
+  PERFORMANCE:
+    /^(performance\.(cache\.(enabled|ttl|maxSize|strategy|compressionEnabled)|compression\.(enabled|threshold|algorithm)|clustering\.(enabled|workers|maxMemory)))$/,
 
   // Feature flag keys
-  FEATURES: /^(features\.(newSearchAlgorithm|enhancedLogging|betaFeatures|experimentalFeatures|debugMode))$/,
+  FEATURES:
+    /^(features\.(newSearchAlgorithm|enhancedLogging|betaFeatures|experimentalFeatures|debugMode))$/,
 
   // Environment-specific keys
-  ENV: /^(environment|debug|logLevel)$/
+  ENV: /^(environment|debug|logLevel)$/,
 } as const;
 
 /**
  * Validate a configuration key
  */
 export function isValidConfigKey(key: string): boolean {
-  return Object.values(CONFIG_KEY_PATTERNS).some(pattern => pattern.test(key));
+  return Object.values(CONFIG_KEY_PATTERNS).some((pattern) => pattern.test(key));
 }
 
 /**
@@ -289,7 +291,7 @@ export function getConfigSection(key: ConfigKey): string {
  */
 const VALID_ENVIRONMENTS = ['development', 'staging', 'production', 'test'] as const;
 
-export type ValidEnvironment = typeof VALID_ENVIRONMENTS[number];
+export type ValidEnvironment = (typeof VALID_ENVIRONMENTS)[number];
 
 /**
  * Validate environment value
@@ -303,7 +305,9 @@ export function isValidEnvironment(value: string): value is ValidEnvironment {
  */
 export function createEnvironment(env: string): Environment {
   if (!isValidEnvironment(env)) {
-    throw new Error(`Invalid environment: ${env}. Must be one of: ${VALID_ENVIRONMENTS.join(', ')}`);
+    throw new Error(
+      `Invalid environment: ${env}. Must be one of: ${VALID_ENVIRONMENTS.join(', ')}`
+    );
   }
   return env as Environment;
 }
@@ -323,7 +327,7 @@ export function getEnvironmentPrecedence(env: Environment): number {
     production: 4,
     staging: 3,
     test: 2,
-    development: 1
+    development: 1,
   };
   return precedence[unbrand(env) as ValidEnvironment];
 }
@@ -349,7 +353,9 @@ export function isValidServiceName(name: string): boolean {
  */
 export function createServiceName(name: string): ServiceName {
   if (!isValidServiceName(name)) {
-    throw new Error(`Invalid service name: ${name}. Must be 3-50 characters, lowercase, alphanumeric with hyphens, no leading/trailing hyphens`);
+    throw new Error(
+      `Invalid service name: ${name}. Must be 3-50 characters, lowercase, alphanumeric with hyphens, no leading/trailing hyphens`
+    );
   }
   return name as ServiceName;
 }
@@ -370,7 +376,8 @@ export function isServiceName(value: unknown): value is ServiceName {
  */
 const CONNECTION_STRING_PATTERNS = {
   // PostgreSQL: postgresql://[user[:password]@][host][:port][/dbname][?param1=value1&...]
-  POSTGRESQL: /^postgresql:\/\/(?:([^:@]+)(?::([^@]*))?@)?([^:\/]+)(?::(\d+))?(\/[^?]+)?(?:\?(.*))?$/,
+  POSTGRESQL:
+    /^postgresql:\/\/(?:([^:@]+)(?::([^@]*))?@)?([^:\/]+)(?::(\d+))?(\/[^?]+)?(?:\?(.*))?$/,
 
   // MongoDB: mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
   MONGODB: /^mongodb:\/\/(?:([^:]+):([^@]+)@)?([^\/]+)(?:\/([^?]+))?(?:\?(.*))?$/,
@@ -379,7 +386,7 @@ const CONNECTION_STRING_PATTERNS = {
   REDIS: /^redis:\/\/(?::([^@]+)@)?([^:\/]+)(?::(\d+))?(?:\/(\d+))?$/,
 
   // HTTP/HTTPS: http[s]://[user[:password]@]host[:port][path][?query]
-  HTTP: /^https?:\/\/(?:([^:@]+)(?::([^@]*))?@)?([^:\/]+)(?::(\d+))?(\/[^?]*)?(?:\?(.*))?$/
+  HTTP: /^https?:\/\/(?:([^:@]+)(?::([^@]*))?@)?([^:\/]+)(?::(\d+))?(\/[^?]*)?(?:\?(.*))?$/,
 } as const;
 
 /**
@@ -391,7 +398,7 @@ export type ConnectionStringType = keyof typeof CONNECTION_STRING_PATTERNS;
  * Validate connection string format
  */
 export function isValidConnectionString(value: string): boolean {
-  return Object.values(CONNECTION_STRING_PATTERNS).some(pattern => pattern.test(value));
+  return Object.values(CONNECTION_STRING_PATTERNS).some((pattern) => pattern.test(value));
 }
 
 /**
@@ -467,7 +474,7 @@ export function parseConnectionString(connectionString: ConnectionString): {
     port: match[4] ? parseInt(match[4], 10) : undefined,
     username: match[1],
     password: match[2],
-    database: match[5]
+    database: match[5],
   };
 
   // Parse options if present
@@ -495,15 +502,17 @@ export function parseConnectionString(connectionString: ConnectionString): {
 const SECRET_REQUIREMENTS = {
   minLength: 8,
   maxLength: 2048,
-  requireSpecialChars: false // Some secrets like API keys might not have special chars
+  requireSpecialChars: false, // Some secrets like API keys might not have special chars
 } as const;
 
 /**
  * Validate secret value (basic checks for common secret types)
  */
 export function isValidSecret(value: string): boolean {
-  if (value.length < SECRET_REQUIREMENTS.minLength ||
-      value.length > SECRET_REQUIREMENTS.maxLength) {
+  if (
+    value.length < SECRET_REQUIREMENTS.minLength ||
+    value.length > SECRET_REQUIREMENTS.maxLength
+  ) {
     return false;
   }
 
@@ -511,10 +520,10 @@ export function isValidSecret(value: string): boolean {
   const insecurePatterns = [
     /^(password|123456|qwerty|admin|test)/i,
     /^(.)\1+$/, // All same character
-    /^(012345|abcde)/i // Sequential patterns
+    /^(012345|abcde)/i, // Sequential patterns
   ];
 
-  return !insecurePatterns.some(pattern => pattern.test(value));
+  return !insecurePatterns.some((pattern) => pattern.test(value));
 }
 
 /**
@@ -522,7 +531,9 @@ export function isValidSecret(value: string): boolean {
  */
 export function createSecret(secret: string): Secret {
   if (!isValidSecret(secret)) {
-    throw new Error(`Invalid secret: must be between ${SECRET_REQUIREMENTS.minLength} and ${SECRET_REQUIREMENTS.maxLength} characters and not use common insecure patterns`);
+    throw new Error(
+      `Invalid secret: must be between ${SECRET_REQUIREMENTS.minLength} and ${SECRET_REQUIREMENTS.maxLength} characters and not use common insecure patterns`
+    );
   }
   return secret as Secret;
 }
@@ -541,7 +552,8 @@ export function isSecret(value: unknown): value is Secret {
 /**
  * Hostname validation pattern (RFC 1123)
  */
-const HOSTNAME_PATTERN = /^(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?|[a-fA-F0-9:]+)$/;
+const HOSTNAME_PATTERN =
+  /^(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?|[a-fA-F0-9:]+)$/;
 
 /**
  * Validate hostname
@@ -577,7 +589,7 @@ export function isHostname(value: unknown): value is Hostname {
 const PORT_RANGE = {
   min: 1,
   max: 65535,
-  recommendedMin: 1024 // Non-privileged ports
+  recommendedMin: 1024, // Non-privileged ports
 } as const;
 
 /**
@@ -622,7 +634,8 @@ export function isPort(value: unknown): value is Port {
 /**
  * Semantic version pattern
  */
-const VERSION_PATTERN = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+const VERSION_PATTERN =
+  /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
 
 /**
  * Version components
@@ -675,7 +688,7 @@ export function parseVersion(version: Version): VersionComponents {
     minor: parseInt(match[2], 10),
     patch: parseInt(match[3], 10),
     prerelease: match[4],
-    build: match[5]
+    build: match[5],
   };
 }
 
@@ -726,7 +739,9 @@ export function isValidFeatureFlag(flag: string): boolean {
  */
 export function createFeatureFlag(flag: string): FeatureFlag {
   if (!isValidFeatureFlag(flag)) {
-    throw new Error(`Invalid feature flag name: ${flag}. Must be 3-50 characters, lowercase, alphanumeric with underscores, no leading/trailing underscores`);
+    throw new Error(
+      `Invalid feature flag name: ${flag}. Must be 3-50 characters, lowercase, alphanumeric with underscores, no leading/trailing underscores`
+    );
   }
   return flag as FeatureFlag;
 }
@@ -804,7 +819,9 @@ export function isValidTagValue(value: string): boolean {
  */
 export function createTagKey(key: string): TagKey {
   if (!isValidTagKey(key)) {
-    throw new Error(`Invalid tag key: ${key}. Must be alphanumeric with underscores, no whitespace, max 100 characters`);
+    throw new Error(
+      `Invalid tag key: ${key}. Must be alphanumeric with underscores, no whitespace, max 100 characters`
+    );
   }
   return key as TagKey;
 }
@@ -855,13 +872,16 @@ export type MetricMap = Map<MetricName, number>;
 /**
  * Type-safe service registry
  */
-export type ServiceRegistry = Map<ServiceName, {
-  version: Version;
-  host: Hostname;
-  port: Port;
-  connectionString?: ConnectionString;
-  enabled: boolean;
-}>;
+export type ServiceRegistry = Map<
+  ServiceName,
+  {
+    version: Version;
+    host: Hostname;
+    port: Port;
+    connectionString?: ConnectionString;
+    enabled: boolean;
+  }
+>;
 
 // ============================================================================
 // Utility Functions for Branded Types

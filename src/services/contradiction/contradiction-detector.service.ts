@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Contradiction Detection Service
  * MVP implementation for detecting potential contradictions in stored knowledge
@@ -208,7 +203,12 @@ export class ContradictionDetector implements ContradictionDetectorService {
         confidence_score: hasDirectNegation.confidence,
         description: hasDirectNegation.description,
         reasoning: hasDirectNegation.reasoning,
-        evidence: hasDirectNegation.evidence as { item_id: string; evidence_type: string; content: string; confidence: number; }[],
+        evidence: hasDirectNegation.evidence as {
+          item_id: string;
+          evidence_type: string;
+          content: string;
+          confidence: number;
+        }[],
       });
     }
 
@@ -222,7 +222,12 @@ export class ContradictionDetector implements ContradictionDetectorService {
         confidence_score: semanticContradiction.confidence,
         description: semanticContradiction.description,
         reasoning: semanticContradiction.reasoning,
-        evidence: semanticContradiction.evidence as { item_id: string; evidence_type: string; content: string; confidence: number; }[],
+        evidence: semanticContradiction.evidence as {
+          item_id: string;
+          evidence_type: string;
+          content: string;
+          confidence: number;
+        }[],
       });
     }
 
@@ -511,7 +516,12 @@ export class ContradictionDetector implements ContradictionDetectorService {
         confidence_score: mutualExclusion.confidence,
         description: mutualExclusion.description,
         reasoning: mutualExclusion.reasoning,
-        evidence: mutualExclusion.evidence as { item_id: string; evidence_type: string; content: string; confidence: number; }[],
+        evidence: mutualExclusion.evidence as {
+          item_id: string;
+          evidence_type: string;
+          content: string;
+          confidence: number;
+        }[],
       });
     }
 
@@ -612,7 +622,12 @@ export class ContradictionDetector implements ContradictionDetectorService {
             confidence_score: conflict.confidence,
             description: conflict.description,
             reasoning: conflict.reasoning,
-            evidence: conflict.evidence as { item_id: string; evidence_type: string; content: string; confidence: number; }[],
+            evidence: conflict.evidence as {
+              item_id: string;
+              evidence_type: string;
+              content: string;
+              confidence: number;
+            }[],
           });
         }
       }
@@ -730,7 +745,7 @@ export class ContradictionDetector implements ContradictionDetectorService {
     confidence_score: number;
     description: string;
     reasoning: string;
-    evidence: { item_id: string; evidence_type: string; content: string; confidence: number; }[];
+    evidence: { item_id: string; evidence_type: string; content: string; confidence: number }[];
   }): ContradictionResult {
     const severity = this.calculateSeverity(params.confidence_score, params.type);
 

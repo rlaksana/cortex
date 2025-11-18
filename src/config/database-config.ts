@@ -66,6 +66,11 @@ export interface VectorConfig {
   embeddingModel: string;
   batchSize: number;
 
+  // Legacy Qdrant adapter properties for backward compatibility
+  host?: string;
+  port?: number;
+  database?: string;
+
   // Qdrant-specific nested config for backward compatibility
   qdrant?: {
     url: string;

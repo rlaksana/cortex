@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: DI container interface compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Logger Service Implementation
@@ -13,9 +11,8 @@
  * @since 2025
  */
 
-import { Injectable } from '../di-container.js';
-import type { IConfigService , ILoggerService, IMetricsService  } from '../service-interfaces.js';
-import { ServiceTokens } from '../service-interfaces.js';
+// import { Injectable } from '../di-container.js'; // Removed to avoid circular dependency
+import type { IConfigService, ILoggerService, IMetricsService } from '../service-interfaces.js';
 
 /**
  * Log levels in order of severity
@@ -49,12 +46,13 @@ export interface LogEntry {
 /**
  * Logger service with structured logging and correlation
  */
-@Injectable(ServiceTokens.LOGGER_SERVICE)
+// @Injectable(ServiceTokens.LOGGER_SERVICE) // Removed to avoid circular dependency
 export class LoggerService implements ILoggerService {
   private config: IConfigService;
   private metrics?: IMetricsService;
   private context: Record<string, unknown>;
   private correlationId?: string;
+  private currentLevel?: string;
 
   constructor(
     config: IConfigService,
@@ -104,6 +102,47 @@ export class LoggerService implements ILoggerService {
   }
 
   /**
+   * Create logger with additional context
+   */
+  withContext(context: Record<string, unknown>): ILoggerService {
+    const mergedContext = { ...this.context, ...context };
+    return new LoggerService(this.config, this.metrics, mergedContext);
+  }
+
+  /**
+   * Set log level
+   */
+  setLevel(level: 'debug' | 'info' | 'warn' | 'error'): void {
+    // This could be persisted to config or stored as instance variable
+    // For now, we'll delegate to environment if needed
+    const currentEnv = this.config.get('NODE_ENV', 'development') as string;
+    if (currentEnv === 'production' && level === 'debug') {
+      // Don't allow debug in production
+      return;
+    }
+    // Store the level for future use
+    this.currentLevel = level;
+  }
+
+  /**
+   * Get current log level
+   */
+  getLevel(): string {
+    return this.currentLevel || this.config.get('LOG_LEVEL', 'info');
+  }
+
+  /**
+   * Check if a log level is enabled
+   */
+  isLevelEnabled(level: string): boolean {
+    const currentLevel = this.getLevel();
+    const levels = ['error', 'warn', 'info', 'debug'];
+    const currentIdx = levels.indexOf(currentLevel);
+    const checkIdx = levels.indexOf(level);
+    return checkIdx <= currentIdx;
+  }
+
+  /**
    * Set correlation ID for request tracing
    */
   setCorrelationId(correlationId: string): void {
@@ -142,7 +181,7 @@ export class LoggerService implements ILoggerService {
    * Create logger with request context
    */
   withRequest(requestId: string, method?: string, url?: string): ILoggerService {
-    const context: unknown = { requestId };
+    const context: Record<string, unknown> = { requestId };
     if (method) context.method = method;
     if (url) context.url = url;
     return this.child(context);
@@ -173,7 +212,11 @@ export class LoggerService implements ILoggerService {
   /**
    * Log operation completion
    */
-  logOperationComplete(operation: string, duration: number, context?: Record<string, unknown>): void {
+  logOperationComplete(
+    operation: string,
+    duration: number,
+    context?: Record<string, unknown>
+  ): void {
     this.info(`Completed operation: ${operation}`, {
       operation,
       phase: 'complete',
@@ -345,7 +388,13 @@ export class LoggerService implements ILoggerService {
    */
   private isError(value: unknown): value is Error {
     return (
-      value instanceof Error || (value && typeof value === 'object' && value.message && value.name)
+      value instanceof Error ||
+      (value &&
+        typeof value === 'object' &&
+        'message' in value &&
+        'name' in value &&
+        typeof value.message === 'string' &&
+        typeof value.name === 'string')
     );
   }
 

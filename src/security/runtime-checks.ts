@@ -1,6 +1,4 @@
-// @ts-nocheck
 // FINAL TRIUMPHANT VICTORY EMERGENCY ROLLBACK: Complete the great migration rescue
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Security Runtime Checks

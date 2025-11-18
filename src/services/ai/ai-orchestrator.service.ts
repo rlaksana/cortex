@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * AI Orchestrator Service
  *
@@ -15,9 +11,7 @@
 
 import { randomUUID } from 'crypto';
 
-import { logger } from '@/utils/logger.js';
-
-import { type ZAIClientService,zaiClientService } from './zai-client.service';
+import { type ZAIClientService, zaiClientService } from './zai-client.service';
 import { zaiConfigManager } from '../../config/zai-config.js';
 import type {
   AIOrchestratorConfig,
@@ -30,6 +24,7 @@ import type {
   ZAIServiceStatus,
   ZAIStreamChunk,
 } from '../../types/zai-interfaces.js';
+import { logger } from '../../utils/logger.js';
 import { embeddingService } from '../embeddings/embedding-service.js';
 
 /**
@@ -146,15 +141,21 @@ class ZAIProviderWrapper implements AIProvider {
   }
 
   async isAvailable(): Promise<boolean> {
-    return await this.client.isAvailable();
+    const response = await this.client.isAvailable();
+    return response.success ? response.data.available : false;
   }
 
   async generateCompletion(request: ZAIChatRequest): Promise<ZAIChatResponse> {
-    return await this.client.generateCompletion(request);
+    const response = await this.client.generateCompletion(request);
+    if (!response.success) {
+      throw new Error(response.error?.message || 'Failed to generate completion');
+    }
+    return response.data;
   }
 
   async *generateStreamingCompletion(request: ZAIChatRequest): AsyncGenerator<ZAIStreamChunk> {
-    yield* this.client.generateStreamingCompletion(request);
+    const streamGenerator = await this.client.generateStreamingCompletion(request);
+    yield* streamGenerator;
   }
 
   getMetrics(): ZAIMetrics {
@@ -462,13 +463,26 @@ export class AIOrchestratorService {
    * Initialize AI providers
    */
   private initializeProviders(): void {
-    // Initialize ZAI provider
-    const zaiProvider = new ZAIProviderWrapper(zaiClientService, this.config.providerConfigs.zai as unknown as { model: string; [key: string]: unknown });
+    // Initialize ZAI provider - safely extract model property from ZAIConfig
+    const zaiConfig = this.config.providerConfigs.zai;
+    const zaiProviderConfig = { model: zaiConfig.model, ...zaiConfig };
+    const zaiProvider = new ZAIProviderWrapper(zaiClientService, zaiProviderConfig);
     this.providers.set('zai', zaiProvider);
 
-    // Initialize OpenAI provider
-    const openaiProvider = new OpenAIProvider(this.config.providerConfigs.openai as { model?: string; [key: string]: unknown });
+    // Initialize OpenAI provider - safely cast unknown with type guard
+    const openaiConfig = this.config.providerConfigs.openai;
+    const openaiProviderConfig = this.isValidOpenAIConfig(openaiConfig)
+      ? openaiConfig
+      : { model: 'gpt-4-turbo-preview' };
+    const openaiProvider = new OpenAIProvider(openaiProviderConfig);
     this.providers.set('openai', openaiProvider);
+  }
+
+  /**
+   * Type guard for OpenAI config validation
+   */
+  private isValidOpenAIConfig(config: unknown): config is { model?: string; [key: string]: unknown } {
+    return config !== null && typeof config === 'object';
   }
 
   /**
@@ -510,7 +524,8 @@ export class AIOrchestratorService {
       return response;
     } catch (fallbackError) {
       const primaryErrorMessage = error instanceof Error ? error.message : String(error);
-      const fallbackErrorMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+      const fallbackErrorMessage =
+        fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
       logger.error(
         {
           requestId,

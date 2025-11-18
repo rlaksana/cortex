@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTE FINAL EMERGENCY ROLLBACK: Last remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Comprehensive Retry Budget Alert System
@@ -19,10 +17,9 @@ import { logger } from '@/utils/logger.js';
 
 import {
   type CircuitBreakerHealthStatus,
-  circuitBreakerMonitor} from './circuit-breaker-monitor.js';
-import {
-  type RetryBudgetMetrics,
-  retryBudgetMonitor} from './retry-budget-monitor.js';
+  circuitBreakerMonitor,
+} from './circuit-breaker-monitor.js';
+import { type RetryBudgetMetrics, retryBudgetMonitor } from './retry-budget-monitor.js';
 
 /**
  * Alert severity levels
@@ -325,7 +322,7 @@ export class RetryAlertSystem extends EventEmitter {
    */
   start(): void {
     if (this.isRunning) {
-      logger.warn('Retry alert system is already running');
+      logger.warn({ message: 'Retry alert system is already running' });
       return;
     }
 
@@ -346,14 +343,12 @@ export class RetryAlertSystem extends EventEmitter {
     // Perform initial evaluation
     this.evaluateAlertRules();
 
-    logger.info(
-      {
-        evaluationInterval: this.config.processing.evaluationIntervalSeconds,
-        rulesCount: this.alertRules.size,
-        escalationPoliciesCount: this.escalationPolicies.size,
-      },
-      'Retry alert system started'
-    );
+    logger.info({
+      message: 'Retry alert system started',
+      evaluationInterval: this.config.processing.evaluationIntervalSeconds,
+      rulesCount: this.alertRules.size,
+      escalationPoliciesCount: this.escalationPolicies.size,
+    });
 
     this.emit('started');
   }
@@ -363,7 +358,7 @@ export class RetryAlertSystem extends EventEmitter {
    */
   stop(): void {
     if (!this.isRunning) {
-      logger.warn('Retry alert system is not running');
+      logger.warn({ message: 'Retry alert system is not running' });
       return;
     }
 
@@ -379,7 +374,7 @@ export class RetryAlertSystem extends EventEmitter {
       this.escalationInterval = null;
     }
 
-    logger.info('Retry alert system stopped');
+    logger.info({ message: 'Retry alert system stopped' });
     this.emit('stopped');
   }
 
@@ -388,7 +383,7 @@ export class RetryAlertSystem extends EventEmitter {
    */
   addAlertRule(rule: AlertRule): void {
     this.alertRules.set(rule.id, rule);
-    logger.info({ ruleId: rule.id, ruleName: rule.name }, 'Alert rule added');
+    logger.info({ message: 'Alert rule added', ruleId: rule.id, ruleName: rule.name });
     this.emit('rule_added', rule);
   }
 
@@ -401,7 +396,7 @@ export class RetryAlertSystem extends EventEmitter {
 
     const updated = { ...existing, ...updates };
     this.alertRules.set(ruleId, updated);
-    logger.info({ ruleId, ruleName: updated.name }, 'Alert rule updated');
+    logger.info({ message: 'Alert rule updated', ruleId, ruleName: updated.name });
     this.emit('rule_updated', updated);
     return true;
   }
@@ -412,7 +407,7 @@ export class RetryAlertSystem extends EventEmitter {
   deleteAlertRule(ruleId: string): boolean {
     const deleted = this.alertRules.delete(ruleId);
     if (deleted) {
-      logger.info({ ruleId }, 'Alert rule deleted');
+      logger.info({ message: 'Alert rule deleted', ruleId });
       this.emit('rule_deleted', { ruleId });
     }
     return deleted;
@@ -429,8 +424,9 @@ export class RetryAlertSystem extends EventEmitter {
    * Get active alerts
    */
   getActiveAlerts(): Alert[] {
-    return Array.from(this.activeAlerts.values())
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    return Array.from(this.activeAlerts.values()).sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+    );
   }
 
   /**
@@ -438,10 +434,10 @@ export class RetryAlertSystem extends EventEmitter {
    */
   getAlertHistory(serviceName: string, hours: number = 24): Alert[] {
     const history = this.alertHistory.get(serviceName) || [];
-    const cutoff = Date.now() - (hours * 60 * 60 * 1000);
+    const cutoff = Date.now() - hours * 60 * 60 * 1000;
 
     return history
-      .filter(alert => alert.timestamp.getTime() >= cutoff)
+      .filter((alert) => alert.timestamp.getTime() >= cutoff)
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
@@ -456,7 +452,7 @@ export class RetryAlertSystem extends EventEmitter {
     alert.acknowledgedBy = acknowledgedBy;
     alert.acknowledgedAt = new Date();
 
-    logger.info({ alertId, acknowledgedBy }, 'Alert acknowledged');
+    logger.info({ message: 'Alert acknowledged', alertId, acknowledgedBy });
     this.emit('alert_acknowledged', alert);
     return true;
   }
@@ -475,7 +471,7 @@ export class RetryAlertSystem extends EventEmitter {
     this.moveAlertToHistory(alert);
     this.activeAlerts.delete(alertId);
 
-    logger.info({ alertId }, 'Alert resolved');
+    logger.info({ message: 'Alert resolved', alertId });
     this.emit('alert_resolved', alert);
     return true;
   }
@@ -485,14 +481,18 @@ export class RetryAlertSystem extends EventEmitter {
    */
   addEscalationPolicy(policy: EscalationPolicy): void {
     this.escalationPolicies.set(policy.id, policy);
-    logger.info({ policyId: policy.id, policyName: policy.name }, 'Escalation policy added');
+    logger.info({ message: 'Escalation policy added', policyId: policy.id, policyName: policy.name });
     this.emit('escalation_policy_added', policy);
   }
 
   /**
    * Manually trigger alert for testing
    */
-  async triggerTestAlert(serviceName: string, type: AlertType, severity: AlertSeverity): Promise<void> {
+  async triggerTestAlert(
+    serviceName: string,
+    type: AlertType,
+    severity: AlertSeverity
+  ): Promise<void> {
     const alert: Alert = {
       id: `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       ruleId: 'test_rule',
@@ -511,7 +511,7 @@ export class RetryAlertSystem extends EventEmitter {
     };
 
     await this.processAlert(alert);
-    logger.info({ alertId: alert.id, serviceName, type }, 'Test alert triggered');
+    logger.info({ message: 'Test alert triggered', alertId: alert.id, serviceName, type });
   }
 
   /**
@@ -525,7 +525,11 @@ export class RetryAlertSystem extends EventEmitter {
       const circuitBreakerMetrics = circuitBreakerMonitor.getAllHealthStatuses();
 
       for (const [serviceName, retryMetrics] of retryBudgetMetrics) {
-        await this.evaluateRulesForService(serviceName, retryMetrics, circuitBreakerMetrics.get(serviceName));
+        await this.evaluateRulesForService(
+          serviceName,
+          retryMetrics,
+          circuitBreakerMetrics.get(serviceName)
+        );
       }
 
       // Clean up old alerts
@@ -535,9 +539,9 @@ export class RetryAlertSystem extends EventEmitter {
       if (this.config.correlation.enabled) {
         this.processAlertCorrelations();
       }
-
     } catch (error) {
-      logger.error({ error }, 'Failed to evaluate alert rules');
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      logger.error({ error: errorMsg }, 'Failed to evaluate alert rules');
     }
   }
 
@@ -551,10 +555,16 @@ export class RetryAlertSystem extends EventEmitter {
   ): Promise<void> {
     for (const rule of this.alertRules.values()) {
       if (!rule.enabled) continue;
-      const svcFilter = (rule.conditions as unknown[]).find(c => 'serviceFilter' in c)?.serviceFilter as string[] | undefined;
+      const conditionWithFilter = rule.conditions.find((c) => 'serviceFilter' in c);
+      const svcFilter = conditionWithFilter ? conditionWithFilter.serviceFilter as string[] : undefined;
       if (svcFilter && !svcFilter.includes(serviceName)) continue;
 
-      const shouldAlert = await this.evaluateRuleConditions(rule, serviceName, retryMetrics, circuitMetrics);
+      const shouldAlert = await this.evaluateRuleConditions(
+        rule,
+        serviceName,
+        retryMetrics,
+        circuitMetrics
+      );
       if (shouldAlert) {
         await this.createAlert(rule, serviceName, retryMetrics, circuitMetrics);
       }
@@ -571,7 +581,12 @@ export class RetryAlertSystem extends EventEmitter {
     circuitMetrics?: CircuitBreakerHealthStatus
   ): Promise<boolean> {
     for (const condition of rule.conditions) {
-      const value = this.getMetricValue(condition.metric, serviceName, retryMetrics, circuitMetrics);
+      const value = this.getMetricValue(
+        condition.metric,
+        serviceName,
+        retryMetrics,
+        circuitMetrics
+      );
       if (value === null) continue;
 
       let conditionMet = false;
@@ -663,7 +678,10 @@ export class RetryAlertSystem extends EventEmitter {
     // Check for deduplication
     const dedupKey = `${rule.type}:${serviceName}`;
     const recentAlert = this.recentAlerts.get(dedupKey);
-    if (recentAlert && Date.now() - recentAlert.getTime() < rule.notifications.cooldownMinutes * 60 * 1000) {
+    if (
+      recentAlert &&
+      Date.now() - recentAlert.getTime() < rule.notifications.cooldownMinutes * 60 * 1000
+    ) {
       return; // Skip due to cooldown
     }
 
@@ -712,15 +730,13 @@ export class RetryAlertSystem extends EventEmitter {
     // Emit alert event
     this.emit('alert_created', alert);
 
-    logger.info(
-      {
-        alertId: alert.id,
-        serviceName: alert.serviceName,
-        type: alert.type,
-        severity: alert.severity,
-      },
-      'Alert created and processed'
-    );
+    logger.info({
+      message: 'Alert created and processed',
+      alertId: alert.id,
+      serviceName: alert.serviceName,
+      type: alert.type,
+      severity: alert.severity,
+    });
   }
 
   /**
@@ -768,9 +784,10 @@ export class RetryAlertSystem extends EventEmitter {
           break;
       }
 
-      logger.debug({ alertId: alert.id, channel }, 'Alert notification sent');
+      logger.debug({ message: 'Alert notification sent', alertId: alert.id, channel });
     } catch (error) {
-      logger.error({ alertId: alert.id, channel, error }, 'Failed to send alert notification');
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      logger.error({ message: 'Failed to send alert notification', alertId: alert.id, channel, error: errorMsg });
     }
   }
 
@@ -791,8 +808,9 @@ export class RetryAlertSystem extends EventEmitter {
 
       // Check if escalation is needed
       const timeSinceAlert = now - alert.timestamp.getTime();
-      const currentLevel = policy.levels.find(level =>
-        timeSinceAlert >= level.delayMinutes * 60 * 1000 && level.level > alert.escalationLevel
+      const currentLevel = policy.levels.find(
+        (level) =>
+          timeSinceAlert >= level.delayMinutes * 60 * 1000 && level.level > alert.escalationLevel
       );
 
       if (currentLevel && !alert.escalated) {
@@ -804,7 +822,11 @@ export class RetryAlertSystem extends EventEmitter {
   /**
    * Escalate alert
    */
-  private async escalateAlert(alert: Alert, level: unknown, policy: EscalationPolicy): Promise<void> {
+  private async escalateAlert(
+    alert: Alert,
+    level: { level: number; delayMinutes: number; channels: AlertChannel[] },
+    policy: EscalationPolicy
+  ): Promise<void> {
     alert.escalated = true;
     alert.escalationLevel = level.level;
 
@@ -813,15 +835,13 @@ export class RetryAlertSystem extends EventEmitter {
       await this.sendNotification(alert, channel);
     }
 
-    logger.info(
-      {
-        alertId: alert.id,
-        serviceName: alert.serviceName,
-        escalationLevel: level.level,
-        policy: policy.name,
-      },
-      'Alert escalated'
-    );
+    logger.info({
+      message: 'Alert escalated',
+      alertId: alert.id,
+      serviceName: alert.serviceName,
+      escalationLevel: level.level,
+      policy: policy.name,
+    });
 
     this.emit('alert_escalated', { alert, level, policy });
   }
@@ -830,11 +850,13 @@ export class RetryAlertSystem extends EventEmitter {
    * Process alert correlations
    */
   private processAlertCorrelations(): void {
-    const recentAlerts = Array.from(this.activeAlerts.values())
-      .filter(alert => Date.now() - alert.timestamp.getTime() < this.config.correlation.windowMinutes * 60 * 1000);
+    const recentAlerts = Array.from(this.activeAlerts.values()).filter(
+      (alert) =>
+        Date.now() - alert.timestamp.getTime() < this.config.correlation.windowMinutes * 60 * 1000
+    );
 
     for (const pattern of this.config.correlation.patterns) {
-      const matchingAlerts = recentAlerts.filter(alert => pattern.triggers.includes(alert.type));
+      const matchingAlerts = recentAlerts.filter((alert) => pattern.triggers.includes(alert.type));
 
       if (matchingAlerts.length >= 2) {
         const correlationId = `corr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -843,16 +865,17 @@ export class RetryAlertSystem extends EventEmitter {
           alert.correlationId = correlationId;
         }
 
-        this.alertCorrelations.set(correlationId, matchingAlerts.map(a => a.id));
-
-        logger.info(
-          {
-            correlationId,
-            pattern: pattern.name,
-            alertCount: matchingAlerts.length,
-          },
-          'Alert correlation detected'
+        this.alertCorrelations.set(
+          correlationId,
+          matchingAlerts.map((a) => a.id)
         );
+
+        logger.info({
+          message: 'Alert correlation detected',
+          correlationId,
+          pattern: pattern.name,
+          alertCount: matchingAlerts.length,
+        });
 
         this.emit('alert_correlation', { correlationId, pattern, alerts: matchingAlerts });
       }
@@ -868,23 +891,30 @@ export class RetryAlertSystem extends EventEmitter {
 
     // Clean up recent alerts for deduplication
     for (const [key, timestamp] of this.recentAlerts) {
-      if (now - timestamp.getTime() > this.config.processing.deduplicationWindowMinutes * 60 * 1000) {
+      if (
+        now - timestamp.getTime() >
+        this.config.processing.deduplicationWindowMinutes * 60 * 1000
+      ) {
         this.recentAlerts.delete(key);
       }
     }
 
     // Clean up resolved alerts from history
     for (const [serviceName, history] of this.alertHistory) {
-      const filtered = history.filter(alert => now - alert.timestamp.getTime() < maxAge);
+      const filtered = history.filter((alert) => now - alert.timestamp.getTime() < maxAge);
       this.alertHistory.set(serviceName, filtered);
     }
 
     // Ensure we don't exceed max active alerts
     if (this.activeAlerts.size > this.config.processing.maxActiveAlerts) {
-      const sorted = Array.from(this.activeAlerts.values())
-        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      const sorted = Array.from(this.activeAlerts.values()).sort(
+        (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+      );
 
-      const toRemove = sorted.slice(0, this.activeAlerts.size - this.config.processing.maxActiveAlerts);
+      const toRemove = sorted.slice(
+        0,
+        this.activeAlerts.size - this.config.processing.maxActiveAlerts
+      );
       for (const alert of toRemove) {
         this.moveAlertToHistory(alert);
         this.activeAlerts.delete(alert.id);
@@ -1006,19 +1036,21 @@ export class RetryAlertSystem extends EventEmitter {
    */
   private setupEventListeners(): void {
     // Listen to circuit breaker events
-    circuitBreakerMonitor.on('alert', (alert: unknown) => {
+    circuitBreakerMonitor.on('alert', (alert: { severity?: string; type?: string }) => {
       // Create correlation alert if circuit breaker impacts retry budget
       const correlationRule = this.alertRules.get('circuit_correlation');
-      if (correlationRule && correlationRule.enabled) {
+      if (correlationRule && correlationRule.enabled && alert.severity === 'critical') {
         // This will be handled in the next evaluation cycle
+        logger.warn({ alert }, 'Circuit breaker alert received');
       }
     });
 
     // Listen to retry budget events
-    retryBudgetMonitor.on('alert', (alert: unknown) => {
+    retryBudgetMonitor.on('alert', (alert: { severity?: string; type?: string }) => {
       // Direct alert creation for immediate critical events
       if (alert.severity === 'critical') {
         // This will be handled in the next evaluation cycle
+        logger.warn({ alert }, 'Retry budget alert received');
       }
     });
   }
@@ -1064,7 +1096,12 @@ export class RetryAlertSystem extends EventEmitter {
           },
         ],
         notifications: {
-          channels: [AlertChannel.EMAIL, AlertChannel.SLACK, AlertChannel.DASHBOARD, AlertChannel.LOG],
+          channels: [
+            AlertChannel.EMAIL,
+            AlertChannel.SLACK,
+            AlertChannel.DASHBOARD,
+            AlertChannel.LOG,
+          ],
           cooldownMinutes: 5,
           escalationPolicy: 'default_escalation',
         },
@@ -1085,7 +1122,12 @@ export class RetryAlertSystem extends EventEmitter {
           },
         ],
         notifications: {
-          channels: [AlertChannel.EMAIL, AlertChannel.SLACK, AlertChannel.DASHBOARD, AlertChannel.LOG],
+          channels: [
+            AlertChannel.EMAIL,
+            AlertChannel.SLACK,
+            AlertChannel.DASHBOARD,
+            AlertChannel.LOG,
+          ],
           cooldownMinutes: 10,
           escalationPolicy: 'default_escalation',
         },
@@ -1191,7 +1233,7 @@ export class RetryAlertSystem extends EventEmitter {
    */
   private async sendEmailNotification(notification: AlertNotification): Promise<void> {
     // In a real implementation, this would send email via SMTP
-    logger.debug({ alertId: notification.alert.id }, 'Email notification would be sent');
+    logger.debug({ message: 'Email notification would be sent', alertId: notification.alert.id });
     this.emit('email_notification_sent', notification);
   }
 
@@ -1200,7 +1242,7 @@ export class RetryAlertSystem extends EventEmitter {
    */
   private async sendSlackNotification(notification: AlertNotification): Promise<void> {
     // In a real implementation, this would send Slack webhook
-    logger.debug({ alertId: notification.alert.id }, 'Slack notification would be sent');
+    logger.debug({ message: 'Slack notification would be sent', alertId: notification.alert.id });
     this.emit('slack_notification_sent', notification);
   }
 
@@ -1209,7 +1251,7 @@ export class RetryAlertSystem extends EventEmitter {
    */
   private async sendPagerDutyNotification(notification: AlertNotification): Promise<void> {
     // In a real implementation, this would send PagerDuty alert
-    logger.debug({ alertId: notification.alert.id }, 'PagerDuty notification would be sent');
+    logger.debug({ message: 'PagerDuty notification would be sent', alertId: notification.alert.id });
     this.emit('pagerduty_notification_sent', notification);
   }
 
@@ -1218,7 +1260,7 @@ export class RetryAlertSystem extends EventEmitter {
    */
   private async sendWebhookNotification(notification: AlertNotification): Promise<void> {
     // In a real implementation, this would send HTTP webhook
-    logger.debug({ alertId: notification.alert.id }, 'Webhook notification would be sent');
+    logger.debug({ message: 'Webhook notification would be sent', alertId: notification.alert.id });
     this.emit('webhook_notification_sent', notification);
   }
 }

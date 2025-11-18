@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTELY FINAL EMERGENCY ROLLBACK: Complete ALL systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Discriminated Union Utilities
@@ -9,7 +7,14 @@
  * to provide better type safety and exhaustive checking
  */
 
-export type SearchStrategyType = 'semantic' | 'keyword' | 'hybrid' | 'expanded' | 'graph' | 'fallback' | 'auto';
+export type SearchStrategyType =
+  | 'semantic'
+  | 'keyword'
+  | 'hybrid'
+  | 'expanded'
+  | 'graph'
+  | 'fallback'
+  | 'auto';
 
 export interface BaseSearchStrategy {
   type: SearchStrategyType;

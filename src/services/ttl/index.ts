@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * TTL Services Index
  *
@@ -20,11 +16,11 @@
  */
 
 // Core Services
-export { EnhancedExpiryUtils,enhancedExpiryUtils } from '../../utils/enhanced-expiry-utils.js';
+export { EnhancedExpiryUtils, enhancedExpiryUtils } from '../../utils/enhanced-expiry-utils.js';
 export { createTTLCronScheduler, TTLCronScheduler } from './ttl-cron-scheduler.js';
 export { createTTLManagementService, TTLManagementService } from './ttl-management-service.js';
-export { TTLPolicyService,ttlPolicyService } from './ttl-policy-service.js';
-export { TTLSafetyService,ttlSafetyService } from './ttl-safety-service.js';
+export { TTLPolicyService, ttlPolicyService } from './ttl-policy-service.js';
+export { TTLSafetyService, ttlSafetyService } from './ttl-safety-service.js';
 
 // Import for internal use
 import { createTTLManagementService } from './ttl-management-service.js';

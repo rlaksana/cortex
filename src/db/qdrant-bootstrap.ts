@@ -18,7 +18,6 @@
  * @since 2025
  */
 
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
 // TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
@@ -27,6 +26,7 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 import { logger } from '@/utils/logger.js';
 
 import type { VectorConfig } from './interfaces/vector-adapter.interface.js';
+import { getQdrantNestedConfig } from './type-guards.js';
 import { createQdrantHealthProbe, type QdrantHealthStatus } from './qdrant-health-probe.js';
 
 export interface CollectionConfig {
@@ -193,33 +193,35 @@ export class QdrantBootstrap {
     this.haConfig = haConfig;
 
     try {
+      const qdrantConfig = getQdrantNestedConfig(config);
+
       this.client = new QdrantClient({
-        url: config.url || config.qdrant?.url || 'http://localhost:6333',
-        apiKey: config.apiKey || config.qdrant?.apiKey,
-        timeout: 30000, // 30 seconds
+        url: qdrantConfig.url,
+        apiKey: qdrantConfig.apiKey,
+        timeout: qdrantConfig.timeout || 30000, // 30 seconds
       });
 
       // Add primary node to health probe
-      const primaryUrl = config.url || config.qdrant?.url || 'http://localhost:6333';
-      const primaryApiKey = config.apiKey || config.qdrant?.apiKey;
+      const primaryUrl = qdrantConfig.url;
+      const primaryApiKey = qdrantConfig.apiKey;
 
       this.healthProbe.addNode('primary', {
-        type: 'qdrant',
+        type: 'qdrant' as const,
         url: primaryUrl,
         apiKey: primaryApiKey,
         qdrant: {
           url: primaryUrl,
           apiKey: primaryApiKey,
-          timeout: 30000,
+          timeout: qdrantConfig.timeout || 30000,
         },
-      });
+      } as any);
 
       // Add HA nodes to health probe
       if (haConfig?.enabled) {
         for (const node of haConfig.nodes) {
           if (node.id !== 'primary') {
             this.healthProbe.addNode(node.id, {
-              type: 'qdrant',
+              type: 'qdrant' as const,
               url: node.url,
               apiKey: node.apiKey,
               qdrant: {
@@ -227,13 +229,13 @@ export class QdrantBootstrap {
                 apiKey: node.apiKey,
                 timeout: 30000,
               },
-            });
+            } as any);
           }
         }
       }
 
       logger.info('Qdrant Bootstrap Service initialized', {
-        url: config.url || config.qdrant?.url || 'http://localhost:6333',
+        url: qdrantConfig.url,
         haEnabled: haConfig?.enabled || false,
         nodeCount: haConfig?.nodes.length || 1,
       });
@@ -693,10 +695,24 @@ export class QdrantBootstrap {
    */
   private async setupHA(config: BootstrapConfig): Promise<{
     success: boolean;
-    status: unknown;
+    status: {
+      clusterHealthy: boolean;
+      nodesHealthy: number;
+      totalNodes: number;
+      replicationStatus: string;
+    };
     errors: string[];
   }> {
-    const result = { success: true, status: null, errors: [] as string[] };
+    const result = {
+      success: true,
+      status: {
+        clusterHealthy: false,
+        nodesHealthy: 0,
+        totalNodes: this.haConfig?.nodes?.length || 0,
+        replicationStatus: 'unknown'
+      },
+      errors: [] as string[]
+    };
 
     try {
       if (!this.haConfig?.enabled) {
@@ -705,12 +721,16 @@ export class QdrantBootstrap {
         return result;
       }
 
+      let healthyNodes = 0;
+
       // Check all nodes health
       for (const node of this.haConfig.nodes) {
         if (node.id !== 'primary') {
           try {
             const healthStatus = await this.healthProbe.checkNodeHealth(node.id);
-            if (!healthStatus.isHealthy) {
+            if (healthStatus.isHealthy) {
+              healthyNodes++;
+            } else {
               result.errors.push(
                 `Node ${node.id} is not healthy: ${healthStatus.errors.join(', ')}`
               );
@@ -718,17 +738,25 @@ export class QdrantBootstrap {
           } catch (error) {
             result.errors.push(`Failed to check node ${node.id}: ${error}`);
           }
+        } else {
+          // Primary node is assumed healthy
+          healthyNodes++;
         }
       }
 
       // Setup replication if all nodes are healthy
       if (result.errors.length === 0) {
         logger.info('Setting up replication across nodes');
+        result.status.replicationStatus = 'active';
         // This would involve Qdrant cluster configuration
         // Implementation depends on Qdrant version and cluster setup
+      } else {
+        result.status.replicationStatus = 'failed';
       }
 
+      result.status.nodesHealthy = healthyNodes;
       result.success = result.errors.length === 0;
+      result.status.clusterHealthy = healthyNodes === result.status.totalNodes;
     } catch (error) {
       result.success = false;
       result.errors.push(

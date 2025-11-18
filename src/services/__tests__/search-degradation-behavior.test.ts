@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Search Degradation Behavior Test Suite
  *
@@ -18,26 +13,27 @@
  * appropriate fallback behavior under various failure conditions.
  */
 
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { searchAuditLogger } from '@/utils/logger.js';
+import { logger } from '../../utils/logger.js';
+import { safeGetProperty, safeObjectAccess } from '../../utils/type-safe-access.js';
 
-import type { SearchQuery } from '../../types/core-interfaces.js';
+import type { SearchQuery } from '../../types/core-interfaces';
 import {
   ErrorCategory,
   ErrorSeverity,
   RecoveryStrategy,
   searchErrorHandler,
-} from '../search/search-error-handler.js';
-import { SearchStrategyManager } from '../search/search-strategy-manager.js';
+} from '../search/search-error-handler';
+import { SearchStrategyManager } from '../search/search-strategy-manager';
 
 // Mock the logger to avoid noise in tests
-jest.mock('../../utils/logger.js', () => ({
+vi.mock('../../utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
@@ -58,20 +54,20 @@ describe('Search Degradation Behavior Tests', () => {
     // Reset error handler and metrics before each test
     searchErrorHandler.resetMetrics();
     searchManager.resetMetrics();
-    searchAuditLogger.clearLogs();
+    logger.clearLogs();
   });
 
   afterEach(() => {
     searchManager.resetMetrics();
     searchErrorHandler.resetAllCircuitBreakers();
-    searchAuditLogger.clearLogs();
+    logger.clearLogs();
   });
 
   describe('Vector Database Failure Scenarios', () => {
     describe('Complete Vector Database Unavailability', () => {
       it('should degrade gracefully when vector database is completely unavailable', async () => {
         // Mock complete vector database failure
-        jest.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
+        vi.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
 
         const query: SearchQuery = {
           query: 'test semantic search query',
@@ -101,7 +97,7 @@ describe('Search Degradation Behavior Tests', () => {
 
       it('should maintain functionality across all search strategies during vector outage', async () => {
         // Mock persistent vector database failure
-        jest.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
+        vi.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
 
         const strategies = ['fast', 'auto', 'deep'] as const;
         const results = [];
@@ -166,7 +162,7 @@ describe('Search Degradation Behavior Tests', () => {
     describe('Partial Vector Database Degradation', () => {
       it('should handle intermittent vector database failures', async () => {
         let failureCount = 0;
-        jest.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
+        vi.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
           failureCount++;
           if (failureCount <= 2) {
             throw new Error('Vector database temporarily unavailable');
@@ -194,7 +190,7 @@ describe('Search Degradation Behavior Tests', () => {
 
       it('should handle vector database slow response times', async () => {
         // Mock slow vector responses
-        jest.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
+        vi.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
           // Simulate slow response
           await new Promise((resolve) => setTimeout(resolve, 2000));
           return [];
@@ -221,7 +217,7 @@ describe('Search Degradation Behavior Tests', () => {
 
       it('should handle vector database high error rates', async () => {
         const errorRate = 0.8; // 80% error rate
-        jest.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
+        vi.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
           if (Math.random() < errorRate) {
             throw new Error('Vector database error');
           }
@@ -390,7 +386,7 @@ describe('Search Degradation Behavior Tests', () => {
         let connectionCount = 0;
         const maxConnections = 5;
 
-        jest.spyOn(searchManager as unknown, 'queryDatabase').mockImplementation(async () => {
+        vi.spyOn(searchManager as unknown, 'queryDatabase').mockImplementation(async () => {
           connectionCount++;
           if (connectionCount > maxConnections) {
             throw new Error('Connection pool exhausted');
@@ -423,7 +419,7 @@ describe('Search Degradation Behavior Tests', () => {
 
       it('should maintain system stability during CPU spikes', async () => {
         // Mock CPU-intensive operations causing timeouts
-        jest.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
+        vi.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
           // Simulate CPU-intensive operation
           const start = Date.now();
           while (Date.now() - start < 5000) {
@@ -457,7 +453,7 @@ describe('Search Degradation Behavior Tests', () => {
     describe('High Network Latency', () => {
       it('should handle high latency to vector database', async () => {
         // Mock high latency responses
-        jest.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
+        vi.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
           await new Promise((resolve) => setTimeout(resolve, 8000)); // 8 second delay
           return [];
         });
@@ -483,7 +479,7 @@ describe('Search Degradation Behavior Tests', () => {
 
       it('should implement adaptive timeouts based on network conditions', async () => {
         let callCount = 0;
-        jest.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
+        vi.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
           callCount++;
           // First call is slow, subsequent calls are faster
           const delay = callCount === 1 ? 3000 : 500;
@@ -507,7 +503,7 @@ describe('Search Degradation Behavior Tests', () => {
 
       it('should provide graceful fallback when network is unreliable', async () => {
         const reliabilityFactor = 0.5; // 50% network reliability
-        jest.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
+        vi.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
           if (Math.random() > reliabilityFactor) {
             throw new Error('Network timeout');
           }
@@ -572,7 +568,7 @@ describe('Search Degradation Behavior Tests', () => {
         let networkConnected = true;
         let flipCount = 0;
 
-        jest.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
+        vi.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
           flipCount++;
           if (flipCount % 3 === 0) {
             networkConnected = !networkConnected;
@@ -729,7 +725,7 @@ describe('Search Degradation Behavior Tests', () => {
       it('should implement circuit breaker half-open state correctly', async () => {
         // Force circuit breaker to open
         const persistentError = new Error('Persistent failure');
-        jest.spyOn(searchManager['deepVectorSearch'], 'search').mockRejectedValue(persistentError);
+        vi.spyOn(searchManager['deepVectorSearch'], 'search').mockRejectedValue(persistentError);
 
         const query: SearchQuery = {
           query: 'test circuit breaker',
@@ -751,7 +747,7 @@ describe('Search Degradation Behavior Tests', () => {
         expect(circuitBreakers.get('search_deep')?.isOpen).toBe(true);
 
         // Mock successful recovery after timeout
-        jest.spyOn(searchManager['deepVectorSearch'], 'search').mockResolvedValue([]);
+        vi.spyOn(searchManager['deepVectorSearch'], 'search').mockResolvedValue([]);
 
         // Wait for circuit breaker timeout (simulated)
         await new Promise((resolve) => setTimeout(resolve, 100));
@@ -769,7 +765,7 @@ describe('Search Degradation Behavior Tests', () => {
         let failureCount = 0;
         const persistentError = new Error('Still failing');
 
-        jest.spyOn(searchManager['deepVectorSearch'], 'search').mockImplementation(async () => {
+        vi.spyOn(searchManager['deepVectorSearch'], 'search').mockImplementation(async () => {
           failureCount++;
           // Fail in half-open state to re-open circuit breaker
           if (failureCount === 7) {
@@ -822,7 +818,7 @@ describe('Search Degradation Behavior Tests', () => {
         let performanceTrend = 'degrading';
         let performanceValue = 5000; // Start with poor performance (5 seconds)
 
-        jest.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
+        vi.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
           // Simulate performance improvement
           if (performanceTrend === 'improving') {
             performanceValue = Math.max(1000, performanceValue - 1000);
@@ -871,7 +867,7 @@ describe('Search Degradation Behavior Tests', () => {
         const failurePattern = [true, true, false, true, false, false, false]; // true = failure
         let patternIndex = 0;
 
-        jest.spyOn(searchManager['autoHybridSearch'], 'search').mockImplementation(async () => {
+        vi.spyOn(searchManager['autoHybridSearch'], 'search').mockImplementation(async () => {
           const shouldFail = failurePattern[patternIndex % failurePattern.length];
           patternIndex++;
 
@@ -914,7 +910,7 @@ describe('Search Degradation Behavior Tests', () => {
       it('should support manual circuit breaker reset', async () => {
         // Force circuit breaker to open
         const persistentError = new Error('Persistent failure');
-        jest.spyOn(searchManager['fastKeywordSearch'], 'search').mockRejectedValue(persistentError);
+        vi.spyOn(searchManager['fastKeywordSearch'], 'search').mockRejectedValue(persistentError);
 
         const query: SearchQuery = {
           query: 'test manual reset',
@@ -943,7 +939,7 @@ describe('Search Degradation Behavior Tests', () => {
         expect(circuitBreakers.get('search_fast')).toBeUndefined();
 
         // Mock successful operation after reset
-        jest.spyOn(searchManager['fastKeywordSearch'], 'search').mockResolvedValue([]);
+        vi.spyOn(searchManager['fastKeywordSearch'], 'search').mockResolvedValue([]);
 
         // Should succeed after manual reset
         const result = await searchManager.executeSearch(query, 'fast');
@@ -953,7 +949,7 @@ describe('Search Degradation Behavior Tests', () => {
 
       it('should support manual health status override', async () => {
         // Mock unhealthy status
-        jest.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
+        vi.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
 
         const query: SearchQuery = {
           query: 'test health override',
@@ -1049,10 +1045,12 @@ describe('Search Degradation Behavior Tests', () => {
         });
 
         // Apply same mocks to lenient manager
-        jest.spyOn(lenientManager as unknown, 'performVectorSearch').mockImplementation(async () => {
-          await new Promise((resolve) => setTimeout(resolve, 1500));
-          throw new Error('Slow response');
-        });
+        jest
+          .spyOn(lenientManager as unknown, 'performVectorSearch')
+          .mockImplementation(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+            throw new Error('Slow response');
+          });
 
         // Should handle better with lenient settings
         const lenientResult = await lenientManager.executeSearch(query, 'auto');
@@ -1068,7 +1066,7 @@ describe('Search Degradation Behavior Tests', () => {
         let adjustmentCount = 0;
 
         // Mock adaptive threshold logic
-        jest.spyOn(searchManager as unknown, 'shouldDegrade').mockImplementation((performance) => {
+        vi.spyOn(searchManager as unknown, 'shouldDegrade').mockImplementation((performance) => {
           adjustmentCount++;
 
           // Simulate threshold adjustment based on recent performance
@@ -1112,7 +1110,7 @@ describe('Search Degradation Behavior Tests', () => {
         await searchManager.executeSearch({ query: 'healthy test', mode: 'fast' }, 'fast');
 
         // Mock some failures for degraded state
-        jest.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
+        vi.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
         await searchManager.executeSearch({ query: 'degraded test', mode: 'deep' }, 'deep');
 
         const healthReport = searchManager.getSystemHealth();
@@ -1143,7 +1141,9 @@ describe('Search Degradation Behavior Tests', () => {
         for (let i = 0; i < 5; i++) {
           // Simulate changing conditions
           const isHealthy = i >= 2; // Become healthy after 2 iterations
-          jest.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(isHealthy);
+          jest
+            .spyOn(searchManager as unknown, 'checkVectorBackendHealth')
+            .mockResolvedValue(isHealthy);
 
           await searchManager.executeSearch(
             {
@@ -1215,7 +1215,7 @@ describe('Search Degradation Behavior Tests', () => {
     describe('Performance Metrics During Degradation', () => {
       it('should maintain accurate metrics during system degradation', async () => {
         // Mock degradation scenario
-        jest.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
+        vi.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
 
         const queries = Array.from({ length: 20 }, (_, i) => ({
           query: `degradation metrics test ${i}`,
@@ -1339,7 +1339,7 @@ describe('Search Degradation Behavior Tests', () => {
         let errorRate = 0;
         let totalRequests = 0;
 
-        jest.spyOn(searchManager['autoHybridSearch'], 'search').mockImplementation(async () => {
+        vi.spyOn(searchManager['autoHybridSearch'], 'search').mockImplementation(async () => {
           totalRequests++;
           // Increase error rate over time
           if (totalRequests > 5) {
@@ -1383,7 +1383,7 @@ describe('Search Degradation Behavior Tests', () => {
         let errorRate = 0.9; // Start with high error rate
         let recoveryProgress = 0;
 
-        jest.spyOn(searchManager['autoHybridSearch'], 'search').mockImplementation(async () => {
+        vi.spyOn(searchManager['autoHybridSearch'], 'search').mockImplementation(async () => {
           recoveryProgress++;
 
           // Gradually reduce error rate (recovery)
@@ -1429,12 +1429,12 @@ describe('Search Degradation Behavior Tests', () => {
         let systemLoad = 0.3; // Start with low load
 
         // Mock performance-based threshold adjustment
-        jest.spyOn(searchManager as unknown, 'getDynamicThreshold').mockImplementation(() => {
+        vi.spyOn(searchManager as unknown, 'getDynamicThreshold').mockImplementation(() => {
           // Increase threshold as system load increases
           return 0.7 + systemLoad * 0.2;
         });
 
-        jest.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
+        vi.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
           systemLoad += 0.1; // Simulate increasing load
 
           if (systemLoad > 0.7) {
@@ -1491,13 +1491,15 @@ describe('Search Degradation Behavior Tests', () => {
           };
 
           // Mock performance based on threshold
-          jest.spyOn(searchManager as unknown, 'performVectorSearch').mockImplementation(async () => {
-            const performance = Math.random();
-            if (performance < context.expectedThreshold) {
-              throw new Error('Below contextual threshold');
-            }
-            return [];
-          });
+          jest
+            .spyOn(searchManager as unknown, 'performVectorSearch')
+            .mockImplementation(async () => {
+              const performance = Math.random();
+              if (performance < context.expectedThreshold) {
+                throw new Error('Below contextual threshold');
+              }
+              return [];
+            });
 
           try {
             const result = await searchManager.executeSearch(query, 'auto');

@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * P3 Data Management: PII Redaction Service
  *
@@ -1585,7 +1581,8 @@ export class PIIRedactionService {
   } {
     return {
       is_initialized: true,
-      patterns_enabled: Object.values(this.config.patterns).filter((p: unknown) => p.enabled).length,
+      patterns_enabled: Object.values(this.config.patterns).filter((p: unknown) => p.enabled)
+        .length,
       cache_size: this.detectionCache.size,
       audit_logs_count: this.auditLogs.length,
       supported_frameworks: this.config.compliance.frameworks,

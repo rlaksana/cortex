@@ -1,11 +1,14 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Monitoring system type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 const asNum = (v: unknown, d = 0): number => Number(v ?? d);
+const asStr = (v: unknown, d = ''): string => String(v ?? d).trim();
+const asObj = <T extends object>(v: unknown, d: T): T =>
+  v && typeof v === 'object' ? (v as T) : d;
 const asNumMap = (m: unknown): Record<string, number> =>
   m && typeof m === 'object'
-    ? Object.fromEntries(Object.entries(m as Record<string, unknown>).map(([k, v]) => [k, asNum(v)]))
+    ? Object.fromEntries(
+        Object.entries(m as Record<string, unknown>).map(([k, v]) => [k, asNum(v)])
+      )
     : {};
 /**
  * Alert System Integration Service for MCP Cortex
@@ -36,7 +39,7 @@ import { HealthCheckService } from './health-check-service.js';
 import { onCallManagementService } from './oncall-management-service.js';
 import { runbookIntegrationService } from './runbook-integration-service.js';
 import { DependencyType } from '../services/deps-registry.js';
-import { HealthStatus,type SystemHealthResult } from '../types/unified-health-interfaces.js';
+import { HealthStatus, type SystemHealthResult } from '../types/unified-health-interfaces.js';
 
 // ============================================================================
 // Alert System Configuration
@@ -348,7 +351,9 @@ export class AlertSystemIntegrationService extends EventEmitter {
       return {
         status: 'unhealthy',
         score: 0,
-        issues: ['Health check failed: ' + (error instanceof Error ? error.message : 'Unknown error')],
+        issues: [
+          'Health check failed: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        ],
         recommendations: ['Check system logs and restart if necessary'],
       };
     }
@@ -421,12 +426,12 @@ export class AlertSystemIntegrationService extends EventEmitter {
             suiteId: suite.id,
             suiteName: suite.name,
             category: suite.category,
-            passed: suiteResults.every(r => r.results.summary.passed),
+            passed: suiteResults.every((r) => r.results.summary.passed),
             duration: suiteResults.reduce((sum, r) => sum + (r.duration || 0), 0),
             executions: suiteResults,
           });
 
-          if (suiteResults.every(r => r.results.summary.passed)) {
+          if (suiteResults.every((r) => r.results.summary.passed)) {
             results.overall.passed++;
           } else {
             results.overall.failed++;
@@ -448,19 +453,21 @@ export class AlertSystemIntegrationService extends EventEmitter {
       const endTime = Date.now();
       results.endTime = new Date(endTime);
       results.duration = endTime - startTime;
-      results.overall.successRate = results.overall.total > 0
-        ? (results.overall.passed / results.overall.total) * 100
-        : 0;
+      results.overall.successRate =
+        results.overall.total > 0 ? (results.overall.passed / results.overall.total) * 100 : 0;
 
       results.recommendations = this.generateTestRecommendations(results);
 
-      logger.info({
-        totalSuites: results.overall.total,
-        passed: results.overall.passed,
-        failed: results.overall.failed,
-        successRate: results.overall.successRate,
-        duration: results.duration,
-      }, 'Comprehensive alert system tests completed');
+      logger.info(
+        {
+          totalSuites: results.overall.total,
+          passed: results.overall.passed,
+          failed: results.overall.failed,
+          successRate: results.overall.successRate,
+          duration: results.duration,
+        },
+        'Comprehensive alert system tests completed'
+      );
 
       this.emit('system_tests_completed', results);
 
@@ -494,8 +501,8 @@ export class AlertSystemIntegrationService extends EventEmitter {
       // Collect results
       const endTime = Date.now();
       const activeAlerts = this.getActiveAlerts();
-      const triggeredAlerts = activeAlerts.filter(alert =>
-        alert.timestamp >= new Date(startTime) && alert.timestamp <= new Date(endTime)
+      const triggeredAlerts = activeAlerts.filter(
+        (alert) => alert.timestamp >= new Date(startTime) && alert.timestamp <= new Date(endTime)
       );
 
       const result: FaultScenarioTestResult = {
@@ -511,12 +518,15 @@ export class AlertSystemIntegrationService extends EventEmitter {
         recommendations: this.generateScenarioRecommendations(scenario, triggeredAlerts),
       };
 
-      logger.info({
-        scenarioName,
-        duration: result.duration,
-        triggeredAlerts: result.triggeredAlerts,
-        success: result.success,
-      }, 'Fault scenario test completed');
+      logger.info(
+        {
+          scenarioName,
+          duration: result.duration,
+          triggeredAlerts: result.triggeredAlerts,
+          success: result.success,
+        },
+        'Fault scenario test completed'
+      );
 
       this.emit('fault_scenario_test_completed', result);
 
@@ -651,7 +661,9 @@ export class AlertSystemIntegrationService extends EventEmitter {
     }
 
     if (this.config.integrations.webhook.enabled) {
-      logger.info(`Webhook integration enabled with ${this.config.integrations.webhook.endpoints.length} endpoints`);
+      logger.info(
+        `Webhook integration enabled with ${this.config.integrations.webhook.endpoints.length} endpoints`
+      );
     }
 
     if (this.config.integrations.sns.enabled) {
@@ -663,7 +675,9 @@ export class AlertSystemIntegrationService extends EventEmitter {
     }
 
     if (this.config.integrations.grafana.enabled) {
-      logger.info(`Grafana integration enabled with ${this.config.integrations.grafana.dashboards.length} dashboards`);
+      logger.info(
+        `Grafana integration enabled with ${this.config.integrations.grafana.dashboards.length} dashboards`
+      );
     }
   }
 
@@ -771,7 +785,7 @@ export class AlertSystemIntegrationService extends EventEmitter {
 
   private calculateSystemHealth(): void {
     const components = this.status.components;
-    const healthyCount = components.filter(c => c.status === 'healthy').length;
+    const healthyCount = components.filter((c) => c.status === 'healthy').length;
     const totalCount = components.length;
 
     const healthScore = totalCount > 0 ? (healthyCount / totalCount) * 100 : 0;
@@ -800,7 +814,7 @@ export class AlertSystemIntegrationService extends EventEmitter {
     this.status.metrics = {
       totalAlerts: alertHistory.length,
       activeAlerts: alerts.length,
-      resolvedAlerts: alertHistory.filter(a => a.status === 'resolved').length,
+      resolvedAlerts: alertHistory.filter((a) => a.status === 'resolved').length,
       notificationsSent: this.countNotifications(alertHistory),
       escalationsTriggered: this.countEscalations(alertHistory),
       runbooksExecuted: runbookIntegrationService.getAllExecutions().length,
@@ -815,20 +829,26 @@ export class AlertSystemIntegrationService extends EventEmitter {
   }
 
   private handleHealthCheck(healthResult: SystemHealthResult): void {
-    logger.debug({
-      status: healthResult.status,
-      components: healthResult.components.length,
-      healthy: healthResult.summary.healthy_components,
-    }, 'Health check completed');
+    logger.debug(
+      {
+        status: healthResult.status,
+        components: healthResult.components.length,
+        healthy: healthResult.summary.healthy_components,
+      },
+      'Health check completed'
+    );
   }
 
   private handleAlertTriggered(alert: Alert): void {
-    logger.info({
-      alertId: alert.id,
-      ruleId: alert.ruleId,
-      severity: alert.severity,
-      title: alert.title,
-    }, 'Alert triggered');
+    logger.info(
+      {
+        alertId: alert.id,
+        ruleId: alert.ruleId,
+        severity: alert.severity,
+        title: alert.title,
+      },
+      'Alert triggered'
+    );
 
     // Check if auto-assignment is needed
     this.checkAutoAssignment(alert);
@@ -838,45 +858,64 @@ export class AlertSystemIntegrationService extends EventEmitter {
   }
 
   private handleAlertAcknowledged(alert: Alert): void {
-    logger.info({
-      alertId: alert.id,
-      acknowledgedBy: alert.acknowledgedBy,
-    }, 'Alert acknowledged');
+    logger.info(
+      {
+        alertId: alert.id,
+        acknowledgedBy: alert.acknowledgedBy,
+      },
+      'Alert acknowledged'
+    );
   }
 
   private handleAlertResolved(alert: Alert): void {
-    logger.info({
-      alertId: alert.id,
-      resolvedAt: alert.resolvedAt,
-    }, 'Alert resolved');
+    logger.info(
+      {
+        alertId: alert.id,
+        resolvedAt: alert.resolvedAt,
+      },
+      'Alert resolved'
+    );
   }
 
   private handleAlertAssigned(assignment: unknown): void {
-    logger.info({
-      alertId: assignment.alertId,
-      userId: assignment.userId,
-    }, 'Alert assigned to on-call user');
+    const assignmentObj = asObj(assignment, {} as Record<string, unknown>);
+    logger.info(
+      {
+        alertId: asStr(assignmentObj.alertId),
+        userId: asStr(assignmentObj.userId),
+      },
+      'Alert assigned to on-call user'
+    );
   }
 
   private handleRunbookCompleted(execution: unknown): void {
-    logger.info({
-      executionId: execution.id,
-      runbookId: execution.runbookId,
-      success: execution.result.success,
-    }, 'Runbook execution completed');
+    const executionObj = asObj(execution, {} as Record<string, unknown>);
+    const resultObj = asObj(executionObj.result, {} as Record<string, unknown>);
+    logger.info(
+      {
+        executionId: asStr(executionObj.id),
+        runbookId: asStr(executionObj.runbookId),
+        success: Boolean(resultObj.success),
+      },
+      'Runbook execution completed'
+    );
   }
 
   private handleMetricsAggregated(metrics: unknown): void {
-    logger.debug({
-      total: metrics.total,
-      active: metrics.active,
-    }, 'Metrics aggregated');
+    const metricsObj = asObj(metrics, {} as Record<string, unknown>);
+    logger.debug(
+      {
+        total: asNum(metricsObj.total),
+        active: asNum(metricsObj.active),
+      },
+      'Metrics aggregated'
+    );
   }
 
   private async checkAutoAssignment(alert: Alert): Promise<void> {
     try {
       // Auto-assign to on-call user based on alert severity and component
-      const toSeverity = (s: unknown): 'critical'|'high'|'medium'|'low' => {
+      const toSeverity = (s: unknown): 'critical' | 'high' | 'medium' | 'low' => {
         const k = String(s || '').toLowerCase();
         if (k === 'emergency' || k === 'critical') return 'critical';
         if (k === 'warning' || k === 'warn') return 'medium';
@@ -891,10 +930,13 @@ export class AlertSystemIntegrationService extends EventEmitter {
 
       await onCallManagementService.assignAlert(alert.id, assignmentOptions);
     } catch (error) {
-      logger.warn({
-        alertId: alert.id,
-        error,
-      }, 'Failed to auto-assign alert');
+      logger.warn(
+        {
+          alertId: alert.id,
+          error,
+        },
+        'Failed to auto-assign alert'
+      );
     }
   }
 
@@ -906,11 +948,14 @@ export class AlertSystemIntegrationService extends EventEmitter {
         const topRecommendation = recommendations[0];
 
         if (topRecommendation.confidence > 80) {
-          logger.info({
-            alertId: alert.id,
-            runbookId: topRecommendation.runbookId,
-            confidence: topRecommendation.confidence,
-          }, 'High-confidence runbook recommendation available');
+          logger.info(
+            {
+              alertId: alert.id,
+              runbookId: topRecommendation.runbookId,
+              confidence: topRecommendation.confidence,
+            },
+            'High-confidence runbook recommendation available'
+          );
 
           // Emit recommendation event
           this.emit('runbook_recommended', {
@@ -922,10 +967,13 @@ export class AlertSystemIntegrationService extends EventEmitter {
         }
       }
     } catch (error) {
-      logger.warn({
-        alertId: alert.id,
-        error,
-      }, 'Failed to get runbook recommendations');
+      logger.warn(
+        {
+          alertId: alert.id,
+          error,
+        },
+        'Failed to get runbook recommendations'
+      );
     }
   }
 
@@ -972,22 +1020,27 @@ export class AlertSystemIntegrationService extends EventEmitter {
 
     for (const component of this.status.components) {
       if (component.errorRate > 5) {
-        recommendations.push(`Check ${component.name} error rate (${component.errorRate.toFixed(1)}%)`);
+        recommendations.push(
+          `Check ${component.name} error rate (${component.errorRate.toFixed(1)}%)`
+        );
       }
 
       if (component.responseTime > 1000) {
-        recommendations.push(`Investigate ${component.name} response time (${component.responseTime}ms)`);
+        recommendations.push(
+          `Investigate ${component.name} response time (${component.responseTime}ms)`
+        );
       }
 
       if (component.uptime < 95) {
-        recommendations.push(`Review ${component.name} availability (${component.uptime.toFixed(1)}%)`);
+        recommendations.push(
+          `Review ${component.name} availability (${component.uptime.toFixed(1)}%)`
+        );
       }
     }
 
     return recommendations;
   }
 
-  
   private mapHealthStatus(status: HealthStatus): 'healthy' | 'degraded' | 'unhealthy' {
     switch (status) {
       case HealthStatus.HEALTHY:
@@ -1005,7 +1058,9 @@ export class AlertSystemIntegrationService extends EventEmitter {
 
   private calculateHealthScore(healthResult: SystemHealthResult): number {
     const totalComponents = healthResult.components.length;
-    const healthyComponents = healthResult.components.filter(c => c.status === HealthStatus.HEALTHY).length;
+    const healthyComponents = healthResult.components.filter(
+      (c) => c.status === HealthStatus.HEALTHY
+    ).length;
 
     return totalComponents > 0 ? (healthyComponents / totalComponents) * 100 : 0;
   }
@@ -1019,15 +1074,21 @@ export class AlertSystemIntegrationService extends EventEmitter {
 
     for (const component of healthResult.components) {
       if (component.error_rate > 10) {
-        recommendations.push(`${component.name}: High error rate (${component.error_rate.toFixed(1)}%)`);
+        recommendations.push(
+          `${component.name}: High error rate (${component.error_rate.toFixed(1)}%)`
+        );
       }
 
       if (component.response_time_ms > 5000) {
-        recommendations.push(`${component.name}: High response time (${component.response_time_ms}ms)`);
+        recommendations.push(
+          `${component.name}: High response time (${component.response_time_ms}ms)`
+        );
       }
 
       if (component.uptime_percentage < 95) {
-        recommendations.push(`${component.name}: Low availability (${component.uptime_percentage.toFixed(1)}%)`);
+        recommendations.push(
+          `${component.name}: Low availability (${component.uptime_percentage.toFixed(1)}%)`
+        );
       }
     }
 
@@ -1035,7 +1096,7 @@ export class AlertSystemIntegrationService extends EventEmitter {
   }
 
   private getComponentStatusesFromHealth(healthResult: SystemHealthResult): ComponentStatus[] {
-    return healthResult.components.map(component => ({
+    return healthResult.components.map((component) => ({
       name: component.name,
       type: component.type,
       status: this.mapHealthStatus(component.status),
@@ -1051,11 +1112,14 @@ export class AlertSystemIntegrationService extends EventEmitter {
     // Merge with existing component statuses
     const existingComponents = this.status.components;
 
-    componentStatuses.forEach(healthComponent => {
-      const existingIndex = existingComponents.findIndex(c => c.name === healthComponent.name);
+    componentStatuses.forEach((healthComponent) => {
+      const existingIndex = existingComponents.findIndex((c) => c.name === healthComponent.name);
 
       if (existingIndex >= 0) {
-        existingComponents[existingIndex] = { ...existingComponents[existingIndex], ...healthComponent };
+        existingComponents[existingIndex] = {
+          ...existingComponents[existingIndex],
+          ...healthComponent,
+        };
       } else {
         existingComponents.push(healthComponent);
       }
@@ -1084,24 +1148,24 @@ export class AlertSystemIntegrationService extends EventEmitter {
       byRule: asNumMap(metrics.byRule),
       byComponent: asNumMap(metrics.byComponent),
       bySource: asNumMap(metrics.bySource),
-      notificationsSent:       asNum(metrics.notificationsSent),
+      notificationsSent: asNum(metrics.notificationsSent),
       notificationSuccessRate: asNum(metrics.notificationSuccessRate),
-      averageResponseTime:     asNum(metrics.averageResponseTime),
+      averageResponseTime: asNum(metrics.averageResponseTime),
       responseTime: {
         average: asNum(metrics.averageResponseTime),
-        median:  0,
-        p95:     0,
-        p99:     0,
-        min:     0,
-        max:     0,
+        median: 0,
+        p95: 0,
+        p99: 0,
+        min: 0,
+        max: 0,
       },
       resolutionTime: {
-        average:   0,
-        median:    0,
-        p95:       0,
-        p99:       0,
-        min:       0,
-        max:       0,
+        average: 0,
+        median: 0,
+        p95: 0,
+        p99: 0,
+        min: 0,
+        max: 0,
         bySeverity: { info: 0, warning: 0, critical: 0, emergency: 0 },
       },
       // responseTime/resolutionTime not present on AlertMetrics interface; keep scalars only
@@ -1167,15 +1231,18 @@ export class AlertSystemIntegrationService extends EventEmitter {
       },
     ];
 
-    return scenarios.find(s => s.name === scenarioName);
+    return scenarios.find((s) => s.name === scenarioName);
   }
 
   private async simulateFaultScenario(scenario: FaultScenario): Promise<void> {
-    logger.info({
-      scenarioName: scenario.name,
-      type: scenario.type,
-      severity: scenario.severity,
-    }, 'Simulating fault scenario');
+    logger.info(
+      {
+        scenarioName: scenario.name,
+        type: scenario.type,
+        severity: scenario.severity,
+      },
+      'Simulating fault scenario'
+    );
 
     // Create simulated health result based on scenario
     const healthResult = this.createSimulatedHealthResult(scenario);
@@ -1349,7 +1416,7 @@ export class AlertSystemIntegrationService extends EventEmitter {
   }
 
   private countEscalations(alerts: Alert[]): number {
-    return alerts.filter(alert => alert.escalated).length;
+    return alerts.filter((alert) => alert.escalated).length;
   }
 
   private validateScenarioResults(scenario: FaultScenario, alerts: Alert[]): boolean {
@@ -1357,7 +1424,7 @@ export class AlertSystemIntegrationService extends EventEmitter {
     const notificationCount = this.countNotifications(alerts);
     const escalationCount = this.countEscalations(alerts);
 
-    const expectedEsc = (scenario.expectedEscalations ?? 0);
+    const expectedEsc = scenario.expectedEscalations ?? 0;
     return (
       alertCount === scenario.expectedAlerts &&
       notificationCount >= scenario.expectedNotifications &&
@@ -1387,14 +1454,19 @@ export class AlertSystemIntegrationService extends EventEmitter {
     const recommendations: string[] = [];
 
     if (results.overall.successRate < 100) {
-      recommendations.push('Some test suites failed - review test configurations and system health');
+      recommendations.push(
+        'Some test suites failed - review test configurations and system health'
+      );
     }
 
-    if (results.duration > 300000) { // 5 minutes
-      recommendations.push('Test execution took longer than expected - consider optimizing test scenarios');
+    if (results.duration > 300000) {
+      // 5 minutes
+      recommendations.push(
+        'Test execution took longer than expected - consider optimizing test scenarios'
+      );
     }
 
-    const failedSuites = results.suites.filter(s => !s.passed);
+    const failedSuites = results.suites.filter((s) => !s.passed);
     for (const suite of failedSuites) {
       recommendations.push(`Review ${suite.suiteName} test suite - multiple failures detected`);
     }
@@ -1417,12 +1489,12 @@ export class AlertSystemIntegrationService extends EventEmitter {
   private calculateSuccessRate(alerts: Alert[]): number {
     if (alerts.length === 0) return 100;
 
-    const resolvedAlerts = alerts.filter(alert => alert.status === 'resolved').length;
+    const resolvedAlerts = alerts.filter((alert) => alert.status === 'resolved').length;
     return (resolvedAlerts / alerts.length) * 100;
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

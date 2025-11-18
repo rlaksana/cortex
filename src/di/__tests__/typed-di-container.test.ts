@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Comprehensive Tests for Typed DI Container
  *
@@ -15,17 +11,13 @@
  * - Metrics and monitoring
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import {
-  TypedDIContainer,
-  createTypedDIContainer,
-  ServiceLifetime
-} from '../typed-di-container.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { TypedDIContainer, createTypedDIContainer, ServiceLifetime } from '../typed-di-container';
 import {
   RuntimeValidator,
   RuntimeTypeChecker,
   ServiceValidationError,
-  TypeValidationError
+  TypeValidationError,
 } from '../runtime-validation';
 import { createServiceId } from '../../factories/factory-types';
 
@@ -107,7 +99,7 @@ const testServiceValidator: RuntimeValidator<ITestService> = {
 
   getErrorMessage(value: unknown): string {
     return `Expected ITestService, got ${typeof value}`;
-  }
+  },
 };
 
 // ============================================================================
@@ -126,7 +118,7 @@ describe('TypedDIContainer', () => {
       enableRuntimeTypeChecking: true,
       enableCircularDependencyDetection: true,
       enableMetrics: true,
-      enableDebugLogging: false
+      enableDebugLogging: false,
     });
   });
 
@@ -142,7 +134,7 @@ describe('TypedDIContainer', () => {
     it('should register and resolve a simple service', () => {
       container.register(TEST_SERVICE_ID, TestService, ServiceLifetime.SINGLETON);
 
-      const service = container.resolve(TEST_SERVICE_ID);
+      const service = container.resolve(TEST_SERVICE_ID) as ITestService;
 
       expect(service).toBeInstanceOf(TestService);
       expect(service.getValue()).toBe('default');
@@ -151,8 +143,8 @@ describe('TypedDIContainer', () => {
     it('should return the same instance for singleton services', () => {
       container.register(TEST_SERVICE_ID, TestService, ServiceLifetime.SINGLETON);
 
-      const service1 = container.resolve(TEST_SERVICE_ID);
-      const service2 = container.resolve(TEST_SERVICE_ID);
+      const service1 = container.resolve(TEST_SERVICE_ID) as ITestService;
+      const service2 = container.resolve(TEST_SERVICE_ID) as ITestService;
 
       expect(service1).toBe(service2);
     });
@@ -160,8 +152,8 @@ describe('TypedDIContainer', () => {
     it('should create new instances for transient services', () => {
       container.register(TEST_SERVICE_ID, TestService, ServiceLifetime.TRANSIENT);
 
-      const service1 = container.resolve(TEST_SERVICE_ID);
-      const service2 = container.resolve(TEST_SERVICE_ID);
+      const service1 = container.resolve(TEST_SERVICE_ID) as ITestService;
+      const service2 = container.resolve(TEST_SERVICE_ID) as ITestService;
 
       expect(service1).not.toBe(service2);
       expect(service1).toBeInstanceOf(TestService);
@@ -177,7 +169,7 @@ describe('TypedDIContainer', () => {
         [TEST_SERVICE_ID]
       );
 
-      const service = container.resolve(TEST_SERVICE_WITH_DEPS_ID);
+      const service = container.resolve(TEST_SERVICE_WITH_DEPS_ID) as ITestServiceWithDeps;
 
       expect(service).toBeInstanceOf(TestServiceWithDeps);
       expect(service.getValue()).toBe('with-deps');
@@ -190,14 +182,14 @@ describe('TypedDIContainer', () => {
 
       container.registerInstance(TEST_SERVICE_ID, instance, testServiceValidator);
 
-      const resolved = container.resolve(TEST_SERVICE_ID);
+      const resolved = container.resolve(TEST_SERVICE_ID) as ITestService;
 
       expect(resolved).toBe(instance);
       expect(resolved.getValue()).toBe('instance-value');
     });
 
     it('should register and resolve factory services', async () => {
-      const factory = jest.fn().mockImplementation(() => {
+      const factory = vi.fn().mockImplementation(() => {
         const service = new TestService();
         service.setValue('factory-value');
         return service;
@@ -205,7 +197,7 @@ describe('TypedDIContainer', () => {
 
       container.registerFactory(TEST_SERVICE_ID, factory, ServiceLifetime.SINGLETON);
 
-      const service = container.resolve(TEST_SERVICE_ID);
+      const service = container.resolve(TEST_SERVICE_ID) as ITestService;
 
       expect(factory).toHaveBeenCalledWith(container);
       expect(service).toBeInstanceOf(TestService);
@@ -227,9 +219,15 @@ describe('TypedDIContainer', () => {
     });
 
     it('should validate services during resolution when validator is provided', () => {
-      const factory = jest.fn().mockReturnValue({ invalid: 'object' });
+      const factory = vi.fn().mockReturnValue({ invalid: 'object' });
 
-      container.registerFactory(TEST_SERVICE_ID, factory, ServiceLifetime.SINGLETON, [], testServiceValidator);
+      container.registerFactory(
+        TEST_SERVICE_ID,
+        factory,
+        ServiceLifetime.SINGLETON,
+        [],
+        testServiceValidator
+      );
 
       expect(() => {
         container.resolve(TEST_SERVICE_ID);
@@ -238,13 +236,17 @@ describe('TypedDIContainer', () => {
 
     it('should skip validation when runtime type checking is disabled', () => {
       const containerNoValidation = createTypedDIContainer({
-        enableRuntimeTypeChecking: false
+        enableRuntimeTypeChecking: false,
       });
 
       const invalidInstance = { invalid: 'object' } as unknown;
 
       expect(() => {
-        containerNoValidation.registerInstance(TEST_SERVICE_ID, invalidInstance, testServiceValidator);
+        containerNoValidation.registerInstance(
+          TEST_SERVICE_ID,
+          invalidInstance,
+          testServiceValidator
+        );
       }).not.toThrow();
     });
   });
@@ -258,13 +260,23 @@ describe('TypedDIContainer', () => {
       const SERVICE_A = createServiceId<unknown>('ServiceA');
       const SERVICE_B = createServiceId<unknown>('ServiceB');
 
-      container.register(SERVICE_A, class A {
-        constructor(public b: unknown) {}
-      }, ServiceLifetime.SINGLETON, [SERVICE_B]);
+      container.register(
+        SERVICE_A,
+        class A {
+          constructor(public b: unknown) {}
+        },
+        ServiceLifetime.SINGLETON,
+        [SERVICE_B]
+      );
 
-      container.register(SERVICE_B, class B {
-        constructor(public a: unknown) {}
-      }, ServiceLifetime.SINGLETON, [SERVICE_A]);
+      container.register(
+        SERVICE_B,
+        class B {
+          constructor(public a: unknown) {}
+        },
+        ServiceLifetime.SINGLETON,
+        [SERVICE_A]
+      );
 
       expect(() => {
         container.resolve(SERVICE_A);
@@ -276,17 +288,32 @@ describe('TypedDIContainer', () => {
       const SERVICE_B = createServiceId<unknown>('ServiceB');
       const SERVICE_C = createServiceId<unknown>('ServiceC');
 
-      container.register(SERVICE_A, class A {
-        constructor(public b: unknown) {}
-      }, ServiceLifetime.SINGLETON, [SERVICE_B]);
+      container.register(
+        SERVICE_A,
+        class A {
+          constructor(public b: unknown) {}
+        },
+        ServiceLifetime.SINGLETON,
+        [SERVICE_B]
+      );
 
-      container.register(SERVICE_B, class B {
-        constructor(public c: unknown) {}
-      }, ServiceLifetime.SINGLETON, [SERVICE_C]);
+      container.register(
+        SERVICE_B,
+        class B {
+          constructor(public c: unknown) {}
+        },
+        ServiceLifetime.SINGLETON,
+        [SERVICE_C]
+      );
 
-      container.register(SERVICE_C, class C {
-        constructor(public a: unknown) {}
-      }, ServiceLifetime.SINGLETON, [SERVICE_A]);
+      container.register(
+        SERVICE_C,
+        class C {
+          constructor(public a: unknown) {}
+        },
+        ServiceLifetime.SINGLETON,
+        [SERVICE_A]
+      );
 
       expect(() => {
         container.resolve(SERVICE_A);
@@ -297,13 +324,23 @@ describe('TypedDIContainer', () => {
       const SERVICE_A = createServiceId<unknown>('ServiceA');
       const SERVICE_B = createServiceId<unknown>('ServiceB');
 
-      container.register(SERVICE_A, class A {
-        constructor(public b: unknown) {}
-      }, ServiceLifetime.SINGLETON, [SERVICE_B]);
+      container.register(
+        SERVICE_A,
+        class A {
+          constructor(public b: unknown) {}
+        },
+        ServiceLifetime.SINGLETON,
+        [SERVICE_B]
+      );
 
-      container.register(SERVICE_B, class B {
-        constructor(public a: unknown) {}
-      }, ServiceLifetime.SINGLETON, [SERVICE_A]);
+      container.register(
+        SERVICE_B,
+        class B {
+          constructor(public a: unknown) {}
+        },
+        ServiceLifetime.SINGLETON,
+        [SERVICE_A]
+      );
 
       const validation = container.validateDependencyGraph();
 
@@ -406,7 +443,7 @@ describe('TypedDIContainer', () => {
     });
 
     it('should handle factory errors gracefully', () => {
-      const errorFactory = jest.fn().mockImplementation(() => {
+      const errorFactory = vi.fn().mockImplementation(() => {
         throw new Error('Factory error');
       });
 
@@ -424,9 +461,13 @@ describe('TypedDIContainer', () => {
 
   describe('Lifecycle Management', () => {
     it('should dispose disposable services', async () => {
-      container.registerInstance(DISPOSABLE_SERVICE_ID, new DisposableService(), testServiceValidator);
+      container.registerInstance(
+        DISPOSABLE_SERVICE_ID,
+        new DisposableService(),
+        testServiceValidator
+      );
 
-      const service = container.resolve(DISPOSABLE_SERVICE_ID);
+      const service = container.resolve(DISPOSABLE_SERVICE_ID) as ITestService;
       expect(service.getValue()).toBe('disposable');
 
       await container.dispose();
@@ -439,7 +480,7 @@ describe('TypedDIContainer', () => {
     it('should handle disposal errors gracefully', async () => {
       const faultyDisposable = new DisposableService();
       const originalDispose = faultyDisposable.dispose.bind(faultyDisposable);
-      faultyDisposable.dispose = jest.fn().mockImplementation(async () => {
+      faultyDisposable.dispose = vi.fn().mockImplementation(async () => {
         await originalDispose();
         throw new Error('Disposal error');
       });
@@ -481,34 +522,36 @@ describe('TypedDIContainer', () => {
       expect(metrics.averageResolutionTime).toBeGreaterThan(0);
     });
 
-    it('should emit lifecycle events', (done) => {
+    it('should emit lifecycle events', async () => {
       container.register(TEST_SERVICE_ID, TestService, ServiceLifetime.SINGLETON);
 
       let eventCount = 0;
       const expectedEvents = ['service:registered', 'service:resolving', 'service:resolved'];
 
-      container.on('service:registered', () => {
-        eventCount++;
-        checkComplete();
-      });
+      return new Promise<void>((resolve) => {
+        container.on('service:registered', () => {
+          eventCount++;
+          checkComplete();
+        });
 
-      container.on('service:resolving', () => {
-        eventCount++;
-        checkComplete();
-      });
+        container.on('service:resolving', () => {
+          eventCount++;
+          checkComplete();
+        });
 
-      container.on('service:resolved', () => {
-        eventCount++;
-        checkComplete();
-      });
+        container.on('service:resolved', () => {
+          eventCount++;
+          checkComplete();
+        });
 
-      function checkComplete() {
-        if (eventCount === expectedEvents.length) {
-          done();
+        function checkComplete() {
+          if (eventCount === expectedEvents.length) {
+            resolve();
+          }
         }
-      }
 
-      container.resolve(TEST_SERVICE_ID);
+        container.resolve(TEST_SERVICE_ID);
+      });
     });
 
     it('should track failed resolutions', () => {
@@ -531,7 +574,14 @@ describe('TypedDIContainer', () => {
 
   describe('Service Information and Discovery', () => {
     it('should provide service information', () => {
-      container.register(TEST_SERVICE_ID, TestService, ServiceLifetime.SINGLETON, [], testServiceValidator, ['test']);
+      container.register(
+        TEST_SERVICE_ID,
+        TestService,
+        ServiceLifetime.SINGLETON,
+        [],
+        testServiceValidator,
+        ['test']
+      );
 
       const serviceInfo = container.getServiceInfo(TEST_SERVICE_ID);
 
@@ -576,7 +626,7 @@ describe('TypedDIContainer', () => {
         enableAutoValidation: false,
         enableRuntimeTypeChecking: false,
         enableMetrics: false,
-        maxResolutionDepth: 5
+        maxResolutionDepth: 5,
       });
 
       expect(customContainer.getMetrics().totalServices).toBe(0);
@@ -600,20 +650,13 @@ describe('TypedDIContainer', () => {
       const SERVICE_C = createServiceId<ITestService>('ServiceC');
 
       container.register(SERVICE_A, TestService, ServiceLifetime.SINGLETON);
-      container.register(
+      container.register(SERVICE_B, TestServiceWithDeps, ServiceLifetime.SINGLETON, [SERVICE_A]);
+      container.register(SERVICE_C, TestServiceWithDeps, ServiceLifetime.SINGLETON, [
         SERVICE_B,
-        TestServiceWithDeps,
-        ServiceLifetime.SINGLETON,
-        [SERVICE_A]
-      );
-      container.register(
-        SERVICE_C,
-        TestServiceWithDeps,
-        ServiceLifetime.SINGLETON,
-        [SERVICE_B, SERVICE_A]
-      );
+        SERVICE_A,
+      ]);
 
-      const serviceC = container.resolve(SERVICE_C);
+      const serviceC = container.resolve(SERVICE_C) as ITestServiceWithDeps;
 
       expect(serviceC).toBeInstanceOf(TestServiceWithDeps);
       expect(serviceC.getDepValue()).toBe('with-deps');
@@ -648,14 +691,19 @@ describe('TypedDIContainer', () => {
 
       container.register(FACTORY_DEP_ID, TestService, ServiceLifetime.SINGLETON);
 
-      container.registerFactory(FACTORY_SERVICE_ID, (container) => {
-        const dep = container.resolve(FACTORY_DEP_ID);
-        const service = new TestService();
-        service.setValue(`factory-with-dep: ${dep.getValue()}`);
-        return service;
-      }, ServiceLifetime.SINGLETON, [FACTORY_DEP_ID]);
+      container.registerFactory(
+        FACTORY_SERVICE_ID,
+        (container) => {
+          const dep = container.resolve(FACTORY_DEP_ID) as ITestService;
+          const service = new TestService();
+          service.setValue(`factory-with-dep: ${dep.getValue()}`);
+          return service;
+        },
+        ServiceLifetime.SINGLETON,
+        [FACTORY_DEP_ID]
+      );
 
-      const service = container.resolve(FACTORY_SERVICE_ID);
+      const service = container.resolve(FACTORY_SERVICE_ID) as ITestService;
 
       expect(service.getValue()).toBe('factory-with-dep: default');
     });

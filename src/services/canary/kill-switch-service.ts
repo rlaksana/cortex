@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Emergency Kill Switch Service
  *
@@ -159,13 +155,16 @@ export interface KillSwitchEvent {
  */
 export interface SystemHealthStatus {
   overall: HealthStatus;
-  components: Map<string, {
-    status: HealthStatus;
-    errorRate: number;
-    latency: number;
-    uptime: number;
-    lastCheck: Date;
-  }>;
+  components: Map<
+    string,
+    {
+      status: HealthStatus;
+      errorRate: number;
+      latency: number;
+      uptime: number;
+      lastCheck: Date;
+    }
+  >;
   metrics: {
     memoryUsage: number;
     cpuUsage: number;
@@ -313,7 +312,7 @@ export class KillSwitchService extends EventEmitter {
    * Get configurations by scope
    */
   getConfigsByScope(scope: KillSwitchScope): KillSwitchConfig[] {
-    return this.getAllConfigs().filter(config => config.scope === scope);
+    return this.getAllConfigs().filter((config) => config.scope === scope);
   }
 
   // ============================================================================
@@ -323,7 +322,11 @@ export class KillSwitchService extends EventEmitter {
   /**
    * Manually trigger a kill switch
    */
-  async triggerKillSwitch(configId: string, reason: string, triggeredBy?: string): Promise<boolean> {
+  async triggerKillSwitch(
+    configId: string,
+    reason: string,
+    triggeredBy?: string
+  ): Promise<boolean> {
     const config = this.configs.get(configId);
     if (!config) {
       logger.error('Kill switch configuration not found', { configId });
@@ -388,7 +391,11 @@ export class KillSwitchService extends EventEmitter {
   /**
    * Deactivate a kill switch
    */
-  async deactivateKillSwitch(configId: string, reason?: string, deactivatedBy?: string): Promise<boolean> {
+  async deactivateKillSwitch(
+    configId: string,
+    reason?: string,
+    deactivatedBy?: string
+  ): Promise<boolean> {
     const config = this.configs.get(configId);
     const event = this.activeEvents.get(configId);
 
@@ -432,7 +439,7 @@ export class KillSwitchService extends EventEmitter {
    */
   getActiveEvents(): KillSwitchEvent[] {
     return Array.from(this.activeEvents.values()).filter(
-      event => event.status === KillSwitchStatus.ACTIVE
+      (event) => event.status === KillSwitchStatus.ACTIVE
     );
   }
 
@@ -517,11 +524,7 @@ export class KillSwitchService extends EventEmitter {
       // Check each trigger condition
       for (const condition of config.triggerConditions) {
         if (await this.evaluateTriggerCondition(condition, config)) {
-          await this.triggerKillSwitch(
-            config.id,
-            `Auto-triggered: ${condition.type}`,
-            'system'
-          );
+          await this.triggerKillSwitch(config.id, `Auto-triggered: ${condition.type}`, 'system');
           break; // Only trigger once per config
         }
       }
@@ -531,7 +534,10 @@ export class KillSwitchService extends EventEmitter {
   /**
    * Evaluate a single trigger condition
    */
-  private async evaluateTriggerCondition(condition: TriggerCondition, config: KillSwitchConfig): Promise<boolean> {
+  private async evaluateTriggerCondition(
+    condition: TriggerCondition,
+    config: KillSwitchConfig
+  ): Promise<boolean> {
     try {
       switch (condition.type) {
         case KillSwitchTrigger.HEALTH_CHECK_FAILURE:
@@ -606,7 +612,7 @@ export class KillSwitchService extends EventEmitter {
       let totalErrors = 0;
       let totalComponents = 0;
 
-      this.systemHealth.components.forEach(comp => {
+      this.systemHealth.components.forEach((comp) => {
         totalErrors += comp.errorRate;
         totalComponents++;
       });
@@ -640,7 +646,7 @@ export class KillSwitchService extends EventEmitter {
       let totalLatency = 0;
       let totalComponents = 0;
 
-      this.systemHealth.components.forEach(comp => {
+      this.systemHealth.components.forEach((comp) => {
         totalLatency += comp.latency;
         totalComponents++;
       });
@@ -703,7 +709,10 @@ export class KillSwitchService extends EventEmitter {
   /**
    * Execute kill switch actions
    */
-  private async executeKillSwitchActions(config: KillSwitchConfig, event: KillSwitchEvent): Promise<void> {
+  private async executeKillSwitchActions(
+    config: KillSwitchConfig,
+    event: KillSwitchEvent
+  ): Promise<void> {
     try {
       switch (config.scope) {
         case KillSwitchScope.SYSTEM_WIDE:
@@ -731,7 +740,6 @@ export class KillSwitchService extends EventEmitter {
       if (config.notifications.enabled) {
         await this.sendKillSwitchNotifications(config, event, 'triggered');
       }
-
     } catch (error) {
       logger.error('Error executing kill switch actions', {
         configId: config.id,
@@ -744,7 +752,10 @@ export class KillSwitchService extends EventEmitter {
   /**
    * Execute system-wide kill
    */
-  private async executeSystemWideKill(config: KillSwitchConfig, event: KillSwitchEvent): Promise<void> {
+  private async executeSystemWideKill(
+    config: KillSwitchConfig,
+    event: KillSwitchEvent
+  ): Promise<void> {
     logger.error('Executing system-wide kill switch', {
       configId: config.id,
       eventId: event.id,
@@ -764,7 +775,10 @@ export class KillSwitchService extends EventEmitter {
   /**
    * Execute component kill
    */
-  private async executeComponentKill(config: KillSwitchConfig, event: KillSwitchEvent): Promise<void> {
+  private async executeComponentKill(
+    config: KillSwitchConfig,
+    event: KillSwitchEvent
+  ): Promise<void> {
     const component = config.targetComponent;
     if (!component) {
       logger.warn('Component kill switch without target component', {
@@ -790,7 +804,10 @@ export class KillSwitchService extends EventEmitter {
   /**
    * Execute feature kill
    */
-  private async executeFeatureKill(config: KillSwitchConfig, event: KillSwitchEvent): Promise<void> {
+  private async executeFeatureKill(
+    config: KillSwitchConfig,
+    event: KillSwitchEvent
+  ): Promise<void> {
     logger.error('Executing feature kill switch', {
       configId: config.id,
       eventId: event.id,
@@ -807,7 +824,10 @@ export class KillSwitchService extends EventEmitter {
   /**
    * Execute deployment kill
    */
-  private async executeDeploymentKill(config: KillSwitchConfig, event: KillSwitchEvent): Promise<void> {
+  private async executeDeploymentKill(
+    config: KillSwitchConfig,
+    event: KillSwitchEvent
+  ): Promise<void> {
     logger.error('Executing deployment kill switch', {
       configId: config.id,
       eventId: event.id,
@@ -824,7 +844,10 @@ export class KillSwitchService extends EventEmitter {
   /**
    * Execute API endpoint kill
    */
-  private async executeEndpointKill(config: KillSwitchConfig, event: KillSwitchEvent): Promise<void> {
+  private async executeEndpointKill(
+    config: KillSwitchConfig,
+    event: KillSwitchEvent
+  ): Promise<void> {
     const endpoint = config.targetComponent;
     if (!endpoint) {
       logger.warn('API endpoint kill switch without target endpoint', {
@@ -924,7 +947,8 @@ export class KillSwitchService extends EventEmitter {
         } as unknown);
       } else {
         // Schedule next recovery attempt with backoff
-        const backoffDelay = config.autoRecovery.delayMs *
+        const backoffDelay =
+          config.autoRecovery.delayMs *
           Math.pow(config.autoRecovery.backoffMultiplier, event.recoveryAttempts);
 
         setTimeout(() => {
@@ -944,7 +968,10 @@ export class KillSwitchService extends EventEmitter {
   /**
    * Execute recovery actions
    */
-  private async executeRecoveryActions(config: KillSwitchConfig, event: KillSwitchEvent): Promise<void> {
+  private async executeRecoveryActions(
+    config: KillSwitchConfig,
+    event: KillSwitchEvent
+  ): Promise<void> {
     const actions = config.autoRecovery.recoveryActions.sort((a, b) => a.order - b.order);
 
     for (const action of actions) {
@@ -1038,9 +1065,10 @@ export class KillSwitchService extends EventEmitter {
     type: 'triggered' | 'recovered'
   ): Promise<void> {
     try {
-      const message = type === 'triggered'
-        ? `Kill switch "${config.name}" triggered: ${event.reason}`
-        : `Kill switch "${config.name}" recovered after ${event.recoveryAttempts} attempts`;
+      const message =
+        type === 'triggered'
+          ? `Kill switch "${config.name}" triggered: ${event.reason}`
+          : `Kill switch "${config.name}" recovered after ${event.recoveryAttempts} attempts`;
 
       // This would integrate with your notification service
       logger.info('Kill switch notification sent', {
@@ -1050,7 +1078,6 @@ export class KillSwitchService extends EventEmitter {
         message,
         channels: config.notifications.channels,
       });
-
     } catch (error) {
       logger.error('Error sending kill switch notifications', {
         configId: config.id,

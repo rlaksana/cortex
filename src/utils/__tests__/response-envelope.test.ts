@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * MCP Response Envelope System Tests
  *
@@ -18,13 +14,13 @@ import {
   createResponseEnvelopeBuilder,
   ErrorCode,
   type SuccessEnvelope,
-  type ErrorEnvelope
-} from '../response-envelope-builder.js';
+  type ErrorEnvelope,
+} from '../response-envelope-builder';
 import {
   ResponseEnvelopeValidator,
   validateEnvelopeOrThrow,
-  validateOperationResponseOrThrow
-} from '../response-envelope-validator.js';
+  validateOperationResponseOrThrow,
+} from '../response-envelope-validator';
 import {
   isMemoryStoreResponse,
   isMemoryFindResponse,
@@ -33,9 +29,9 @@ import {
   extractMemoryFindData,
   extractSystemStatusData,
   ResponseProcessor,
-  createResponseMatcher
-} from '../mcp-response-guards.js';
-import type { MemoryStoreResult, MemoryFindResult } from '../../types/mcp-response-data.types.js';
+  createResponseMatcher,
+} from '../mcp-response-guards';
+import type { MemoryStoreResult, MemoryFindResult } from '../../types/mcp-response-data.types';
 
 describe('ResponseEnvelopeBuilder', () => {
   it('should create a success envelope with valid structure', () => {
@@ -45,7 +41,7 @@ describe('ResponseEnvelopeBuilder', () => {
       strategy: 'auto' as const,
       vector_used: false,
       degraded: false,
-      source: 'test'
+      source: 'test',
     };
 
     const envelope = builder.createSuccessEnvelope(testData, mockMeta, 'Success message');
@@ -74,7 +70,7 @@ describe('ResponseEnvelopeBuilder', () => {
     expect(envelope.success).toBe(false);
     expect(envelope.data).toBe(null);
     expect(envelope.error.code).toBe(ErrorCode.VALIDATION_FAILED);
-    expect(envelope.error.message).toBe('Test error message');
+    expect((envelope.error as unknown).message).toBe('Test error message');
     expect(envelope.error.type).toBe('ValidationError');
     expect(envelope.error.details).toEqual({ field: 'test' });
     expect(envelope.error.retryable).toBe(false);
@@ -88,7 +84,7 @@ describe('ResponseEnvelopeBuilder', () => {
       strategy: 'auto' as const,
       vector_used: false,
       degraded: false,
-      source: 'test'
+      source: 'test',
     };
 
     const pagination = {
@@ -97,7 +93,7 @@ describe('ResponseEnvelopeBuilder', () => {
       total: 100,
       total_pages: 10,
       has_next: true,
-      has_prev: false
+      has_prev: false,
     };
 
     const envelope = builder.createPaginatedEnvelope(testItems, pagination, mockMeta);
@@ -115,16 +111,10 @@ describe('ResponseEnvelopeBuilder', () => {
       strategy: 'auto' as const,
       vector_used: false,
       degraded: false,
-      source: 'test'
+      source: 'test',
     };
 
-    const envelope = builder.createStreamingEnvelope(
-      testData,
-      'stream123',
-      1,
-      'active',
-      mockMeta
-    );
+    const envelope = builder.createStreamingEnvelope(testData, 'stream123', 1, 'active', mockMeta);
 
     expect(envelope.type).toBe('streaming');
     expect(envelope.success).toBe(true);
@@ -145,7 +135,7 @@ describe('ResponseEnvelopeValidator', () => {
         strategy: 'auto',
         vector_used: false,
         degraded: false,
-        source: 'test'
+        source: 'test',
       }
     );
 
@@ -176,9 +166,9 @@ describe('ResponseEnvelopeValidator', () => {
         total_attempted: 1,
         total_stored: 1,
         total_failed: 0,
-        success_rate: 1.0
+        success_rate: 1.0,
       },
-      batch_id: 'batch123'
+      batch_id: 'batch123',
     };
 
     const validation = ResponseEnvelopeValidator.validateMemoryStoreResult(memoryStoreData);
@@ -201,9 +191,9 @@ describe('ResponseEnvelopeValidator', () => {
           vector_used: false,
           semantic_search: false,
           keyword_search: true,
-          fuzzy_matching: false
-        }
-      }
+          fuzzy_matching: false,
+        },
+      },
     };
 
     const validation = ResponseEnvelopeValidator.validateMemoryFindResult(memoryFindData);
@@ -222,9 +212,9 @@ describe('Response Type Guards', () => {
         total_attempted: 1,
         total_stored: 1,
         total_failed: 0,
-        success_rate: 1.0
+        success_rate: 1.0,
       },
-      batch_id: 'batch123'
+      batch_id: 'batch123',
     };
 
     const envelope = builder.createMemoryStoreSuccess(memoryStoreData);
@@ -249,9 +239,9 @@ describe('Response Type Guards', () => {
           vector_used: false,
           semantic_search: false,
           keyword_search: true,
-          fuzzy_matching: false
-        }
-      }
+          fuzzy_matching: false,
+        },
+      },
     };
 
     const envelope = builder.createMemoryFindSuccess(memoryFindData);
@@ -281,14 +271,14 @@ describe('ResponseProcessor', () => {
         strategy: 'auto',
         vector_used: false,
         degraded: false,
-        source: 'test'
+        source: 'test',
       }
     );
 
     const result = ResponseProcessor.process(envelope, {
       onSuccess: (data) => `Processed: ${data.result}`,
       onError: () => 'Error processed',
-      onUnknown: () => 'Unknown processed'
+      onUnknown: () => 'Unknown processed',
     });
 
     expect(result).toBe('Processed: success');
@@ -296,15 +286,12 @@ describe('ResponseProcessor', () => {
 
   it('should process error responses correctly', () => {
     const builder = createResponseEnvelopeBuilder('test_operation');
-    const envelope = builder.createErrorEnvelope(
-      ErrorCode.VALIDATION_FAILED,
-      'Test error'
-    );
+    const envelope = builder.createErrorEnvelope(ErrorCode.VALIDATION_FAILED, 'Test error');
 
     const result = ResponseProcessor.process(envelope, {
       onSuccess: () => 'Success processed',
-      onError: (error) => `Error: ${error.message}`,
-      onUnknown: () => 'Unknown processed'
+      onError: (error) => `Error: ${(error as Error).message}`,
+      onUnknown: () => 'Unknown processed',
     });
 
     expect(result).toBe('Error: Test error');
@@ -319,9 +306,9 @@ describe('ResponseProcessor', () => {
         total_attempted: 1,
         total_stored: 1,
         total_failed: 0,
-        success_rate: 1.0
+        success_rate: 1.0,
       },
-      batch_id: 'batch123'
+      batch_id: 'batch123',
     };
 
     const envelope = builder.createMemoryStoreSuccess(memoryStoreData);
@@ -329,7 +316,7 @@ describe('ResponseProcessor', () => {
     const result = ResponseProcessor.processMemoryStore(envelope, {
       onSuccess: (data) => `Stored ${data.summary.total_stored} items`,
       onError: () => 'Error processed',
-      onUnknown: () => 'Unknown processed'
+      onUnknown: () => 'Unknown processed',
     });
 
     expect(result).toBe('Stored 1 items');
@@ -345,13 +332,13 @@ describe('ResponseMatcher', () => {
         strategy: 'auto',
         vector_used: false,
         degraded: false,
-        source: 'test'
+        source: 'test',
       }
     );
 
     const result = createResponseMatcher(envelope)
       .onSuccess((data) => `Success: ${data.result}`)
-      .onError((error) => `Error: ${error.message}`)
+      .onError((error) => `Error: ${(error as Error).message}`)
       .otherwise(() => 'Unknown');
 
     expect(result).toBe('Success: success');
@@ -359,14 +346,11 @@ describe('ResponseMatcher', () => {
 
   it('should match error case correctly', () => {
     const builder = createResponseEnvelopeBuilder('test_operation');
-    const envelope = builder.createErrorEnvelope(
-      ErrorCode.VALIDATION_FAILED,
-      'Test error'
-    );
+    const envelope = builder.createErrorEnvelope(ErrorCode.VALIDATION_FAILED, 'Test error');
 
     const result = createResponseMatcher(envelope)
       .onSuccess((data) => `Success: ${JSON.stringify(data)}`)
-      .onError((error) => `Error: ${error.message}`)
+      .onError((error) => `Error: ${(error as Error).message}`)
       .otherwise(() => 'Unknown');
 
     expect(result).toBe('Error: Test error');
@@ -383,9 +367,9 @@ describe('validateOperationResponseOrThrow', () => {
         total_attempted: 1,
         total_stored: 1,
         total_failed: 0,
-        success_rate: 1.0
+        success_rate: 1.0,
       },
-      batch_id: 'batch123'
+      batch_id: 'batch123',
     };
 
     const envelope = builder.createMemoryStoreSuccess(memoryStoreData);
@@ -404,11 +388,11 @@ describe('validateOperationResponseOrThrow', () => {
         strategy: 'auto',
         vector_used: false,
         degraded: false,
-        source: 'test'
+        source: 'test',
       },
       timestamp: new Date().toISOString(),
       request_id: 'test',
-      api_version: '1.0.0'
+      api_version: '1.0.0',
     };
 
     expect(() => {

@@ -1,6 +1,7 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Utility type guard compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
+// PHASE 2.2A RECOVERY: Pool type guards utility synchronization complete
+// Recovery Date: 2025-11-14T18:45:00+07:00 (Asia/Jakarta)
+// Recovery Method: Sequential file-by-file approach with quality gates
+// Dependencies: Pool interfaces and database pool types
 
 /**
  * Pool Type Guards - Runtime Validation for Pool Types
@@ -194,19 +195,44 @@ export function isDatabaseConnectionConfig(value: unknown): boolean {
 
   const config = value as Record<string, unknown>;
 
+  // Validate required fields first
+  if (!validateRequiredDbConfigFields(config)) {
+    return false;
+  }
+
+  // Validate optional fields
+  return validateOptionalDbConfigFields(config);
+}
+
+/**
+ * Validate required database connection configuration fields
+ */
+function validateRequiredDbConfigFields(config: Record<string, unknown>): boolean {
   return (
     typeof config.type === 'string' &&
     typeof config.host === 'string' &&
     typeof config.port === 'number' &&
     config.port > 0 &&
-    config.port <= 65535 &&
-    (config.database === undefined || typeof config.database === 'string') &&
-    (config.username === undefined || typeof config.username === 'string') &&
-    (config.password === undefined || typeof config.password === 'string') &&
-    (config.ssl === undefined || typeof config.ssl === 'boolean') &&
-    (config.connectionTimeout === undefined || typeof config.connectionTimeout === 'number') &&
-    (config.idleTimeout === undefined || typeof config.idleTimeout === 'number') &&
-    (config.maxRetries === undefined || typeof config.maxRetries === 'number')
+    config.port <= 65535
+  );
+}
+
+/**
+ * Validate optional database connection configuration fields
+ */
+function validateOptionalDbConfigFields(config: Record<string, unknown>): boolean {
+  const optionalFields = [
+    { key: 'database', type: 'string' },
+    { key: 'username', type: 'string' },
+    { key: 'password', type: 'string' },
+    { key: 'ssl', type: 'boolean' },
+    { key: 'connectionTimeout', type: 'number' },
+    { key: 'idleTimeout', type: 'number' },
+    { key: 'maxRetries', type: 'number' },
+  ];
+
+  return optionalFields.every(
+    (field) => config[field.key] === undefined || typeof config[field.key] === field.type
   );
 }
 
@@ -220,23 +246,40 @@ export function isPoolStats(value: unknown): boolean {
 
   const stats = value as Record<string, unknown>;
 
-  return (
-    isPoolId(stats.poolId) &&
-    typeof stats.totalResources === 'number' &&
-    typeof stats.availableResources === 'number' &&
-    typeof stats.inUseResources === 'number' &&
-    typeof stats.maintenanceResources === 'number' &&
-    typeof stats.errorResources === 'number' &&
-    typeof stats.averageAcquireTime === 'number' &&
-    typeof stats.averageResponseTime === 'number' &&
-    typeof stats.totalAcquisitions === 'number' &&
-    typeof stats.totalReleases === 'number' &&
-    typeof stats.totalErrors === 'number' &&
-    typeof stats.poolUtilization === 'number' &&
-    isPoolHealthStatus(stats.healthStatus) &&
-    stats.lastHealthCheck instanceof Date &&
-    typeof stats.uptime === 'number'
-  );
+  // Validate pool ID and health status first
+  if (!isPoolId(stats.poolId) || !isPoolHealthStatus(stats.healthStatus)) {
+    return false;
+  }
+
+  // Validate numeric statistics
+  if (!validateNumericStats(stats)) {
+    return false;
+  }
+
+  // Validate date fields
+  return stats.lastHealthCheck instanceof Date;
+}
+
+/**
+ * Validate numeric pool statistics
+ */
+function validateNumericStats(stats: Record<string, unknown>): boolean {
+  const numericFields = [
+    'totalResources',
+    'availableResources',
+    'inUseResources',
+    'maintenanceResources',
+    'errorResources',
+    'averageAcquireTime',
+    'averageResponseTime',
+    'totalAcquisitions',
+    'totalReleases',
+    'totalErrors',
+    'poolUtilization',
+    'uptime',
+  ];
+
+  return numericFields.every((field) => typeof stats[field] === 'number');
 }
 
 /**
@@ -322,7 +365,9 @@ export function isPoolHealthIssue(value: unknown): boolean {
   return (
     isResourceId(issue.resourceId) &&
     ['low', 'medium', 'high', 'critical'].includes(issue.severity as string) &&
-    ['connection', 'performance', 'validation', 'timeout', 'configuration'].includes(issue.type as string) &&
+    ['connection', 'performance', 'validation', 'timeout', 'configuration'].includes(
+      issue.type as string
+    ) &&
     typeof issue.message === 'string' &&
     issue.detectedAt instanceof Date &&
     (issue.metrics === undefined || typeof issue.metrics === 'object')

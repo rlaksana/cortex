@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Configuration Validation Utilities
  *
@@ -14,9 +10,7 @@
 
 import { logger } from '@/utils/logger.js';
 
-import type {
-  MigrationEnvironmentConfig,
-} from './migration-config.js';
+import type { MigrationEnvironmentConfig } from './migration-config.js';
 import {
   assertType,
   isDatabaseConnectionConfig,
@@ -25,9 +19,7 @@ import {
   isTransformationRule,
   validateConfig,
 } from '../schemas/type-guards.js';
-import type {
-  JSONValue,
-} from '../types/index.js';
+import type { JSONValue } from '../types/index.js';
 
 // ============================================================================
 // Configuration Validation Result Types
@@ -112,7 +104,8 @@ export class ConfigurationValidator {
           section: 'mode',
           field: 'mode',
           severity: 'critical',
-          suggestion: 'Specify migration mode: pg-to-qdrant, qdrant-to-pg, sync, validate, or cleanup',
+          suggestion:
+            'Specify migration mode: pg-to-qdrant, qdrant-to-pg, sync, validate, or cleanup',
         });
       } else {
         const validModes = ['pg-to-qdrant', 'qdrant-to-pg', 'sync', 'validate', 'cleanup'];
@@ -179,23 +172,30 @@ export class ConfigurationValidator {
       }
 
       // If no critical errors, validate the complete config structure
-      const hasCriticalErrors = errors.some(e => e.severity === 'critical');
+      const hasCriticalErrors = errors.some((e) => e.severity === 'critical');
       if (!hasCriticalErrors) {
         const completeValidation = validateConfig(config, this.isCompleteMigrationConfig);
         if (!completeValidation.success) {
+          const errorResult = completeValidation as { success: false; error: string };
           errors.push({
             code: 'CONFIG_INVALID_COMPLETE',
-            message: completeValidation.error,
+            message: errorResult.error,
             section: 'complete',
             severity: 'error',
             suggestion: 'Review overall configuration structure',
           });
-        } else if (completeValidation.success) {
+        } else {
           checkedSections.push('complete');
         }
       }
 
-      return this.createResult(errors, warnings, startTime, checkedSections, config as MigrationEnvironmentConfig);
+      return this.createResult(
+        errors,
+        warnings,
+        startTime,
+        checkedSections,
+        config as MigrationEnvironmentConfig
+      );
     } catch (error) {
       logger.error({ error, config }, 'Configuration validation failed unexpectedly');
 
@@ -214,9 +214,10 @@ export class ConfigurationValidator {
   /**
    * Validate data transformation configuration
    */
-  private static validateDataTransformationConfig(
-    config: unknown
-  ): { errors: ConfigurationValidationError[]; warnings: ConfigurationValidationWarning[] } {
+  private static validateDataTransformationConfig(config: unknown): {
+    errors: ConfigurationValidationError[];
+    warnings: ConfigurationValidationWarning[];
+  } {
     const errors: ConfigurationValidationError[] = [];
     const warnings: ConfigurationValidationWarning[] = [];
 
@@ -234,8 +235,10 @@ export class ConfigurationValidator {
     const dtConfig = config as Record<string, unknown>;
 
     // Validate required fields
-    if (typeof dtConfig.generateEmbeddings !== 'string' ||
-        !['always', 'if-missing', 'never'].includes(dtConfig.generateEmbeddings)) {
+    if (
+      typeof dtConfig.generateEmbeddings !== 'string' ||
+      !['always', 'if-missing', 'never'].includes(dtConfig.generateEmbeddings)
+    ) {
       errors.push({
         code: 'DATA_TRANSFORM_INVALID_EMBEDDINGS',
         message: 'Invalid generateEmbeddings setting',
@@ -340,9 +343,10 @@ export class ConfigurationValidator {
   /**
    * Validate validation configuration
    */
-  private static validateValidationConfig(
-    config: unknown
-  ): { errors: ConfigurationValidationError[]; warnings: ConfigurationValidationWarning[] } {
+  private static validateValidationConfig(config: unknown): {
+    errors: ConfigurationValidationError[];
+    warnings: ConfigurationValidationWarning[];
+  } {
     const errors: ConfigurationValidationError[] = [];
     const warnings: ConfigurationValidationWarning[] = [];
 
@@ -361,7 +365,7 @@ export class ConfigurationValidator {
 
     // Validate boolean fields
     const booleanFields = ['enabled', 'checkSum', 'checkEmbeddings', 'checkMetadata'];
-    booleanFields.forEach(field => {
+    booleanFields.forEach((field) => {
       if (vConfig[field] !== undefined && typeof vConfig[field] !== 'boolean') {
         errors.push({
           code: 'VALIDATION_CONFIG_INVALID_BOOLEAN',
@@ -391,8 +395,11 @@ export class ConfigurationValidator {
 
     // Validate numeric fields
     const numericFields = ['sampleSize', 'timeout', 'toleranceThreshold'];
-    numericFields.forEach(field => {
-      if (vConfig[field] !== undefined && (typeof vConfig[field] !== 'number' || vConfig[field] < 0)) {
+    numericFields.forEach((field) => {
+      if (
+        vConfig[field] !== undefined &&
+        (typeof vConfig[field] !== 'number' || vConfig[field] < 0)
+      ) {
         errors.push({
           code: 'VALIDATION_CONFIG_INVALID_NUMBER',
           message: `${field} must be a non-negative number`,
@@ -410,9 +417,10 @@ export class ConfigurationValidator {
   /**
    * Validate performance configuration
    */
-  private static validatePerformanceConfig(
-    config: unknown
-  ): { errors: ConfigurationValidationError[]; warnings: ConfigurationValidationWarning[] } {
+  private static validatePerformanceConfig(config: unknown): {
+    errors: ConfigurationValidationError[];
+    warnings: ConfigurationValidationWarning[];
+  } {
     const errors: ConfigurationValidationError[] = [];
     const warnings: ConfigurationValidationWarning[] = [];
 
@@ -431,11 +439,15 @@ export class ConfigurationValidator {
 
     // Validate numeric fields
     const numericFields = [
-      'maxConcurrency', 'memoryLimitMB', 'rateLimitRPS',
-      'chunkSize', 'prefetchSize', 'gcInterval'
+      'maxConcurrency',
+      'memoryLimitMB',
+      'rateLimitRPS',
+      'chunkSize',
+      'prefetchSize',
+      'gcInterval',
     ];
 
-    numericFields.forEach(field => {
+    numericFields.forEach((field) => {
       if (pConfig[field] !== undefined) {
         if (typeof pConfig[field] !== 'number' || pConfig[field] <= 0) {
           errors.push({
@@ -451,7 +463,11 @@ export class ConfigurationValidator {
     });
 
     // Add warnings for potentially problematic values
-    if (pConfig.maxConcurrency && typeof pConfig.maxConcurrency === 'number' && pConfig.maxConcurrency > 20) {
+    if (
+      pConfig.maxConcurrency &&
+      typeof pConfig.maxConcurrency === 'number' &&
+      pConfig.maxConcurrency > 20
+    ) {
       warnings.push({
         code: 'PERFORMANCE_CONFIG_HIGH_CONCURRENCY',
         message: 'High concurrency may impact system stability',
@@ -461,7 +477,11 @@ export class ConfigurationValidator {
       });
     }
 
-    if (pConfig.memoryLimitMB && typeof pConfig.memoryLimitMB === 'number' && pConfig.memoryLimitMB > 2048) {
+    if (
+      pConfig.memoryLimitMB &&
+      typeof pConfig.memoryLimitMB === 'number' &&
+      pConfig.memoryLimitMB > 2048
+    ) {
       warnings.push({
         code: 'PERFORMANCE_CONFIG_HIGH_MEMORY',
         message: 'High memory limit may cause system issues',
@@ -477,9 +497,10 @@ export class ConfigurationValidator {
   /**
    * Validate safety configuration
    */
-  private static validateSafetyConfig(
-    config: unknown
-  ): { errors: ConfigurationValidationError[]; warnings: ConfigurationValidationWarning[] } {
+  private static validateSafetyConfig(config: unknown): {
+    errors: ConfigurationValidationError[];
+    warnings: ConfigurationValidationWarning[];
+  } {
     const errors: ConfigurationValidationError[] = [];
     const warnings: ConfigurationValidationWarning[] = [];
 
@@ -498,11 +519,15 @@ export class ConfigurationValidator {
 
     // Validate boolean fields
     const booleanFields = [
-      'dryRun', 'preserveSource', 'requireConfirmation',
-      'backupEnabled', 'resumeOnError', 'rollbackOnFailure'
+      'dryRun',
+      'preserveSource',
+      'requireConfirmation',
+      'backupEnabled',
+      'resumeOnError',
+      'rollbackOnFailure',
     ];
 
-    booleanFields.forEach(field => {
+    booleanFields.forEach((field) => {
       if (sConfig[field] !== undefined && typeof sConfig[field] !== 'boolean') {
         errors.push({
           code: 'SAFETY_CONFIG_INVALID_BOOLEAN',
@@ -517,7 +542,7 @@ export class ConfigurationValidator {
 
     // Validate numeric fields
     const numericFields = ['maxErrors', 'errorThreshold'];
-    numericFields.forEach(field => {
+    numericFields.forEach((field) => {
       if (sConfig[field] !== undefined) {
         if (typeof sConfig[field] !== 'number' || sConfig[field] < 0) {
           errors.push({
@@ -629,13 +654,15 @@ export class ConfigurationValidator {
 
     const config = value as Record<string, unknown>;
 
-    return typeof config.mode === 'string' &&
-           typeof config.dataTransformation === 'object' &&
-           typeof config.validation === 'object' &&
-           typeof config.performance === 'object' &&
-           typeof config.safety === 'object' &&
-           isDatabaseConnectionConfig(config.source) &&
-           isDatabaseConnectionConfig(config.target);
+    return (
+      typeof config.mode === 'string' &&
+      typeof config.dataTransformation === 'object' &&
+      typeof config.validation === 'object' &&
+      typeof config.performance === 'object' &&
+      typeof config.safety === 'object' &&
+      isDatabaseConnectionConfig(config.source) &&
+      isDatabaseConnectionConfig(config.target)
+    );
   }
 
   /**
@@ -670,10 +697,7 @@ export class ConfigurationValidator {
 /**
  * Quick validation function with simple boolean result
  */
-export function isValidConfiguration(
-  config: unknown,
-  options?: { strict?: boolean }
-): boolean {
+export function isValidConfiguration(config: unknown, options?: { strict?: boolean }): boolean {
   const result = ConfigurationValidator.validateMigrationConfig(config, options);
   return result.valid;
 }
@@ -688,7 +712,7 @@ export function validateConfigurationOrThrow(
   const result = ConfigurationValidator.validateMigrationConfig(config, options);
 
   if (!result.valid) {
-    const errorMessages = result.errors.map(e => `${e.section}: ${e.message}`).join('; ');
+    const errorMessages = result.errors.map((e) => `${e.section}: ${e.message}`).join('; ');
     throw new Error(`Configuration validation failed: ${errorMessages}`);
   }
 

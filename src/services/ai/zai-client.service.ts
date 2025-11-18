@@ -1,11 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * ZAI Client Service
  *
@@ -19,12 +11,16 @@
 
 import { randomUUID } from 'crypto';
 
-import { logger } from '@/utils/logger.js';
-
 import { InMemoryCache } from './utils/in-memory-cache.js';
 import { SimplePerformanceMonitor } from './utils/performance-monitor.js';
 import { SimpleRateLimiter } from './utils/rate-limiter.js';
 import { zaiConfigManager } from '../../config/zai-config.js';
+import { ServiceAdapterBase } from '../../interfaces/service-adapter.js';
+import type {
+  AIServiceStatus,
+  IZAIClientService,
+  ServiceResponse,
+} from '../../interfaces/service-interfaces.js';
 import type {
   CircuitBreaker,
   RateLimiter,
@@ -41,11 +37,12 @@ import type {
   ZAIStreamChunk,
 } from '../../types/zai-interfaces.js';
 import { ZAIError, ZAIErrorType } from '../../types/zai-interfaces.js';
+import { logger } from '../../utils/logger.js';
 
 /**
  * Production-ready ZAI client service
  */
-export class ZAIClientService {
+export class ZAIClientService extends ServiceAdapterBase implements IZAIClientService {
   private _config: ZAIConfig;
   private circuitBreaker: CircuitBreaker;
   private rateLimiter: RateLimiter;
@@ -58,6 +55,7 @@ export class ZAIClientService {
   private readonly startTime = Date.now();
 
   constructor(config?: ZAIConfig) {
+    super('ZAIClientService');
     this._config = config || zaiConfigManager.getZAIConfig();
     this.metrics = {
       timestamp: new Date(),
@@ -110,150 +108,130 @@ export class ZAIClientService {
   /**
    * Generate chat completion
    */
-  async generateCompletion(request: ZAIChatRequest): Promise<ZAIChatResponse> {
-    const requestId = randomUUID();
-    const startTime = Date.now();
+  async generateCompletion(request: ZAIChatRequest): Promise<ServiceResponse<ZAIChatResponse>> {
+    return this.executeOperation(
+      async () => {
+        const requestId = randomUUID();
+        const startTime = Date.now();
 
-    try {
-      // Validate request
-      this.validateRequest(request);
+        // Validate request
+        this.validateRequest(request);
 
-      // Check rate limit
-      if (!(await this.rateLimiter.isAllowed())) {
-        throw new ZAIError(
-          'Rate limit exceeded',
-          ZAIErrorType['RATE_LIMIT_ERROR'],
-          'rate_limit_exceeded'
-        );
-      }
+        // Check rate limit
+        if (!(await this.rateLimiter.isAllowed())) {
+          throw new ZAIError(
+            'Rate limit exceeded',
+            ZAIErrorType['RATE_LIMIT_ERROR'],
+            'rate_limit_exceeded'
+          );
+        }
 
-      // Check circuit breaker
-      if (!this.canExecuteRequest()) {
-        throw new ZAIError(
-          'Service temporarily unavailable due to circuit breaker',
-          ZAIErrorType['UNKNOWN_ERROR'],
-          'circuit_breaker_open'
-        );
-      }
+        // Check circuit breaker
+        if (!this.canExecuteRequest()) {
+          throw new ZAIError(
+            'Service temporarily unavailable due to circuit breaker',
+            ZAIErrorType['UNKNOWN_ERROR'],
+            'circuit_breaker_open'
+          );
+        }
 
-      // Emit request started event
-      this.emitEvent({
-        type: 'request_started',
-        data: { requestId, payload: request },
-      });
+        // Emit request started event
+        this.emitEvent({
+          type: 'request_started',
+          data: { requestId, payload: request },
+        });
 
-      // Check cache first
-      const cacheKey = this.generateCacheKey(request);
-      const cachedResponse = await this.cache.get(cacheKey);
-      if (cachedResponse) {
+        // Check cache first
+        const cacheKey = this.generateCacheKey(request);
+        const cachedResponse = await this.cache.get(cacheKey);
+        if (cachedResponse) {
+          this.emitEvent({
+            type: 'request_completed',
+            data: { requestId, response: cachedResponse, duration: Date.now() - startTime },
+          });
+          return { ...cachedResponse, cached: true };
+        }
+
+        // Make API request
+        const response = await this.makeAPICall(request, requestId);
+
+        // Cache successful response
+        await this.cache.set(cacheKey, response);
+
+        // Update metrics
+        this.updateMetrics(true, response, Date.now() - startTime);
+
+        // Reset circuit breaker on success
+        this.resetCircuitBreaker();
+
+        // Emit request completed event
         this.emitEvent({
           type: 'request_completed',
-          data: { requestId, response: cachedResponse, duration: Date.now() - startTime },
+          data: { requestId, response, duration: Date.now() - startTime },
         });
-        return { ...cachedResponse, cached: true };
-      }
 
-      // Make API request
-      const response = await this.makeAPICall(request, requestId);
-
-      // Cache successful response
-      await this.cache.set(cacheKey, response);
-
-      // Update metrics
-      this.updateMetrics(true, response, Date.now() - startTime);
-
-      // Reset circuit breaker on success
-      this.resetCircuitBreaker();
-
-      // Emit request completed event
-      this.emitEvent({
-        type: 'request_completed',
-        data: { requestId, response, duration: Date.now() - startTime },
-      });
-
-      return response;
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      const zaiError = error instanceof ZAIError ? error : this.convertToZAIError(error);
-
-      // Update metrics
-      this.updateMetrics(false, null, duration);
-
-      // Record performance error
-      this.performanceMonitor.recordError(zaiError);
-
-      // Handle circuit breaker
-      this.handleCircuitBreakerFailure();
-
-      // Emit request failed event
-      this.emitEvent({
-        type: 'request_failed',
-        data: {
-          requestId,
-          error: {
-            message: zaiError.message,
-            type: zaiError.type,
-            code: zaiError.code,
-            param: zaiError.param
-          },
-          duration
-        },
-      });
-
-      throw zaiError;
-    }
+        return response;
+      },
+      'generateCompletion',
+      { request }
+    );
   }
 
   /**
    * Generate streaming completion
    */
-  async *generateStreamingCompletion(request: ZAIChatRequest): AsyncGenerator<ZAIStreamChunk> {
-    const requestId = randomUUID();
+  async generateStreamingCompletion(request: ZAIChatRequest): Promise<AsyncGenerator<ZAIStreamChunk>> {
+    // Simplified streaming implementation that returns Promise<AsyncGenerator>
+    async function* streamGenerator(this: ZAIClientService): AsyncGenerator<ZAIStreamChunk> {
+      const requestId = randomUUID();
 
-    try {
-      // Validation and setup similar to generateCompletion
-      this.validateRequest(request);
+      try {
+        // Validation and setup similar to generateCompletion
+        this.validateRequest(request);
 
-      if (!(await this.rateLimiter.isAllowed())) {
-        throw new ZAIError(
-          'Rate limit exceeded',
-          ZAIErrorType['RATE_LIMIT_ERROR'],
-          'rate_limit_exceeded'
-        );
+        if (!(await this.rateLimiter.isAllowed())) {
+          throw new ZAIError(
+            'Rate limit exceeded',
+            ZAIErrorType['RATE_LIMIT_ERROR'],
+            'rate_limit_exceeded'
+          );
+        }
+
+        if (!this.canExecuteRequest()) {
+          throw new ZAIError(
+            'Service temporarily unavailable due to circuit breaker',
+            ZAIErrorType['UNKNOWN_ERROR'],
+            'circuit_breaker_open'
+          );
+        }
+
+        // For streaming, we'll make the actual API call
+        // This is a simplified implementation - in production, you'd handle streaming properly
+        const response = await this.makeAPICall(request, requestId);
+
+        // Yield the response as a single chunk
+        // In a real implementation, you'd process the actual streaming response
+        yield {
+          id: response.id,
+          object: 'chat.completion.chunk',
+          created: response.created,
+          model: response.model,
+          choices: response.choices,
+          finished: true,
+        };
+      } catch (error) {
+        const zaiError = error instanceof ZAIError ? error : this.convertToZAIError(error);
+        throw zaiError;
       }
-
-      if (!this.canExecuteRequest()) {
-        throw new ZAIError(
-          'Service temporarily unavailable due to circuit breaker',
-          ZAIErrorType['UNKNOWN_ERROR'],
-          'circuit_breaker_open'
-        );
-      }
-
-      // For streaming, we'll make the actual API call
-      // This is a simplified implementation - in production, you'd handle streaming properly
-      const response = await this.makeAPICall(request, requestId);
-
-      // Yield the response as a single chunk
-      // In a real implementation, you'd process the actual streaming response
-      yield {
-        id: response.id,
-        object: 'chat.completion.chunk',
-        created: response.created,
-        model: response.model,
-        choices: response.choices,
-        finished: true,
-      };
-    } catch (error) {
-      const zaiError = error instanceof ZAIError ? error : this.convertToZAIError(error);
-      throw zaiError;
     }
+
+    return streamGenerator.call(this);
   }
 
   /**
-   * Check if service is available
+   * Check if service is available (internal method)
    */
-  async isAvailable(): Promise<boolean> {
+  async _isAvailable(): Promise<boolean> {
     try {
       // Quick health check
       if (this.circuitBreaker.state === 'open') {
@@ -278,11 +256,11 @@ export class ZAIClientService {
   }
 
   /**
-   * Get service status
+   * Get service status (internal method)
    */
-  async getServiceStatus(): Promise<ZAIServiceStatus> {
+  async _getServiceStatus(): Promise<ZAIServiceStatus> {
     const now = Date.now();
-    const isHealthy = await this.isAvailable();
+    const isHealthy = await this._isAvailable();
 
     return {
       status: isHealthy ? 'healthy' : this.circuitBreaker.state === 'open' ? 'down' : 'degraded',
@@ -549,7 +527,6 @@ export class ZAIClientService {
       this.metrics.requestCount > 0 ? this.metrics.errorCount / this.metrics.requestCount : 0;
   }
 
-
   /**
    * Convert generic error to ZAIError
    */
@@ -601,6 +578,192 @@ export class ZAIClientService {
         }
       })
     );
+  }
+
+  // ============================================================================
+  // IZAIClientService IMPLEMENTATION
+  // ============================================================================
+
+  // ============================================================================
+  // IAIService IMPLEMENTATION
+  // ============================================================================
+
+  /**
+   * Check if service is available
+   */
+  async isAvailable(): Promise<ServiceResponse<{ available: boolean }>> {
+    return this.executeOperation(
+      async () => {
+        // Check circuit breaker state and other health indicators
+        const circuitBreakerHealthy = this.circuitBreaker.state === 'closed';
+        const rateLimitHealthy = await this.rateLimiter.isAllowed().catch(() => false);
+        const available = circuitBreakerHealthy && rateLimitHealthy;
+        return { available };
+      },
+      'isAvailable',
+      {}
+    );
+  }
+
+  /**
+   * Get service status
+   */
+  async getServiceStatus(): Promise<ServiceResponse<AIServiceStatus>> {
+    return this.executeOperation(
+      async () => {
+        const status = await this._getServiceStatus();
+        // Convert ZAIServiceStatus to AIServiceStatus
+        return {
+          status:
+            status.status === 'healthy'
+              ? 'healthy'
+              : status.status === 'degraded'
+                ? 'degraded'
+                : 'down',
+          lastCheck: new Date().toISOString(),
+          responseTime: status.responseTime,
+          errorRate: status.errorRate,
+          circuitBreakerState: status.circuitBreakerState,
+          consecutiveFailures: status.consecutiveFailures,
+          uptime: process.uptime(),
+        };
+      },
+      'getServiceStatus',
+      {}
+    );
+  }
+
+  /**
+   * Get service metrics
+   */
+  async getMetrics(): Promise<ServiceResponse<ZAIMetrics>> {
+    return this.executeOperation(
+      async () => {
+        return this.metrics;
+      },
+      'getMetrics',
+      {}
+    );
+  }
+
+  /**
+   * Reset metrics
+   */
+  async reset(): Promise<ServiceResponse<void>> {
+    return this.executeOperation(
+      async () => {
+        this.metrics = {
+          timestamp: new Date(),
+          totalRequests: 0,
+          successfulRequests: 0,
+          failedRequests: 0,
+          averageResponseTime: 0,
+          p95ResponseTime: 0,
+          p99ResponseTime: 0,
+          totalTokensUsed: 0,
+          totalCost: 0,
+          cacheHitRate: 0,
+          errorRate: 0,
+          uptime: 0,
+          lastReset: Date.now(),
+        };
+      },
+      'reset',
+      {}
+    );
+  }
+
+  /**
+   * Add event listener
+   */
+  addEventListener(listener: ZAIEventListener): ServiceResponse<void> {
+    try {
+      this.eventListeners.add(listener);
+      return {
+        success: true,
+        metadata: {
+          processingTimeMs: 0,
+          source: this.serviceName,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'ADD_LISTENER_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString(),
+          retryable: false,
+        },
+        metadata: {
+          processingTimeMs: 0,
+          source: this.serviceName,
+        },
+      };
+    }
+  }
+
+  /**
+   * Remove event listener
+   */
+  removeEventListener(listener: ZAIEventListener): ServiceResponse<void> {
+    try {
+      this.eventListeners.delete(listener);
+      return {
+        success: true,
+        metadata: {
+          processingTimeMs: 0,
+          source: this.serviceName,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'REMOVE_LISTENER_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString(),
+          retryable: false,
+        },
+        metadata: {
+          processingTimeMs: 0,
+          source: this.serviceName,
+        },
+      };
+    }
+  }
+
+  /**
+   * Health check implementation for ZAI service
+   */
+  async healthCheck(): Promise<ServiceResponse<{ status: 'healthy' | 'unhealthy' }>> {
+    return this.executeOperation(async () => {
+      const now = Date.now();
+
+      // Only perform actual health check if enough time has passed
+      if (now - this.lastHealthCheck < this.healthCheckInterval) {
+        return { status: 'healthy' };
+      }
+
+      this.lastHealthCheck = now;
+
+      // Check circuit breaker state
+      if (this.circuitBreaker.state === 'open') {
+        return { status: 'unhealthy' };
+      }
+
+      // Check error rate
+      const errorRate = this.metrics.requestCount > 0
+        ? this.metrics.errorCount / this.metrics.requestCount
+        : 0;
+
+      // Consider unhealthy if error rate is above 50%
+      if (errorRate > 0.5) {
+        return { status: 'unhealthy' };
+      }
+
+      return { status: 'healthy' };
+    }, 'healthCheck');
   }
 }
 

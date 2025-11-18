@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Enhanced monitoring type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Production Health Endpoint
@@ -12,11 +10,11 @@
  * @version 2.0.1
  */
 
-import { type NextFunction,type Request, type Response } from 'express';
+import { type NextFunction, type Request, type Response } from 'express';
 
 import { ProductionLogger } from '@/utils/logger.js';
 
-import { type HealthCheckResult,ProductionHealthChecker } from './production-health-checker.js';
+import { type HealthCheckResult, ProductionHealthChecker } from './production-health-checker.js';
 
 export interface HealthEndpointConfig {
   enableDetailedEndpoints: boolean;
@@ -29,7 +27,11 @@ export interface HealthEndpointConfig {
 
 export class HealthEndpointManager {
   private healthChecker: ProductionHealthChecker;
-  private logger: { info: (...a:any[])=>void; warn:(...a:any[])=>void; error:(...a:any[])=>void };
+  private logger: {
+    info: (...a: any[]) => void;
+    warn: (...a: any[]) => void;
+    error: (...a: any[]) => void;
+  };
   private config: HealthEndpointConfig;
   private lastHealthCheck: HealthCheckResult | null = null;
   private healthCheckCache: Map<string, { result: HealthCheckResult; timestamp: number }> =
@@ -412,7 +414,13 @@ export class HealthEndpointManager {
   /**
    * Setup all health endpoints
    */
-  setupEndpoints(app: unknown): void {
+  setupEndpoints(app: any): void {
+    // Check if app has the expected Express methods
+    if (!app || typeof app.get !== 'function') {
+      this.logger.error('Invalid app object provided to setupEndpoints');
+      return;
+    }
+
     // Main health check endpoint
     app.get('/health', this.authenticateHealthEndpoint.bind(this), this.healthCheck.bind(this));
 

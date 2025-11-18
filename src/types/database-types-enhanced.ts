@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Enhanced Database & Storage Types for Cortex MCP System
  *
@@ -9,15 +5,14 @@
  * and provide consistent patterns for data storage and retrieval operations.
  */
 
-import type {
-  Dict,
-  JSONValue,
-  Metadata,
-  OperationContext,
-  PaginationOptions,
-  Result,
-  Tags} from './base-types.js';
-import type { KnowledgeItem } from './knowledge-types.js';
+import type { Dict, JSONValue, Metadata, OperationContext, Result, Tags } from './base-types.js';
+import type { KnowledgeItem, SearchQuery as CoreSearchQuery } from './core-interfaces.js';
+
+export interface PaginationOptions {
+  readonly offset?: number;
+  readonly limit?: number;
+  readonly cursor?: string;
+}
 
 // ============================================================================
 // Core Database Interface
@@ -32,7 +27,7 @@ export interface DatabaseAdapter {
   disconnect(): Promise<void>;
   ping(): Promise<boolean>;
   create(item: KnowledgeItem): Promise<CreateResult>;
-  find(query: SearchQuery): Promise<FindResult>;
+  find(query: DatabaseSearchQuery): Promise<FindResult>;
   update(id: string, updates: Partial<KnowledgeItem>): Promise<UpdateResult>;
   delete(id: string): Promise<DeleteResult>;
   batch(operations: BatchOperation[]): Promise<BatchResult>;
@@ -84,24 +79,18 @@ export interface IndexConfig {
   readonly options?: Dict<JSONValue>;
 }
 
-export type IndexType =
-  | 'vector'
-  | 'fulltext'
-  | 'hash'
-  | 'btree'
-  | 'unique'
-  | 'partial'
-  | 'sparse';
+export type IndexType = 'vector' | 'fulltext' | 'hash' | 'btree' | 'unique' | 'partial' | 'sparse';
 
 // ============================================================================
 // Query Types
 // ============================================================================
 
-export interface SearchQuery {
-  readonly text?: string;
+// Re-export canonical SearchQuery from core-interfaces to avoid duplication
+export type SearchQuery = CoreSearchQuery;
+
+// Extended database-specific query interface that extends the canonical one
+export interface DatabaseSearchQuery extends CoreSearchQuery {
   readonly vector?: number[];
-  readonly filters?: QueryFilters;
-  readonly pagination?: PaginationOptions;
   readonly sort?: QuerySort[];
   readonly options?: QueryOptions;
   readonly context?: OperationContext;
@@ -149,13 +138,7 @@ export interface QueryOptions {
   readonly consistency?: ConsistencyLevel;
 }
 
-export type SearchType =
-  | 'semantic'
-  | 'keyword'
-  | 'hybrid'
-  | 'fuzzy'
-  | 'exact'
-  | 'regex';
+export type SearchType = 'semantic' | 'keyword' | 'hybrid' | 'fuzzy' | 'exact' | 'regex';
 
 export type ConsistencyLevel = 'one' | 'quorum' | 'all' | 'eventual';
 
@@ -278,12 +261,7 @@ export interface VectorDatabaseAdapter extends DatabaseAdapter {
   deleteVectors(collection: string, ids: readonly string[]): Promise<DeleteResult>;
 }
 
-export type VectorDistance =
-  | 'cosine'
-  | 'euclidean'
-  | 'manhattan'
-  | 'dotproduct'
-  | 'hamming';
+export type VectorDistance = 'cosine' | 'euclidean' | 'manhattan' | 'dotproduct' | 'hamming';
 
 export interface CollectionConfig {
   readonly size?: number;
@@ -654,12 +632,13 @@ export interface BackupResult {
 /** @deprecated Use DatabaseResult<T> from './database-generics.js' instead */
 export type DatabaseResult<T> = Result<T, DatabaseError>;
 
-export interface DatabaseContext extends OperationContext {
+export interface DatabaseContext {
   readonly database: string;
   readonly collection?: string;
   readonly operation: string;
   readonly userId?: string;
   readonly sessionId?: string;
+  readonly [key: string]: JSONValue | undefined;
 }
 
 export interface ConnectionPool {
@@ -679,4 +658,258 @@ export interface IndexStatistics {
   readonly created: Date;
   readonly updated: Date;
   readonly lastUsed?: Date;
+}
+
+// ============================================================================
+// TS2339 Fix: Additional Interface Definitions
+// ============================================================================
+
+/**
+ * Metric operation interface for monitoring system events
+ */
+export interface MetricOperation {
+  readonly operation: string;
+  readonly success: boolean;
+  readonly timestamp?: string;
+  readonly duration?: number;
+  readonly metadata?: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Consistency validator issue interface
+ */
+export interface ConsistencyIssue {
+  readonly itemId: string;
+  readonly type: 'missing_vector' | 'invalid_metadata' | 'orphaned_record' | 'corruption';
+  readonly severity: 'low' | 'medium' | 'high' | 'critical';
+  readonly description: string;
+  readonly collection?: string;
+  readonly detectedAt: string;
+}
+
+/**
+ * Auto-repair result interface
+ */
+export interface AutoRepairResult {
+  readonly itemId: string;
+  readonly issueType: string;
+  readonly action: 'repair' | 'skip' | 'delete' | 'recreate';
+  readonly success: boolean;
+  readonly details: string;
+  readonly repairedAt?: string;
+  readonly error?: string;
+}
+
+/**
+ * Qdrant pooled client configuration
+ */
+export interface QdrantClientConfig {
+  readonly apiKey: string;
+  readonly host: string;
+  readonly port: number;
+  readonly timeout?: number;
+  readonly maxRetries?: number;
+  readonly tls?: boolean;
+}
+
+/**
+ * Database pool statistics interface
+ */
+export interface DatabasePoolStats {
+  readonly activeConnections: number;
+  readonly idleConnections: number;
+  readonly totalConnections: number;
+  readonly maxConnections: number;
+  readonly connectionErrors: number;
+  readonly averageResponseTime: number;
+  readonly lastError?: string;
+}
+
+/**
+ * RPO/RTO compliance metrics
+ */
+export interface RpoRtoMetrics {
+  readonly rpoCompliance: number; // 0-100 percentage
+  readonly rtoCompliance: number; // 0-100 percentage
+  readonly lastBackupTime?: string;
+  readonly recoveryPointObjective?: number; // in minutes
+  readonly recoveryTimeObjective?: number; // in minutes
+  readonly actualRecoveryTime?: number; // in minutes
+}
+
+/**
+ * Mock Qdrant client for testing
+ */
+export interface MockQdrantClient {
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+  createCollection(name: string, config?: unknown): Promise<void>;
+  deleteCollection(name: string): Promise<void>;
+  upsert(collectionName: string, points: unknown[]): Promise<void>;
+  search(collectionName: string, query: unknown): Promise<unknown[]>;
+  scroll(collectionName: string, options?: unknown): Promise<unknown[]>;
+  recommend(collectionName: string, request: unknown): Promise<unknown[]>;
+  facet(collectionName: string, request: unknown): Promise<unknown>;
+  getCollection(name: string): Promise<unknown>;
+  healthCheck(): Promise<boolean>;
+}
+
+/**
+ * Enhanced logger interface with level management
+ */
+export interface EnhancedLogger {
+  readonly currentLevel: string;
+  readonly levels: readonly string[];
+  setLevel(level: string): void;
+  getLevel(): string;
+  debug(message: unknown, context?: unknown): void;
+  info(message: unknown, context?: unknown): void;
+  warn(message: unknown, context?: unknown): void;
+  error(message: unknown, context?: unknown): void;
+}
+
+/**
+ * Service registry interface for DI container
+ */
+export interface ServiceRegistry {
+  readonly services: Readonly<Record<string, unknown>>;
+  register<T>(name: string, service: T): void;
+  get<T>(name: string): T;
+  has(name: string): boolean;
+  clear(): void;
+}
+
+/**
+ * Circuit breaker monitoring data
+ */
+export interface CircuitBreakerData {
+  readonly serviceName: string;
+  readonly state: 'closed' | 'open' | 'half_open';
+  readonly failureCount: number;
+  readonly successCount: number;
+  readonly lastFailureTime?: string;
+  readonly nextRetryTime?: string;
+  readonly timeout: number;
+  readonly errorThreshold: number;
+}
+
+/**
+ * Typed metric alert interface
+ */
+export interface TypedMetricAlert {
+  readonly id: string;
+  readonly name: string;
+  readonly threshold: number;
+  readonly currentValue: number;
+  readonly severity: 'low' | 'medium' | 'high' | 'critical';
+  readonly state: 'active' | 'resolved';
+  readonly stateHistory: readonly {
+    readonly state: string;
+    readonly timestamp: string;
+    readonly value: number;
+  }[];
+  readonly metadata: Readonly<Record<string, unknown>>;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/**
+ * Metric data point interface
+ */
+export interface MetricDataPoint {
+  readonly function: string;
+  readonly value: number;
+  readonly timestamp: string;
+  readonly labels?: Readonly<Record<string, string>>;
+}
+
+/**
+ * Service dependency registration
+ */
+export interface EnhancedServiceRegistration<T> {
+  readonly service: T;
+  readonly dependencies: readonly string[];
+  readonly singleton?: boolean;
+  readonly factory?: () => T;
+  readonly metadata?: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Collection configuration with deleted threshold
+ */
+export interface CollectionConfigWithDeleted {
+  readonly name: string;
+  readonly vector_size: number;
+  readonly distance: 'Cosine' | 'Euclid' | 'Dot';
+  readonly deleted_threshold?: number;
+  readonly metadata?: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Type guard functions for runtime validation
+ */
+export function isMetricOperation(obj: unknown): obj is MetricOperation {
+  if (!obj || typeof obj !== 'object') return false;
+  const o = obj as Record<string, unknown>;
+  return typeof o.operation === 'string' && typeof o.success === 'boolean';
+}
+
+export function isConsistencyIssue(obj: unknown): obj is ConsistencyIssue {
+  if (!obj || typeof obj !== 'object') return false;
+  const o = obj as Record<string, unknown>;
+  return (
+    typeof o.itemId === 'string' &&
+    typeof o.type === 'string' &&
+    typeof o.severity === 'string' &&
+    typeof o.description === 'string'
+  );
+}
+
+export function isQdrantClientConfig(obj: unknown): obj is QdrantClientConfig {
+  if (!obj || typeof obj !== 'object') return false;
+  const o = obj as Record<string, unknown>;
+  return (
+    typeof o.apiKey === 'string' &&
+    typeof o.host === 'string' &&
+    typeof o.port === 'number'
+  );
+}
+
+export function isMockQdrantClient(obj: unknown): obj is MockQdrantClient {
+  if (!obj || typeof obj !== 'object') return false;
+  const o = obj as Record<string, unknown>;
+  return (
+    typeof o.connect === 'function' &&
+    typeof o.createCollection === 'function' &&
+    typeof o.upsert === 'function' &&
+    typeof o.search === 'function'
+  );
+}
+
+export function isEnhancedLogger(obj: unknown): obj is EnhancedLogger {
+  if (!obj || typeof obj !== 'object') return false;
+  const o = obj as Record<string, unknown>;
+  return typeof o.currentLevel === 'string' && typeof o.setLevel === 'function';
+}
+
+export function isServiceRegistry(obj: unknown): obj is ServiceRegistry {
+  if (!obj || typeof obj !== 'object') return false;
+  const o = obj as Record<string, unknown>;
+  return typeof o.services === 'object' && o.services !== null && typeof o.register === 'function';
+}
+
+export function isCircuitBreakerData(obj: unknown): obj is CircuitBreakerData {
+  if (!obj || typeof obj !== 'object') return false;
+  const o = obj as Record<string, unknown>;
+  return typeof o.serviceName === 'string' && typeof o.state === 'string';
+}
+
+export function isMetricDataPoint(obj: unknown): obj is MetricDataPoint {
+  if (!obj || typeof obj !== 'object') return false;
+  const o = obj as Record<string, unknown>;
+  return (
+    typeof o.function === 'string' &&
+    typeof o.value === 'number' &&
+    typeof o.timestamp === 'string'
+  );
 }

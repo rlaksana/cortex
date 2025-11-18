@@ -1,6 +1,4 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
+// TypeScript Recovery: Phase 1 - Database Interface Synchronization
 
 /**
  * Database and Qdrant Type Definitions
@@ -21,6 +19,110 @@ export interface Result<T, E = Error> {
 }
 
 export type Brand<T, B> = T & { __brand: B };
+
+// ============================================================================
+// Database Response Types
+// ============================================================================
+
+export interface DatabaseResponse {
+  id: string;
+  created_at?: string | Date;
+  updated_at?: string | Date;
+  tags?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export interface IncidentResponse extends DatabaseResponse {
+  title: string;
+  severity: string;
+  impact?: string;
+  resolution_status?: string;
+  business_impact?: string;
+  root_cause_analysis?: string;
+  affected_services?: string[];
+  recovery_actions?: string[];
+  follow_up_required?: boolean;
+  incident_commander?: string;
+  timeline?: Array<{ timestamp: string; event: string; actor?: string }>;
+}
+
+export interface ReleaseResponse extends DatabaseResponse {
+  version: string;
+  release_type?: string;
+  scope?: string;
+  status?: string;
+  release_date?: string | Date;
+  deployment_strategy?: string;
+  rollback_plan?: string;
+  features?: string[];
+  bug_fixes?: string[];
+  breaking_changes?: string[];
+  approvers?: string[];
+  release_notes?: string[];
+  ticket_references?: string[];
+  included_changes?: string[];
+  testing_status?: string;
+  post_release_actions?: string[];
+}
+
+export interface RiskResponse extends DatabaseResponse {
+  title: string;
+  category: string;
+  risk_level?: string;
+  probability?: string;
+  impact_description?: string;
+  trigger_events?: string[];
+  mitigation_strategies?: string[];
+  owner?: string;
+  review_date?: string;
+  status?: string;
+  related_decisions?: string[];
+  monitoring_indicators?: string[];
+  contingency_plans?: string;
+}
+
+export interface AssumptionResponse extends DatabaseResponse {
+  title: string;
+  description: string;
+  category: string;
+  validation_status?: string;
+  impact_if_invalid: string;
+  validation_criteria?: string[];
+  validation_date?: string;
+  owner?: string;
+  related_assumptions?: string[];
+  dependencies?: string[];
+  monitoring_approach?: string;
+  review_frequency?: string;
+  expiry_date?: string;
+}
+
+export interface EntityResponse extends DatabaseResponse {
+  entity_type: string;
+  name: string;
+  data: Record<string, unknown>;
+  content_hash?: string;
+  deleted_at?: string | Date;
+}
+
+export interface KnowledgeResponse extends DatabaseResponse {
+  kind: string;
+  content?: string;
+  data: Record<string, unknown>;
+  scope?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  expiry_at?: string | Date;
+  source?: Record<string, unknown>;
+  idempotency_key?: string;
+}
+
+export interface SearchResultResponse<T = unknown> extends DatabaseResponse {
+  rank?: number;
+  score?: number;
+  highlight?: string[];
+  match_type?: 'exact' | 'fuzzy' | 'semantic' | 'keyword' | 'hybrid' | 'expanded' | 'graph';
+  data: T;
+}
 
 // ============================================================================
 // Base Database Types
@@ -716,16 +818,15 @@ export interface BulkSearchResult {
 // ============================================================================
 
 export interface QdrantClientConfig {
-  url: string;
-  timeout?: number;
+  url?: string;
+  host?: string;
   apiKey?: string;
   https?: boolean;
+  prefix?: string;
   port?: number;
-  host?: string;
+  timeout?: number;
+  checkCompatibility?: boolean;
   headers?: Record<string, string>;
-  check_duplicates?: boolean;
-  max_retries?: number;
-  retry_delay?: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -862,11 +963,12 @@ export function isQdrantFilter(obj: unknown): obj is QdrantFilter {
   const hasValidMust = filter.must === undefined || Array.isArray(filter.must);
   const hasValidMustNot = filter.must_not === undefined || Array.isArray(filter.must_not);
   const hasValidShould = filter.should === undefined || Array.isArray(filter.should);
-  const hasValidMinShould = filter.min_should === undefined ||
+  const hasValidMinShould =
+    filter.min_should === undefined ||
     (typeof filter.min_should === 'object' &&
-     filter.min_should !== null &&
-     'conditions' in filter.min_should &&
-     'min_count' in filter.min_should);
+      filter.min_should !== null &&
+      'conditions' in filter.min_should &&
+      'min_count' in filter.min_should);
 
   return hasValidMust && hasValidMustNot && hasValidShould && hasValidMinShould;
 }
@@ -922,19 +1024,33 @@ export function isMatchCondition(obj: unknown): obj is MatchCondition {
 }
 
 export function isIsNullCondition(obj: unknown): boolean {
-  return obj !== null && typeof obj === 'object' && 'key' in obj && typeof (obj as { key: unknown }).key === 'string';
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'key' in obj &&
+    typeof (obj as { key: unknown }).key === 'string'
+  );
 }
 
 export function isEmptyCondition(obj: unknown): boolean {
-  return obj !== null && typeof obj === 'object' && 'key' in obj && typeof (obj as { key: unknown }).key === 'string';
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'key' in obj &&
+    typeof (obj as { key: unknown }).key === 'string'
+  );
 }
 
 export function isHasIdCondition(obj: unknown): obj is HasIdCondition {
-  return obj !== null &&
-         typeof obj === 'object' &&
-         'has_id' in obj &&
-         Array.isArray((obj as { has_id: unknown }).has_id) &&
-         (obj as { has_id: unknown[] }).has_id.every(id => typeof id === 'string' || typeof id === 'number');
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'has_id' in obj &&
+    Array.isArray((obj as { has_id: unknown }).has_id) &&
+    (obj as { has_id: unknown[] }).has_id.every(
+      (id) => typeof id === 'string' || typeof id === 'number'
+    )
+  );
 }
 
 export function isValuesCountCondition(obj: unknown): obj is ValuesCountCondition {
@@ -1027,7 +1143,9 @@ export function isQdrantPointStruct(obj: unknown): obj is QdrantPointStruct {
     Array.isArray(point.vector) &&
     point.vector.every((v: unknown) => typeof v === 'number') &&
     (point.payload === undefined || typeof point.payload === 'object') &&
-    (point.shard_key === undefined || typeof point.shard_key === 'string' || Array.isArray(point.shard_key))
+    (point.shard_key === undefined ||
+      typeof point.shard_key === 'string' ||
+      Array.isArray(point.shard_key))
   );
 }
 
@@ -1039,7 +1157,8 @@ export function isQdrantScoredPoint(obj: unknown): obj is QdrantScoredPoint {
   const point = obj as Record<string, unknown>;
 
   return (
-    point.id !== undefined && typeof point.id === 'object' && // PointId is an object
+    point.id !== undefined &&
+    typeof point.id === 'object' && // PointId is an object
     typeof point.score === 'number' &&
     (point.payload === undefined || typeof point.payload === 'object') &&
     (point.vectors === undefined || typeof point.vectors === 'object') &&

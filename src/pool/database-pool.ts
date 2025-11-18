@@ -1,6 +1,4 @@
-// @ts-nocheck
 // LAST ABSOLUTE FINAL EMERGENCY ROLLBACK: Complete the systematic rollback
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Database Connection Pool Implementation
@@ -31,6 +29,8 @@ import type {
   ResourceDestroyer,
   ResourceFactory,
   ResourceId,
+  ResourceMetrics,
+  ResourceState,
   ResourceValidator,
 } from '../types/pool-interfaces.js';
 
@@ -79,8 +79,9 @@ export interface DatabaseConnectionConfig {
 /**
  * Database connection factory interface
  */
-export interface DatabaseConnectionFactory<TConnection extends DatabaseConnection = DatabaseConnection>
-  extends ResourceFactory<TConnection, DatabaseConnectionConfig> {
+export interface DatabaseConnectionFactory<
+  TConnection extends DatabaseConnection = DatabaseConnection,
+> extends ResourceFactory<TConnection, DatabaseConnectionConfig> {
   /**
    * Create database connection with specific configuration
    */
@@ -105,8 +106,9 @@ export interface DatabaseConnectionFactory<TConnection extends DatabaseConnectio
 /**
  * Database connection validator interface
  */
-export interface DatabaseConnectionValidator<TConnection extends DatabaseConnection = DatabaseConnection>
-  extends ResourceValidator<TConnection> {
+export interface DatabaseConnectionValidator<
+  TConnection extends DatabaseConnection = DatabaseConnection,
+> extends ResourceValidator<TConnection> {
   /**
    * Validate connection health with detailed diagnostics
    */
@@ -127,8 +129,9 @@ export interface DatabaseConnectionValidator<TConnection extends DatabaseConnect
 /**
  * Database connection destroyer interface
  */
-export interface DatabaseConnectionDestroyer<TConnection extends DatabaseConnection = DatabaseConnection>
-  extends ResourceDestroyer<TConnection> {
+export interface DatabaseConnectionDestroyer<
+  TConnection extends DatabaseConnection = DatabaseConnection,
+> extends ResourceDestroyer<TConnection> {
   /**
    * Gracefully close connection with timeout
    */
@@ -267,6 +270,19 @@ export class DatabaseConnectionPool<TConnection extends DatabaseConnection = Dat
    */
   async releaseConnection(connection: TConnection): Promise<void> {
     const resourceId = this.getResourceIdFromConnection(connection);
+    const metrics: ResourceMetrics = {
+      resourceId,
+      poolId: this.getPoolId(),
+      state: 'available' as ResourceState,
+      created: connection.created,
+      lastUsed: connection.lastUsed,
+      usageCount: 0,
+      errorCount: 0,
+      averageResponseTime: 0,
+      lastHealthCheck: new Date(),
+      responseTimeHistory: [],
+    };
+
     const resource = {
       resource: connection,
       resourceId,
@@ -275,7 +291,7 @@ export class DatabaseConnectionPool<TConnection extends DatabaseConnection = Dat
       lastUsed: connection.lastUsed,
       usageCount: 0,
       isValid: connection.isValid,
-      metrics: {} as unknown,
+      metrics,
     };
 
     await this.resourcePool.release(resource);
@@ -324,9 +340,15 @@ export class DatabaseConnectionPool<TConnection extends DatabaseConnection = Dat
   getHealthStatus(): DatabasePoolHealthInfo {
     const healthStatus = this.resourcePool.getHealthStatus();
 
+    // Convert PoolHealthStatus to the more restrictive DatabasePoolHealthInfo status
+    const dbStatus =
+      healthStatus.status === 'maintenance' || healthStatus.status === 'unknown'
+        ? 'healthy'
+        : (healthStatus.status as 'healthy' | 'degraded' | 'unhealthy');
+
     return {
       databaseType: this.getDatabaseType(),
-      status: healthStatus.status,
+      status: dbStatus,
       lastCheck: healthStatus.lastCheck,
       healthyConnections: healthStatus.healthyResources,
       unhealthyConnections: healthStatus.unhealthyResources,
@@ -345,16 +367,23 @@ export class DatabaseConnectionPool<TConnection extends DatabaseConnection = Dat
     const healthResult = await this.resourcePool.performHealthCheck();
     const stats = this.resourcePool.getStats();
 
+    // Convert PoolHealthStatus to the more restrictive DatabasePoolHealthInfo status
+    const dbStatus =
+      healthResult.status === 'maintenance' || healthResult.status === 'unknown'
+        ? 'healthy'
+        : (healthResult.status as 'healthy' | 'degraded' | 'unhealthy');
+
     return {
       databaseType: this.getDatabaseType(),
-      status: healthResult.status,
+      status: dbStatus,
       lastCheck: healthResult.checkedAt,
       healthyConnections: healthResult.healthyResources.length,
       unhealthyConnections: healthResult.unhealthyResources.length,
-      totalConnections: healthResult.healthyResources.length + healthResult.unhealthyResources.length,
+      totalConnections:
+        healthResult.healthyResources.length + healthResult.unhealthyResources.length,
       averageResponseTime: stats.averageResponseTime,
       connectionErrors: stats.totalErrors,
-      issues: healthResult.issues.map(issue => issue.message),
+      issues: healthResult.issues.map((issue) => issue.message),
       recommendations: healthResult.recommendations,
     };
   }
@@ -519,7 +548,9 @@ export class DatabaseConnectionPool<TConnection extends DatabaseConnection = Dat
         };
       },
 
-      validateConnectionHealth: this.connectionValidator.validateConnectionHealth.bind(this.connectionValidator),
+      validateConnectionHealth: this.connectionValidator.validateConnectionHealth.bind(
+        this.connectionValidator
+      ),
       supportsOperation: this.connectionValidator.supportsOperation.bind(this.connectionValidator),
     };
   }
@@ -539,7 +570,9 @@ export class DatabaseConnectionPool<TConnection extends DatabaseConnection = Dat
       },
 
       closeConnection: this.connectionDestroyer.closeConnection.bind(this.connectionDestroyer),
-      forceCloseConnection: this.connectionDestroyer.forceCloseConnection.bind(this.connectionDestroyer),
+      forceCloseConnection: this.connectionDestroyer.forceCloseConnection.bind(
+        this.connectionDestroyer
+      ),
     };
   }
 
@@ -557,24 +590,22 @@ export class DatabasePoolFactory {
   /**
    * Create a new database connection pool
    */
-  static async createPool<TConnection extends DatabaseConnection>(
-    config: {
-      readonly poolId: PoolId;
-      readonly minConnections: number;
-      readonly maxConnections: number;
-      readonly acquireTimeout: number;
-      readonly idleTimeout: number;
-      readonly healthCheckInterval: number;
-      readonly maxRetries: number;
-      readonly retryDelay: number;
-      readonly enableMetrics: boolean;
-      readonly enableHealthChecks: boolean;
-      readonly connectionFactory: DatabaseConnectionFactory<TConnection>;
-      readonly connectionValidator?: DatabaseConnectionValidator<TConnection>;
-      readonly connectionDestroyer?: DatabaseConnectionDestroyer<TConnection>;
-      readonly databaseConfig: DatabaseConnectionConfig;
-    }
-  ): Promise<DatabaseConnectionPool<TConnection>> {
+  static async createPool<TConnection extends DatabaseConnection>(config: {
+    readonly poolId: PoolId;
+    readonly minConnections: number;
+    readonly maxConnections: number;
+    readonly acquireTimeout: number;
+    readonly idleTimeout: number;
+    readonly healthCheckInterval: number;
+    readonly maxRetries: number;
+    readonly retryDelay: number;
+    readonly enableMetrics: boolean;
+    readonly enableHealthChecks: boolean;
+    readonly connectionFactory: DatabaseConnectionFactory<TConnection>;
+    readonly connectionValidator?: DatabaseConnectionValidator<TConnection>;
+    readonly connectionDestroyer?: DatabaseConnectionDestroyer<TConnection>;
+    readonly databaseConfig: DatabaseConnectionConfig;
+  }): Promise<DatabaseConnectionPool<TConnection>> {
     const pool = new DatabaseConnectionPool<TConnection>(config);
     await pool.initialize();
     this.pools.set(config.poolId, pool);
@@ -601,7 +632,7 @@ export class DatabasePoolFactory {
    * Close all pools
    */
   static async closeAll(): Promise<void> {
-    const closePromises = Array.from(this.pools.values()).map(pool => pool.close());
+    const closePromises = Array.from(this.pools.values()).map((pool) => pool.close());
     await Promise.allSettled(closePromises);
     this.pools.clear();
   }
@@ -610,14 +641,14 @@ export class DatabasePoolFactory {
    * Get health status of all pools
    */
   static async getAllPoolHealth(): Promise<readonly DatabasePoolHealthInfo[]> {
-    return Promise.all(Array.from(this.pools.values()).map(pool => pool.getHealthStatus()));
+    return Promise.all(Array.from(this.pools.values()).map((pool) => pool.getHealthStatus()));
   }
 
   /**
    * Perform global health check
    */
   static async performGlobalHealthCheck(): Promise<readonly DatabasePoolHealthInfo[]> {
-    return Promise.all(Array.from(this.pools.values()).map(pool => pool.performHealthCheck()));
+    return Promise.all(Array.from(this.pools.values()).map((pool) => pool.performHealthCheck()));
   }
 }
 
@@ -636,7 +667,10 @@ export class DatabasePoolUtils {
   /**
    * Create database configuration from environment variables
    */
-  static createDatabaseConfig(env: Record<string, string | undefined>, prefix: string = 'DB'): DatabaseConnectionConfig {
+  static createDatabaseConfig(
+    env: Record<string, string | undefined>,
+    prefix: string = 'DB'
+  ): DatabaseConnectionConfig {
     return {
       type: env[`${prefix}_TYPE`] || 'unknown',
       host: env[`${prefix}_HOST`] || 'localhost',

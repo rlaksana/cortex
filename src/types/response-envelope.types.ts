@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * MCP Tool Response Envelope Types
  *
@@ -138,6 +134,16 @@ export interface ErrorEnvelope<TErrorData = unknown> extends BaseResponseEnvelop
    * Error correlation ID for debugging
    */
   error_id: string;
+
+  /**
+   * Rate limiting information (when available)
+   */
+  rate_limit?: {
+    allowed: boolean;
+    remaining: number;
+    reset_time: string;
+    identifier: string;
+  };
 }
 
 /**
@@ -203,6 +209,16 @@ export interface PaginatedEnvelope<TData = unknown> extends BaseResponseEnvelope
    * Optional summary statistics for the dataset
    */
   summary?: Record<string, unknown>;
+
+  /**
+   * Rate limiting information (when available)
+   */
+  rate_limit?: {
+    allowed: boolean;
+    remaining: number;
+    reset_time: string;
+    identifier: string;
+  };
 }
 
 /**
@@ -267,6 +283,16 @@ export interface StreamingEnvelope<TData = unknown> extends BaseResponseEnvelope
      * Transfer progress (0-1)
      */
     progress?: number;
+  };
+
+  /**
+   * Rate limiting information (when available)
+   */
+  rate_limit?: {
+    allowed: boolean;
+    remaining: number;
+    reset_time: string;
+    identifier: string;
   };
 }
 

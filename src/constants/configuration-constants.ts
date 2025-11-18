@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Typed Configuration Constants
  *
@@ -13,11 +9,7 @@
  * @since 2025
  */
 
-import type {
-  Dict,
-  JSONValue,
-  MutableDict
-} from '../types/index.js';
+import type { Dict, JSONValue, MutableDict } from '../types/index.js';
 
 // ============================================================================
 // Database Configuration Constants
@@ -27,7 +19,7 @@ import type {
  * Supported database types with type safety
  */
 export const SUPPORTED_DATABASE_TYPES = ['qdrant'] as const;
-export type DatabaseType = typeof SUPPORTED_DATABASE_TYPES[number];
+export type DatabaseType = (typeof SUPPORTED_DATABASE_TYPES)[number];
 
 /**
  * Default Qdrant configuration
@@ -43,7 +35,7 @@ export const DEFAULT_QDRANT_CONFIG: {
   port: 6333,
   timeout: 30000,
   maxRetries: 3,
-  distance: 'Cosine'
+  distance: 'Cosine',
 };
 
 /**
@@ -56,7 +48,7 @@ export const DEFAULT_VECTOR_CONFIG: {
 } = {
   size: 1536,
   distance: 'Cosine',
-  model: 'text-embedding-3-small'
+  model: 'text-embedding-3-small',
 };
 
 // ============================================================================
@@ -66,8 +58,14 @@ export const DEFAULT_VECTOR_CONFIG: {
 /**
  * Migration modes with type safety
  */
-export const MIGRATION_MODES = ['pg-to-qdrant', 'qdrant-to-pg', 'sync', 'validate', 'cleanup'] as const;
-export type MigrationMode = typeof MIGRATION_MODES[number];
+export const MIGRATION_MODES = [
+  'pg-to-qdrant',
+  'qdrant-to-pg',
+  'sync',
+  'validate',
+  'cleanup',
+] as const;
+export type MigrationMode = (typeof MIGRATION_MODES)[number];
 
 /**
  * Default migration settings
@@ -89,7 +87,7 @@ export const DEFAULT_MIGRATION_CONFIG: {
   preservePg: true,
   validationEnabled: true,
   skipValidation: false,
-  progressFile: './migration-progress.json'
+  progressFile: './migration-progress.json',
 };
 
 /**
@@ -159,7 +157,7 @@ export const MIGRATION_STRATEGIES: Dict<{
  * Validation levels with type safety
  */
 export const VALIDATION_LEVELS = ['basic', 'comprehensive', 'exhaustive'] as const;
-export type ValidationLevel = typeof VALIDATION_LEVELS[number];
+export type ValidationLevel = (typeof VALIDATION_LEVELS)[number];
 
 /**
  * Default validation configuration
@@ -262,24 +260,24 @@ export const PASSWORD_VALIDATION_PATTERNS: {
     {
       name: 'uppercase',
       pattern: /[A-Z]/,
-      description: 'At least one uppercase letter'
+      description: 'At least one uppercase letter',
     },
     {
       name: 'lowercase',
       pattern: /[a-z]/,
-      description: 'At least one lowercase letter'
+      description: 'At least one lowercase letter',
     },
     {
       name: 'number',
       pattern: /\d/,
-      description: 'At least one number'
+      description: 'At least one number',
     },
     {
       name: 'special',
       pattern: /[!@#$%^&*(),.?":{}|<>]/,
-      description: 'At least one special character'
-    }
-  ]
+      description: 'At least one special character',
+    },
+  ],
 };
 
 // ============================================================================
@@ -303,14 +301,8 @@ export const API_KEY_VALIDATION: {
     ],
     minLength: 20,
     validPrefixes: ['sk-', 'sk-proj-'],
-    placeholder: [
-      /your_.*_api_key/i,
-      /sk-.*\.\.\./,
-      /placeholder/i,
-      /example/i,
-      /test/i,
-    ]
-  }
+    placeholder: [/your_.*_api_key/i, /sk-.*\.\.\./, /placeholder/i, /example/i, /test/i],
+  },
 };
 
 // ============================================================================
@@ -321,7 +313,7 @@ export const API_KEY_VALIDATION: {
  * Supported environments
  */
 export const SUPPORTED_ENVIRONMENTS = ['development', 'production', 'test', 'staging'] as const;
-export type Environment = typeof SUPPORTED_ENVIRONMENTS[number];
+export type Environment = (typeof SUPPORTED_ENVIRONMENTS)[number];
 
 /**
  * Environment-specific settings
@@ -426,95 +418,95 @@ export const ERROR_CODES: Dict<{
   severity: 'error' | 'warning' | 'info';
 }> = {
   // Security errors
-  'SEC001': {
+  SEC001: {
     message: 'Database password appears to be a placeholder value',
     category: 'security',
     severity: 'error',
   },
-  'SEC002': {
+  SEC002: {
     message: 'Database password should be at least 12 characters long for security',
     category: 'security',
     severity: 'warning',
   },
-  'SEC003': {
+  SEC003: {
     message: 'OpenAI API key appears to be a placeholder value',
     category: 'security',
     severity: 'error',
   },
-  'SEC004': {
+  SEC004: {
     message: 'OpenAI API key format is invalid',
     category: 'security',
     severity: 'error',
   },
-  'SEC005': {
+  SEC005: {
     message: 'JWT secret appears to be a placeholder value',
     category: 'security',
     severity: 'error',
   },
-  'SEC006': {
+  SEC006: {
     message: 'JWT secret must be at least 32 characters long',
     category: 'security',
     severity: 'error',
   },
 
   // Performance errors
-  'PERF001': {
+  PERF001: {
     message: 'Large batch size may cause memory issues',
     category: 'performance',
     severity: 'warning',
   },
-  'PERF002': {
+  PERF002: {
     message: 'High memory usage detected',
     category: 'performance',
     severity: 'warning',
   },
-  'PERF003': {
+  PERF003: {
     message: 'Slow query detected',
     category: 'performance',
     severity: 'warning',
   },
 
   // Validation errors
-  'VAL001': {
+  VAL001: {
     message: 'Invalid configuration value',
     category: 'validation',
     severity: 'error',
   },
-  'VAL002': {
+  VAL002: {
     message: 'Missing required configuration field',
     category: 'validation',
     severity: 'error',
   },
-  'VAL003': {
+  VAL003: {
     message: 'Configuration type mismatch',
     category: 'validation',
     severity: 'error',
   },
 
   // Connectivity errors
-  'CONN001': {
+  CONN001: {
     message: 'Database connection failed',
     category: 'connectivity',
     severity: 'error',
   },
-  'CONN002': {
+  CONN002: {
     message: 'Service unavailable',
     category: 'connectivity',
     severity: 'error',
   },
-  'CONN003': {
+  CONN003: {
     message: 'Connection timeout',
     category: 'connectivity',
     severity: 'warning',
   },
 
   // Compatibility errors
-  'COMP001': {
+  COMP001: {
     message: 'Vector model compatibility issue',
     category: 'compatibility',
     severity: 'error',
   },
-  'COMP002': {
+  COMP002: {
     message: 'Version compatibility issue',
     category: 'compatibility',
     severity: 'warning',
@@ -585,7 +577,9 @@ export function validatePassword(password: string): {
 
   // Check minimum length
   if (password.length < PASSWORD_VALIDATION_PATTERNS.minLength) {
-    errors.push(`Password must be at least ${PASSWORD_VALIDATION_PATTERNS.minLength} characters long`);
+    errors.push(
+      `Password must be at least ${PASSWORD_VALIDATION_PATTERNS.minLength} characters long`
+    );
   }
 
   // Check for character patterns
@@ -598,14 +592,17 @@ export function validatePassword(password: string): {
   return {
     valid: errors.length === 0,
     errors,
-    warnings
+    warnings,
   };
 }
 
 /**
  * Validate API key format
  */
-export function validateApiKey(apiKey: string, service: 'openai'): {
+export function validateApiKey(
+  apiKey: string,
+  service: 'openai'
+): {
   valid: boolean;
   errors: string[];
   warnings: string[];
@@ -633,7 +630,7 @@ export function validateApiKey(apiKey: string, service: 'openai'): {
   }
 
   // Check for valid prefixes
-  const hasValidPrefix = validation.validPrefixes.some(prefix => apiKey.startsWith(prefix));
+  const hasValidPrefix = validation.validPrefixes.some((prefix) => apiKey.startsWith(prefix));
   if (!hasValidPrefix) {
     errors.push(`API key must start with one of: ${validation.validPrefixes.join(', ')}`);
   }
@@ -641,7 +638,7 @@ export function validateApiKey(apiKey: string, service: 'openai'): {
   return {
     valid: errors.length === 0,
     errors,
-    warnings
+    warnings,
   };
 }
 
@@ -656,7 +653,7 @@ export function getEnvironmentConfig(environment: Environment): Dict<JSONValue> 
 
   return {
     environment,
-    ...settings
+    ...settings,
   } as Dict<JSONValue>;
 }
 

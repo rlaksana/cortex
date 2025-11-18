@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Enhanced Expiry Utilities Unit Tests
  *
@@ -21,9 +17,9 @@
  * @since 2025
  */
 
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { enhancedExpiryUtils } from '../enhanced-expiry-utils.js';
+import { enhancedExpiryUtils } from '../enhanced-expiry-utils';
 
 describe('Enhanced Expiry Utils', () => {
   beforeEach(() => {

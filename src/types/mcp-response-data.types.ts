@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * MCP Tool Response Data Types
  *
@@ -13,7 +9,7 @@
  * @since 2025
  */
 
-import { type EnhancedContentItem, type EnhancedDataItem } from '../schemas/knowledge-types';
+import type { KnowledgeItem } from '../schemas/knowledge-types';
 
 /**
  * Memory store operation result
@@ -22,7 +18,7 @@ export interface MemoryStoreResult {
   /**
    * Items that were successfully stored
    */
-  stored_items: Array<EnhancedContentItem | EnhancedDataItem>;
+  stored_items: Array<KnowledgeItem>;
 
   /**
    * Items that failed to store
@@ -31,7 +27,7 @@ export interface MemoryStoreResult {
     /**
      * The item that failed to store
      */
-    item: EnhancedContentItem | EnhancedDataItem;
+    item: KnowledgeItem;
 
     /**
      * Error reason for failure
@@ -121,7 +117,7 @@ export interface MemoryFindResult {
   /**
    * Returned items
    */
-  items: Array<EnhancedContentItem | EnhancedDataItem>;
+  items: Array<KnowledgeItem>;
 
   /**
    * Search identifier for tracing

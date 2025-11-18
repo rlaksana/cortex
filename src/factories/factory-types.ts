@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ULTIMATE FINAL EMERGENCY ROLLBACK: Remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Enhanced factory type definitions with proper generics and type safety
@@ -16,28 +14,28 @@ export type DatabaseId<T = unknown> = string & { readonly __brand: unique symbol
 export enum ServiceLifetime {
   SINGLETON = 'singleton',
   SCOPED = 'scoped',
-  TRANSIENT = 'transient'
+  TRANSIENT = 'transient',
 }
 
 // Enhanced service registration with proper generics
 export interface TypedServiceRegistration<T> {
-  readonly token: ServiceId<T> | symbol | (new (...args: never[]) => T);
-  readonly implementation: new (...args: never[]) => T;
+  readonly token: ServiceId<T> | symbol | (new (...args: any[]) => T);
+  readonly implementation: new (...args: any[]) => T;
   readonly lifetime: ServiceLifetime;
-  readonly dependencies?: ReadonlyArray<ServiceId | symbol | (new (...args: never[]) => unknown)>;
+  readonly dependencies?: ReadonlyArray<ServiceId<any> | symbol | (new (...args: any[]) => unknown)>;
 }
 
 // Factory service registration
 export interface FactoryServiceRegistration<T> {
-  readonly token: ServiceId<T> | symbol | (new (...args: never[]) => T);
+  readonly token: ServiceId<T> | symbol | (new (...args: any[]) => T);
   readonly factory: (container: TypedDIContainer) => T | Promise<T>;
   readonly lifetime: ServiceLifetime;
-  readonly dependencies?: ReadonlyArray<ServiceId | symbol | (new (...args: never[]) => unknown)>;
+  readonly dependencies?: ReadonlyArray<ServiceId<any> | symbol | (new (...args: any[]) => unknown)>;
 }
 
 // Instance service registration
 export interface InstanceServiceRegistration<T> {
-  readonly token: ServiceId<T> | symbol | (new (...args: never[]) => T);
+  readonly token: ServiceId<T> | symbol | (new (...args: any[]) => T);
   readonly instance: T;
   readonly lifetime: ServiceLifetime.SINGLETON;
 }
@@ -68,32 +66,30 @@ export interface DatabaseFactory<TDb extends IDatabase> {
 // Enhanced DI Container interface
 export interface TypedDIContainer {
   register<T>(
-    token: ServiceId<T> | symbol | (new (...args: never[]) => T),
-    implementation: new (...args: never[]) => T,
+    token: ServiceId<T> | symbol | (new (...args: any[]) => T),
+    implementation: new (...args: any[]) => T,
     lifetime?: ServiceLifetime,
-    dependencies?: ReadonlyArray<ServiceId | symbol | (new (...args: never[]) => unknown)>
+    dependencies?: ReadonlyArray<ServiceId<any> | symbol | (new (...args: any[]) => unknown)>
   ): void;
 
   registerFactory<T>(
-    token: ServiceId<T> | symbol | (new (...args: never[]) => T),
+    token: ServiceId<T> | symbol | (new (...args: any[]) => T),
     factory: (container: TypedDIContainer) => T | Promise<T>,
     lifetime?: ServiceLifetime,
-    dependencies?: ReadonlyArray<ServiceId | symbol | (new (...args: never[]) => unknown)>
+    dependencies?: ReadonlyArray<ServiceId<any> | symbol | (new (...args: any[]) => unknown)>
   ): void;
 
   registerInstance<T>(
-    token: ServiceId<T> | symbol | (new (...args: never[]) => T),
+    token: ServiceId<T> | symbol | (new (...args: any[]) => T),
     instance: T
   ): void;
 
   resolve<T>(
-    token: ServiceId<T> | symbol | (new (...args: never[]) => T),
+    token: ServiceId<T> | symbol | (new (...args: any[]) => T),
     options?: ResolutionOptions
   ): T;
 
-  isRegistered<T>(
-    token: ServiceId<T> | symbol | (new (...args: never[]) => T)
-  ): boolean;
+  isRegistered<T>(token: ServiceId<T> | symbol | (new (...args: any[]) => T)): boolean;
 
   createScope<T>(scopeId?: string): TypedDIContainer & { readonly scopeId: string };
   dispose(): Promise<void>;
@@ -129,17 +125,28 @@ export interface ServiceMetadata {
   readonly description?: string;
   readonly dependencies?: ReadonlyArray<string>;
   readonly tags?: ReadonlyArray<string>;
+  readonly streaming?: boolean;
+  // Additional properties for orchestrator metadata
+  readonly strategy?: string;
+  readonly degraded?: boolean;
+  readonly confidence_score?: number;
+  readonly processingTimeMs?: number;
+  readonly search_metadata?: {
+    strategy_used?: string;
+    fallback_triggered?: boolean;
+    fallback_reason?: string;
+    execution_time_ms?: number;
+    results_count?: number;
+    query_complexity?: string;
+    quality_score?: number;
+  };
 }
 
 // Factory registry interface
 export interface FactoryRegistry {
-  register<TInstance, TConfig>(
-    factory: TypedFactory<TInstance, TConfig>
-  ): void;
+  register<TInstance, TConfig>(factory: TypedFactory<TInstance, TConfig>): void;
 
-  get<TInstance, TConfig>(
-    id: FactoryId<TInstance>
-  ): TypedFactory<TInstance, TConfig> | undefined;
+  get<TInstance, TConfig>(id: FactoryId<TInstance>): TypedFactory<TInstance, TConfig> | undefined;
 
   getAll(): ReadonlyMap<string, TypedFactory<unknown, unknown>>;
 
@@ -173,40 +180,81 @@ export function createDatabaseId<T>(name: string): DatabaseId<T> {
 }
 
 // Import required types from existing codebase
-import type { IDatabase } from '../db/interfaces/database.interface';
-import type { DatabaseConfig } from '../types/database';
+import type { DatabaseConfig, IDatabase } from '../db/database-interface.js';
+
+// Basic utility type
+export type ReadonlyRecord<K extends string | number | symbol, T> = Readonly<Record<K, T>>;
 
 // Enhanced error types for factory operations
 export class FactoryError extends Error {
+  public readonly factoryId: string;
+  public override readonly cause?: Error;
+
   constructor(
     message: string,
-    public readonly factoryId: string,
-    public readonly cause?: Error
+    factoryId: string,
+    cause?: Error
   ) {
     super(message);
     this.name = 'FactoryError';
+    this.factoryId = factoryId;
+    this.cause = cause;
+  }
+
+  public override get message(): string {
+    return super.message;
   }
 }
 
 export class ServiceRegistrationError extends Error {
+  public readonly serviceId: string;
+  public override readonly cause?: Error;
+
   constructor(
     message: string,
-    public readonly serviceId: string,
-    public readonly cause?: Error
+    serviceId: string,
+    cause?: Error
   ) {
     super(message);
     this.name = 'ServiceRegistrationError';
+    this.serviceId = serviceId;
+    this.cause = cause;
+  }
+
+  public override get message(): string {
+    return super.message;
   }
 }
 
 export class DependencyResolutionError extends Error {
+  public readonly dependencyId: string;
+  public readonly dependentService?: string;
+  public override readonly cause?: Error;
+
   constructor(
     message: string,
-    public readonly dependencyId: string,
-    public readonly dependentService?: string,
-    public readonly cause?: Error
+    dependencyId: string,
+    dependentService?: string,
+    cause?: Error
   ) {
     super(message);
     this.name = 'DependencyResolutionError';
+    this.dependencyId = dependencyId;
+    this.dependentService = dependentService;
+    this.cause = cause;
+  }
+
+  public override get message(): string {
+    return super.message;
   }
 }
+
+// Re-export configuration interfaces from enhanced-mcp-factory
+export type {
+  EnhancedLoggerConfig,
+  EnhancedServerConfig,
+  PerformanceConfig,
+  SecurityConfig,
+  ServerFeatures,
+  StoredItemKind,
+} from './enhanced-mcp-factory';

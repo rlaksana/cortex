@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * P4-1: Performance Trending Service Tests
  *
@@ -10,26 +5,26 @@
  * data collection functionality.
  */
 
-import { afterEach,beforeEach, describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { logger } from '../../../utils/logger.js';
-import { PerformanceTrendingService } from '../performance-trending.js';
-import { systemMetricsService } from '../system-metrics.js';
+import { logger } from '../../../utils/logger';
+import { PerformanceTrendingService } from '../performance-trending';
+import { systemMetricsService } from '../system-metrics';
 
 // Mock the logger
-jest.mock('../../../utils/logger', () => ({
+vi.mock('../../../utils/logger', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
 // Mock system metrics service
-jest.mock('../system-metrics.js', () => ({
+vi.mock('../system-metrics.js', () => ({
   systemMetricsService: {
-    getMetrics: jest.fn(() => ({
+    getMetrics: vi.fn(() => ({
       store_count: { total: 100, successful: 95, failed: 5 },
       find_count: { total: 200, successful: 190, failed: 10 },
       purge_count: { total: 50, successful: 48, failed: 2 },
@@ -229,7 +224,7 @@ describe('PerformanceTrendingService', () => {
         memory: { memory_usage_kb: 102400 }, // High memory usage
       };
 
-      jest.spyOn(systemMetricsService, 'getMetrics').mockReturnValue(mockHighResponseTimeMetrics);
+      vi.spyOn(systemMetricsService, 'getMetrics').mockReturnValue(mockHighResponseTimeMetrics);
 
       service.startCollection();
       await new Promise((resolve) => setTimeout(resolve, 1200));
@@ -350,7 +345,7 @@ describe('PerformanceTrendingService', () => {
         },
       };
 
-      jest.spyOn(systemMetricsService, 'getMetrics').mockReturnValue(spikeMetrics);
+      vi.spyOn(systemMetricsService, 'getMetrics').mockReturnValue(spikeMetrics);
 
       // Wait for another collection cycle
       await new Promise((resolve) => setTimeout(resolve, 1200));
@@ -415,7 +410,7 @@ describe('PerformanceTrendingService', () => {
   describe('Error Handling', () => {
     it('should handle errors during metrics collection gracefully', () => {
       // Mock systemMetricsService to throw an error
-      jest.spyOn(systemMetricsService, 'getMetrics').mockImplementation(() => {
+      vi.spyOn(systemMetricsService, 'getMetrics').mockImplementation(() => {
         throw new Error('Metrics collection failed');
       });
 

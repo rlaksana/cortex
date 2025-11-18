@@ -1,14 +1,14 @@
-// @ts-nocheck
-// FINAL COMPREHENSIVE EMERGENCY ROLLBACK: Utility layer type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
+// PHASE 2.2A RECOVERY: Logger utility synchronization complete
+// Recovery Date: 2025-11-14T18:10:00+07:00 (Asia/Jakarta)
+// Recovery Method: Sequential file-by-file approach with quality gates
+// Dependencies: Correlation ID system and simple logger wrapper for circular dependency resolution
 
-// Temporarily use simple logger to break circular dependencies
 import {
   generateCorrelationId,
   getOrCreateCorrelationId,
   withCorrelationId,
 } from './correlation-id.js';
-import { type SimpleLogger,simpleLogger } from './logger-wrapper.js';
+import { type SimpleLogger, simpleLogger } from './logger-wrapper.js';
 
 // Re-export simple logger as logger to maintain compatibility
 export const logger = simpleLogger;
@@ -43,7 +43,6 @@ export {
   withCorrelationId,
 } from './correlation-id.js';
 
-
 /**
  * Create a child logger with additional context
  *
@@ -54,13 +53,17 @@ export {
  * const requestLogger = createChildLogger({ request_id: uuidv7(), tool_name: 'memory.find' });
  * requestLogger.info({ query: 'auth tokens' }, 'Search query received');
  */
-export function createChildLogger(context: Record<string, unknown>) {
+export function createChildLogger(context: Record<string, unknown>): SimpleLogger {
   // Simple logger doesn't have child method, so return a wrapper that adds context
   return {
-    info: (message: unknown, meta?: unknown) => logger.info(message, { ...context, ...meta }),
-    warn: (message: unknown, meta?: unknown) => logger.warn(message, { ...context, ...meta }),
-    error: (message: unknown, meta?: unknown) => logger.error(message, { ...context, ...meta }),
-    debug: (message: unknown, meta?: unknown) => logger.debug(message, { ...context, ...meta }),
+    info: (message: unknown, meta?: unknown) =>
+      logger.info({ ...context, ...(meta as Record<string, unknown>) }, message),
+    warn: (message: unknown, meta?: unknown) =>
+      logger.warn({ ...context, ...(meta as Record<string, unknown>) }, message),
+    error: (message: unknown, meta?: unknown) =>
+      logger.error({ ...context, ...(meta as Record<string, unknown>) }, message),
+    debug: (message: unknown, meta?: unknown) =>
+      logger.debug({ ...context, ...(meta as Record<string, unknown>) }, message),
     flush: logger.flush?.bind(logger),
   };
 }
@@ -123,7 +126,11 @@ export function withRequestLogging<T>(toolName: string, fn: () => T, correlation
  * @param duration_ms - Query execution time in milliseconds
  * @param context - Additional context (e.g., query parameters)
  */
-export function logSlowQuery(sql: string, duration_ms: number, context?: Record<string, unknown>) {
+export function logSlowQuery(
+  sql: string,
+  duration_ms: number,
+  context?: Record<string, unknown>
+): void {
   if (duration_ms > 200) {
     logger.warn(
       {
@@ -135,4 +142,3 @@ export function logSlowQuery(sql: string, duration_ms: number, context?: Record<
     );
   }
 }
-

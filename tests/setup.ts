@@ -43,6 +43,16 @@ process.env['QDRANT_COLLECTION_NAME'] = 'test-cortex-memory';
 // Import comprehensive test setup
 import './setup/jest-setup.js';
 
+// Import error utility functions for test type safety
+import { expectError, expectErrorWithName, isError, hasMessage, hasName } from './types/vitest-types';
+
+// Make error utilities globally available
+(global as any).expectError = expectError;
+(global as any).expectErrorWithName = expectErrorWithName;
+(global as any).isError = isError;
+(global as any).hasMessage = hasMessage;
+(global as any).hasName = hasName;
+
 // Additional simple test utilities for backward compatibility
 global.testUtils = {
   // Legacy utilities for existing tests

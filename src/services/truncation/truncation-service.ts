@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * P1-2: Truncation Service
  * Handles intelligent content truncation with proper metadata and metrics
@@ -11,10 +6,7 @@
 import { logger } from '@/utils/logger.js';
 
 import { environment } from '../../config/environment.js';
-import type {
-  TruncationConfig,
-  TruncationResult,
-} from '../../config/truncation-config.js';
+import type { TruncationConfig, TruncationResult } from '../../config/truncation-config.js';
 import { CONTENT_TYPE_PATTERNS, TRUNCATION_STRATEGIES } from '../../config/truncation-config.js';
 
 /**

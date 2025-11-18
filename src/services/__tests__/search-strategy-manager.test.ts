@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Search Strategy Manager Test Suite - Phase 3 Enhanced
  *
@@ -15,24 +10,20 @@
  * - System health reporting
  */
 
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { SearchQuery } from '../../types/core-interfaces.js';
-import { memoryFindWithStrategies } from '../memory-find.js';
-import {
-  ErrorCategory,
-  ErrorSeverity,
-  searchErrorHandler,
-} from '../search/search-error-handler.js';
-import { SearchStrategyManager } from '../search/search-strategy-manager.js';
+import type { SearchQuery } from '../../types/core-interfaces';
+import { memoryFindWithStrategies } from '../memory-find';
+import { ErrorCategory, ErrorSeverity, searchErrorHandler } from '../search/search-error-handler';
+import { SearchStrategyManager } from '../search/search-strategy-manager';
 
 // Mock the logger to avoid noise in tests
-jest.mock('../../utils/logger.js', () => ({
+vi.mock('../../utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
@@ -119,7 +110,7 @@ describe('SearchStrategyManager', () => {
 
       it('should degrade gracefully when vector unavailable', async () => {
         // Mock vector health as unavailable
-        jest.spyOn(searchManager as unknown, 'updateVectorHealth').mockImplementation(async () => {
+        vi.spyOn(searchManager as unknown, 'updateVectorHealth').mockImplementation(async () => {
           searchManager['vectorHealth'].available = false;
           searchManager['vectorHealth'].consecutiveFailures = 3;
           searchManager['vectorHealth'].degradationReason = 'Mocked failure';
@@ -171,7 +162,7 @@ describe('SearchStrategyManager', () => {
 
       it('should degrade to auto when vector unavailable', async () => {
         // Mock vector health check to return false
-        jest.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
+        vi.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
 
         const query: SearchQuery = {
           query: 'test query',
@@ -241,7 +232,7 @@ describe('SearchStrategyManager', () => {
 
     it('should handle timeout errors with fallback', async () => {
       const timeoutError = new Error('Request timed out');
-      jest.spyOn(searchManager['autoHybridSearch'], 'search').mockRejectedValue(timeoutError);
+      vi.spyOn(searchManager['autoHybridSearch'], 'search').mockRejectedValue(timeoutError);
 
       const query: SearchQuery = {
         query: 'test query',
@@ -257,7 +248,7 @@ describe('SearchStrategyManager', () => {
 
     it('should activate circuit breaker on repeated failures', async () => {
       const persistentError = new Error('Persistent database error');
-      jest.spyOn(searchManager['deepVectorSearch'], 'search').mockRejectedValue(persistentError);
+      vi.spyOn(searchManager['deepVectorSearch'], 'search').mockRejectedValue(persistentError);
 
       const query: SearchQuery = {
         query: 'test query',
@@ -279,7 +270,7 @@ describe('SearchStrategyManager', () => {
 
     it('should provide detailed error information', async () => {
       const validationError = new Error('Invalid query format');
-      jest.spyOn(searchManager['fastKeywordSearch'], 'search').mockRejectedValue(validationError);
+      vi.spyOn(searchManager['fastKeywordSearch'], 'search').mockRejectedValue(validationError);
 
       const query: SearchQuery = {
         query: 'test query',
@@ -339,7 +330,7 @@ describe('SearchStrategyManager', () => {
 
     it('should track degradation and fallback metrics', async () => {
       // Mock vector unavailability to trigger degradation
-      jest.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
+      vi.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
 
       const query: SearchQuery = {
         query: 'degradation test',
@@ -374,7 +365,7 @@ describe('SearchStrategyManager', () => {
 
     it('should detect degraded system state', async () => {
       // Mock vector backend failure
-      jest.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
+      vi.spyOn(searchManager as unknown, 'checkVectorBackendHealth').mockResolvedValue(false);
 
       const query: SearchQuery = {
         query: 'health test',
@@ -413,7 +404,7 @@ describe('SearchStrategyManager', () => {
       ];
 
       const errorPromises = errors.map(async (error, index) => {
-        jest.spyOn(searchManager['fastKeywordSearch'], 'search').mockRejectedValueOnce(error);
+        vi.spyOn(searchManager['fastKeywordSearch'], 'search').mockRejectedValueOnce(error);
 
         try {
           await searchManager.executeSearch({ query: `error test ${index}`, mode: 'fast' }, 'fast');

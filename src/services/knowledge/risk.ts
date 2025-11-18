@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 import type { RiskData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeRisk(data: RiskData, scope: ScopeFilter): Promise<string> {

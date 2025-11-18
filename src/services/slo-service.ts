@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Service Level Objective (SLO) Service
  *
@@ -138,7 +134,7 @@ export class SLOService extends EventEmitter {
    */
   async deleteSLI(id: string): Promise<boolean> {
     // Check if SLI is referenced by any SLOs
-    const referencingSLOs = Array.from(this.slos.values()).filter(slo => slo.sli === id);
+    const referencingSLOs = Array.from(this.slos.values()).filter((slo) => slo.sli === id);
     if (referencingSLOs.length > 0) {
       throw new Error(`Cannot delete SLI ${id}: referenced by ${referencingSLOs.length} SLOs`);
     }
@@ -277,7 +273,7 @@ export class SLOService extends EventEmitter {
       // Enforce data retention
       const retentionPeriod = this.config.storage.retention.raw;
       const cutoffTime = Date.now() - retentionPeriod;
-      const filtered = sliMeasurements.filter(m => m.timestamp.getTime() > cutoffTime);
+      const filtered = sliMeasurements.filter((m) => m.timestamp.getTime() > cutoffTime);
 
       this.measurements.set(measurement.sliId, filtered);
     }
@@ -309,8 +305,8 @@ export class SLOService extends EventEmitter {
       return [...measurements];
     }
 
-    return measurements.filter(m =>
-      m.timestamp.getTime() >= startTime && m.timestamp.getTime() <= endTime
+    return measurements.filter(
+      (m) => m.timestamp.getTime() >= startTime && m.timestamp.getTime() <= endTime
     );
   }
 
@@ -383,7 +379,7 @@ export class SLOService extends EventEmitter {
     // Enforce retention
     const retentionPeriod = this.config.storage.retention.daily;
     const cutoffTime = Date.now() - retentionPeriod;
-    const filtered = sloEvaluations.filter(e => e.timestamp.getTime() > cutoffTime);
+    const filtered = sloEvaluations.filter((e) => e.timestamp.getTime() > cutoffTime);
 
     this.evaluations.set(sloId, filtered);
 
@@ -436,10 +432,10 @@ export class SLOService extends EventEmitter {
     };
 
     // Initialize counters
-    Object.values(SLOEvaluationStatus).forEach(status => {
+    Object.values(SLOEvaluationStatus).forEach((status) => {
       summary.byStatus[status] = 0;
     });
-    Object.values(AlertSeverity).forEach(severity => {
+    Object.values(AlertSeverity).forEach((severity) => {
       summary.bySeverity[severity] = 0;
     });
 
@@ -493,11 +489,14 @@ export class SLOService extends EventEmitter {
       const evaluation = this.getLatestEvaluation(slo.id);
       const alerts = evaluation?.alerts || [];
 
-      if (!evaluation ||
-          evaluation.status === SLOEvaluationStatus.VIOLATION ||
-          evaluation.status === SLOEvaluationStatus.WARNING ||
-          alerts.some(a => a.severity === AlertSeverity.CRITICAL || a.severity === AlertSeverity.EMERGENCY)) {
-
+      if (
+        !evaluation ||
+        evaluation.status === SLOEvaluationStatus.VIOLATION ||
+        evaluation.status === SLOEvaluationStatus.WARNING ||
+        alerts.some(
+          (a) => a.severity === AlertSeverity.CRITICAL || a.severity === AlertSeverity.EMERGENCY
+        )
+      ) {
         needsAttention.push({
           slo,
           evaluation,
@@ -716,7 +715,7 @@ export class SLOService extends EventEmitter {
       return 0;
     }
 
-    const values = measurements.map(m => m.value);
+    const values = measurements.map((m) => m.value);
     const aggregation = sli.measurement.aggregation;
 
     switch (aggregation) {
@@ -725,9 +724,7 @@ export class SLOService extends EventEmitter {
       case SLIAggregation.MEDIAN:
         const sorted = [...values].sort((a, b) => a - b);
         const mid = Math.floor(sorted.length / 2);
-        return sorted.length % 2 === 0
-          ? (sorted[mid - 1] + sorted[mid]) / 2
-          : sorted[mid];
+        return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
       case SLIAggregation.P95:
         const p95Index = Math.floor(values.length * 0.95);
         return values.sort((a, b) => a - b)[p95Index];
@@ -745,8 +742,9 @@ export class SLOService extends EventEmitter {
       case SLIAggregation.RATE:
         // Calculate rate based on time window
         if (measurements.length < 2) return 0;
-        const timeSpan = measurements[measurements.length - 1].timestamp.getTime() -
-                        measurements[0].timestamp.getTime();
+        const timeSpan =
+          measurements[measurements.length - 1].timestamp.getTime() -
+          measurements[0].timestamp.getTime();
         return (values.length / timeSpan) * 1000; // Rate per second
       case SLIAggregation.RATIO:
         // For ratio calculations, assume values are success/total pairs
@@ -834,7 +832,7 @@ export class SLOService extends EventEmitter {
     if (evaluations.length < 3) return BurnRateTrend.UNKNOWN;
 
     const recentEvaluations = evaluations.slice(-5);
-    const burnRates = recentEvaluations.map(e => e.budget.burnRate);
+    const burnRates = recentEvaluations.map((e) => e.budget.burnRate);
 
     // Simple trend analysis
     let increasing = 0;
@@ -856,10 +854,7 @@ export class SLOService extends EventEmitter {
   /**
    * Determine SLO evaluation status
    */
-  private determineSLOStatus(
-    compliance: number,
-    budget: unknown
-  ): SLOEvaluationStatus {
+  private determineSLOStatus(compliance: number, budget: unknown): SLOEvaluationStatus {
     // Check for violation
     if (compliance < 95 || budget.remaining <= 0) {
       return SLOEvaluationStatus.VIOLATION;
@@ -985,14 +980,17 @@ export class SLOService extends EventEmitter {
     if (measurements.length === 0) return 0;
 
     // Calculate average data quality
-    const avgCompleteness = measurements.reduce((sum, m) => sum + m.quality.completeness, 0) / measurements.length;
-    const avgAccuracy = measurements.reduce((sum, m) => sum + m.quality.accuracy, 0) / measurements.length;
-    const avgTimeliness = measurements.reduce((sum, m) => sum + m.quality.timeliness, 0) / measurements.length;
+    const avgCompleteness =
+      measurements.reduce((sum, m) => sum + m.quality.completeness, 0) / measurements.length;
+    const avgAccuracy =
+      measurements.reduce((sum, m) => sum + m.quality.accuracy, 0) / measurements.length;
+    const avgTimeliness =
+      measurements.reduce((sum, m) => sum + m.quality.timeliness, 0) / measurements.length;
 
     // Factor in data volume
     const volumeFactor = Math.min(measurements.length / 100, 1); // Normalized to 100 data points
 
-    return (avgCompleteness * 0.4 + avgAccuracy * 0.3 + avgTimeliness * 0.2 + volumeFactor * 0.1);
+    return avgCompleteness * 0.4 + avgAccuracy * 0.3 + avgTimeliness * 0.2 + volumeFactor * 0.1;
   }
 
   /**
@@ -1006,12 +1004,12 @@ export class SLOService extends EventEmitter {
     if (!evaluation) return 'medium';
 
     // Emergency alerts get critical priority
-    if (alerts.some(a => a.severity === AlertSeverity.EMERGENCY)) {
+    if (alerts.some((a) => a.severity === AlertSeverity.EMERGENCY)) {
       return 'critical';
     }
 
     // Critical alerts get high priority
-    if (alerts.some(a => a.severity === AlertSeverity.CRITICAL)) {
+    if (alerts.some((a) => a.severity === AlertSeverity.CRITICAL)) {
       return 'high';
     }
 
@@ -1036,7 +1034,10 @@ export class SLOService extends EventEmitter {
   /**
    * Compare priority levels
    */
-  private comparePriority(a: 'critical' | 'high' | 'medium' | 'low', b: 'critical' | 'high' | 'medium' | 'low'): number {
+  private comparePriority(
+    a: 'critical' | 'high' | 'medium' | 'low',
+    b: 'critical' | 'high' | 'medium' | 'low'
+  ): number {
     const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
     return priorityOrder[a] - priorityOrder[b];
   }

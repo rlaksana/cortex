@@ -1,6 +1,4 @@
-// @ts-nocheck
 // FINAL TRIUMPHANT VICTORY EMERGENCY ROLLBACK: Complete the great migration rescue
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Error Handling Utilities for Type Validation
@@ -10,15 +8,9 @@
  * error reporting with context and suggestions.
  */
 
-
-import type {
-  ValidationError} from './config-validation-schema.js';
-import type {
-  ValidationError as GuardValidationError
-} from './runtime-type-guard-framework.js';
-import type {
-  JSONConversionError,
-  PropertyAccessError} from './safe-property-access.js';
+import type { ValidationError } from './config-validation-schema.js';
+import type { ValidationError as GuardValidationError } from './runtime-type-guard-framework.js';
+import type { PropertyAccessError } from './safe-property-access.js';
 
 // ============================================================================
 // Error Classification Types
@@ -33,29 +25,29 @@ export type ErrorSeverity = 'low' | 'medium' | 'high' | 'critical';
  * Error categories for classification
  */
 export type ErrorCategory =
-  | 'TYPE_ERROR'           // Type mismatches and invalid types
-  | 'VALUE_ERROR'          // Invalid values within correct types
-  | 'STRUCTURE_ERROR'      // Structure and format errors
-  | 'CONSTRAINT_ERROR'     // Constraint violations (range, pattern, etc.)
-  | 'SYSTEM_ERROR'         // System-level errors (I/O, memory, etc.)
-  | 'CONFIGURATION_ERROR'  // Configuration-related errors
-  | 'VALIDATION_ERROR'     // General validation failures
-  | 'RUNTIME_ERROR'        // Runtime execution errors
-  | 'UNKNOWN_ERROR';       // Unclassified errors
+  | 'TYPE_ERROR' // Type mismatches and invalid types
+  | 'VALUE_ERROR' // Invalid values within correct types
+  | 'STRUCTURE_ERROR' // Structure and format errors
+  | 'CONSTRAINT_ERROR' // Constraint violations (range, pattern, etc.)
+  | 'SYSTEM_ERROR' // System-level errors (I/O, memory, etc.)
+  | 'CONFIGURATION_ERROR' // Configuration-related errors
+  | 'VALIDATION_ERROR' // General validation failures
+  | 'RUNTIME_ERROR' // Runtime execution errors
+  | 'UNKNOWN_ERROR'; // Unclassified errors
 
 /**
  * Error recovery strategies
  */
 export type RecoveryStrategy =
-  | 'RETRY'              // Retry the operation
-  | 'USE_DEFAULT'        // Use a default value
-  | 'COERCE'             // Coerce to acceptable type
-  | 'SKIP'               // Skip the operation
-  | 'FAIL_FAST'          // Fail immediately
-  | 'USER_INPUT'         // Request user input
-  | 'FALLBACK'           // Use fallback mechanism
-  | 'IGNORE'             // Ignore the error
-  | 'ESCALATE';          // Escalate to higher level
+  | 'RETRY' // Retry the operation
+  | 'USE_DEFAULT' // Use a default value
+  | 'COERCE' // Coerce to acceptable type
+  | 'SKIP' // Skip the operation
+  | 'FAIL_FAST' // Fail immediately
+  | 'USER_INPUT' // Request user input
+  | 'FALLBACK' // Use fallback mechanism
+  | 'IGNORE' // Ignore the error
+  | 'ESCALATE'; // Escalate to higher level
 
 /**
  * Error context information
@@ -158,10 +150,7 @@ export interface ErrorHandlingConfig {
 /**
  * Error handler function
  */
-export type ErrorHandler = (
-  error: ErrorInfo,
-  context: ErrorContext
-) => ErrorRecoveryResult;
+export type ErrorHandler = (error: ErrorInfo, context: ErrorContext) => ErrorRecoveryResult;
 
 // ============================================================================
 // Error Classifier
@@ -171,7 +160,8 @@ export type ErrorHandler = (
  * Error classification engine
  */
 export class ErrorClassifier {
-  private readonly classificationRules: Map<string, (error: unknown) => ErrorInfo | null> = new Map();
+  private readonly classificationRules: Map<string, (error: unknown) => ErrorInfo | null> =
+    new Map();
   private readonly severityRules: Map<string, ErrorSeverity> = new Map();
 
   constructor() {
@@ -221,7 +211,7 @@ export class ErrorClassifier {
       data: errorInfo.data,
       suggestions: errorInfo.suggestions,
       recoveryStrategies: this.determineRecoveryStrategies(errorInfo),
-      ...context
+      ...context,
     };
 
     return finalErrorInfo;
@@ -250,7 +240,7 @@ export class ErrorClassifier {
       expected: error.expected,
       actual: error.actual,
       data: error.data,
-      suggestions: error.suggestions
+      suggestions: error.suggestions,
     };
 
     // Determine category based on error code
@@ -261,7 +251,7 @@ export class ErrorClassifier {
       id: '', // Will be set by caller
       category,
       recoverable: this.isRecoverableError(category, error.code),
-      suggestions: this.enhanceSuggestions(baseError.suggestions, category, error.code)
+      suggestions: this.enhanceSuggestions(baseError.suggestions, category, error.code),
     };
   }
 
@@ -289,7 +279,7 @@ export class ErrorClassifier {
       value: error.value,
       expected: this.getExpectedTypeForError(error.type),
       actual: typeof error.value,
-      suggestions: this.getPropertyAccessSuggestions(error.type)
+      suggestions: this.getPropertyAccessSuggestions(error.type),
     };
   }
 
@@ -320,8 +310,8 @@ export class ErrorClassifier {
       suggestions: error.suggestions,
       data: {
         recoverable: error.recoverable,
-        cause: error.cause?.message
-      }
+        cause: error.cause?.message,
+      },
     };
   }
 
@@ -385,9 +375,9 @@ export class ErrorClassifier {
       severity,
       recoverable,
       data: {
-        stack: error.stack
+        stack: error.stack,
       },
-      suggestions: this.getNativeErrorSuggestions(name)
+      suggestions: this.getNativeErrorSuggestions(name),
     };
   }
 
@@ -403,7 +393,7 @@ export class ErrorClassifier {
       severity: 'low',
       recoverable: true,
       value: error,
-      suggestions: ['Convert string to Error object for better classification']
+      suggestions: ['Convert string to Error object for better classification'],
     };
   }
 
@@ -419,7 +409,7 @@ export class ErrorClassifier {
       severity: 'medium',
       recoverable: false,
       value: error,
-      suggestions: ['Provide more specific error information', 'Check error type and structure']
+      suggestions: ['Provide more specific error information', 'Check error type and structure'],
     };
   }
 
@@ -433,15 +423,27 @@ export class ErrorClassifier {
       return 'TYPE_ERROR';
     }
 
-    if (codeLower.includes('value') || codeLower.includes('range') || codeLower.includes('pattern')) {
+    if (
+      codeLower.includes('value') ||
+      codeLower.includes('range') ||
+      codeLower.includes('pattern')
+    ) {
       return 'VALUE_ERROR';
     }
 
-    if (codeLower.includes('structure') || codeLower.includes('format') || codeLower.includes('schema')) {
+    if (
+      codeLower.includes('structure') ||
+      codeLower.includes('format') ||
+      codeLower.includes('schema')
+    ) {
       return 'STRUCTURE_ERROR';
     }
 
-    if (codeLower.includes('constraint') || codeLower.includes('validation') || codeLower.includes('rule')) {
+    if (
+      codeLower.includes('constraint') ||
+      codeLower.includes('validation') ||
+      codeLower.includes('rule')
+    ) {
       return 'CONSTRAINT_ERROR';
     }
 
@@ -490,15 +492,10 @@ export class ErrorClassifier {
    * Check if error is recoverable
    */
   private isRecoverableError(category: ErrorCategory, code: string): boolean {
-    const nonRecoverablePatterns = [
-      'SYSTEM_ERROR',
-      'CRITICAL',
-      'FATAL',
-      'PANIC'
-    ];
+    const nonRecoverablePatterns = ['SYSTEM_ERROR', 'CRITICAL', 'FATAL', 'PANIC'];
 
-    return !nonRecoverablePatterns.some(pattern =>
-      category.includes(pattern) || code.includes(pattern)
+    return !nonRecoverablePatterns.some(
+      (pattern) => category.includes(pattern) || code.includes(pattern)
     );
   }
 
@@ -582,12 +579,12 @@ export class ErrorClassifier {
    */
   private getExpectedTypeForError(errorType: string): string {
     const typeMap: Record<string, string> = {
-      'TYPE_MISMATCH': 'Expected type',
-      'NOT_FOUND': 'Existing property',
-      'INVALID_INDEX': 'Valid array index',
-      'VALIDATION_FAILED': 'Valid value',
-      'READ_ONLY': 'Writable property',
-      'UNDEFINED_PARENT': 'Valid object'
+      TYPE_MISMATCH: 'Expected type',
+      NOT_FOUND: 'Existing property',
+      INVALID_INDEX: 'Valid array index',
+      VALIDATION_FAILED: 'Valid value',
+      READ_ONLY: 'Writable property',
+      UNDEFINED_PARENT: 'Valid object',
     };
 
     return typeMap[errorType] || 'Valid value';
@@ -598,30 +595,30 @@ export class ErrorClassifier {
    */
   private getPropertyAccessSuggestions(errorType: string): string[] {
     const suggestions: Record<string, string[]> = {
-      'TYPE_MISMATCH': [
+      TYPE_MISMATCH: [
         'Ensure the value type matches the expected type',
-        'Use type guards to validate values before access'
+        'Use type guards to validate values before access',
       ],
-      'NOT_FOUND': [
+      NOT_FOUND: [
         'Check if the property exists before accessing',
-        'Use optional chaining or default values'
+        'Use optional chaining or default values',
       ],
-      'INVALID_INDEX': [
+      INVALID_INDEX: [
         'Ensure index is within array bounds',
-        'Validate index is a non-negative integer'
+        'Validate index is a non-negative integer',
       ],
-      'VALIDATION_FAILED': [
+      VALIDATION_FAILED: [
         'Review validation criteria for this property',
-        'Check if value meets all required constraints'
+        'Check if value meets all required constraints',
       ],
-      'READ_ONLY': [
+      READ_ONLY: [
         'Use different approach to modify read-only properties',
-        'Check if modification is actually needed'
+        'Check if modification is actually needed',
       ],
-      'UNDEFINED_PARENT': [
+      UNDEFINED_PARENT: [
         'Ensure parent object is properly initialized',
-        'Add null checks before property access'
-      ]
+        'Add null checks before property access',
+      ],
     };
 
     return suggestions[errorType] || ['Check error details and context'];
@@ -632,22 +629,16 @@ export class ErrorClassifier {
    */
   private getNativeErrorSuggestions(errorName: string): string[] {
     const suggestions: Record<string, string[]> = {
-      'TypeError': [
+      TypeError: [
         'Check variable types before operations',
-        'Use type annotations to catch type errors early'
+        'Use type annotations to catch type errors early',
       ],
-      'RangeError': [
-        'Check array indices and numeric ranges',
-        'Validate input values before use'
-      ],
-      'ReferenceError': [
+      RangeError: ['Check array indices and numeric ranges', 'Validate input values before use'],
+      ReferenceError: [
         'Ensure variables are properly declared',
-        'Check variable scope and hoisting'
+        'Check variable scope and hoisting',
       ],
-      'SyntaxError': [
-        'Review code syntax and structure',
-        'Use linting tools to catch syntax errors'
-      ]
+      SyntaxError: ['Review code syntax and structure', 'Use linting tools to catch syntax errors'],
     };
 
     return suggestions[errorName] || ['Review error details and stack trace'];
@@ -692,7 +683,7 @@ export class ErrorRecoveryEngine {
         ['CONFIGURATION_ERROR', ['USE_DEFAULT', 'FALLBACK']],
         ['SYSTEM_ERROR', ['RETRY', 'ESCALATE']],
         ['VALIDATION_ERROR', ['SKIP', 'USE_DEFAULT']],
-        ['UNKNOWN_ERROR', ['IGNORE']]
+        ['UNKNOWN_ERROR', ['IGNORE']],
       ]),
       maxRetries: 3,
       retryDelay: 1000,
@@ -700,21 +691,18 @@ export class ErrorRecoveryEngine {
       callbacks: new Map(),
       logErrors: true,
       handlers: new Map(),
-      ...config
+      ...config,
     };
   }
 
   /**
    * Attempt to recover from an error
    */
-  async recover(
-    error: ErrorInfo,
-    context?: Partial<ErrorContext>
-  ): Promise<ErrorRecoveryResult> {
+  async recover(error: ErrorInfo, context?: Partial<ErrorContext>): Promise<ErrorRecoveryResult> {
     const fullContext: ErrorContext = {
       operation: 'error_recovery',
       timestamp: new Date(),
-      ...context
+      ...context,
     };
 
     const attempt = (this.stats.get(error.code) || 0) + 1;
@@ -736,7 +724,8 @@ export class ErrorRecoveryEngine {
     }
 
     // Try default recovery strategies
-    const strategies = error.recoveryStrategies || this.config.defaultStrategies.get(error.category) || [];
+    const strategies =
+      error.recoveryStrategies || this.config.defaultStrategies.get(error.category) || [];
 
     for (const strategy of strategies) {
       const result = await this.tryStrategy(strategy, error, fullContext, attempt);
@@ -752,7 +741,7 @@ export class ErrorRecoveryEngine {
       strategy: 'FAIL_FAST',
       attempt,
       errors: [error],
-      warnings: ['All recovery strategies failed']
+      warnings: ['All recovery strategies failed'],
     };
 
     this.recordRecoveryResult(finalResult);
@@ -796,7 +785,7 @@ export class ErrorRecoveryEngine {
           strategy,
           attempt,
           errors: [error],
-          warnings: [`Unknown recovery strategy: ${strategy}`]
+          warnings: [`Unknown recovery strategy: ${strategy}`],
         };
     }
   }
@@ -815,12 +804,14 @@ export class ErrorRecoveryEngine {
         strategy: 'RETRY',
         attempt,
         errors: [error],
-        warnings: [`Maximum retries (${this.config.maxRetries}) exceeded`]
+        warnings: [`Maximum retries (${this.config.maxRetries}) exceeded`],
       };
     }
 
     if (this.config.collectStats) {
-      console.log(`Retrying operation ${context.operation} (attempt ${attempt}/${this.config.maxRetries})`);
+      console.log(
+        `Retrying operation ${context.operation} (attempt ${attempt}/${this.config.maxRetries})`
+      );
     }
 
     // Wait before retry
@@ -833,17 +824,14 @@ export class ErrorRecoveryEngine {
       strategy: 'RETRY',
       attempt,
       errors: [error],
-      warnings: [`Retry ${attempt} failed`]
+      warnings: [`Retry ${attempt} failed`],
     };
   }
 
   /**
    * Try use default strategy
    */
-  private tryUseDefault(
-    error: ErrorInfo,
-    context: ErrorContext
-  ): ErrorRecoveryResult {
+  private tryUseDefault(error: ErrorInfo, context: ErrorContext): ErrorRecoveryResult {
     // In a real implementation, you would have access to default values
     // For now, we'll simulate using null as default
     return {
@@ -852,17 +840,14 @@ export class ErrorRecoveryEngine {
       strategy: 'USE_DEFAULT',
       attempt: 1,
       errors: [],
-      warnings: ['Using default value']
+      warnings: ['Using default value'],
     };
   }
 
   /**
    * Try coerce strategy
    */
-  private tryCoerce(
-    error: ErrorInfo,
-    context: ErrorContext
-  ): ErrorRecoveryResult {
+  private tryCoerce(error: ErrorInfo, context: ErrorContext): ErrorRecoveryResult {
     // Simple coercion logic - in a real implementation, this would be more sophisticated
     let coercedValue: unknown;
 
@@ -886,7 +871,7 @@ export class ErrorRecoveryEngine {
         strategy: 'COERCE',
         attempt: 1,
         errors: [],
-        warnings: [`Coerced ${typeof error.value} to ${typeof coercedValue}`]
+        warnings: [`Coerced ${typeof error.value} to ${typeof coercedValue}`],
       };
     }
 
@@ -895,33 +880,27 @@ export class ErrorRecoveryEngine {
       strategy: 'COERCE',
       attempt: 1,
       errors: [error],
-      warnings: ['Could not coerce value to acceptable type']
+      warnings: ['Could not coerce value to acceptable type'],
     };
   }
 
   /**
    * Try skip strategy
    */
-  private trySkip(
-    error: ErrorInfo,
-    context: ErrorContext
-  ): ErrorRecoveryResult {
+  private trySkip(error: ErrorInfo, context: ErrorContext): ErrorRecoveryResult {
     return {
       success: true,
       strategy: 'SKIP',
       attempt: 1,
       errors: [],
-      warnings: ['Skipping operation due to error']
+      warnings: ['Skipping operation due to error'],
     };
   }
 
   /**
    * Try fallback strategy
    */
-  private tryFallback(
-    error: ErrorInfo,
-    context: ErrorContext
-  ): ErrorRecoveryResult {
+  private tryFallback(error: ErrorInfo, context: ErrorContext): ErrorRecoveryResult {
     // In a real implementation, you would have access to fallback mechanisms
     return {
       success: true,
@@ -929,7 +908,7 @@ export class ErrorRecoveryEngine {
       strategy: 'FALLBACK',
       attempt: 1,
       errors: [],
-      warnings: ['Using fallback mechanism']
+      warnings: ['Using fallback mechanism'],
     };
   }
 
@@ -939,24 +918,21 @@ export class ErrorRecoveryEngine {
   private async tryUserInput(
     error: ErrorInfo,
     context: ErrorContext
-  ): Promise<ErrorRecoveryValueResult> {
+  ): Promise<ErrorRecoveryResult> {
     // In a real implementation, you would prompt the user for input
     return {
       success: false,
       strategy: 'USER_INPUT',
       attempt: 1,
       errors: [error],
-      warnings: ['User input not available in this context']
+      warnings: ['User input not available in this context'],
     };
   }
 
   /**
    * Try escalate strategy
    */
-  private tryEscalate(
-    error: ErrorInfo,
-    context: ErrorContext
-  ): ErrorRecoveryResult {
+  private tryEscalate(error: ErrorInfo, context: ErrorContext): ErrorRecoveryResult {
     // In a real implementation, you would escalate to a higher-level handler
     if (this.config.logErrors) {
       console.error(`Escalating error ${error.code}: ${error.message}`, error);
@@ -967,7 +943,7 @@ export class ErrorRecoveryEngine {
       strategy: 'ESCALATE',
       attempt: 1,
       errors: [error],
-      warnings: ['Error escalated to higher level']
+      warnings: ['Error escalated to higher level'],
     };
   }
 
@@ -1002,7 +978,7 @@ export class ErrorRecoveryEngine {
    * Delay execution for specified milliseconds
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 
@@ -1057,10 +1033,7 @@ export class ErrorHandlerRegistry {
   /**
    * Handle an error with registered handlers
    */
-  async handleError(
-    error: ErrorInfo,
-    context: ErrorContext
-  ): Promise<ErrorRecoveryResult> {
+  async handleError(error: ErrorInfo, context: ErrorContext): Promise<ErrorRecoveryResult> {
     const handlers = this.getHandlers(error.code);
     const errors: ErrorInfo[] = [error];
     const warnings: string[] = [];
@@ -1086,8 +1059,8 @@ export class ErrorHandlerRegistry {
           severity: 'high',
           recoverable: false,
           data: {
-            handlerError: handlerError instanceof Error ? handlerError.stack : String(handlerError)
-          }
+            handlerError: handlerError instanceof Error ? handlerError.stack : String(handlerError),
+          },
         });
       }
     }
@@ -1098,7 +1071,7 @@ export class ErrorHandlerRegistry {
       strategy: 'FAIL_FAST',
       attempt: 1,
       errors,
-      warnings
+      warnings,
     };
   }
 }
@@ -1153,7 +1126,7 @@ export async function handleError(
   const handlerResult = await handlerRegistry.handleError(errorInfo, {
     operation: 'error_handling',
     timestamp: new Date(),
-    ...context
+    ...context,
   });
 
   if (handlerResult.success) {
@@ -1174,7 +1147,7 @@ export function createErrorContext(
   return {
     operation,
     timestamp: new Date(),
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -1187,7 +1160,7 @@ export function formatError(errorInfo: ErrorInfo): string {
     `Message: ${errorInfo.message}`,
     `Category: ${errorInfo.category}`,
     `Severity: ${errorInfo.severity}`,
-    `Recoverable: ${errorInfo.recoverable}`
+    `Recoverable: ${errorInfo.recoverable}`,
   ];
 
   if (errorInfo.path) {
@@ -1204,7 +1177,7 @@ export function formatError(errorInfo: ErrorInfo): string {
 
   if (errorInfo.suggestions && errorInfo.suggestions.length > 0) {
     lines.push('Suggestions:');
-    errorInfo.suggestions.slice(0, 3).forEach(suggestion => {
+    errorInfo.suggestions.slice(0, 3).forEach((suggestion) => {
       lines.push(`  - ${suggestion}`);
     });
   }

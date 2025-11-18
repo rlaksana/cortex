@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Factual Verification Contradiction Detection Strategy
  *
@@ -1165,4 +1160,3 @@ Provide detailed factual analysis focusing on objectively verifiable contradicti
  * Export singleton instance
  */
 export const factualVerificationStrategy = new FactualVerificationStrategy();
-

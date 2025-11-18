@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Auto-Purge Service
  *
@@ -16,7 +12,10 @@
 import { logger } from '@/utils/logger.js';
 
 import { Environment } from '../config/environment.js';
-import { type QdrantDatabaseConfig,QdrantOnlyDatabaseLayer } from '../db/unified-database-layer-v2.js';
+import {
+  type QdrantDatabaseConfig,
+  QdrantOnlyDatabaseLayer,
+} from '../db/unified-database-layer-v2.js';
 
 export interface PurgeResult {
   deleted_counts: Record<string, number>;

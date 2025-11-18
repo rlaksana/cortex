@@ -14,16 +14,10 @@
  * @since 2025
  */
 
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 import { type QdrantClient } from '@qdrant/js-client-rest';
 
 import { logger } from '@/utils/logger.js';
-
-
+import { type ConsistencyIssue, type AutoRepairResult, isConsistencyIssue } from '../types/database-types-enhanced.js';
 
 /**
  * Validation configuration
@@ -332,12 +326,15 @@ export class QdrantConsistencyValidator {
   private config: ValidationConfiguration;
   private validationHistory: Map<string, ComprehensiveValidationResult> = new Map();
   private baselineResults: Map<string, unknown> = new Map();
-  private activeValidations: Map<string, {
-    startTime: Date;
-    type: string;
-    progress: number;
-    status: 'running' | 'completed' | 'failed' | 'cancelled';
-  }> = new Map();
+  private activeValidations: Map<
+    string,
+    {
+      startTime: Date;
+      type: string;
+      progress: number;
+      status: 'running' | 'completed' | 'failed' | 'cancelled';
+    }
+  > = new Map();
 
   constructor(client: QdrantClient, config: ValidationConfiguration) {
     this.client = client;
@@ -428,13 +425,13 @@ export class QdrantConsistencyValidator {
 
       // Create basic validation results for required checks
       const checksum = {
-        overall: { valid: true }
+        overall: { valid: true },
       };
       const integrity = {
-        overall: { passed: true }
+        overall: { passed: true },
       };
       const completeness = {
-        completenessRate: 100
+        completenessRate: 100,
       };
 
       // Calculate summary and recommendations
@@ -484,11 +481,14 @@ export class QdrantConsistencyValidator {
           completeness: completeness.completenessRate >= 95,
           consistency: referentialIntegrity.brokenRelationships === 0,
           crossReplicaConsistency: {
-            passed: crossReplicaConsistency.every(r => r.consistencyRate >= 95),
-            mismatches: crossReplicaConsistency.flatMap(r => r.mismatches.map(m => `${r.replicaId}:${m.itemId}`)),
+            passed: crossReplicaConsistency.every((r) => r.consistencyRate >= 95),
+            mismatches: crossReplicaConsistency.flatMap((r) =>
+              r.mismatches.map((m) => `${r.replicaId}:${m.itemId}`)
+            ),
           },
           vectorEmbeddingIntegrity: {
-            passed: vectorEmbeddingIntegrity.corruptionRate <= this.config.thresholds.corruptionRate,
+            passed:
+              vectorEmbeddingIntegrity.corruptionRate <= this.config.thresholds.corruptionRate,
             corruptionRate: vectorEmbeddingIntegrity.corruptionRate,
             driftDetected: false, // Would be calculated based on semantic analysis
             corruptedVectors: vectorEmbeddingIntegrity.corruptedVectors,
@@ -496,11 +496,13 @@ export class QdrantConsistencyValidator {
           },
           metadataConsistency: {
             passed: metadataConsistency.invalidItems === 0,
-            inconsistencies: metadataConsistency.schemaValidation.violations.map(v => `${v.itemId}:${v.field}`),
+            inconsistencies: metadataConsistency.schemaValidation.violations.map(
+              (v) => `${v.itemId}:${v.field}`
+            ),
           },
           referentialIntegrity: {
             passed: referentialIntegrity.brokenRelationships === 0,
-            brokenReferences: referentialIntegrity.orphanedReferences.map(r => r.itemId),
+            brokenReferences: referentialIntegrity.orphanedReferences.map((r) => r.itemId),
           },
         },
       };
@@ -519,16 +521,18 @@ export class QdrantConsistencyValidator {
       // Send alerts if needed
       await this.sendValidationAlerts(result);
 
-      logger.info({
-        validationId,
-        duration,
-        overallScore: result.overallScore,
-        valid: result.valid,
-        totalIssues: summary.totalIssues,
-      }, 'Quick consistency validation completed');
+      logger.info(
+        {
+          validationId,
+          duration,
+          overallScore: result.overallScore,
+          valid: result.valid,
+          totalIssues: summary.totalIssues,
+        },
+        'Quick consistency validation completed'
+      );
 
       return result;
-
     } catch (error) {
       this.activeValidations.set(validationId, {
         ...this.activeValidations.get(validationId)!,
@@ -543,7 +547,9 @@ export class QdrantConsistencyValidator {
   /**
    * Perform comprehensive consistency validation
    */
-  async performComprehensiveValidation(collections?: string[]): Promise<ComprehensiveValidationResult> {
+  async performComprehensiveValidation(
+    collections?: string[]
+  ): Promise<ComprehensiveValidationResult> {
     const validationId = this.generateValidationId('comprehensive');
     const startTime = Date.now();
 
@@ -597,13 +603,13 @@ export class QdrantConsistencyValidator {
 
       // Create basic validation results for required checks
       const checksum = {
-        overall: { valid: true }
+        overall: { valid: true },
       };
       const integrity = {
-        overall: { passed: true }
+        overall: { passed: true },
       };
       const completeness = {
-        completenessRate: 100
+        completenessRate: 100,
       };
 
       // Calculate summary and recommendations
@@ -658,11 +664,14 @@ export class QdrantConsistencyValidator {
           completeness: completeness.completenessRate >= 95,
           consistency: referentialIntegrity.brokenRelationships === 0,
           crossReplicaConsistency: {
-            passed: crossReplicaConsistency.every(r => r.consistencyRate >= 95),
-            mismatches: crossReplicaConsistency.flatMap(r => r.mismatches.map(m => `${r.replicaId}:${m.itemId}`)),
+            passed: crossReplicaConsistency.every((r) => r.consistencyRate >= 95),
+            mismatches: crossReplicaConsistency.flatMap((r) =>
+              r.mismatches.map((m) => `${r.replicaId}:${m.itemId}`)
+            ),
           },
           vectorEmbeddingIntegrity: {
-            passed: vectorEmbeddingIntegrity.corruptionRate <= this.config.thresholds.corruptionRate,
+            passed:
+              vectorEmbeddingIntegrity.corruptionRate <= this.config.thresholds.corruptionRate,
             corruptionRate: vectorEmbeddingIntegrity.corruptionRate,
             driftDetected: false, // Would be calculated based on semantic analysis
             corruptedVectors: vectorEmbeddingIntegrity.corruptedVectors,
@@ -670,11 +679,13 @@ export class QdrantConsistencyValidator {
           },
           metadataConsistency: {
             passed: metadataConsistency.invalidItems === 0,
-            inconsistencies: metadataConsistency.schemaValidation.violations.map(v => `${v.itemId}:${v.field}`),
+            inconsistencies: metadataConsistency.schemaValidation.violations.map(
+              (v) => `${v.itemId}:${v.field}`
+            ),
           },
           referentialIntegrity: {
             passed: referentialIntegrity.brokenRelationships === 0,
-            brokenReferences: referentialIntegrity.orphanedReferences.map(r => r.itemId),
+            brokenReferences: referentialIntegrity.orphanedReferences.map((r) => r.itemId),
           },
         },
       };
@@ -693,16 +704,18 @@ export class QdrantConsistencyValidator {
       // Send alerts if needed
       await this.sendValidationAlerts(result);
 
-      logger.info({
-        validationId,
-        duration,
-        overallScore: result.overallScore,
-        valid: result.valid,
-        totalIssues: summary.totalIssues,
-      }, 'Comprehensive consistency validation completed');
+      logger.info(
+        {
+          validationId,
+          duration,
+          overallScore: result.overallScore,
+          valid: result.valid,
+          totalIssues: summary.totalIssues,
+        },
+        'Comprehensive consistency validation completed'
+      );
 
       return result;
-
     } catch (error) {
       this.activeValidations.set(validationId, {
         ...this.activeValidations.get(validationId)!,
@@ -765,15 +778,17 @@ export class QdrantConsistencyValidator {
         status: 'completed',
       });
 
-      logger.info({
-        validationId,
-        duration,
-        overallScore: result.overallScore,
-        valid: result.valid,
-      }, 'Deep consistency validation completed');
+      logger.info(
+        {
+          validationId,
+          duration,
+          overallScore: result.overallScore,
+          valid: result.valid,
+        },
+        'Deep consistency validation completed'
+      );
 
       return result;
-
     } catch (error) {
       this.activeValidations.set(validationId, {
         ...this.activeValidations.get(validationId)!,
@@ -806,12 +821,15 @@ export class QdrantConsistencyValidator {
         throw new Error(`Validation not found: ${validationId}`);
       }
 
-      logger.info({
-        repairId,
-        validationId,
-        totalIssues: validation.summary.totalIssues,
-        options,
-      }, 'Starting validation issue repair');
+      logger.info(
+        {
+          repairId,
+          validationId,
+          totalIssues: validation.summary.totalIssues,
+          options,
+        },
+        'Starting validation issue repair'
+      );
 
       const backupCreated = options.createBackup ? await this.createRepairBackup(repairId) : false;
 
@@ -825,9 +843,9 @@ export class QdrantConsistencyValidator {
       const allIssues = this.collectAllIssues(validation);
 
       // Filter issues by type if specified
-      const targetIssues = options.issueTypes ?
-        allIssues.filter(issue => options.issueTypes!.includes(issue.type)) :
-        allIssues;
+      const targetIssues = options.issueTypes
+        ? allIssues.filter((issue) => options.issueTypes!.includes(issue.type))
+        : allIssues;
 
       totalIssues = targetIssues.length;
 
@@ -880,18 +898,20 @@ export class QdrantConsistencyValidator {
         duration,
       };
 
-      logger.info({
-        repairId,
-        totalIssues,
-        repairedIssues,
-        failedRepairs,
-        skippedRepairs,
-        duration,
-        estimatedDataLoss,
-      }, 'Validation issue repair completed');
+      logger.info(
+        {
+          repairId,
+          totalIssues,
+          repairedIssues,
+          failedRepairs,
+          skippedRepairs,
+          duration,
+          estimatedDataLoss,
+        },
+        'Validation issue repair completed'
+      );
 
       return result;
-
     } catch (error) {
       logger.error({ repairId, validationId, error }, 'Validation issue repair failed');
       throw error;
@@ -901,7 +921,10 @@ export class QdrantConsistencyValidator {
   /**
    * Get validation history and statistics
    */
-  getValidationHistory(limit?: number, validationType?: string): {
+  getValidationHistory(
+    limit?: number,
+    validationType?: string
+  ): {
     validations: ComprehensiveValidationResult[];
     statistics: {
       totalValidations: number;
@@ -914,27 +937,31 @@ export class QdrantConsistencyValidator {
     const allValidations = Array.from(this.validationHistory.values());
 
     // Filter by type if specified
-    const filteredValidations = validationType ?
-      allValidations.filter(v => v.validationType === validationType) :
-      allValidations;
+    const filteredValidations = validationType
+      ? allValidations.filter((v) => v.validationType === validationType)
+      : allValidations;
 
     // Sort by timestamp (most recent first)
-    filteredValidations.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    filteredValidations.sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
 
     // Apply limit
     const validations = limit ? filteredValidations.slice(0, limit) : filteredValidations;
 
     // Calculate statistics
     const totalValidations = filteredValidations.length;
-    const averageScore = totalValidations > 0 ?
-      filteredValidations.reduce((sum, v) => sum + v.overallScore, 0) / totalValidations :
-      0;
+    const averageScore =
+      totalValidations > 0
+        ? filteredValidations.reduce((sum, v) => sum + v.overallScore, 0) / totalValidations
+        : 0;
 
-    const averageDuration = totalValidations > 0 ?
-      filteredValidations.reduce((sum, v) => sum + v.duration, 0) / totalValidations :
-      0;
+    const averageDuration =
+      totalValidations > 0
+        ? filteredValidations.reduce((sum, v) => sum + v.duration, 0) / totalValidations
+        : 0;
 
-    const successfulValidations = filteredValidations.filter(v => v.valid).length;
+    const successfulValidations = filteredValidations.filter((v) => v.valid).length;
     const successRate = totalValidations > 0 ? (successfulValidations / totalValidations) * 100 : 0;
 
     const trendDirection = this.calculateTrendDirection(filteredValidations);
@@ -1109,7 +1136,7 @@ export class QdrantConsistencyValidator {
       semanticDrifts: [],
       contentEmbeddingAlignment: {
         averageSimilarity: 0.95,
-        minSimilarity: 0.90,
+        minSimilarity: 0.9,
         maxSimilarity: 0.99,
         alignedItems: totalItems,
         misalignedItems: 0,
@@ -1136,14 +1163,22 @@ export class QdrantConsistencyValidator {
     let lowIssues = 0;
 
     // Count issues from cross-replica consistency
-    results.crossReplicaConsistency.forEach(replica => {
+    results.crossReplicaConsistency.forEach((replica) => {
       totalIssues += replica.inconsistentItems;
-      replica.mismatches.forEach(mismatch => {
+      replica.mismatches.forEach((mismatch) => {
         switch (mismatch.severity) {
-          case 'critical': criticalIssues++; break;
-          case 'high': highIssues++; break;
-          case 'medium': mediumIssues++; break;
-          case 'low': lowIssues++; break;
+          case 'critical':
+            criticalIssues++;
+            break;
+          case 'high':
+            highIssues++;
+            break;
+          case 'medium':
+            mediumIssues++;
+            break;
+          case 'low':
+            lowIssues++;
+            break;
         }
       });
     });
@@ -1169,22 +1204,29 @@ export class QdrantConsistencyValidator {
     // Count issues from semantic consistency
     if (results.semanticConsistency) {
       totalIssues += results.semanticConsistency.semanticDrifts.length;
-      results.semanticConsistency.semanticDrifts.forEach(drift => {
+      results.semanticConsistency.semanticDrifts.forEach((drift) => {
         switch (drift.severity) {
-          case 'high': highIssues++; break;
-          case 'medium': mediumIssues++; break;
-          case 'low': lowIssues++; break;
+          case 'high':
+            highIssues++;
+            break;
+          case 'medium':
+            mediumIssues++;
+            break;
+          case 'low':
+            lowIssues++;
+            break;
         }
       });
     }
 
     // Calculate data health score
-    const totalPossibleIssues = results.vectorEmbeddingIntegrity.totalVectors +
-                              results.metadataConsistency.totalItems +
-                              results.referentialIntegrity.totalRelationships;
+    const totalPossibleIssues =
+      results.vectorEmbeddingIntegrity.totalVectors +
+      results.metadataConsistency.totalItems +
+      results.referentialIntegrity.totalRelationships;
 
-    const dataHealthScore = totalPossibleIssues > 0 ?
-      Math.max(0, 100 - (totalIssues / totalPossibleIssues) * 100) : 100;
+    const dataHealthScore =
+      totalPossibleIssues > 0 ? Math.max(0, 100 - (totalIssues / totalPossibleIssues) * 100) : 100;
 
     return {
       totalIssues,
@@ -1198,7 +1240,9 @@ export class QdrantConsistencyValidator {
     };
   }
 
-  private generateValidationRecommendations(summary: ComprehensiveValidationResult['summary']): string[] {
+  private generateValidationRecommendations(
+    summary: ComprehensiveValidationResult['summary']
+  ): string[] {
     const recommendations: string[] = [];
 
     if (summary.criticalIssues > 0) {
@@ -1224,7 +1268,9 @@ export class QdrantConsistencyValidator {
     return recommendations;
   }
 
-  private async analyzeValidationTrends(currentValidationId: string): Promise<ComprehensiveValidationResult['trendComparison']> {
+  private async analyzeValidationTrends(
+    currentValidationId: string
+  ): Promise<ComprehensiveValidationResult['trendComparison']> {
     // Implementation would compare with previous validation results
     return {
       previousValidation: undefined,
@@ -1284,8 +1330,8 @@ export class QdrantConsistencyValidator {
     }> = [];
 
     // Collect cross-replica consistency issues
-    validation.crossReplicaConsistency.forEach(replica => {
-      replica.mismatches.forEach(mismatch => {
+    validation.crossReplicaConsistency.forEach((replica) => {
+      replica.mismatches.forEach((mismatch) => {
         issues.push({
           itemId: mismatch.itemId,
           type: 'cross-replica-consistency',
@@ -1296,7 +1342,7 @@ export class QdrantConsistencyValidator {
     });
 
     // Collect vector embedding integrity issues
-    validation.vectorEmbeddingIntegrity.corruptionDetails.forEach(corruption => {
+    validation.vectorEmbeddingIntegrity.corruptionDetails.forEach((corruption) => {
       issues.push({
         itemId: corruption.vectorId,
         type: 'vector-embedding-integrity',
@@ -1306,7 +1352,7 @@ export class QdrantConsistencyValidator {
     });
 
     // Collect metadata consistency issues
-    validation.metadataConsistency.schemaValidation.violations.forEach(violation => {
+    validation.metadataConsistency.schemaValidation.violations.forEach((violation) => {
       issues.push({
         itemId: violation.itemId,
         type: 'metadata-consistency',
@@ -1316,7 +1362,7 @@ export class QdrantConsistencyValidator {
     });
 
     // Collect referential integrity issues
-    validation.referentialIntegrity.orphanedReferences.forEach(reference => {
+    validation.referentialIntegrity.orphanedReferences.forEach((reference) => {
       issues.push({
         itemId: reference.itemId,
         type: 'referential-integrity',
@@ -1328,14 +1374,29 @@ export class QdrantConsistencyValidator {
     return issues;
   }
 
-  private async repairSingleIssue(issue: unknown, autoRepair: boolean): Promise<ValidationRepairResult['repairActions'][0]> {
+  private async repairSingleIssue(
+    issue: unknown,
+    autoRepair: boolean
+  ): Promise<AutoRepairResult> {
+    // Validate issue structure
+    const issueData: ConsistencyIssue = isConsistencyIssue(issue)
+      ? issue
+      : {
+          itemId: 'unknown',
+          type: 'corruption',
+          severity: 'medium',
+          description: 'Unidentified issue',
+          detectedAt: new Date().toISOString(),
+        };
+
     // Implementation would repair individual issues
     return {
-      itemId: issue.itemId,
-      issueType: issue.type,
+      itemId: issueData.itemId,
+      issueType: issueData.type,
       action: autoRepair ? 'repair' : 'skip',
       success: autoRepair,
       details: autoRepair ? 'Issue repaired successfully' : 'Manual repair required',
+      repairedAt: autoRepair ? new Date().toISOString() : undefined,
     };
   }
 
@@ -1354,7 +1415,9 @@ export class QdrantConsistencyValidator {
     return 0;
   }
 
-  private calculateTrendDirection(validations: ComprehensiveValidationResult[]): 'improving' | 'stable' | 'degrading' {
+  private calculateTrendDirection(
+    validations: ComprehensiveValidationResult[]
+  ): 'improving' | 'stable' | 'degrading' {
     if (validations.length < 2) return 'stable';
 
     const recent = validations.slice(0, 5);
@@ -1374,11 +1437,14 @@ export class QdrantConsistencyValidator {
   private async sendValidationAlerts(result: ComprehensiveValidationResult): Promise<void> {
     // Implementation would send alerts based on validation results
     if (!result.valid && this.config.alerting.enabled) {
-      logger.warn({
-        validationId: result.validationId,
-        overallScore: result.overallScore,
-        criticalIssues: result.summary.criticalIssues,
-      }, 'Validation alert triggered');
+      logger.warn(
+        {
+          validationId: result.validationId,
+          overallScore: result.overallScore,
+          criticalIssues: result.summary.criticalIssues,
+        },
+        'Validation alert triggered'
+      );
     }
   }
 

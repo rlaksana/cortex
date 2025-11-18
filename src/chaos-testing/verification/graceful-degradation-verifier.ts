@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Graceful Degradation Verifier
  *
@@ -20,7 +16,8 @@ import {
   type SystemMetrics,
   UserFacingErrorExpectation,
   type UserFacingErrorResult,
-  VerificationResults} from '../types/chaos-testing-types.js';
+  VerificationResults,
+} from '../types/chaos-testing-types.js';
 
 export interface DegradationMetrics {
   fallbackActivationTime: number;
@@ -126,7 +123,7 @@ export class GracefulDegradationVerifier extends EventEmitter {
       degradationTime: 0,
       serviceAvailability: 0,
       circuitBreakerState: 'closed',
-      userFacingErrors: []
+      userFacingErrors: [],
     };
 
     // Verify fallback activation
@@ -138,7 +135,8 @@ export class GracefulDegradationVerifier extends EventEmitter {
     const availabilityResult = this.verifyServiceAvailability(baseline, current, metricsHistory);
     result.serviceAvailability = availabilityResult.overallAvailability;
 
-    if (availabilityResult.overallAvailability < 95) { // 95% threshold
+    if (availabilityResult.overallAvailability < 95) {
+      // 95% threshold
       result.passed = false;
     }
 
@@ -207,9 +205,11 @@ export class GracefulDegradationVerifier extends EventEmitter {
   /**
    * Verify circuit breaker behavior
    */
-  private verifyCircuitBreakerBehavior(
-    metricsHistory: DegradationMetrics[]
-  ): { behavedCorrectly: boolean; finalState: string; transitionCount: number } {
+  private verifyCircuitBreakerBehavior(metricsHistory: DegradationMetrics[]): {
+    behavedCorrectly: boolean;
+    finalState: string;
+    transitionCount: number;
+  } {
     let behavedCorrectly = true;
     let finalState = 'closed';
     let transitionCount = 0;
@@ -255,9 +255,10 @@ export class GracefulDegradationVerifier extends EventEmitter {
   /**
    * Verify user-facing error behavior
    */
-  private verifyUserFacingErrors(
-    metricsHistory: DegradationMetrics[]
-  ): { errors: UserFacingErrorResult[]; excessiveErrors: boolean } {
+  private verifyUserFacingErrors(metricsHistory: DegradationMetrics[]): {
+    errors: UserFacingErrorResult[];
+    excessiveErrors: boolean;
+  } {
     const errors: UserFacingErrorResult[] = [];
     let excessiveErrors = false;
 
@@ -281,7 +282,8 @@ export class GracefulDegradationVerifier extends EventEmitter {
     const totalRequests = 1000; // This should come from actual metrics
     const errorRate = (totalErrors / totalRequests) * 100;
 
-    if (errorRate > 5) { // 5% error rate threshold
+    if (errorRate > 5) {
+      // 5% error rate threshold
       excessiveErrors = true;
     }
 
@@ -292,7 +294,7 @@ export class GracefulDegradationVerifier extends EventEmitter {
         errorType,
         actualRate,
         expectedRate: 0, // Should be configurable
-        withinThreshold: actualRate <= 5
+        withinThreshold: actualRate <= 5,
       });
     });
 
@@ -310,41 +312,41 @@ export class GracefulDegradationVerifier extends EventEmitter {
         p50: 80,
         p95: 200,
         p99: 300,
-        max: 500
+        max: 500,
       },
       throughput: {
         requestsPerSecond: 100,
         operationsPerSecond: 150,
-        bytesPerSecond: 1024 * 1024
+        bytesPerSecond: 1024 * 1024,
       },
       errorRate: {
         totalErrors: 0,
         errorRate: 0,
-        errorsByType: {}
+        errorsByType: {},
       },
       resourceUsage: {
         cpu: 30,
         memory: 40,
         diskIO: 10,
         networkIO: 20,
-        openConnections: 50
+        openConnections: 50,
       },
       circuitBreaker: {
         state: 'closed',
         failureRate: 0,
         numberOfCalls: 100,
         numberOfSuccessfulCalls: 100,
-        numberOfFailedCalls: 0
+        numberOfFailedCalls: 0,
       },
       health: {
         overallStatus: 'healthy',
         componentStatus: {
           qdrant: 'healthy',
           api: 'healthy',
-          monitoring: 'healthy'
+          monitoring: 'healthy',
         },
-        lastHealthCheck: new Date()
-      }
+        lastHealthCheck: new Date(),
+      },
     };
   }
 
@@ -360,45 +362,45 @@ export class GracefulDegradationVerifier extends EventEmitter {
         p50: 120,
         p95: 300,
         p99: 500,
-        max: 1000
+        max: 1000,
       },
       throughput: {
         requestsPerSecond: 80,
         operationsPerSecond: 120,
-        bytesPerSecond: 800 * 1024
+        bytesPerSecond: 800 * 1024,
       },
       errorRate: {
         totalErrors: 10,
         errorRate: 2,
         errorsByType: {
-          'connection_error': 5,
-          'timeout_error': 3,
-          'validation_error': 2
-        }
+          connection_error: 5,
+          timeout_error: 3,
+          validation_error: 2,
+        },
       },
       resourceUsage: {
         cpu: 50,
         memory: 60,
         diskIO: 30,
         networkIO: 40,
-        openConnections: 60
+        openConnections: 60,
       },
       circuitBreaker: {
         state: 'half-open',
         failureRate: 15,
         numberOfCalls: 80,
         numberOfSuccessfulCalls: 68,
-        numberOfFailedCalls: 12
+        numberOfFailedCalls: 12,
       },
       health: {
         overallStatus: 'degraded',
         componentStatus: {
           qdrant: 'degraded',
           api: 'healthy',
-          monitoring: 'healthy'
+          monitoring: 'healthy',
         },
-        lastHealthCheck: new Date()
-      }
+        lastHealthCheck: new Date(),
+      },
     };
   }
 
@@ -437,7 +439,7 @@ export class GracefulDegradationVerifier extends EventEmitter {
       circuitBreakerTransitions: await this.getCircuitBreakerTransitions(),
       serviceAvailability: await this.calculateServiceAvailability(currentMetrics),
       userFacingErrors: await this.getUserFacingErrorMetrics(),
-      performanceImpact: await this.calculatePerformanceImpact(currentMetrics)
+      performanceImpact: await this.calculatePerformanceImpact(currentMetrics),
     };
   }
 
@@ -474,21 +476,25 @@ export class GracefulDegradationVerifier extends EventEmitter {
   /**
    * Calculate service availability
    */
-  private async calculateServiceAvailability(metrics: SystemMetrics): Promise<ServiceAvailabilityMetrics> {
-    const overall = 100 - (metrics.errorRate.errorRate * 100);
+  private async calculateServiceAvailability(
+    metrics: SystemMetrics
+  ): Promise<ServiceAvailabilityMetrics> {
+    const overall = 100 - metrics.errorRate.errorRate * 100;
 
     return {
       overall,
       byComponent: {
         qdrant: metrics.health.componentStatus.qdrant === 'healthy' ? 100 : 80,
         api: metrics.health.componentStatus.api === 'healthy' ? 100 : 90,
-        monitoring: metrics.health.componentStatus.monitoring === 'healthy' ? 100 : 95
+        monitoring: metrics.health.componentStatus.monitoring === 'healthy' ? 100 : 95,
       },
-      timeline: [{
-        timestamp: new Date(),
-        availability: overall,
-        component: 'overall'
-      }]
+      timeline: [
+        {
+          timestamp: new Date(),
+          availability: overall,
+          component: 'overall',
+        },
+      ],
     };
   }
 
@@ -501,32 +507,38 @@ export class GracefulDegradationVerifier extends EventEmitter {
       errorsByType: {},
       errorRates: {},
       retryableErrors: 0,
-      nonRetryableErrors: 0
+      nonRetryableErrors: 0,
     };
   }
 
   /**
    * Calculate performance impact
    */
-  private async calculatePerformanceImpact(metrics: SystemMetrics): Promise<PerformanceImpactMetrics> {
+  private async calculatePerformanceImpact(
+    metrics: SystemMetrics
+  ): Promise<PerformanceImpactMetrics> {
     const baseline = this.systemBaseline;
 
     if (!baseline) {
       return {
         responseTimeIncrease: 0,
         throughputDecrease: 0,
-        errorRateIncrease: 0
+        errorRateIncrease: 0,
       };
     }
 
-    const responseTimeIncrease = ((metrics.responseTime.mean - baseline.responseTime.mean) / baseline.responseTime.mean) * 100;
-    const throughputDecrease = ((baseline.throughput.requestsPerSecond - metrics.throughput.requestsPerSecond) / baseline.throughput.requestsPerSecond) * 100;
+    const responseTimeIncrease =
+      ((metrics.responseTime.mean - baseline.responseTime.mean) / baseline.responseTime.mean) * 100;
+    const throughputDecrease =
+      ((baseline.throughput.requestsPerSecond - metrics.throughput.requestsPerSecond) /
+        baseline.throughput.requestsPerSecond) *
+      100;
     const errorRateIncrease = metrics.errorRate.errorRate - baseline.errorRate.errorRate;
 
     return {
       responseTimeIncrease,
       throughputDecrease,
-      errorRateIncrease
+      errorRateIncrease,
     };
   }
 
@@ -559,13 +571,15 @@ export class GracefulDegradationVerifier extends EventEmitter {
 
     // Verify user-facing errors
     for (const expectedError of criteria.userFacingErrors) {
-      const actualError = result.userFacingErrors.find(e => e.errorType === expectedError.errorType);
+      const actualError = result.userFacingErrors.find(
+        (e) => e.errorType === expectedError.errorType
+      );
 
       if (!actualError) {
         continue; // Error type didn't occur
       }
 
-      const withinThreshold = actualError.actualRate <= (expectedError.expectedRate * 1.1); // 10% tolerance
+      const withinThreshold = actualError.actualRate <= expectedError.expectedRate * 1.1; // 10% tolerance
       if (!withinThreshold) {
         return false;
       }

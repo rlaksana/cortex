@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ULTIMATE FINAL EMERGENCY ROLLBACK: Remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * HTTP Error Handling and Type Discrimination
@@ -16,10 +14,10 @@
 import type {
   HttpError,
   HttpErrorType,
-  isHttpError,
   TypedHttpRequest,
   TypedHttpResponse,
 } from '../types/http-client-types.js';
+import { isHttpError } from '../types/http-client-types.js';
 
 // ============================================================================
 // Error Classification and Mapping
@@ -347,7 +345,11 @@ export class HttpErrorHandler {
    * Get error statistics
    */
   getErrorStats(): Record<ErrorCategory, number> {
-    return Object.fromEntries(this.errorStats);
+    const result = {} as Record<ErrorCategory, number>;
+    for (const [category, count] of this.errorStats) {
+      result[category] = count;
+    }
+    return result;
   }
 
   /**
@@ -379,24 +381,30 @@ export class HttpErrorHandler {
       return error;
     }
 
-    // Convert unknown errors to HttpError
+    // Convert unknown errors to HttpError using proper object creation
     if (error instanceof Error) {
-      const httpError = new Error(error.message) as HttpError;
-      httpError.type = this.inferErrorType(error);
-      httpError.request = request;
-      httpError.timestamp = Date.now();
-      httpError.retryable = this.isTypeRetryable(httpError.type);
-      return httpError;
+      const errorType = this.inferErrorType(error);
+      return {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        type: errorType as HttpError['type'],
+        request,
+        timestamp: Date.now(),
+        retryable: this.isTypeRetryable(errorType),
+      } as HttpError;
     }
 
     // Unknown error type
-    const httpError = new Error('Unknown error occurred') as HttpError;
-    httpError.type = 'unknown_error';
-    httpError.request = request;
-    httpError.timestamp = Date.now();
-    httpError.retryable = false;
-    httpError.details = { originalError: error };
-    return httpError;
+    return {
+      name: 'UnknownError',
+      message: 'Unknown error occurred',
+      type: 'unknown_error' as const,
+      request,
+      timestamp: Date.now(),
+      retryable: false,
+      details: { originalError: error },
+    };
   }
 
   /**
@@ -490,7 +498,7 @@ export class HttpErrorHandler {
     request: TypedHttpRequest
   ): Promise<TypedHttpResponse | null> {
     const applicableHandlers = this.fallbackHandlers
-      .filter(handler => handler.canHandle(error))
+      .filter((handler) => handler.canHandle(error))
       .sort((a, b) => b.priority - a.priority);
 
     for (const handler of applicableHandlers) {
@@ -585,10 +593,22 @@ export class HttpErrorHandler {
     // Copy original error properties
     Object.assign(enhancedError, error);
 
-    // Add classification details
-    (enhancedError as unknown).classification = classification;
-    (enhancedError as unknown).userMessage = classification.userMessage;
-    (enhancedError as unknown).technicalDetails = classification.technicalDetails;
+    // Add classification details using object property assignment
+    Object.defineProperty(enhancedError, 'classification', {
+      value: classification,
+      enumerable: true,
+      writable: false,
+    });
+    Object.defineProperty(enhancedError, 'userMessage', {
+      value: classification.userMessage,
+      enumerable: true,
+      writable: false,
+    });
+    Object.defineProperty(enhancedError, 'technicalDetails', {
+      value: classification.technicalDetails,
+      enumerable: true,
+      writable: false,
+    });
 
     return enhancedError;
   }
@@ -597,7 +617,7 @@ export class HttpErrorHandler {
    * Delay helper
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -718,9 +738,7 @@ class DefaultResponseFallbackHandler implements FallbackHandler {
 /**
  * Create HTTP error handler with configuration
  */
-export function createHttpErrorHandler(
-  config: Partial<ErrorHandlerConfig> = {}
-): HttpErrorHandler {
+export function createHttpErrorHandler(config: Partial<ErrorHandlerConfig> = {}): HttpErrorHandler {
   return new HttpErrorHandler(config);
 }
 

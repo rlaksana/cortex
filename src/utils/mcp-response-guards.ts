@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Utility type guard compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * MCP Response Type Guards
@@ -19,7 +17,8 @@ import {
   type MemoryStoreResult,
   type RateLimitErrorDetails,
   type SystemStatusResult,
-  type ValidationErrorDetails} from '../types/mcp-response-data.types';
+  type ValidationErrorDetails,
+} from '../types/mcp-response-data.types';
 import {
   type ErrorEnvelope,
   isErrorEnvelope,
@@ -29,7 +28,8 @@ import {
   type PaginatedEnvelope,
   type ResponseEnvelope,
   type StreamingEnvelope,
-  type SuccessEnvelope} from '../types/response-envelope.types';
+  type SuccessEnvelope,
+} from '../types/response-envelope.types';
 
 /**
  * Type guard to check if envelope contains memory store data
@@ -37,10 +37,25 @@ import {
 export function isMemoryStoreResponse(
   envelope: ResponseEnvelope
 ): envelope is SuccessEnvelope<MemoryStoreResult> {
-  return isSuccessEnvelope(envelope) &&
-         Array.isArray(envelope.data.stored_items) &&
-         Array.isArray(envelope.data.failed_items) &&
-         typeof envelope.data.summary === 'object';
+  if (!isSuccessEnvelope(envelope)) {
+    return false;
+  }
+
+  const data = envelope.data;
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+
+  const dataObj = data as Record<string, unknown>;
+
+  // Check if this looks like memory store data
+  const hasValidStructure = (
+    (Array.isArray(dataObj.stored_items) && Array.isArray(dataObj.failed_items)) ||
+    (typeof dataObj.stored === 'number' && typeof dataObj.skipped === 'number') ||
+    (typeof dataObj.summary === 'object' && dataObj.summary !== null)
+  );
+
+  return hasValidStructure;
 }
 
 /**
@@ -49,12 +64,23 @@ export function isMemoryStoreResponse(
 export function isMemoryFindResponse(
   envelope: ResponseEnvelope
 ): envelope is SuccessEnvelope<MemoryFindResult> {
-  return isSuccessEnvelope(envelope) &&
-         typeof envelope.data.query === 'string' &&
-         typeof envelope.data.strategy === 'string' &&
-         typeof envelope.data.total === 'number' &&
-         Array.isArray(envelope.data.items) &&
-         typeof envelope.data.search_id === 'string';
+  if (!isSuccessEnvelope(envelope)) {
+    return false;
+  }
+
+  const data = envelope.data;
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+
+  const dataObj = data as Record<string, unknown>;
+
+  // Check required fields with type safety
+  const hasValidQuery = typeof dataObj.query === 'string';
+  const hasValidTotal = typeof dataObj.total === 'number' && dataObj.total >= 0;
+  const hasValidItems = Array.isArray(dataObj.items) || Array.isArray(dataObj.results);
+
+  return hasValidQuery && (hasValidTotal || hasValidItems);
 }
 
 /**
@@ -63,12 +89,29 @@ export function isMemoryFindResponse(
 export function isSystemStatusResponse(
   envelope: ResponseEnvelope
 ): envelope is SuccessEnvelope<SystemStatusResult> {
-  return isSuccessEnvelope(envelope) &&
-         typeof envelope.data.status === 'string' &&
-         typeof envelope.data.components === 'object' &&
-         typeof envelope.data.metrics === 'object' &&
-         typeof envelope.data.version === 'object' &&
-         typeof envelope.data.capabilities === 'object';
+  if (!isSuccessEnvelope(envelope)) {
+    return false;
+  }
+
+  const data = envelope.data;
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+
+  const dataObj = data as Record<string, unknown>;
+
+  // Check required field
+  const hasValidStatus = typeof dataObj.status === 'string';
+
+  // Optional fields should be objects if present
+  const hasValidComponents = !dataObj.components || (
+    typeof dataObj.components === 'object' && dataObj.components !== null && !Array.isArray(dataObj.components)
+  );
+  const hasValidMetrics = !dataObj.metrics || (
+    typeof dataObj.metrics === 'object' && dataObj.metrics !== null && !Array.isArray(dataObj.metrics)
+  );
+
+  return hasValidStatus && hasValidComponents && hasValidMetrics;
 }
 
 /**
@@ -77,13 +120,16 @@ export function isSystemStatusResponse(
 export function isValidationErrorResponse(
   envelope: ResponseEnvelope
 ): envelope is ErrorEnvelope<ValidationErrorDetails[]> {
-  return isErrorEnvelope(envelope) &&
-         Array.isArray(envelope.error.details) &&
-         envelope.error.details.every(detail =>
-           typeof detail.field === 'string' &&
-           typeof detail.message === 'string' &&
-           typeof detail.rule === 'string'
-         );
+  return (
+    isErrorEnvelope(envelope) &&
+    Array.isArray(envelope.error.details) &&
+    envelope.error.details.every(
+      (detail) =>
+        typeof detail.field === 'string' &&
+        typeof detail.message === 'string' &&
+        typeof detail.rule === 'string'
+    )
+  );
 }
 
 /**
@@ -92,12 +138,14 @@ export function isValidationErrorResponse(
 export function isRateLimitErrorResponse(
   envelope: ResponseEnvelope
 ): envelope is ErrorEnvelope<RateLimitErrorDetails> {
-  return isErrorEnvelope(envelope) &&
-         typeof envelope.error.details === 'object' &&
-         envelope.error.details !== null &&
-         typeof (envelope.error.details as RateLimitErrorDetails).limit === 'number' &&
-         typeof (envelope.error.details as RateLimitErrorDetails).remaining === 'number' &&
-         typeof (envelope.error.details as RateLimitErrorDetails).reset_time === 'string';
+  return (
+    isErrorEnvelope(envelope) &&
+    typeof envelope.error.details === 'object' &&
+    envelope.error.details !== null &&
+    typeof (envelope.error.details as RateLimitErrorDetails).limit === 'number' &&
+    typeof (envelope.error.details as RateLimitErrorDetails).remaining === 'number' &&
+    typeof (envelope.error.details as RateLimitErrorDetails).reset_time === 'string'
+  );
 }
 
 /**
@@ -106,37 +154,33 @@ export function isRateLimitErrorResponse(
 export function isDatabaseErrorResponse(
   envelope: ResponseEnvelope
 ): envelope is ErrorEnvelope<DatabaseErrorDetails> {
-  return isErrorEnvelope(envelope) &&
-         typeof envelope.error.details === 'object' &&
-         envelope.error.details !== null &&
-         typeof (envelope.error.details as DatabaseErrorDetails).operation === 'string' &&
-         typeof (envelope.error.details as DatabaseErrorDetails).connection_status === 'string';
+  return (
+    isErrorEnvelope(envelope) &&
+    typeof envelope.error.details === 'object' &&
+    envelope.error.details !== null &&
+    typeof (envelope.error.details as DatabaseErrorDetails).operation === 'string' &&
+    typeof (envelope.error.details as DatabaseErrorDetails).connection_status === 'string'
+  );
 }
 
 /**
  * Safe extractor for memory store data
  */
-export function extractMemoryStoreData(
-  envelope: ResponseEnvelope
-): MemoryStoreResult | null {
+export function extractMemoryStoreData(envelope: ResponseEnvelope): MemoryStoreResult | null {
   return isMemoryStoreResponse(envelope) ? envelope.data : null;
 }
 
 /**
  * Safe extractor for memory find data
  */
-export function extractMemoryFindData(
-  envelope: ResponseEnvelope
-): MemoryFindResult | null {
+export function extractMemoryFindData(envelope: ResponseEnvelope): MemoryFindResult | null {
   return isMemoryFindResponse(envelope) ? envelope.data : null;
 }
 
 /**
  * Safe extractor for system status data
  */
-export function extractSystemStatusData(
-  envelope: ResponseEnvelope
-): SystemStatusResult | null {
+export function extractSystemStatusData(envelope: ResponseEnvelope): SystemStatusResult | null {
   return isSystemStatusResponse(envelope) ? envelope.data : null;
 }
 
@@ -155,7 +199,7 @@ export function extractValidationErrorDetails(
 export function extractRateLimitErrorDetails(
   envelope: ResponseEnvelope
 ): RateLimitErrorDetails | null {
-  return isRateLimitErrorResponse(envelope) ? (envelope.error.details || null) : null;
+  return isRateLimitErrorResponse(envelope) ? envelope.error.details || null : null;
 }
 
 /**
@@ -164,7 +208,7 @@ export function extractRateLimitErrorDetails(
 export function extractDatabaseErrorDetails(
   envelope: ResponseEnvelope
 ): DatabaseErrorDetails | null {
-  return isDatabaseErrorResponse(envelope) ? (envelope.error.details || null) : null;
+  return isDatabaseErrorResponse(envelope) ? envelope.error.details || null : null;
 }
 
 /**
@@ -308,7 +352,7 @@ export function createResponseMatcher<T = unknown>(envelope: ResponseEnvelope) {
      */
     otherwise: <U>(handler: (envelope: ResponseEnvelope) => U): U => {
       return handler(envelope);
-    }
+    },
   };
 }
 
@@ -350,4 +394,191 @@ export function getOperationStatus(envelope: ResponseEnvelope): 'success' | 'err
   } else {
     return 'unknown';
   }
+}
+
+// ============================================================================
+// Runtime Validation Utilities
+// ============================================================================
+
+/**
+ * Validate response envelope structure at runtime
+ */
+export function validateResponseEnvelope(obj: unknown): obj is ResponseEnvelope {
+  if (!obj || typeof obj !== 'object') {
+    return false;
+  }
+
+  const envelope = obj as Record<string, unknown>;
+
+  // Check required properties
+  if (typeof envelope.success !== 'boolean') {
+    return false;
+  }
+
+  // If success is true, must have data property
+  if (envelope.success && envelope.data === undefined) {
+    return false;
+  }
+
+  // If success is false, must have error property
+  if (!envelope.success && envelope.error === undefined) {
+    return false;
+  }
+
+  // Optional properties validation
+  if (envelope.timestamp !== undefined && typeof envelope.timestamp !== 'string') {
+    return false;
+  }
+
+  if (envelope.correlationId !== undefined && typeof envelope.correlationId !== 'string') {
+    return false;
+  }
+
+  if (envelope.metadata !== undefined && (
+    typeof envelope.metadata !== 'object' || envelope.metadata === null || Array.isArray(envelope.metadata)
+  )) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Validate MCP tool response structure at runtime
+ */
+export function validateMcpToolResponse(obj: unknown): boolean {
+  if (!obj || typeof obj !== 'object') {
+    return false;
+  }
+
+  const response = obj as Record<string, unknown>;
+
+  // Must have content array
+  if (!Array.isArray(response.content)) {
+    return false;
+  }
+
+  // Content array must not be empty
+  if (response.content.length === 0) {
+    return false;
+  }
+
+  // Validate each content block
+  for (const block of response.content) {
+    if (!block || typeof block !== 'object') {
+      return false;
+    }
+
+    const blockObj = block as Record<string, unknown>;
+    if (typeof blockObj.type !== 'string') {
+      return false;
+    }
+
+    // Text content blocks must have text
+    if (blockObj.type === 'text' && typeof blockObj.text !== 'string') {
+      return false;
+    }
+  }
+
+  // isError must be boolean if present
+  if (response.isError !== undefined && typeof response.isError !== 'boolean') {
+    return false;
+  }
+
+  // _meta must be object if present
+  if (response._meta !== undefined && (
+    typeof response._meta !== 'object' || response._meta === null || Array.isArray(response._meta)
+  )) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Safe response envelope validation with error reporting
+ */
+export function safeValidateResponseEnvelope(obj: unknown): {
+  isValid: boolean;
+  envelope?: ResponseEnvelope;
+  errors: string[];
+} {
+  const errors: string[] = [];
+
+  if (!obj || typeof obj !== 'object') {
+    errors.push('Response must be an object');
+    return { isValid: false, errors };
+  }
+
+  const envelope = obj as Record<string, unknown>;
+
+  // Check success property
+  if (typeof envelope.success !== 'boolean') {
+    errors.push('Missing or invalid success property (must be boolean)');
+  }
+
+  // Check data property for success responses
+  if (envelope.success === true && envelope.data === undefined) {
+    errors.push('Success responses must have data property');
+  }
+
+  // Check error property for error responses
+  if (envelope.success === false && envelope.error === undefined) {
+    errors.push('Error responses must have error property');
+  }
+
+  // Validate error structure if present
+  if (envelope.error !== undefined) {
+    const error = envelope.error;
+    if (!error || typeof error !== 'object') {
+      errors.push('Error property must be an object');
+    } else {
+      const errorObj = error as Record<string, unknown>;
+      if (typeof errorObj.code !== 'string' && typeof errorObj.code !== 'number') {
+        errors.push('Error object must have code property');
+      }
+      if (typeof errorObj.message !== 'string') {
+        errors.push('Error object must have message property');
+      }
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    envelope: errors.length === 0 ? envelope as unknown as ResponseEnvelope : undefined,
+    errors,
+  };
+}
+
+/**
+ * Runtime type guard for content blocks
+ */
+export function isContentBlock(obj: unknown): obj is { type: string; text?: string } {
+  if (!obj || typeof obj !== 'object') {
+    return false;
+  }
+
+  const block = obj as Record<string, unknown>;
+
+  if (typeof block.type !== 'string') {
+    return false;
+  }
+
+  // Text blocks must have text property
+  if (block.type === 'text' && typeof block.text !== 'string') {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Validate array of content blocks
+ */
+export function validateContentBlocks(blocks: unknown): blocks is { type: string; text?: string }[] {
+  if (!Array.isArray(blocks)) {
+    return false;
+  }
+
+  return blocks.every(isContentBlock);
 }

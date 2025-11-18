@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * In-Memory Fallback Storage
  *
@@ -167,7 +163,6 @@ export class InMemoryFallbackStorage extends EventEmitter {
 
       logger.info('In-memory fallback storage initialized successfully');
       this.emit('initialized');
-
     } catch (error) {
       logger.error({ error }, 'Failed to initialize in-memory fallback storage');
       throw error;
@@ -201,6 +196,18 @@ export class InMemoryFallbackStorage extends EventEmitter {
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
+
+        if (!item) {
+          skipped++;
+          itemResults.push({
+            input_index: i,
+            status: 'skipped_invalid',
+            kind: 'unknown',
+            reason: 'Item is null or undefined',
+            created_at: new Date().toISOString(),
+          });
+          continue;
+        }
 
         try {
           // Check if we have space
@@ -264,7 +271,6 @@ export class InMemoryFallbackStorage extends EventEmitter {
             created_at: entry.item.created_at,
             content: item.content,
           });
-
         } catch (error) {
           errors++;
           itemResults.push({
@@ -284,8 +290,9 @@ export class InMemoryFallbackStorage extends EventEmitter {
       // Generate summary
       const summary: BatchSummary = {
         stored,
-        skipped_dedupe: itemResults.filter(item => item.status === 'skipped_dedupe').length,
-        business_rule_blocked: itemResults.filter(item => item.status === 'business_rule_blocked').length,
+        skipped_dedupe: itemResults.filter((item) => item.status === 'skipped_dedupe').length,
+        business_rule_blocked: itemResults.filter((item) => item.status === 'business_rule_blocked')
+          .length,
         validation_error: errors,
         total: items.length,
       };
@@ -308,7 +315,6 @@ export class InMemoryFallbackStorage extends EventEmitter {
           fallback_reason: 'Qdrant database unavailable - using in-memory storage',
         },
       };
-
     } catch (error) {
       this.updateMetrics(Date.now() - startTime, false);
       this.metrics.failedFallbackOps++;
@@ -355,7 +361,8 @@ export class InMemoryFallbackStorage extends EventEmitter {
 
         // Check if item matches search
         const score = this.calculateSearchScore(entry.item, searchTerm);
-        if (score > 0.1) { // Minimum relevance threshold
+        if (score > 0.1) {
+          // Minimum relevance threshold
           results.push({
             item: entry.item,
             score,
@@ -372,14 +379,14 @@ export class InMemoryFallbackStorage extends EventEmitter {
 
       // Filter by scope if specified
       if (query.scope) {
-        filteredResults = filteredResults.filter(result =>
+        filteredResults = filteredResults.filter((result) =>
           this.matchesScope(result.item.scope, query.scope!)
         );
       }
 
       // Filter by types if specified
       if (query.types && query.types.length > 0) {
-        filteredResults = filteredResults.filter(result =>
+        filteredResults = filteredResults.filter((result) =>
           query.types!.includes(result.item.kind)
         );
       }
@@ -388,7 +395,7 @@ export class InMemoryFallbackStorage extends EventEmitter {
       const limitedResults = filteredResults.slice(0, query.limit || 50);
 
       // Convert to SearchResult format
-      const searchResults: SearchResult[] = limitedResults.map(result => ({
+      const searchResults: SearchResult[] = limitedResults.map((result) => ({
         id: result.item.id!,
         kind: result.item.kind,
         scope: result.item.scope,
@@ -415,14 +422,14 @@ export class InMemoryFallbackStorage extends EventEmitter {
           degraded: true,
           source: 'in-memory-fallback',
           execution_time_ms: Date.now() - startTime,
-          confidence_score: searchResults.length > 0
-            ? searchResults.reduce((sum, r) => sum + r.confidence_score, 0) / searchResults.length
-            : 0,
+          confidence_score:
+            searchResults.length > 0
+              ? searchResults.reduce((sum, r) => sum + r.confidence_score, 0) / searchResults.length
+              : 0,
           truncated: false,
           fallback_reason: 'Qdrant database unavailable - using in-memory search',
         },
       };
-
     } catch (error) {
       this.updateMetrics(Date.now() - startTime, false);
       this.metrics.failedFallbackOps++;
@@ -483,9 +490,8 @@ export class InMemoryFallbackStorage extends EventEmitter {
     // Calculate uptime percentage
     const totalRuntime = Date.now() - this.operationStartTime;
     const fallbackTime = this.metrics.fallbackOperations * this.metrics.averageResponseTime;
-    this.metrics.uptimePercentage = totalRuntime > 0
-      ? ((totalRuntime - fallbackTime) / totalRuntime) * 100
-      : 100;
+    this.metrics.uptimePercentage =
+      totalRuntime > 0 ? ((totalRuntime - fallbackTime) / totalRuntime) * 100 : 100;
 
     return { ...this.metrics };
   }
@@ -525,7 +531,6 @@ export class InMemoryFallbackStorage extends EventEmitter {
 
       logger.info('In-memory fallback storage shut down');
       this.emit('shutdown');
-
     } catch (error) {
       logger.error({ error }, 'Error during in-memory fallback storage shutdown');
       throw error;
@@ -579,7 +584,7 @@ export class InMemoryFallbackStorage extends EventEmitter {
     }
 
     // Use default TTL
-    return Date.now() + (this.config.defaultTTL * 60 * 1000);
+    return Date.now() + this.config.defaultTTL * 60 * 1000;
   }
 
   /**
@@ -740,10 +745,12 @@ export class InMemoryFallbackStorage extends EventEmitter {
     }
 
     // Calculate average response time
-    this.metrics.averageResponseTime = this.responseTimeHistory.reduce((a, b) => a + b, 0) / this.responseTimeHistory.length;
+    this.metrics.averageResponseTime =
+      this.responseTimeHistory.reduce((a, b) => a + b, 0) / this.responseTimeHistory.length;
 
     // Update error rate
-    this.metrics.errorRate = (this.metrics.failedFallbackOps / this.metrics.fallbackOperations) * 100;
+    this.metrics.errorRate =
+      (this.metrics.failedFallbackOps / this.metrics.fallbackOperations) * 100;
 
     // Track fallback time
     if (this.metrics.fallbackOperations === 1) {

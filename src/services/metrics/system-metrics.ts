@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * P8-T8.3: System Metrics Service
  *
@@ -202,6 +198,40 @@ export interface MetricUpdate {
 /**
  * Service for collecting and exposing system metrics
  */
+/**
+ * Type-safe property access helper
+ */
+function safeRecordAccess<T extends Record<string, unknown>>(
+  record: T,
+  key: string,
+  defaultValue: unknown
+): unknown {
+  return (record[key] as unknown) ?? defaultValue;
+}
+
+/**
+ * Type-safe string key assertion
+ */
+function assertStringKey(key: unknown): string {
+  return typeof key === 'string' ? key : String(key);
+}
+
+/**
+ * Type-safe number conversion
+ */
+function safeNumber(value: unknown): number {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') return Number(value) || 0;
+  return 0;
+}
+
+/**
+ * Type-safe boolean check
+ */
+function safeBoolean(value: unknown): boolean {
+  return Boolean(value);
+}
+
 export class SystemMetricsService {
   private metrics: SystemMetrics = {
     store_count: {
@@ -419,8 +449,9 @@ export class SystemMetricsService {
 
       // Track by kind
       if (data.kind) {
-        this.metrics.store_count.by_kind[data.kind] =
-          (this.metrics.store_count.by_kind[data.kind] || 0) + 1;
+        const kind = assertStringKey(data.kind);
+        this.metrics.store_count.by_kind[kind] =
+          (this.metrics.store_count.by_kind[kind] || 0) + 1;
       }
     } else {
       this.metrics.store_count.failed++;
@@ -451,8 +482,9 @@ export class SystemMetricsService {
 
       // Track by mode
       if (data.mode) {
-        this.metrics.find_count.by_mode[data.mode] =
-          (this.metrics.find_count.by_mode[data.mode] || 0) + 1;
+        const mode = assertStringKey(data.mode);
+        this.metrics.find_count.by_mode[mode] =
+          (this.metrics.find_count.by_mode[mode] || 0) + 1;
       }
     } else {
       this.metrics.find_count.failed++;
@@ -465,8 +497,9 @@ export class SystemMetricsService {
 
     // Update observability metrics
     this.metrics.observability.responses_with_metadata++;
-    this.metrics.observability.search_strategies_used[data.mode] =
-      (this.metrics.observability.search_strategies_used[data.mode] || 0) + 1;
+    const mode = assertStringKey(data.mode);
+    this.metrics.observability.search_strategies_used[mode] =
+      (this.metrics.observability.search_strategies_used[mode] || 0) + 1;
 
     if (duration) {
       this.updateObservabilityMetric('avg_response_time_ms', duration);
@@ -483,10 +516,10 @@ export class SystemMetricsService {
       this.metrics.purge_count.successful++;
 
       // Track by kind
-      if (data.kinds) {
-        Object.entries(data.kinds).forEach(([kind, count]) => {
+      if (data.kinds && typeof data.kinds === 'object') {
+        Object.entries(data.kinds as Record<string, unknown>).forEach(([kind, count]) => {
           this.metrics.purge_count.by_kind[kind] =
-            (this.metrics.purge_count.by_kind[kind] || 0) + Number(count);
+            (this.metrics.purge_count.by_kind[kind] || 0) + safeNumber(count);
         });
       }
     } else {
@@ -503,14 +536,14 @@ export class SystemMetricsService {
    * Update validation metrics
    */
   private updateValidationMetrics(data: Record<string, unknown>): void {
-    this.metrics.validator_fail_rate.items_validated += Number(data.items_validated || 1);
+    this.metrics.validator_fail_rate.items_validated += safeNumber(data.items_validated || 1);
 
     if (data.validation_failures) {
-      this.metrics.validator_fail_rate.validation_failures += Number(data.validation_failures);
+      this.metrics.validator_fail_rate.validation_failures += safeNumber(data.validation_failures);
     }
 
     if (data.business_rule_blocks) {
-      this.metrics.validator_fail_rate.business_rule_blocks += Number(data.business_rule_blocks);
+      this.metrics.validator_fail_rate.business_rule_blocks += safeNumber(data.business_rule_blocks);
     }
 
     // Calculate fail rate
@@ -527,8 +560,8 @@ export class SystemMetricsService {
    * Update deduplication metrics
    */
   private updateDedupeMetrics(data: Record<string, unknown>): void {
-    this.metrics.dedupe_rate.items_processed += Number(data.items_processed || 1);
-    this.metrics.dedupe_rate.items_skipped += Number(data.items_skipped || 0);
+    this.metrics.dedupe_rate.items_processed += safeNumber(data.items_processed || 1);
+    this.metrics.dedupe_rate.items_skipped += safeNumber(data.items_skipped || 0);
 
     // Calculate dedupe rate
     this.metrics.dedupe_rate.rate =
@@ -544,12 +577,14 @@ export class SystemMetricsService {
     this.metrics.errors.total_errors++;
 
     if (data.error_type) {
-      this.metrics.errors.by_error_type[data.error_type] =
-        (this.metrics.errors.by_error_type[data.error_type] || 0) + 1;
+      const errorType = assertStringKey(data.error_type);
+      this.metrics.errors.by_error_type[errorType] =
+        (this.metrics.errors.by_error_type[errorType] || 0) + 1;
     }
 
     if (data.tool) {
-      this.metrics.errors.by_tool[data.tool] = (this.metrics.errors.by_tool[data.tool] || 0) + 1;
+      const tool = assertStringKey(data.tool);
+      this.metrics.errors.by_tool[tool] = (this.metrics.errors.by_tool[tool] || 0) + 1;
     }
   }
 
@@ -557,9 +592,9 @@ export class SystemMetricsService {
    * Update rate limiting metrics
    */
   private updateRateLimitMetrics(data: Record<string, unknown>): void {
-    this.metrics.rate_limiting.total_requests += Number(data.total_requests || 0);
-    this.metrics.rate_limiting.blocked_requests += Number(data.blocked_requests || 0);
-    this.metrics.rate_limiting.active_actors = Number(data.active_actors || 0);
+    this.metrics.rate_limiting.total_requests += safeNumber(data.total_requests || 0);
+    this.metrics.rate_limiting.blocked_requests += safeNumber(data.blocked_requests || 0);
+    this.metrics.rate_limiting.active_actors = safeNumber(data.active_actors || 0);
 
     // Calculate block rate
     this.metrics.rate_limiting.block_rate =
@@ -578,8 +613,8 @@ export class SystemMetricsService {
       this.metrics.truncation.store_truncated_total++;
     }
 
-    this.metrics.truncation.store_truncated_chars_total += Number(data.charsRemoved || 0);
-    this.metrics.truncation.store_truncated_tokens_total += Number(data.tokensRemoved || 0);
+    this.metrics.truncation.store_truncated_chars_total += safeNumber(data.charsRemoved || 0);
+    this.metrics.truncation.store_truncated_tokens_total += safeNumber(data.tokensRemoved || 0);
 
     if (duration) {
       this.metrics.truncation.truncation_processing_time_ms += duration;
@@ -587,14 +622,16 @@ export class SystemMetricsService {
 
     // Track by content type
     if (data.contentType) {
-      this.metrics.truncation.truncation_by_type[data.contentType] =
-        (this.metrics.truncation.truncation_by_type[data.contentType] || 0) + 1;
+      const contentType = assertStringKey(data.contentType);
+      this.metrics.truncation.truncation_by_type[contentType] =
+        (this.metrics.truncation.truncation_by_type[contentType] || 0) + 1;
     }
 
     // Track by strategy
     if (data.strategy) {
-      this.metrics.truncation.truncation_by_strategy[data.strategy] =
-        (this.metrics.truncation.truncation_by_strategy[data.strategy] || 0) + 1;
+      const strategy = assertStringKey(data.strategy);
+      this.metrics.truncation.truncation_by_strategy[strategy] =
+        (this.metrics.truncation.truncation_by_strategy[strategy] || 0) + 1;
     }
 
     // Calculate truncation rate
@@ -643,10 +680,10 @@ export class SystemMetricsService {
    */
   private updateChunkingMetrics(data: Record<string, unknown>, duration?: number): void {
     if (data.items_chunked) {
-      this.metrics.chunking.items_chunked += Number(data.items_chunked);
+      this.metrics.chunking.items_chunked += safeNumber(data.items_chunked);
     }
     if (data.chunks_generated) {
-      this.metrics.chunking.chunks_generated += Number(data.chunks_generated);
+      this.metrics.chunking.chunks_generated += safeNumber(data.chunks_generated);
     }
     if (duration) {
       this.metrics.chunking.chunking_duration_ms += duration;
@@ -655,7 +692,7 @@ export class SystemMetricsService {
     // Update success rate
     if (data.success !== undefined) {
       const total = this.metrics.chunking.items_chunked || 1;
-      const successful = data.success
+      const successful = safeBoolean(data.success)
         ? this.metrics.chunking.items_chunked - (this.metrics.chunking.chunking_errors || 0)
         : this.metrics.chunking.chunking_errors + 1;
       this.metrics.chunking.chunking_success_rate = (successful / total) * 100;
@@ -663,31 +700,32 @@ export class SystemMetricsService {
 
     // Track by type
     if (data.type) {
-      this.metrics.chunking.chunking_by_type[data.type] =
-        (this.metrics.chunking.chunking_by_type[data.type] || 0) + 1;
+      const type = assertStringKey(data.type);
+      this.metrics.chunking.chunking_by_type[type] =
+        (this.metrics.chunking.chunking_by_type[type] || 0) + 1;
     }
 
     // Semantic analysis metrics
     if (data.semantic_analysis_used) {
-      this.metrics.chunking.semantic_analysis_used += Number(data.semantic_analysis_used);
+      this.metrics.chunking.semantic_analysis_used += safeNumber(data.semantic_analysis_used);
     }
     if (data.semantic_boundaries_found) {
-      this.metrics.chunking.semantic_boundaries_found += Number(data.semantic_boundaries_found);
+      this.metrics.chunking.semantic_boundaries_found += safeNumber(data.semantic_boundaries_found);
     }
 
     // Reassembly accuracy
     if (data.reassembly_accuracy) {
-      this.metrics.chunking.chunk_reassembly_accuracy = data.reassembly_accuracy;
+      this.metrics.chunking.chunk_reassembly_accuracy = safeNumber(data.reassembly_accuracy);
     }
 
     // Average chunk size
     if (data.average_chunk_size) {
-      this.metrics.chunking.average_chunk_size = data.average_chunk_size;
+      this.metrics.chunking.average_chunk_size = safeNumber(data.average_chunk_size);
     }
 
     // Overlap utilization
     if (data.overlap_utilization) {
-      this.metrics.chunking.overlap_utilization = data.overlap_utilization;
+      this.metrics.chunking.overlap_utilization = safeNumber(data.overlap_utilization);
     }
 
     // Calculate average chunks per item
@@ -704,10 +742,10 @@ export class SystemMetricsService {
     this.metrics.cleanup.cleanup_operations_run++;
 
     if (data.items_deleted) {
-      this.metrics.cleanup.items_deleted_total += Number(data.items_deleted);
+      this.metrics.cleanup.items_deleted_total += safeNumber(data.items_deleted);
     }
     if (data.items_dryrun_identified) {
-      this.metrics.cleanup.items_dryrun_identified += Number(data.items_dryrun_identified);
+      this.metrics.cleanup.items_dryrun_identified += safeNumber(data.items_dryrun_identified);
     }
     if (duration) {
       this.metrics.cleanup.cleanup_duration_ms += duration;
@@ -716,7 +754,7 @@ export class SystemMetricsService {
     // Update success rate
     if (data.success !== undefined) {
       const total = this.metrics.cleanup.cleanup_operations_run;
-      const successful = data.success
+      const successful = safeBoolean(data.success)
         ? total - this.metrics.cleanup.cleanup_errors
         : this.metrics.cleanup.cleanup_errors + 1;
       this.metrics.cleanup.cleanup_success_rate = (successful / total) * 100;
@@ -724,14 +762,16 @@ export class SystemMetricsService {
 
     // Track by operation type
     if (data.operation_type) {
-      this.metrics.cleanup.cleanup_by_operation[data.operation_type] =
-        (this.metrics.cleanup.cleanup_by_operation[data.operation_type] || 0) + 1;
+      const operationType = assertStringKey(data.operation_type);
+      this.metrics.cleanup.cleanup_by_operation[operationType] =
+        (this.metrics.cleanup.cleanup_by_operation[operationType] || 0) + 1;
     }
 
     // Track by knowledge type
     if (data.knowledge_type) {
-      this.metrics.cleanup.cleanup_by_type[data.knowledge_type] =
-        (this.metrics.cleanup.cleanup_by_type[data.knowledge_type] || 0) + 1;
+      const knowledgeType = assertStringKey(data.knowledge_type);
+      this.metrics.cleanup.cleanup_by_type[knowledgeType] =
+        (this.metrics.cleanup.cleanup_by_type[knowledgeType] || 0) + 1;
     }
 
     // Backup metrics
@@ -739,12 +779,12 @@ export class SystemMetricsService {
       this.metrics.cleanup.backup_operations += 1;
     }
     if (data.backup_size) {
-      this.metrics.cleanup.backup_size_total_bytes += Number(data.backup_size);
+      this.metrics.cleanup.backup_size_total_bytes += safeNumber(data.backup_size);
     }
 
     // Performance metrics
     if (data.items_per_second) {
-      this.metrics.cleanup.average_items_per_second = data.items_per_second;
+      this.metrics.cleanup.average_items_per_second = safeNumber(data.items_per_second);
     }
 
     // Confirmation metrics
@@ -791,13 +831,14 @@ export class SystemMetricsService {
 
     // Strategy-specific metrics
     if (data.strategy) {
-      this.metrics.dedupe_hits.dedupe_hits_by_strategy[data.strategy] =
-        (this.metrics.dedupe_hits.dedupe_hits_by_strategy[data.strategy] || 0) + 1;
+      const strategy = assertStringKey(data.strategy);
+      this.metrics.dedupe_hits.dedupe_hits_by_strategy[strategy] =
+        (this.metrics.dedupe_hits.dedupe_hits_by_strategy[strategy] || 0) + 1;
 
       // Track specific merge types
-      if (data.strategy === 'intelligent') {
+      if (strategy === 'intelligent') {
         this.metrics.dedupe_hits.intelligent_merges += 1;
-      } else if (data.strategy === 'combine') {
+      } else if (strategy === 'combine') {
         this.metrics.dedupe_hits.combine_merges += 1;
       }
     }
@@ -899,10 +940,10 @@ export class SystemMetricsService {
     }
 
     // Update policy metrics
-    if (data.ttl_policies_applied) {
-      Object.entries(data.ttl_policies_applied).forEach(([policy, count]) => {
+    if (data.ttl_policies_applied && typeof data.ttl_policies_applied === 'object') {
+      Object.entries(data.ttl_policies_applied as Record<string, unknown>).forEach(([policy, count]) => {
         this.metrics.ttl.ttl_policies_applied[policy] =
-          (this.metrics.ttl.ttl_policies_applied[policy] || 0) + Number(count);
+          (this.metrics.ttl.ttl_policies_applied[policy] || 0) + safeNumber(count);
       });
     }
 
@@ -920,7 +961,7 @@ export class SystemMetricsService {
     }
 
     if (data.ttl_last_cleanup_timestamp) {
-      this.metrics.ttl.ttl_last_cleanup_timestamp = data.ttl_last_cleanup_timestamp;
+      this.metrics.ttl.ttl_last_cleanup_timestamp = String(data.ttl_last_cleanup_timestamp);
     } else {
       this.metrics.ttl.ttl_last_cleanup_timestamp = new Date().toISOString();
     }

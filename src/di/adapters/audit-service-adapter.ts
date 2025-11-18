@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Interface compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
-
 /**
  * Audit Service Adapter
  *
@@ -21,8 +17,21 @@ import {
   AuditSource,
   type AuditValidationResult,
   type TypedAuditEvent,
-  type TypedAuditQueryOptions} from '../../types/audit-types.js';
+  type TypedAuditQueryOptions,
+} from '../../types/audit-types.js';
 import type { IAuditService } from '../service-interfaces.js';
+import {
+  hasPropertySimple,
+  safePropertyAccess,
+  isString,
+  isNumber,
+  isBoolean,
+  isDate
+} from '../../utils/type-guards.js';
+import {
+  isAuditEvent,
+  safeExtractAuditEventProperties
+} from '../../utils/type-safe-access.js';
 
 /**
  * Typed audit log data interface
@@ -61,7 +70,7 @@ export class AuditServiceAdapter implements IAuditService {
   /**
    * Log an audit event (Legacy - for backward compatibility)
    */
-  async log(action: string, data: AuditLogData): Promise<void> {
+  async log(action: string, data: import('../service-interfaces.js').AuditLogData): Promise<void> {
     // Validate input data
     if (!action || typeof action !== 'string') {
       throw new Error('Action must be a non-empty string');
@@ -72,11 +81,16 @@ export class AuditServiceAdapter implements IAuditService {
     }
 
     try {
+      // Safely extract properties using type guards
+      const userId = safePropertyAccess(data, 'userId', isString, 'anonymous');
+      const query = safePropertyAccess(data, 'query', isString, '');
+      const resultsFound = safePropertyAccess(data, 'resultsFound', isNumber, 0);
+
       // Map to the audit service's logSearchOperation method
       this.service.logSearchOperation(
-        data.userId || 'anonymous',
-        data.query || '',
-        data.resultsFound || 0
+        query || '',
+        resultsFound || 0,
+        'search' // Default mode
       );
     } catch (error) {
       throw new Error(`Failed to log audit event: ${(error as Error).message}`);
@@ -100,22 +114,41 @@ export class AuditServiceAdapter implements IAuditService {
   /**
    * Query audit events with filters (Legacy - for backward compatibility)
    */
-  async query(filters: TypedAuditQueryFilters): Promise<unknown[]> {
+  async query(
+    filters: import('../service-interfaces.js').AuditQueryFilters
+  ): Promise<import('../service-interfaces.js').AuditLogEntry[]> {
     if (!filters || typeof filters !== 'object') {
       throw new Error('Filters must be a valid object');
     }
 
     try {
+      // Safely extract filter properties using type guards
+      const userId = safePropertyAccess(filters, 'userId', isString);
+      const eventType = safePropertyAccess(filters, 'eventType', isString);
+      const operation = safePropertyAccess(filters, 'operation', isString);
+      const success = safePropertyAccess(filters, 'success', isBoolean);
+      const startDate = safePropertyAccess(filters, 'startDate', isDate);
+      const endDate = safePropertyAccess(filters, 'endDate', isDate);
+
       const events = this.service.searchAuditEvents({
-        userId: filters.userId,
-        action: filters.eventType,
-        resource: filters.operation,
-        outcome: filters.success ? 'success' : 'failure',
-        startDate: filters.startDate,
-        endDate: filters.endDate,
+        userId,
+        action: eventType,
+        resource: operation,
+        outcome: success ? 'success' : 'failure',
+        startDate,
+        endDate,
       });
 
-      return events;
+      return events.map(event => ({
+        id: event.id,
+        action: event.action, // Fixed: 'action' exists on AuditEvent
+        userId: event.userId,
+        resource: event.resource, // Fixed: 'resource' exists on AuditEvent
+        timestamp: event.timestamp,
+        metadata: event.details || {}, // Fixed: 'details' exists on AuditEvent
+        severity: 'medium' as const,
+        category: 'general' // Default category since AuditEvent doesn't have entityType
+      })) as import('../service-interfaces.js').AuditLogEntry[];
     } catch (error) {
       throw new Error(`Failed to query audit events: ${(error as Error).message}`);
     }
@@ -146,14 +179,19 @@ export class AuditServiceAdapter implements IAuditService {
   /**
    * Archive audit events before a specified date (Legacy - for backward compatibility)
    */
-  async archive(before: Date): Promise<number> {
+  async archive(before: Date): Promise<import('../service-interfaces.js').ArchiveResult> {
     if (!before || !(before instanceof Date)) {
       throw new Error('Before date must be a valid Date object');
     }
 
     try {
       const result = this.service.cleanupOldEvents(before);
-      return result;
+      return {
+        success: true,
+        archivedCount: result as number,
+        timestamp: new Date(),
+        message: `Successfully archived ${result} audit events`,
+      } as import('../service-interfaces.js').ArchiveResult;
     } catch (error) {
       throw new Error(`Failed to archive audit events: ${(error as Error).message}`);
     }
@@ -168,9 +206,9 @@ export class AuditServiceAdapter implements IAuditService {
     categories?: string[];
     dryRun?: boolean;
   }): Promise<{
-      deletedCount: number;
-      dryRun?: number;
-      errors: string[];
+    deletedCount: number;
+    dryRun?: number;
+    errors: string[];
   }> {
     const { before, eventTypes, categories, dryRun = false } = options;
 
@@ -186,7 +224,7 @@ export class AuditServiceAdapter implements IAuditService {
         // Simulate deletion without actually deleting
         const queryOptions: TypedAuditQueryOptions = {
           endDate: before,
-          limit: 1000
+          limit: 1000,
         };
 
         if (eventTypes && eventTypes.length > 0) {
@@ -197,13 +235,13 @@ export class AuditServiceAdapter implements IAuditService {
         return {
           deletedCount: 0,
           dryRun: result.total,
-          errors
+          errors,
         };
       } else {
         // Actual deletion
         const queryOptions: TypedAuditQueryOptions = {
           endDate: before,
-          limit: 1000
+          limit: 1000,
         };
 
         if (eventTypes && eventTypes.length > 0) {
@@ -221,6 +259,107 @@ export class AuditServiceAdapter implements IAuditService {
     } catch (error) {
       errors.push(`Archive operation failed: ${(error as Error).message}`);
       return { deletedCount, errors };
+    }
+  }
+
+  /**
+   * Get audit statistics - required by IAuditService interface
+   */
+  async getStats(timeRange: import('../service-interfaces.js').TimeRange): Promise<import('../service-interfaces.js').AuditStats> {
+    try {
+      // Convert TimeRange to query options
+      const queryOptions: TypedAuditQueryOptions = {
+        startDate: timeRange.start,
+        endDate: timeRange.end,
+        limit: 10000,
+      };
+
+      const result = await auditLogger.queryTypedEvents(queryOptions);
+
+      // Calculate statistics matching the interface
+      const totalEntries = result.total;
+      const entriesByAction: Record<string, number> = {};
+      const entriesByUser: Record<string, number> = {};
+      const entriesBySeverity: Record<string, number> = {};
+
+      for (const event of result.events) {
+        const action = event.operation;
+        const user = event.userId || 'unknown';
+        const severity = 'medium'; // Default severity for typed events
+
+        entriesByAction[action] = (entriesByAction[action] || 0) + 1;
+        entriesByUser[user] = (entriesByUser[user] || 0) + 1;
+        entriesBySeverity[severity] = (entriesBySeverity[severity] || 0) + 1;
+      }
+
+      return {
+        totalEntries,
+        entriesByAction,
+        entriesByUser,
+        entriesBySeverity,
+        timeRange
+      };
+    } catch (error) {
+      throw new Error(`Failed to get audit stats: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Export audit data - required by IAuditService interface
+   */
+  async export(
+    filters: import('../service-interfaces.js').AuditQueryFilters,
+    format: 'json' | 'csv'
+  ): Promise<string> {
+    try {
+      // Convert filters to query options
+      const queryOptions: TypedAuditQueryOptions = {
+        limit: filters.limit || 1000,
+        offset: filters.offset || 0,
+      };
+
+      if (filters.timeRange) {
+        queryOptions.startDate = filters.timeRange.start;
+        queryOptions.endDate = filters.timeRange.end;
+      }
+
+      if (filters.userId) {
+        queryOptions.userId = filters.userId;
+      }
+
+      if (filters.action) {
+        queryOptions.eventType = [filters.action as AuditEventType];
+      }
+
+      const result = await auditLogger.queryTypedEvents(queryOptions);
+
+      if (format === 'json') {
+        return JSON.stringify(result.events, null, 2);
+      } else if (format === 'csv') {
+        // Convert to CSV format
+        const headers = ['id', 'eventType', 'entityType', 'entityId', 'operation', 'userId', 'timestamp', 'success'];
+        const csvRows = [headers.join(',')];
+
+        for (const event of result.events) {
+          const row = [
+            event.id,
+            event.eventType,
+            event.entityType,
+            event.entityId,
+            event.operation,
+            event.userId || '',
+            event.timestamp,
+            event.success.toString()
+          ];
+          csvRows.push(row.join(','));
+        }
+
+        return csvRows.join('\n');
+      } else {
+        throw new Error(`Unsupported export format: ${format}`);
+      }
+    } catch (error) {
+      throw new Error(`Failed to export audit data: ${(error as Error).message}`);
     }
   }
 
@@ -277,17 +416,17 @@ export class AuditServiceAdapter implements IAuditService {
 
       const recentQueryOptions: TypedAuditQueryOptions = {
         startDate: oneDayAgo,
-        limit: 10000
+        limit: 10000,
       };
 
       const recentResult = await auditLogger.queryTypedEvents(recentQueryOptions);
 
       const lastHourCount = recentResult.events.filter(
-        event => new Date(event.timestamp) >= oneHourAgo
+        (event) => new Date(event.timestamp) >= oneHourAgo
       ).length;
 
       const last24HoursCount = recentResult.events.filter(
-        event => new Date(event.timestamp) >= oneDayAgo
+        (event) => new Date(event.timestamp) >= oneDayAgo
       ).length;
 
       return {
@@ -296,8 +435,8 @@ export class AuditServiceAdapter implements IAuditService {
         eventsByCategory,
         recentActivity: {
           lastHour: lastHourCount,
-          last24Hours: last24HoursCount
-        }
+          last24Hours: last24HoursCount,
+        },
       };
     } catch (error) {
       throw new Error(`Failed to get audit statistics: ${(error as Error).message}`);

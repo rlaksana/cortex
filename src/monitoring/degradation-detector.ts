@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Monitoring system type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Qdrant Degradation Detector
@@ -18,7 +16,7 @@ import { EventEmitter } from 'events';
 import { logger } from '@/utils/logger.js';
 
 import { type CircuitBreakerMonitor } from './circuit-breaker-monitor.js';
-import { QdrantConnectionStatus,type QdrantHealthMonitor } from './qdrant-health-monitor.js';
+import { QdrantConnectionStatus, type QdrantHealthMonitor } from './qdrant-health-monitor.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**
@@ -75,15 +73,15 @@ export interface DegradationEvent {
 export interface DegradationDetectorConfig {
   // Detection thresholds
   thresholds: {
-    responseTimeWarning: number;      // ms
-    responseTimeCritical: number;     // ms
-    errorRateWarning: number;         // percentage
-    errorRateCritical: number;        // percentage
+    responseTimeWarning: number; // ms
+    responseTimeCritical: number; // ms
+    errorRateWarning: number; // percentage
+    errorRateCritical: number; // percentage
     consecutiveFailuresWarning: number;
     consecutiveFailuresCritical: number;
-    circuitOpenThreshold: number;     // consecutive checks
+    circuitOpenThreshold: number; // consecutive checks
     healthCheckIntervalMs: number;
-    degradationWindowMs: number;      // time window for degradation detection
+    degradationWindowMs: number; // time window for degradation detection
   };
 
   // Auto-failover settings
@@ -363,7 +361,7 @@ export class QdrantDegradationDetector extends EventEmitter {
       },
     ];
 
-    triggers.forEach(trigger => {
+    triggers.forEach((trigger) => {
       this.triggers.set(trigger.name, {
         ...trigger,
         id: this.generateEventId(),
@@ -415,7 +413,12 @@ export class QdrantDegradationDetector extends EventEmitter {
       for (const [name, trigger] of this.triggers) {
         if (!trigger.enabled) continue;
 
-        const isTriggered = this.evaluateTrigger(trigger, qdrantStatus, qdrantMetrics, circuitStatus);
+        const isTriggered = this.evaluateTrigger(
+          trigger,
+          qdrantStatus,
+          qdrantMetrics,
+          circuitStatus
+        );
 
         if (isTriggered) {
           trigger.currentValue = trigger.threshold;
@@ -427,17 +430,26 @@ export class QdrantDegradationDetector extends EventEmitter {
       }
 
       // Determine new degradation level
-      const newLevel = this.calculateDegradationLevel(triggeredTriggers, qdrantStatus, circuitStatus);
+      const newLevel = this.calculateDegradationLevel(
+        triggeredTriggers,
+        qdrantStatus,
+        circuitStatus
+      );
 
       if (newLevel !== this.currentLevel) {
-        this.handleDegradationLevelChange(newLevel, triggeredTriggers, qdrantStatus, qdrantMetrics, circuitStatus);
+        this.handleDegradationLevelChange(
+          newLevel,
+          triggeredTriggers,
+          qdrantStatus,
+          qdrantMetrics,
+          circuitStatus
+        );
       }
 
       // Check for auto-failover conditions
       if (this.shouldTriggerAutoFailover(newLevel)) {
         this.triggerAutoFailover(newLevel, triggeredTriggers);
       }
-
     } catch (error) {
       logger.error({ error }, 'Degradation check failed');
     }
@@ -452,21 +464,30 @@ export class QdrantDegradationDetector extends EventEmitter {
     qdrantMetrics: unknown,
     circuitStatus: unknown
   ): boolean {
+    // Type assertions for unknown metrics
+    const metrics = qdrantMetrics as {
+      averageResponseTime?: number;
+      errorRate?: number;
+    };
+    const circuit = circuitStatus as {
+      isOpen?: boolean;
+    };
+
     switch (trigger.name) {
       case 'high_response_time':
-        return qdrantMetrics.averageResponseTime > trigger.threshold;
+        return (metrics.averageResponseTime || 0) > trigger.threshold;
 
       case 'critical_response_time':
-        return qdrantMetrics.averageResponseTime > trigger.threshold;
+        return (metrics.averageResponseTime || 0) > trigger.threshold;
 
       case 'high_error_rate':
-        return qdrantMetrics.errorRate > trigger.threshold;
+        return (metrics.errorRate || 0) > trigger.threshold;
 
       case 'critical_error_rate':
-        return qdrantMetrics.errorRate > trigger.threshold;
+        return (metrics.errorRate || 0) > trigger.threshold;
 
       case 'circuit_breaker_open':
-        return circuitStatus?.isOpen || false;
+        return circuit?.isOpen || false;
 
       case 'consecutive_failures':
         // This would be tracked based on consecutive health check failures
@@ -486,19 +507,19 @@ export class QdrantDegradationDetector extends EventEmitter {
     circuitStatus: unknown
   ): DegradationLevel {
     // Check for critical triggers
-    const criticalTriggers = triggeredTriggers.filter(t => t.severity === 'critical');
+    const criticalTriggers = triggeredTriggers.filter((t) => t.severity === 'critical');
     if (criticalTriggers.length > 0) {
       return DegradationLevel.CRITICAL;
     }
 
     // Check for high severity triggers
-    const highTriggers = triggeredTriggers.filter(t => t.severity === 'high');
+    const highTriggers = triggeredTriggers.filter((t) => t.severity === 'high');
     if (highTriggers.length > 0) {
       return DegradationLevel.DEGRADED;
     }
 
     // Check for medium severity triggers
-    const mediumTriggers = triggeredTriggers.filter(t => t.severity === 'medium');
+    const mediumTriggers = triggeredTriggers.filter((t) => t.severity === 'medium');
     if (mediumTriggers.length > 0) {
       return DegradationLevel.WARNING;
     }
@@ -542,14 +563,14 @@ export class QdrantDegradationDetector extends EventEmitter {
       id: this.generateEventId(),
       timestamp: new Date(),
       level: newLevel,
-      trigger: triggeredTriggers.map(t => t.name).join(', ') || 'status_change',
+      trigger: triggeredTriggers.map((t) => t.name).join(', ') || 'status_change',
       description: this.generateDegradationDescription(newLevel, triggeredTriggers, qdrantStatus),
       metrics: {
         qdrantHealth: qdrantStatus,
         connectionStatus: this.qdrantMonitor.getCurrentConnectionStatus(),
-        circuitBreakerOpen: circuitStatus?.isOpen,
-        responseTime: qdrantMetrics.averageResponseTime,
-        errorRate: qdrantMetrics.errorRate,
+        circuitBreakerOpen: (circuitStatus as { isOpen?: boolean })?.isOpen,
+        responseTime: (qdrantMetrics as { averageResponseTime?: number })?.averageResponseTime,
+        errorRate: (qdrantMetrics as { errorRate?: number })?.errorRate,
       },
       recommendations: this.generateRecommendations(newLevel, triggeredTriggers),
       autoFailoverTriggered: false,
@@ -563,7 +584,7 @@ export class QdrantDegradationDetector extends EventEmitter {
       {
         previousLevel,
         newLevel,
-        triggeredTriggers: triggeredTriggers.map(t => t.name),
+        triggeredTriggers: triggeredTriggers.map((t) => t.name),
         degradationDuration: this.degradationStartTime
           ? Date.now() - this.degradationStartTime.getTime()
           : 0,
@@ -613,7 +634,10 @@ export class QdrantDegradationDetector extends EventEmitter {
   /**
    * Trigger auto-failover
    */
-  private triggerAutoFailover(level: DegradationLevel, triggeredTriggers: DegradationTrigger[]): void {
+  private triggerAutoFailover(
+    level: DegradationLevel,
+    triggeredTriggers: DegradationTrigger[]
+  ): void {
     this.failoverAttempts++;
     this.lastFailoverTime = new Date();
 
@@ -639,7 +663,7 @@ export class QdrantDegradationDetector extends EventEmitter {
     logger.error(
       {
         level,
-        triggeredTriggers: triggeredTriggers.map(t => t.name),
+        triggeredTriggers: triggeredTriggers.map((t) => t.name),
         failoverAttempt: this.failoverAttempts,
         maxAttempts: this.config.autoFailover.maxFailoverAttempts,
       },
@@ -681,7 +705,6 @@ export class QdrantDegradationDetector extends EventEmitter {
       } else {
         this.consecutiveSuccesses = 0;
       }
-
     } catch (error) {
       logger.error({ error }, 'Recovery check failed');
       this.consecutiveSuccesses = 0;
@@ -766,7 +789,7 @@ export class QdrantDegradationDetector extends EventEmitter {
     triggeredTriggers: DegradationTrigger[],
     qdrantStatus: HealthStatus
   ): string {
-    const triggerNames = triggeredTriggers.map(t => t.name.replace('_', ' ')).join(', ');
+    const triggerNames = triggeredTriggers.map((t) => t.name.replace('_', ' ')).join(', ');
 
     switch (level) {
       case DegradationLevel.WARNING:

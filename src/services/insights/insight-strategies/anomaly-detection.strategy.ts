@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Anomaly Detection Strategy
  *
@@ -306,7 +302,7 @@ export class AnomalyDetectionStrategy {
     const expectedDistribution = 1 / kindCounts.size;
     const deviations: { kind: string; count: number; deviation: number }[] = [];
 
-    for (const [kind, count] of kindCounts.entries()) {
+    for (const [kind, count] of Array.from(kindCounts.entries())) {
       const actualDistribution = count / items.length;
       const deviation = Math.abs(actualDistribution - expectedDistribution) / expectedDistribution;
       deviations.push({ kind, count, deviation });
@@ -527,7 +523,10 @@ export class AnomalyDetectionStrategy {
   /**
    * Analyze volume trends
    */
-  private analyzeVolumeTrends(items: KnowledgeItem[], options: AnomalyDetectionOptions): TrendAnalysis[] {
+  private analyzeVolumeTrends(
+    items: KnowledgeItem[],
+    options: AnomalyDetectionOptions
+  ): TrendAnalysis[] {
     const analyses: TrendAnalysis[] = [];
 
     const timeItems = items.filter((item) => item.created_at);
@@ -659,7 +658,10 @@ export class AnomalyDetectionStrategy {
   /**
    * Analyze temporal trends
    */
-  private analyzeTemporalTrends(items: KnowledgeItem[], options: AnomalyDetectionOptions): TrendAnalysis[] {
+  private analyzeTemporalTrends(
+    items: KnowledgeItem[],
+    options: AnomalyDetectionOptions
+  ): TrendAnalysis[] {
     const analyses: TrendAnalysis[] = [];
 
     // Analyze creation patterns by time of day/day of week

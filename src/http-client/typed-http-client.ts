@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ULTIMATE FINAL EMERGENCY ROLLBACK: Remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Typed HTTP Client Implementation
@@ -26,7 +24,6 @@ import {
   isHttpError,
   isRetryableError,
   type NetworkHttpError,
-  type ParseHttpError,
   type RateLimitError,
   type SerializableRequestBody,
   type ServerError,
@@ -35,7 +32,8 @@ import {
   type TypedHttpClientConfig,
   type TypedHttpRequest,
   type TypedHttpResponse,
-  type ValidationError} from '../types/http-client-types.js';
+  type ValidationError,
+} from '../types/http-client-types.js';
 
 /**
  * Default HTTP client configuration
@@ -46,7 +44,7 @@ const DEFAULT_CONFIG: TypedHttpClientConfig = {
   retryDelay: 1000,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   },
   responseValidation: {
     enabled: true,
@@ -90,11 +88,7 @@ export class TypedHttpClientImpl implements TypedHttpClient {
       if (request.validator) {
         const validation = request.validator.validate(request.body as TRequest);
         if (!validation.isValid) {
-          throw this.createValidationError(
-            request,
-            validation.errors,
-            'Request validation failed'
-          );
+          throw this.createValidationError(request, validation.errors, 'Request validation failed');
         }
       }
 
@@ -102,9 +96,7 @@ export class TypedHttpClientImpl implements TypedHttpClient {
       const processedRequest = await this.applyRequestInterceptors(request);
 
       // Execute request with retries
-      const response = await this.executeWithRetry<TResponse, TRequest>(
-        processedRequest
-      );
+      const response = await this.executeWithRetry<TResponse, TRequest>(processedRequest);
 
       // Apply response interceptors
       const processedResponse = await this.applyResponseInterceptors(response);
@@ -118,11 +110,7 @@ export class TypedHttpClientImpl implements TypedHttpClient {
       const duration = performance.now() - startTime;
 
       // Apply error interceptors
-      const processedError = await this.applyErrorInterceptors(
-        error,
-        request,
-        duration
-      );
+      const processedError = await this.applyErrorInterceptors(error, request, duration);
 
       throw processedError;
     }
@@ -246,9 +234,7 @@ export class TypedHttpClientImpl implements TypedHttpClient {
   /**
    * Merge request with defaults
    */
-  private mergeDefaults<TRequest>(
-    request: TypedHttpRequest<TRequest>
-  ): TypedHttpRequest<TRequest> {
+  private mergeDefaults<TRequest>(request: TypedHttpRequest<TRequest>): TypedHttpRequest<TRequest> {
     const url = this.buildUrl(request.url);
     const headers = { ...this.config.headers, ...request.headers };
     const timeout = request.timeout ?? this.config.timeout;
@@ -306,7 +292,7 @@ export class TypedHttpClientImpl implements TypedHttpClient {
         }
 
         // Calculate delay
-        const delay = this.calculateRetryDelay(attempt, error);
+        const delay = this.calculateRetryDelay(attempt, error as Error);
         await this.delay(delay);
       }
     }
@@ -402,8 +388,8 @@ export class TypedHttpClientImpl implements TypedHttpClient {
       return body;
     }
 
-    if (typeof body === 'object' && 'toJSON' in body) {
-      return (body as unknown).toJSON();
+    if (typeof body === 'object' && body !== null && 'toJSON' in body && typeof (body as { toJSON?: () => string }).toJSON === 'function') {
+      return (body as { toJSON: () => string }).toJSON();
     }
 
     return JSON.stringify(body);
@@ -412,9 +398,7 @@ export class TypedHttpClientImpl implements TypedHttpClient {
   /**
    * Parse response body
    */
-  private async parseResponse<TResponse>(
-    response: Response
-  ): Promise<TResponse> {
+  private async parseResponse<TResponse>(response: Response): Promise<TResponse> {
     const contentType = response.headers.get('content-type') || '';
 
     try {
@@ -426,18 +410,34 @@ export class TypedHttpClientImpl implements TypedHttpClient {
         return (await response.text()) as unknown as TResponse;
       }
 
-      if (contentType.includes('application/octet-stream') || contentType.includes('application/pdf')) {
+      if (
+        contentType.includes('application/octet-stream') ||
+        contentType.includes('application/pdf')
+      ) {
         return (await response.arrayBuffer()) as unknown as TResponse;
       }
 
-      // Default to text for unknown content types
+      // Default to text for any content types
       return (await response.text()) as unknown as TResponse;
     } catch (error) {
+      const errorResponse: TypedHttpResponse = {
+        data: null as unknown,
+        status: response.status as HttpStatus,
+        statusText: response.statusText,
+        headers: response.headers,
+        ok: response.ok,
+        url: response.url,
+        request: {} as TypedHttpRequest,
+        duration: 0,
+        size: 0,
+        timestamp: Date.now(),
+      };
+
       throw new ParseHttpError(
         `Failed to parse response: ${(error as Error).message}`,
         response.status as HttpStatus,
         response.statusText,
-        {} as TypedHttpResponse,
+        errorResponse,
         await response.text(),
         contentType
       );
@@ -447,10 +447,7 @@ export class TypedHttpClientImpl implements TypedHttpClient {
   /**
    * Validate response data
    */
-  private async validateResponse<TResponse>(
-    data: TResponse,
-    response: Response
-  ): Promise<void> {
+  private async validateResponse<TResponse>(data: TResponse, response: Response): Promise<void> {
     const validationConfig = this.config.responseValidation;
     if (!validationConfig?.enabled) {
       return;
@@ -470,13 +467,46 @@ export class TypedHttpClientImpl implements TypedHttpClient {
         const validator = validationConfig.customValidators[contentType];
         const result = validator(data);
         if (!result.isValid) {
-          throw new ValidationError(
-            `Response validation failed: ${result.errors.join(', ')}`,
-            400,
-            'Bad Request',
-            {} as TypedHttpResponse,
-            result.errors
+          const validationError = new Error(
+            `Response validation failed: ${result.errors.join(', ')}`
           );
+          // Add validation error properties
+          Object.defineProperty(validationError, 'type', {
+            value: 'validation_error',
+            enumerable: true,
+            writable: false,
+          });
+          Object.defineProperty(validationError, 'validationErrors', {
+            value: result.errors,
+            enumerable: true,
+            writable: false,
+          });
+          Object.defineProperty(validationError, 'statusCode', {
+            value: 400,
+            enumerable: true,
+            writable: false,
+          });
+          Object.defineProperty(validationError, 'statusText', {
+            value: 'Bad Request',
+            enumerable: true,
+            writable: false,
+          });
+          Object.defineProperty(validationError, 'response', {
+            value: {} as TypedHttpResponse,
+            enumerable: true,
+            writable: false,
+          });
+          Object.defineProperty(validationError, 'timestamp', {
+            value: Date.now(),
+            enumerable: true,
+            writable: false,
+          });
+          Object.defineProperty(validationError, 'retryable', {
+            value: false,
+            enumerable: true,
+            writable: false,
+          });
+          throw validationError;
         }
       }
     }
@@ -526,12 +556,15 @@ export class TypedHttpClientImpl implements TypedHttpClient {
     request: TypedHttpRequest<TRequest>,
     cause: Error
   ): NetworkHttpError {
-    const error = new Error(`Network error: ${cause.message}`) as NetworkHttpError;
-    error.type = 'network_error';
-    error.cause = cause;
-    error.request = request;
-    error.timestamp = Date.now();
-    error.retryable = true;
+    const error = Object.assign(new Error(`Network error: ${cause.message}`), {
+      type: 'network_error',
+      cause,
+      request,
+      timestamp: Date.now(),
+      retryable: true,
+      statusCode: 0, // Network errors don't have HTTP status codes
+      response: {} as TypedHttpResponse
+    }) as NetworkHttpError;
     return error;
   }
 
@@ -542,13 +575,15 @@ export class TypedHttpClientImpl implements TypedHttpClient {
     request: TypedHttpRequest<TRequest>,
     timeout: number
   ): TimeoutHttpError {
-    const error = new Error(`Request timeout after ${timeout}ms`) as TimeoutHttpError;
-    error.type = 'timeout_error';
-    error.timeout = timeout;
-    error.request = request;
-    error.timestamp = Date.now();
-    error.retryable = true;
-    return error;
+    return Object.assign(new Error(`Request timeout after ${timeout}ms`) as TimeoutHttpError, {
+      type: 'timeout_error' as const,
+      timeout,
+      request,
+      timestamp: Date.now(),
+      retryable: true,
+      statusCode: 408, // Request Timeout
+      response: {} as TypedHttpResponse
+    });
   }
 
   /**
@@ -564,17 +599,30 @@ export class TypedHttpClientImpl implements TypedHttpClient {
     // Create specific error types based on status code
     switch (status) {
       case 401:
-        return this.createAuthenticationError(request, status, statusText);
+        return this.createAuthenticationError(
+          request,
+          status,
+          statusText
+        ) as unknown as HttpStatusError;
       case 403:
-        return this.createAuthorizationError(request, status, statusText);
+        return this.createAuthorizationError(
+          request,
+          status,
+          statusText
+        ) as unknown as HttpStatusError;
       case 429:
-        return this.createRateLimitError(request, status, statusText, response);
+        return this.createRateLimitError(
+          request,
+          status,
+          statusText,
+          response
+        ) as unknown as HttpStatusError;
       case 500:
       case 501:
       case 502:
       case 503:
       case 504:
-        return this.createServerError(request, status, statusText);
+        return this.createServerError(request, status, statusText) as unknown as HttpStatusError;
       default:
         return this.createGenericHttpStatusError(request, status, statusText);
     }
@@ -588,15 +636,17 @@ export class TypedHttpClientImpl implements TypedHttpClient {
     status: HttpStatus,
     statusText: string
   ): AuthenticationError {
-    const error = new Error(`Authentication failed: ${statusText}`) as AuthenticationError;
-    error.type = 'authentication_error';
-    error.statusCode = status;
-    error.statusText = statusText;
-    error.request = request;
-    error.timestamp = Date.now();
-    error.retryable = false;
-    error.response = {} as TypedHttpResponse;
-    return error;
+    return Object.assign(new Error(
+      `Authentication failed: ${statusText}`
+    ) as AuthenticationError, {
+      type: 'authentication_error' as const,
+      statusCode: status,
+      statusText,
+      request,
+      timestamp: Date.now(),
+      retryable: false,
+      response: {} as TypedHttpResponse
+    });
   }
 
   /**
@@ -607,15 +657,15 @@ export class TypedHttpClientImpl implements TypedHttpClient {
     status: HttpStatus,
     statusText: string
   ): AuthorizationError {
-    const error = new Error(`Authorization failed: ${statusText}`) as AuthorizationError;
-    error.type = 'authorization_error';
-    error.statusCode = status;
-    error.statusText = statusText;
-    error.request = request;
-    error.timestamp = Date.now();
-    error.retryable = false;
-    error.response = {} as TypedHttpResponse;
-    return error;
+    return Object.assign(new Error(`Authorization failed: ${statusText}`) as AuthorizationError, {
+      type: 'authorization_error' as const,
+      statusCode: status,
+      statusText,
+      request,
+      timestamp: Date.now(),
+      retryable: false,
+      response: {} as TypedHttpResponse
+    });
   }
 
   /**
@@ -630,16 +680,19 @@ export class TypedHttpClientImpl implements TypedHttpClient {
     const retryAfter = response.headers.get('retry-after');
     const retryAfterMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : undefined;
 
-    const error = new Error(`Rate limit exceeded: ${statusText}`) as RateLimitError;
-    error.type = 'rate_limit_error';
-    error.statusCode = status;
-    error.statusText = statusText;
-    error.request = request;
-    error.timestamp = Date.now();
-    error.retryable = true;
-    error.retryAfter = retryAfterMs;
-    error.response = {} as TypedHttpResponse;
-    return error;
+    return {
+      name: 'RateLimitError',
+      message: `Rate limit exceeded: ${statusText}`,
+      stack: new Error().stack,
+      type: 'rate_limit_error',
+      statusCode: 429 as const, // Rate limit is always 429
+      statusText,
+      request,
+      timestamp: Date.now(),
+      retryable: true,
+      retryAfter: retryAfterMs,
+      response: {} as TypedHttpResponse,
+    };
   }
 
   /**
@@ -650,15 +703,18 @@ export class TypedHttpClientImpl implements TypedHttpClient {
     status: HttpStatus,
     statusText: string
   ): ServerError {
-    const error = new Error(`Server error: ${statusText}`) as ServerError;
-    error.type = 'server_error';
-    error.statusCode = status;
-    error.statusText = statusText;
-    error.request = request;
-    error.timestamp = Date.now();
-    error.retryable = true;
-    error.response = {} as TypedHttpResponse;
-    return error;
+    return {
+      name: 'ServerError',
+      message: `Server error: ${statusText}`,
+      stack: new Error().stack,
+      type: 'server_error',
+      statusCode: (status >= 500 && status <= 504 ? status : 500) as 500 | 501 | 502 | 503 | 504,
+      statusText,
+      request,
+      timestamp: Date.now(),
+      retryable: true,
+      response: {} as TypedHttpResponse,
+    };
   }
 
   /**
@@ -669,15 +725,18 @@ export class TypedHttpClientImpl implements TypedHttpClient {
     status: HttpStatus,
     statusText: string
   ): HttpStatusError {
-    const error = new Error(`HTTP ${status}: ${statusText}`) as HttpStatusError;
-    error.type = 'http_error';
-    error.statusCode = status;
-    error.statusText = statusText;
-    error.request = request;
-    error.timestamp = Date.now();
-    error.retryable = this.isRetryableStatus(status);
-    error.response = {} as TypedHttpResponse;
-    return error;
+    return {
+      name: 'HttpStatusError',
+      message: `HTTP ${status}: ${statusText}`,
+      stack: new Error().stack,
+      type: 'http_error',
+      statusCode: status,
+      statusText,
+      request,
+      timestamp: Date.now(),
+      retryable: this.isRetryableStatus(status),
+      response: {} as TypedHttpResponse,
+    };
   }
 
   /**
@@ -688,14 +747,18 @@ export class TypedHttpClientImpl implements TypedHttpClient {
     errors: string[],
     message: string
   ): ValidationError {
-    const error = new Error(message) as ValidationError;
-    error.type = 'validation_error';
-    error.validationErrors = errors;
-    error.request = request;
-    error.timestamp = Date.now();
-    error.retryable = false;
-    error.response = {} as TypedHttpResponse;
-    return error;
+    return {
+      name: 'ValidationError',
+      message,
+      stack: new Error().stack,
+      type: 'validation_error',
+      validationErrors: errors,
+      request,
+      timestamp: Date.now(),
+      retryable: false,
+      response: {} as TypedHttpResponse,
+      statusCode: 400,
+    };
   }
 
   /**
@@ -717,7 +780,7 @@ export class TypedHttpClientImpl implements TypedHttpClient {
   ): Promise<TypedHttpRequest<TRequest>> {
     let processedRequest = request;
 
-    for (const interceptor of this.interceptors.filter(i => i.type === 'request')) {
+    for (const interceptor of this.interceptors.filter((i) => i.type === 'request')) {
       const context: InterceptorContext = {
         request: processedRequest,
         config: this.config,
@@ -740,7 +803,7 @@ export class TypedHttpClientImpl implements TypedHttpClient {
   ): Promise<TypedHttpResponse<TResponse>> {
     let processedResponse = response;
 
-    for (const interceptor of this.interceptors.filter(i => i.type === 'response')) {
+    for (const interceptor of this.interceptors.filter((i) => i.type === 'response')) {
       const context: InterceptorContext = {
         request: response.request,
         response: processedResponse,
@@ -766,7 +829,7 @@ export class TypedHttpClientImpl implements TypedHttpClient {
   ): Promise<unknown> {
     let processedError = error;
 
-    for (const interceptor of this.interceptors.filter(i => i.type === 'error')) {
+    for (const interceptor of this.interceptors.filter((i) => i.type === 'error')) {
       const context: InterceptorContext = {
         request,
         config: this.config,
@@ -811,16 +874,16 @@ export class TypedHttpClientImpl implements TypedHttpClient {
 // Custom Error Classes
 // ============================================================================
 
-class ParseHttpError extends Error implements ParseHttpError {
-  readonly type = 'parse_error' as const;
-  readonly statusCode: HttpStatus;
-  readonly statusText: string;
-  readonly response: TypedHttpResponse;
-  readonly rawData: string;
-  readonly contentType: string;
-  readonly request: TypedHttpRequest;
-  readonly timestamp: number;
-  readonly retryable = false;
+class ParseHttpError extends Error {
+  declare public readonly type: 'parse_error';
+  declare public readonly statusCode: HttpStatus;
+  declare public readonly statusText: string;
+  declare public readonly response: TypedHttpResponse;
+  declare public readonly rawData: string;
+  declare public readonly contentType: string;
+  declare public readonly request: TypedHttpRequest;
+  declare public readonly timestamp: number;
+  declare public readonly retryable: false;
 
   constructor(
     message: string,
@@ -831,13 +894,17 @@ class ParseHttpError extends Error implements ParseHttpError {
     contentType: string
   ) {
     super(message);
-    this.statusCode = statusCode;
-    this.statusText = statusText;
-    this.response = response;
-    this.rawData = rawData;
-    this.contentType = contentType;
-    this.request = response.request;
-    this.timestamp = Date.now();
+    Object.assign(this, {
+      type: 'parse_error',
+      statusCode,
+      statusText,
+      response,
+      rawData,
+      contentType,
+      request: response.request,
+      timestamp: Date.now(),
+      retryable: false,
+    });
   }
 }
 
@@ -885,7 +952,9 @@ export class TypedHttpClientBuilder {
     return this;
   }
 
-  responseValidation(validation: TypedHttpClientConfig['responseValidation']): TypedHttpClientBuilder {
+  responseValidation(
+    validation: TypedHttpClientConfig['responseValidation']
+  ): TypedHttpClientBuilder {
     this.config.responseValidation = validation;
     return this;
   }

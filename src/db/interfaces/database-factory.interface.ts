@@ -1,6 +1,4 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
+// TypeScript Recovery: Phase 1 - Database Interface Synchronization
 
 /**
  * Database Factory Interface
@@ -69,7 +67,7 @@ export interface IDatabaseFactory {
   /**
    * Test database connectivity
    */
-  testConnection(_type: DatabaseType, _config: DatabaseConfig): Promise<boolean>;
+  testConnection(_type: DatabaseType, _config: VectorConfig): Promise<boolean>;
 }
 
 /**

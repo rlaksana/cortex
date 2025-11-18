@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Production AI Observability Service - Comprehensive AI Operations Monitoring
  *
@@ -25,9 +20,7 @@ import { logger } from '@/utils/logger.js';
 
 import { getOverallHealth } from './ai-health-monitor.js';
 import { aiMetricsService } from './ai-metrics.service';
-import type {
-  AIMetricsSnapshot,
-} from '../types/zai-interfaces.js';
+import type { AIMetricsSnapshot } from '../types/zai-interfaces.js';
 
 /**
  * Observability Configuration
@@ -424,7 +417,9 @@ export class ProductionAIObservabilityService {
 
     return {
       isStarted: this.isStarted,
-      uptime: this.isStarted ? Date.now() - (this.baselineMetrics?.timestamp?.getTime() || Date.now()) : 0,
+      uptime: this.isStarted
+        ? Date.now() - (this.baselineMetrics?.timestamp?.getTime() || Date.now())
+        : 0,
       activeAlerts,
       openIncidents,
       pendingRecommendations,
@@ -832,7 +827,9 @@ export class ProductionAIObservabilityService {
           title: `AI services health degraded`,
           description: `Overall AI services health: ${health.status}`,
           affectedServices: ['ai-service'],
-          metrics: { overallHealth: health.status === 'unhealthy' || health.status === 'degraded' ? 0 : 1 },
+          metrics: {
+            overallHealth: health.status === 'unhealthy' || health.status === 'degraded' ? 0 : 1,
+          },
           thresholds: { overallHealth: 1 },
           recommendations: ['Check AI service dependencies and restart if necessary'],
         });
@@ -1103,6 +1100,3 @@ export class ProductionAIObservabilityService {
  * Default production AI observability service instance
  */
 export const productionAIObservabilityService = new ProductionAIObservabilityService();
-
-
-

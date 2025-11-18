@@ -1,38 +1,33 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-
-import { environment } from '../../config/environment.js';
-import { insightGenerationService } from '../insights/insight-generation-service.js';
-import { memoryStore } from '../memory-store.js';
+import { environment } from '../../config/environment';
+import { insightGenerationService } from '../insights/insight-generation-service';
+import { memoryStore } from '../memory-store';
 
 // Mock dependencies
-jest.mock('../../utils/logger.js');
-jest.mock('../../config/environment.js');
-jest.mock('../orchestrators/memory-store-orchestrator.js');
-jest.mock('../truncation/truncation-service.js');
-jest.mock('../insights/insight-generation-service.js');
-jest.mock('../metrics/system-metrics.js');
+vi.mock('../../utils/logger.js');
+vi.mock('../../config/environment.js');
+vi.mock('../orchestrators/memory-store-orchestrator.js');
+vi.mock('../truncation/truncation-service.js');
+vi.mock('../insights/insight-generation-service.js');
+vi.mock('../metrics/system-metrics.js');
 
-const mockEnvironment = environment as jest.Mocked<typeof environment>;
-const mockInsightService = insightGenerationService as jest.Mocked<typeof insightGenerationService>;
+const mockEnvironment = vi.mocked(environment);
+const mockInsightService = vi.mocked(insightGenerationService);
 
 // Mock the orchestrator to avoid database dependencies
 const mockOrchestrator = {
-  storeItems: jest.fn(),
+  storeItems: vi.fn(),
 };
 
 // Mock truncation service
 const mockTruncationService = {
-  processContent: jest.fn(),
+  processContent: vi.fn(),
 };
 
 describe('Memory Store with Insights Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Mock environment to enable insights in development
     mockEnvironment.isDevelopmentMode.mockReturnValue(true);
@@ -246,7 +241,7 @@ describe('Memory Store with Insights Integration', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Memory Store with Insights Enabled', () => {
@@ -475,11 +470,11 @@ describe('Memory Store with Insights Integration', () => {
 
     it('should log insight generation metrics to system metrics', async () => {
       const mockSystemMetricsService = {
-        updateMetrics: jest.fn(),
+        updateMetrics: vi.fn(),
       };
 
       // Re-mock system metrics to capture the call
-      jest.doMock('../metrics/system-metrics.js', () => ({
+      vi.doMock('../metrics/system-metrics.js', () => ({
         systemMetricsService: mockSystemMetricsService,
       }));
 

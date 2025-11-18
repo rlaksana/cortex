@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * API Type Definitions for Cortex MCP System
  *
@@ -467,7 +463,11 @@ export interface ApiClient {
   get<T = unknown>(url: string, options?: RequestOptions): Promise<ApiResponse<T>>;
   post<T = unknown>(url: string, data?: unknown, options?: RequestOptions): Promise<ApiResponse<T>>;
   put<T = unknown>(url: string, data?: unknown, options?: RequestOptions): Promise<ApiResponse<T>>;
-  patch<T = unknown>(url: string, data?: unknown, options?: RequestOptions): Promise<ApiResponse<T>>;
+  patch<T = unknown>(
+    url: string,
+    data?: unknown,
+    options?: RequestOptions
+  ): Promise<ApiResponse<T>>;
   delete<T = unknown>(url: string, options?: RequestOptions): Promise<ApiResponse<T>>;
 }
 

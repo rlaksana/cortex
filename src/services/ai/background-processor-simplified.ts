@@ -1,11 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Simplified Background Processor Service
  *
@@ -360,7 +352,10 @@ export class SimplifiedBackgroundProcessorService extends EventEmitter {
   /**
    * Execute embedding generation job
    */
-  private async executeEmbeddingGeneration(payload: unknown, signal: AbortSignal): Promise<unknown> {
+  private async executeEmbeddingGeneration(
+    payload: unknown,
+    signal: AbortSignal
+  ): Promise<unknown> {
     // Simplified implementation - would integrate with embedding service
     await this.sleep(1000); // Simulate processing time
     return { embedding: [0.1, 0.2, 0.3], dimension: 3 };
@@ -372,7 +367,8 @@ export class SimplifiedBackgroundProcessorService extends EventEmitter {
   private async executeDataProcessing(payload: unknown, signal: AbortSignal): Promise<unknown> {
     // Simplified implementation - would process data
     await this.sleep(500); // Simulate processing time
-    return { processed: true, recordCount: payload.records || 0 };
+    const recordCount = (payload as { records?: number }).records || 0;
+    return { processed: true, recordCount };
   }
 
   /**
@@ -443,8 +439,8 @@ export class SimplifiedBackgroundProcessorService extends EventEmitter {
           message: (result as Error).message,
           type: 'unknown_error',
           code: 'JOB_FAILED',
-          param: undefined
-        }
+          param: undefined,
+        },
       };
       this.metrics.failedJobs++;
 

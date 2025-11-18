@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Final batch of type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Runtime Type Validation System for DI Container
@@ -9,8 +7,7 @@
  * dependency resolution, and type checking to ensure type safety at runtime.
  */
 
-import type {
-  ValidationResult} from '../factories/factory-types';
+import type { ValidationResult } from '../factories/factory-types';
 
 // Runtime type validation interfaces
 export interface RuntimeValidator<T = unknown> {
@@ -49,7 +46,14 @@ export interface ValidationCache {
 // Type validator implementations
 export class PrimitiveValidator<T> implements RuntimeValidator<T> {
   constructor(
-    private readonly expectedType: 'string' | 'number' | 'boolean' | 'object' | 'function' | 'symbol' | 'undefined',
+    private readonly expectedType:
+      | 'string'
+      | 'number'
+      | 'boolean'
+      | 'object'
+      | 'function'
+      | 'symbol'
+      | 'undefined',
     private readonly typeName: string
   ) {}
 
@@ -89,15 +93,15 @@ export class UnionValidator<T> implements RuntimeValidator<T> {
   constructor(private readonly validators: RuntimeValidator[]) {}
 
   validate(value: unknown): value is T {
-    return this.validators.some(validator => validator.validate(value));
+    return this.validators.some((validator) => validator.validate(value));
   }
 
   getExpectedType(): string {
-    return this.validators.map(v => v.getExpectedType()).join(' | ');
+    return this.validators.map((v) => v.getExpectedType()).join(' | ');
   }
 
   getErrorMessage(value: unknown): string {
-    const errors = this.validators.map(v => v.getErrorMessage(value));
+    const errors = this.validators.map((v) => v.getErrorMessage(value));
     return `Expected one of: ${errors.join(', ')}`;
   }
 }
@@ -107,7 +111,7 @@ export class ArrayValidator<T> implements RuntimeValidator<T[]> {
 
   validate(value: unknown): value is T[] {
     if (!Array.isArray(value)) return false;
-    return value.every(item => this.itemValidator.validate(item));
+    return value.every((item) => this.itemValidator.validate(item));
   }
 
   getExpectedType(): string {
@@ -129,7 +133,7 @@ export class RecordValidator<T> implements RuntimeValidator<Record<string, T>> {
     if (typeof value !== 'object' || value === null) return false;
 
     const record = value as Record<string, unknown>;
-    return Object.values(record).every(v => this.valueValidator.validate(v));
+    return Object.values(record).every((v) => this.valueValidator.validate(v));
   }
 
   getExpectedType(): string {
@@ -167,10 +171,7 @@ export class ValidatedServiceRegistry {
   private validationCache = new Map<string, ValidationCache>();
   private readonly cacheTimeout = 30000; // 30 seconds
 
-  registerService<T>(
-    token: string | symbol,
-    descriptor: ServiceTypeDescriptor
-  ): void {
+  registerService<T>(token: string | symbol, descriptor: ServiceTypeDescriptor): void {
     this.serviceDescriptors.set(token, descriptor);
     this.clearValidationCache(token);
   }
@@ -185,7 +186,7 @@ export class ValidatedServiceRegistry {
     if (!descriptor) {
       return {
         valid: false,
-        errors: [`Service ${String(token)} is not registered`]
+        errors: [`Service ${String(token)} is not registered`],
       };
     }
 
@@ -195,7 +196,7 @@ export class ValidatedServiceRegistry {
     if (cached && this.isCacheValid(cached)) {
       return {
         valid: cached.valid,
-        errors: cached.valid ? [] : ['Cached validation failed']
+        errors: cached.valid ? [] : ['Cached validation failed'],
       };
     }
 
@@ -205,7 +206,7 @@ export class ValidatedServiceRegistry {
     this.validationCache.set(cacheKey, {
       valid: result.valid,
       timestamp: Date.now(),
-      ttl: this.cacheTimeout
+      ttl: this.cacheTimeout,
     });
 
     return result;
@@ -222,7 +223,7 @@ export class ValidatedServiceRegistry {
     return {
       valid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 
@@ -257,10 +258,7 @@ export class ValidatedServiceRegistry {
 export class DependencyResolutionValidator {
   constructor(private readonly serviceRegistry: ValidatedServiceRegistry) {}
 
-  validateResolutionPlan(
-    serviceId: string | symbol,
-    context: ResolutionContext
-  ): ValidationResult {
+  validateResolutionPlan(serviceId: string | symbol, context: ResolutionContext): ValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -290,7 +288,7 @@ export class DependencyResolutionValidator {
       const depContext: ResolutionContext = {
         ...context,
         path: [...context.path, String(serviceId)],
-        depth: context.depth + 1
+        depth: context.depth + 1,
       };
 
       const depResult = this.validateResolutionPlan(depId, depContext);
@@ -301,7 +299,7 @@ export class DependencyResolutionValidator {
     return {
       valid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 
@@ -314,7 +312,7 @@ export class DependencyResolutionValidator {
         serviceId: String(serviceId),
         dependencies: [],
         circular: true,
-        estimatedCost: 0
+        estimatedCost: 0,
       };
     }
 
@@ -327,15 +325,15 @@ export class DependencyResolutionValidator {
         serviceId: String(serviceId),
         dependencies: [],
         circular: false,
-        estimatedCost: 0
+        estimatedCost: 0,
       };
     }
 
-    const dependencies = descriptor.dependencies.map(dep =>
+    const dependencies = descriptor.dependencies.map((dep) =>
       this.createResolutionPlan(dep, new Set(visited))
     );
 
-    const circular = dependencies.some(dep => dep.circular);
+    const circular = dependencies.some((dep) => dep.circular);
     const estimatedCost = 1 + dependencies.reduce((sum, dep) => sum + dep.estimatedCost, 0);
 
     visited.delete(serviceId);
@@ -344,7 +342,7 @@ export class DependencyResolutionValidator {
       serviceId: String(serviceId),
       dependencies,
       circular,
-      estimatedCost
+      estimatedCost,
     };
   }
 
@@ -363,14 +361,16 @@ export class DependencyResolutionValidator {
       }
 
       if (plan.estimatedCost > 50) {
-        warnings.push(`Service ${String(serviceId)} has high dependency cost: ${plan.estimatedCost}`);
+        warnings.push(
+          `Service ${String(serviceId)} has high dependency cost: ${plan.estimatedCost}`
+        );
       }
     }
 
     return {
       valid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 
@@ -417,14 +417,14 @@ export class RuntimeTypeChecker {
     if (!validator) {
       return {
         valid: false,
-        errors: [`Validator '${validatorName}' not found`]
+        errors: [`Validator '${validatorName}' not found`],
       };
     }
 
     const isValid = validator.validate(value);
     return {
       valid: isValid,
-      errors: isValid ? [] : [validator.getErrorMessage(value)]
+      errors: isValid ? [] : [validator.getErrorMessage(value)],
     };
   }
 
@@ -433,7 +433,10 @@ export class RuntimeTypeChecker {
   static readonly number = new PrimitiveValidator<number>('number', 'number');
   static readonly boolean = new PrimitiveValidator<boolean>('boolean', 'boolean');
   static readonly object = new PrimitiveValidator<object>('object', 'object');
-  static readonly function = new PrimitiveValidator<(...args: unknown[]) => unknown>('function', 'function');
+  static readonly function = new PrimitiveValidator<(...args: unknown[]) => unknown>(
+    'function',
+    'function'
+  );
 
   static stringArray(): ArrayValidator<string> {
     return new ArrayValidator(this.string);

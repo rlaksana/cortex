@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTE FINAL EMERGENCY ROLLBACK: Last remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Retry Budget Trend Analyzer
@@ -19,11 +17,9 @@ import { logger } from '@/utils/logger.js';
 
 import {
   type CircuitBreakerHealthStatus,
-  circuitBreakerMonitor} from './circuit-breaker-monitor.js';
-import {
-  type RetryBudgetMetrics,
-  retryBudgetMonitor
-} from './retry-budget-monitor.js';
+  circuitBreakerMonitor,
+} from './circuit-breaker-monitor.js';
+import { type RetryBudgetMetrics, retryBudgetMonitor } from './retry-budget-monitor.js';
 
 /**
  * Time window for trend analysis
@@ -122,7 +118,11 @@ export interface ComparativeAnalysis {
  */
 export interface PredictiveAnalysis {
   serviceName: string;
-  predictionType: 'budget_exhaustion' | 'slo_violation' | 'circuit_failure' | 'performance_degradation';
+  predictionType:
+    | 'budget_exhaustion'
+    | 'slo_violation'
+    | 'circuit_failure'
+    | 'performance_degradation';
   timeToEvent: number; // hours until predicted event
   confidence: number; // 0-1
   riskLevel: 'low' | 'medium' | 'high' | 'critical';
@@ -246,8 +246,10 @@ export class RetryTrendAnalyzer extends EventEmitter {
 
   // Analysis cache
   private trendCache: Map<string, { analysis: TrendAnalysis; timestamp: number }> = new Map();
-  private anomalyCache: Map<string, { anomalies: AnomalyDetection[]; timestamp: number }> = new Map();
-  private patternCache: Map<string, { patterns: PatternDetection[]; timestamp: number }> = new Map();
+  private anomalyCache: Map<string, { anomalies: AnomalyDetection[]; timestamp: number }> =
+    new Map();
+  private patternCache: Map<string, { patterns: PatternDetection[]; timestamp: number }> =
+    new Map();
 
   // Processing
   private processingInterval: NodeJS.Timeout | null = null;
@@ -350,7 +352,10 @@ export class RetryTrendAnalyzer extends EventEmitter {
 
     if (this.config.performance.cacheEnabled) {
       const cached = this.trendCache.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < this.config.performance.cacheTtlMinutes * 60 * 1000) {
+      if (
+        cached &&
+        Date.now() - cached.timestamp < this.config.performance.cacheTtlMinutes * 60 * 1000
+      ) {
         return cached.analysis;
       }
     }
@@ -377,7 +382,10 @@ export class RetryTrendAnalyzer extends EventEmitter {
 
     if (this.config.performance.cacheEnabled) {
       const cached = this.anomalyCache.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < this.config.performance.cacheTtlMinutes * 60 * 1000) {
+      if (
+        cached &&
+        Date.now() - cached.timestamp < this.config.performance.cacheTtlMinutes * 60 * 1000
+      ) {
         return cached.anomalies;
       }
     }
@@ -403,7 +411,10 @@ export class RetryTrendAnalyzer extends EventEmitter {
 
     if (this.config.performance.cacheEnabled) {
       const cached = this.patternCache.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < this.config.performance.cacheTtlMinutes * 60 * 1000) {
+      if (
+        cached &&
+        Date.now() - cached.timestamp < this.config.performance.cacheTtlMinutes * 60 * 1000
+      ) {
         return cached.patterns;
       }
     }
@@ -429,15 +440,23 @@ export class RetryTrendAnalyzer extends EventEmitter {
     comparisonPeriod: AnalysisWindow,
     baselinePeriod: AnalysisWindow
   ): ComparativeAnalysis | null {
-    const comparisonData = this.getDataPointsForWindow(serviceName, 'budget_utilization_percent', comparisonPeriod);
-    const baselineData = this.getDataPointsForWindow(serviceName, 'budget_utilization_percent', baselinePeriod);
+    const comparisonData = this.getDataPointsForWindow(
+      serviceName,
+      'budget_utilization_percent',
+      comparisonPeriod
+    );
+    const baselineData = this.getDataPointsForWindow(
+      serviceName,
+      'budget_utilization_percent',
+      baselinePeriod
+    );
 
     if (comparisonData.length < 5 || baselineData.length < 5) {
       return null;
     }
 
-    const currentAvg = this.calculateAverage(comparisonData.map(d => d.value));
-    const baselineAvg = this.calculateAverage(baselineData.map(d => d.value));
+    const currentAvg = this.calculateAverage(comparisonData.map((d) => d.value));
+    const baselineAvg = this.calculateAverage(baselineData.map((d) => d.value));
     const changePercent = baselineAvg > 0 ? ((currentAvg - baselineAvg) / baselineAvg) * 100 : 0;
 
     const metrics = {
@@ -457,9 +476,10 @@ export class RetryTrendAnalyzer extends EventEmitter {
       riskLevel: this.determineRiskLevel(currentAvg),
     };
 
-    overallHealth.changePercent = overallHealth.baseline > 0
-      ? ((overallHealth.current - overallHealth.baseline) / overallHealth.baseline) * 100
-      : 0;
+    overallHealth.changePercent =
+      overallHealth.baseline > 0
+        ? ((overallHealth.current - overallHealth.baseline) / overallHealth.baseline) * 100
+        : 0;
 
     const recommendations = this.generateRecommendations(serviceName, metrics, overallHealth);
 
@@ -503,7 +523,10 @@ export class RetryTrendAnalyzer extends EventEmitter {
   /**
    * Get comprehensive report for a service
    */
-  getServiceReport(serviceName: string, window: AnalysisWindow = AnalysisWindow.LAST_7_DAYS): {
+  getServiceReport(
+    serviceName: string,
+    window: AnalysisWindow = AnalysisWindow.LAST_7_DAYS
+  ): {
     serviceName: string;
     window: AnalysisWindow;
     timestamp: Date;
@@ -605,7 +628,8 @@ export class RetryTrendAnalyzer extends EventEmitter {
       this.cleanupOldData();
 
       // Clear cache periodically
-      if (Math.random() < 0.1) { // 10% chance each cycle
+      if (Math.random() < 0.1) {
+        // 10% chance each cycle
         this.cleanupCache();
       }
 
@@ -675,9 +699,9 @@ export class RetryTrendAnalyzer extends EventEmitter {
     const now = Date.now();
 
     // Clean up raw data
-    const rawCutoff = now - (this.config.retention.rawEventsDays * 24 * 60 * 60 * 1000);
+    const rawCutoff = now - this.config.retention.rawEventsDays * 24 * 60 * 60 * 1000;
     for (const [serviceName, data] of this.rawData) {
-      const filtered = data.filter(point => point.timestamp.getTime() >= rawCutoff);
+      const filtered = data.filter((point) => point.timestamp.getTime() >= rawCutoff);
       this.rawData.set(serviceName, filtered);
     }
 
@@ -689,7 +713,7 @@ export class RetryTrendAnalyzer extends EventEmitter {
    * Clean up cache
    */
   private cleanupCache(): void {
-    const cutoff = Date.now() - (this.config.performance.cacheTtlMinutes * 60 * 1000);
+    const cutoff = Date.now() - this.config.performance.cacheTtlMinutes * 60 * 1000;
 
     for (const [key, cached] of this.trendCache) {
       if (cached.timestamp < cutoff) {
@@ -713,7 +737,11 @@ export class RetryTrendAnalyzer extends EventEmitter {
   /**
    * Get data points for time window
    */
-  private getDataPointsForWindow(serviceName: string, metric: string, window: AnalysisWindow): Array<{ timestamp: Date; value: number }> {
+  private getDataPointsForWindow(
+    serviceName: string,
+    metric: string,
+    window: AnalysisWindow
+  ): Array<{ timestamp: Date; value: number }> {
     const data = this.rawData.get(serviceName) || [];
     const now = Date.now();
     let windowMs: number;
@@ -741,8 +769,8 @@ export class RetryTrendAnalyzer extends EventEmitter {
 
     const cutoff = now - windowMs;
     return data
-      .filter(point => point.timestamp.getTime() >= cutoff && point.metrics[metric] !== undefined)
-      .map(point => ({
+      .filter((point) => point.timestamp.getTime() >= cutoff && point.metrics[metric] !== undefined)
+      .map((point) => ({
         timestamp: point.timestamp,
         value: point.metrics[metric]!,
       }))
@@ -791,11 +819,24 @@ export class RetryTrendAnalyzer extends EventEmitter {
   private performAnomalyDetection(serviceName: string, hours: number): AnomalyDetection[] {
     const anomalies: AnomalyDetection[] = [];
     const data = this.rawData.get(serviceName) || [];
-    const cutoff = Date.now() - (hours * 60 * 60 * 1000);
-    const recentData = data.filter(point => point.timestamp.getTime() >= cutoff);
+    const cutoff = Date.now() - hours * 60 * 60 * 1000;
+    const recentData = data.filter((point) => point.timestamp.getTime() >= cutoff);
 
-    for (const metric of Object.keys(recentData[0]?.metrics || {})) {
-      const values = recentData.map(point => point.metrics[metric]).filter(v => v !== undefined);
+    if (recentData.length === 0) {
+      return anomalies;
+    }
+
+    const firstDataPoint = recentData[0];
+    const metrics = firstDataPoint?.metrics;
+
+    if (!metrics || typeof metrics !== 'object') {
+      return anomalies;
+    }
+
+    for (const metric of Object.keys(metrics)) {
+      const values = recentData
+        .map((point) => point.metrics[metric])
+        .filter((v) => v !== undefined);
       if (values.length < 10) continue;
 
       const metricAnomalies = this.detectMetricAnomalies(serviceName, metric, recentData);
@@ -814,7 +855,9 @@ export class RetryTrendAnalyzer extends EventEmitter {
     data: HistoricalDataPoint[]
   ): AnomalyDetection[] {
     const anomalies: AnomalyDetection[] = [];
-    const values = data.map(point => point.metrics[metric]).filter(v => v !== undefined) as number[];
+    const values = data
+      .map((point) => point.metrics[metric])
+      .filter((v) => v !== undefined) as number[];
 
     if (values.length < 10) return anomalies;
 
@@ -875,13 +918,16 @@ export class RetryTrendAnalyzer extends EventEmitter {
     const businessHoursPattern = this.detectBusinessHoursPattern(serviceName, data);
     if (businessHoursPattern) patterns.push(businessHoursPattern);
 
-    return patterns.filter(p => p.confidence >= this.config.patterns.minConfidence);
+    return patterns.filter((p) => p.confidence >= this.config.patterns.minConfidence);
   }
 
   /**
    * Detect daily pattern
    */
-  private detectDailyPattern(serviceName: string, data: HistoricalDataPoint[]): PatternDetection | null {
+  private detectDailyPattern(
+    serviceName: string,
+    data: HistoricalDataPoint[]
+  ): PatternDetection | null {
     // Group data by hour of day
     const hourlyData = new Map<number, number[]>();
 
@@ -904,16 +950,16 @@ export class RetryTrendAnalyzer extends EventEmitter {
       .sort((a, b) => a.hour - b.hour);
 
     // Detect pattern (e.g., higher usage during certain hours)
-    const maxAvg = Math.max(...hourlyAverages.map(h => h.avg));
-    const minAvg = Math.min(...hourlyAverages.map(h => h.avg));
+    const maxAvg = Math.max(...hourlyAverages.map((h) => h.avg));
+    const minAvg = Math.min(...hourlyAverages.map((h) => h.avg));
     const variance = maxAvg - minAvg;
 
     if (variance < 10) return null; // No significant pattern
 
     // Find peak hours
     const peakHours = hourlyAverages
-      .filter(h => h.avg > (maxAvg + minAvg) / 2)
-      .map(h => h.hour);
+      .filter((h) => h.avg > (maxAvg + minAvg) / 2)
+      .map((h) => h.hour);
 
     return {
       serviceName,
@@ -922,11 +968,13 @@ export class RetryTrendAnalyzer extends EventEmitter {
       confidence: Math.min(1, variance / 50),
       schedule: {
         startTime: peakHours[0] ? `${peakHours[0].toString().padStart(2, '0')}:00` : undefined,
-        endTime: peakHours[peakHours.length - 1] ? `${(peakHours[peakHours.length - 1] + 1).toString().padStart(2, '0')}:00` : undefined,
+        endTime: peakHours[peakHours.length - 1]
+          ? `${(peakHours[peakHours.length - 1] + 1).toString().padStart(2, '0')}:00`
+          : undefined,
       },
       impact: {
-        averageIncrease: variance / minAvg * 100,
-        peakIncrease: (maxAvg - minAvg) / minAvg * 100,
+        averageIncrease: (variance / minAvg) * 100,
+        peakIncrease: ((maxAvg - minAvg) / minAvg) * 100,
         duration: peakHours.length,
       },
     };
@@ -935,7 +983,10 @@ export class RetryTrendAnalyzer extends EventEmitter {
   /**
    * Detect weekly pattern
    */
-  private detectWeeklyPattern(serviceName: string, data: HistoricalDataPoint[]): PatternDetection | null {
+  private detectWeeklyPattern(
+    serviceName: string,
+    data: HistoricalDataPoint[]
+  ): PatternDetection | null {
     // Similar to daily pattern but by day of week
     // Implementation would be similar to detectDailyPattern
     return null;
@@ -944,20 +995,27 @@ export class RetryTrendAnalyzer extends EventEmitter {
   /**
    * Detect business hours pattern
    */
-  private detectBusinessHoursPattern(serviceName: string, data: HistoricalDataPoint[]): PatternDetection | null {
+  private detectBusinessHoursPattern(
+    serviceName: string,
+    data: HistoricalDataPoint[]
+  ): PatternDetection | null {
     // Compare business hours (9-17, Mon-Fri) vs non-business hours
-    const businessHours = data.filter(point => {
+    const businessHours = data.filter((point) => {
       const hour = point.timestamp.getHours();
       const day = point.timestamp.getDay();
       return day >= 1 && day <= 5 && hour >= 9 && hour <= 17;
     });
 
-    const nonBusinessHours = data.filter(point => !businessHours.includes(point));
+    const nonBusinessHours = data.filter((point) => !businessHours.includes(point));
 
     if (businessHours.length < 10 || nonBusinessHours.length < 10) return null;
 
-    const businessAvg = this.calculateAverage(businessHours.map(p => p.metrics.budget_utilization_percent || 0));
-    const nonBusinessAvg = this.calculateAverage(nonBusinessHours.map(p => p.metrics.budget_utilization_percent || 0));
+    const businessAvg = this.calculateAverage(
+      businessHours.map((p) => p.metrics.budget_utilization_percent || 0)
+    );
+    const nonBusinessAvg = this.calculateAverage(
+      nonBusinessHours.map((p) => p.metrics.budget_utilization_percent || 0)
+    );
     const difference = Math.abs(businessAvg - nonBusinessAvg);
 
     if (difference < 5) return null; // No significant difference
@@ -975,7 +1033,9 @@ export class RetryTrendAnalyzer extends EventEmitter {
         daysOfWeek: [1, 2, 3, 4, 5], // Monday-Friday
       },
       impact: {
-        averageIncrease: higherDuringBusiness ? (businessAvg / nonBusinessAvg - 1) * 100 : (nonBusinessAvg / businessAvg - 1) * 100,
+        averageIncrease: higherDuringBusiness
+          ? (businessAvg / nonBusinessAvg - 1) * 100
+          : (nonBusinessAvg / businessAvg - 1) * 100,
         peakIncrease: difference,
         duration: 8, // 8 business hours
       },
@@ -986,7 +1046,11 @@ export class RetryTrendAnalyzer extends EventEmitter {
    * Predict budget exhaustion
    */
   private predictBudgetExhaustion(serviceName: string): PredictiveAnalysis | null {
-    const trend = this.analyzeTrends(serviceName, 'budget_utilization_percent', AnalysisWindow.LAST_24_HOURS);
+    const trend = this.analyzeTrends(
+      serviceName,
+      'budget_utilization_percent',
+      AnalysisWindow.LAST_24_HOURS
+    );
     if (!trend || trend.direction !== TrendDirection.DEGRADING) return null;
 
     const currentMetrics = retryBudgetMonitor.getMetrics(serviceName);
@@ -998,9 +1062,14 @@ export class RetryTrendAnalyzer extends EventEmitter {
     if (hoursToExhaustion <= 0 || hoursToExhaustion > 168) return null; // Only predict within next week
 
     const confidence = Math.min(1, trend.strength * 0.8);
-    const riskLevel = hoursToExhaustion < 2 ? 'critical' :
-                     hoursToExhaustion < 6 ? 'high' :
-                     hoursToExhaustion < 24 ? 'medium' : 'low';
+    const riskLevel =
+      hoursToExhaustion < 2
+        ? 'critical'
+        : hoursToExhaustion < 6
+          ? 'high'
+          : hoursToExhaustion < 24
+            ? 'medium'
+            : 'low';
 
     return {
       serviceName,
@@ -1035,15 +1104,16 @@ export class RetryTrendAnalyzer extends EventEmitter {
     const trends = [
       this.analyzeTrends(serviceName, 'success_rate_variance', AnalysisWindow.LAST_6_HOURS),
       this.analyzeTrends(serviceName, 'response_time_p95', AnalysisWindow.LAST_6_HOURS),
-    ].filter(t => t !== null) as TrendAnalysis[];
+    ].filter((t) => t !== null) as TrendAnalysis[];
 
-    const degradingTrends = trends.filter(t => t.direction === TrendDirection.DEGRADING);
+    const degradingTrends = trends.filter((t) => t.direction === TrendDirection.DEGRADING);
     if (degradingTrends.length === 0) return null;
 
     const currentMetrics = retryBudgetMonitor.getMetrics(serviceName);
     if (!currentMetrics || currentMetrics.slo.overallCompliance) return null;
 
-    const avgStrength = degradingTrends.reduce((sum, t) => sum + t.strength, 0) / degradingTrends.length;
+    const avgStrength =
+      degradingTrends.reduce((sum, t) => sum + t.strength, 0) / degradingTrends.length;
     const confidence = Math.min(1, avgStrength * 0.7);
     const riskLevel = avgStrength > 0.7 ? 'critical' : avgStrength > 0.4 ? 'high' : 'medium';
 
@@ -1053,7 +1123,7 @@ export class RetryTrendAnalyzer extends EventEmitter {
       timeToEvent: 2, // SLO violations are typically imminent
       confidence,
       riskLevel,
-      contributingFactors: degradingTrends.map(t => ({
+      contributingFactors: degradingTrends.map((t) => ({
         factor: `Degrading ${t.metric}`,
         impact: t.strength,
         trend: t.direction,
@@ -1078,14 +1148,23 @@ export class RetryTrendAnalyzer extends EventEmitter {
     const circuitMetrics = circuitBreakerMonitor.getHealthStatus(serviceName);
     if (!circuitMetrics || circuitMetrics.state === 'open') return null;
 
-    const failureTrend = this.analyzeTrends(serviceName, 'circuit_failure_rate', AnalysisWindow.LAST_HOUR);
+    const failureTrend = this.analyzeTrends(
+      serviceName,
+      'circuit_failure_rate',
+      AnalysisWindow.LAST_HOUR
+    );
     if (!failureTrend || failureTrend.direction !== TrendDirection.DEGRADING) return null;
 
     const consecutiveFailures = circuitMetrics.metrics.consecutiveFailures;
     const confidence = Math.min(1, (failureTrend.strength + consecutiveFailures / 10) * 0.8);
-    const riskLevel = consecutiveFailures > 5 ? 'critical' :
-                     consecutiveFailures > 3 ? 'high' :
-                     consecutiveFailures > 1 ? 'medium' : 'low';
+    const riskLevel =
+      consecutiveFailures > 5
+        ? 'critical'
+        : consecutiveFailures > 3
+          ? 'high'
+          : consecutiveFailures > 1
+            ? 'medium'
+            : 'low';
 
     return {
       serviceName,
@@ -1119,12 +1198,15 @@ export class RetryTrendAnalyzer extends EventEmitter {
   }
 
   // Helper methods
-  private calculateLinearRegression(data: Array<{ timestamp: Date; value: number }>): { slope: number; correlation: number } {
+  private calculateLinearRegression(data: Array<{ timestamp: Date; value: number }>): {
+    slope: number;
+    correlation: number;
+  } {
     if (data.length < 2) return { slope: 0, correlation: 0 };
 
     const n = data.length;
     const x = data.map((_, i) => i);
-    const y = data.map(d => d.value);
+    const y = data.map((d) => d.value);
 
     const sumX = x.reduce((sum, val) => sum + val, 0);
     const sumY = y.reduce((sum, val) => sum + val, 0);
@@ -1133,8 +1215,8 @@ export class RetryTrendAnalyzer extends EventEmitter {
     const sumYY = y.reduce((sum, val) => sum + val * val, 0);
 
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    const correlation = (n * sumXY - sumX * sumY) /
-      Math.sqrt((n * sumXX - sumX * sumX) * (n * sumYY - sumY * sumY));
+    const correlation =
+      (n * sumXY - sumX * sumY) / Math.sqrt((n * sumXX - sumX * sumX) * (n * sumYY - sumY * sumY));
 
     return { slope, correlation: isNaN(correlation) ? 0 : correlation };
   }
@@ -1147,25 +1229,37 @@ export class RetryTrendAnalyzer extends EventEmitter {
     return regression.slope > 0 ? TrendDirection.IMPROVING : TrendDirection.DEGRADING;
   }
 
-  private detectSeasonality(data: Array<{ timestamp: Date; value: number }>): { detected: boolean; period?: number; strength?: number } {
+  private detectSeasonality(data: Array<{ timestamp: Date; value: number }>): {
+    detected: boolean;
+    period?: number;
+    strength?: number;
+  } {
     // Simplified seasonality detection
     // In a real implementation, this would use more sophisticated algorithms
     return { detected: false };
   }
 
-  private generateForecast(data: Array<{ timestamp: Date; value: number }>, regression: { slope: number; correlation: number }): { nextHour: number; nextDay: number; nextWeek: number; confidence: number } {
+  private generateForecast(
+    data: Array<{ timestamp: Date; value: number }>,
+    regression: { slope: number; correlation: number }
+  ): { nextHour: number; nextDay: number; nextWeek: number; confidence: number } {
     const lastValue = data[data.length - 1].value;
     const confidence = Math.abs(regression.correlation);
 
     return {
-      nextHour: lastValue + (regression.slope * 60),
-      nextDay: lastValue + (regression.slope * 60 * 24),
-      nextWeek: lastValue + (regression.slope * 60 * 24 * 7),
+      nextHour: lastValue + regression.slope * 60,
+      nextDay: lastValue + regression.slope * 60 * 24,
+      nextWeek: lastValue + regression.slope * 60 * 24 * 7,
       confidence,
     };
   }
 
-  private calculateStatistics(values: number[]): { mean: number; stdDev: number; min: number; max: number } {
+  private calculateStatistics(values: number[]): {
+    mean: number;
+    stdDev: number;
+    min: number;
+    max: number;
+  } {
     const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
     const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
     const stdDev = Math.sqrt(variance);
@@ -1175,14 +1269,20 @@ export class RetryTrendAnalyzer extends EventEmitter {
     return { mean, stdDev, min, max };
   }
 
-  private determineAnomalySeverity(deviationPercent: number): 'low' | 'medium' | 'high' | 'critical' {
+  private determineAnomalySeverity(
+    deviationPercent: number
+  ): 'low' | 'medium' | 'high' | 'critical' {
     if (deviationPercent > 100) return 'critical';
     if (deviationPercent > 50) return 'high';
     if (deviationPercent > 25) return 'medium';
     return 'low';
   }
 
-  private generatePotentialCauses(metric: string, anomalyType: 'spike' | 'drop', timestamp: Date): string[] {
+  private generatePotentialCauses(
+    metric: string,
+    anomalyType: 'spike' | 'drop',
+    timestamp: Date
+  ): string[] {
     const hour = timestamp.getHours();
     const isBusinessHours = hour >= 9 && hour <= 17;
 
@@ -1212,7 +1312,9 @@ export class RetryTrendAnalyzer extends EventEmitter {
     return values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
   }
 
-  private calculateSignificance(changePercent: number): 'insignificant' | 'minor' | 'moderate' | 'major' {
+  private calculateSignificance(
+    changePercent: number
+  ): 'insignificant' | 'minor' | 'moderate' | 'major' {
     if (Math.abs(changePercent) < 5) return 'insignificant';
     if (Math.abs(changePercent) < 15) return 'minor';
     if (Math.abs(changePercent) < 30) return 'moderate';
@@ -1226,10 +1328,13 @@ export class RetryTrendAnalyzer extends EventEmitter {
     return 'critical';
   }
 
-  private calculateHealthScore(serviceName: string, data: Array<{ timestamp: Date; value: number }>): number {
+  private calculateHealthScore(
+    serviceName: string,
+    data: Array<{ timestamp: Date; value: number }>
+  ): number {
     if (data.length === 0) return 100;
 
-    const values = data.map(d => d.value);
+    const values = data.map((d) => d.value);
     const avg = this.calculateAverage(values);
 
     // Lower utilization is better for health score
@@ -1265,9 +1370,9 @@ export class RetryTrendAnalyzer extends EventEmitter {
   private calculateOverallTrend(trends: TrendAnalysis[]): TrendDirection {
     if (trends.length === 0) return TrendDirection.UNKNOWN;
 
-    const degrading = trends.filter(t => t.direction === TrendDirection.DEGRADING).length;
-    const improving = trends.filter(t => t.direction === TrendDirection.IMPROVING).length;
-    const stable = trends.filter(t => t.direction === TrendDirection.STABLE).length;
+    const degrading = trends.filter((t) => t.direction === TrendDirection.DEGRADING).length;
+    const improving = trends.filter((t) => t.direction === TrendDirection.IMPROVING).length;
+    const stable = trends.filter((t) => t.direction === TrendDirection.STABLE).length;
 
     if (degrading > improving && degrading > stable) return TrendDirection.DEGRADING;
     if (improving > degrading && improving > stable) return TrendDirection.IMPROVING;
@@ -1298,15 +1403,26 @@ export class RetryTrendAnalyzer extends EventEmitter {
   ): string[] {
     const recommendations: string[] = [];
 
-    if (overallHealth.riskLevel === 'critical') {
+    // Type-safe property access for overallHealth
+    const healthRecord = this.isRecord(overallHealth) ? overallHealth : {};
+    const riskLevel = this.safeAccess(healthRecord, 'riskLevel', 'low') as 'low' | 'medium' | 'high' | 'critical';
+    const currentHealth = this.safeAccess(healthRecord, 'current', 100);
+
+    if (riskLevel === 'critical') {
       recommendations.push('IMMEDIATE ACTION REQUIRED: Service health is critical');
     }
 
-    if (metrics.budget_utilization_percent?.changePercent > 20) {
+    // Type-safe property access for metrics
+    const metricsRecord = this.isRecord(metrics) ? metrics : {};
+    const budgetUtilization = this.safeAccess(metricsRecord, 'budget_utilization_percent', null);
+    const budgetRecord = this.isRecord(budgetUtilization) ? budgetUtilization : {};
+    const changePercent = this.safeAccess(budgetRecord, 'changePercent', 0);
+
+    if (changePercent > 20) {
       recommendations.push('Monitor retry budget consumption closely');
     }
 
-    if (overallHealth.current < 50) {
+    if (currentHealth < 50) {
       recommendations.push('Consider scaling up service resources');
     }
 
@@ -1323,7 +1439,7 @@ export class RetryTrendAnalyzer extends EventEmitter {
     const recommendations: string[] = [];
 
     // Based on trends
-    const degradingTrends = trends.filter(t => t.direction === TrendDirection.DEGRADING);
+    const degradingTrends = trends.filter((t) => t.direction === TrendDirection.DEGRADING);
     if (degradingTrends.length > 0) {
       recommendations.push('Multiple metrics showing degrading trends - investigate root causes');
     }
@@ -1334,7 +1450,7 @@ export class RetryTrendAnalyzer extends EventEmitter {
     }
 
     // Based on predictions
-    const criticalPredictions = predictions.filter(p => p.riskLevel === 'critical');
+    const criticalPredictions = predictions.filter((p) => p.riskLevel === 'critical');
     if (criticalPredictions.length > 0) {
       recommendations.push('Critical predictions detected - immediate attention required');
     }
@@ -1345,6 +1461,30 @@ export class RetryTrendAnalyzer extends EventEmitter {
     }
 
     return recommendations;
+  }
+
+  /**
+   * Type guard for object type
+   */
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+
+  /**
+   * Type guard for array type
+   */
+  private isArray(value: unknown): value is unknown[] {
+    return Array.isArray(value);
+  }
+
+  /**
+   * Safely access properties on unknown objects
+   */
+  private safeAccess<T>(obj: unknown, property: string, fallback: T): T {
+    if (typeof obj === 'object' && obj !== null && property in obj) {
+      return (obj as Record<string, unknown>)[property] as T;
+    }
+    return fallback;
   }
 
   /**

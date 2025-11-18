@@ -1,12 +1,8 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-import { createHash,randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 
 import { logger } from '@/utils/logger.js';
 
-import { type SemanticAnalysisResult,SemanticAnalyzer } from './semantic-analyzer.js';
+import { type SemanticAnalysisResult, SemanticAnalyzer } from './semantic-analyzer.js';
 import { environment } from '../../config/environment.js';
 import { type KnowledgeItem } from '../../types/core-interfaces.js';
 import { inheritTTLFromParent } from '../../utils/tl-utils.js';

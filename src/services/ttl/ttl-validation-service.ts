@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * TTL Validation Service
  *
@@ -26,11 +22,9 @@ import { EventEmitter } from 'events';
 import { logger } from '@/utils/logger.js';
 
 import { type TTLManagementService } from './ttl-management-service.js';
-import {type TTLPolicy, type TTLPolicyService } from './ttl-policy-service.js';
+import { type TTLPolicy, type TTLPolicyService } from './ttl-policy-service.js';
 import { type QdrantAdapter } from '../../db/adapters/qdrant-adapter.js';
-import type {
-  KnowledgeItem,
-} from '../../types/core-interfaces.js';
+import type { KnowledgeItem } from '../../types/core-interfaces.js';
 
 /**
  * TTL Validation Result
@@ -286,12 +280,15 @@ export class TTLValidationService extends EventEmitter {
     const startTime = Date.now();
     const correlationId = options.correlationId || this.generateCorrelationId();
 
-    logger.info({
-      correlationId,
-      policyName: policy.name,
-      dryRun: options.dryRun,
-      safetyMode: options.safetyMode,
-    }, '[TTL_VALIDATION] Starting TTL policy validation');
+    logger.info(
+      {
+        correlationId,
+        policyName: policy.name,
+        dryRun: options.dryRun,
+        safetyMode: options.safetyMode,
+      },
+      '[TTL_VALIDATION] Starting TTL policy validation'
+    );
 
     try {
       // Step 1: Basic policy validation
@@ -347,14 +344,17 @@ export class TTLValidationService extends EventEmitter {
         },
       };
 
-      logger.info({
-        correlationId,
-        valid: result.valid,
-        errorCount: result.errors.length,
-        warningCount: result.warnings.length,
-        affectedItems: impact.affectedItems,
-        duration: result.metadata.duration,
-      }, '[TTL_VALIDATION] TTL policy validation completed');
+      logger.info(
+        {
+          correlationId,
+          valid: result.valid,
+          errorCount: result.errors.length,
+          warningCount: result.warnings.length,
+          affectedItems: impact.affectedItems,
+          duration: result.metadata.duration,
+        },
+        '[TTL_VALIDATION] TTL policy validation completed'
+      );
 
       // Emit validation completed event
       this.emit('validation:completed', {
@@ -364,26 +364,30 @@ export class TTLValidationService extends EventEmitter {
       });
 
       return result;
-
     } catch (error) {
       const duration = Date.now() - startTime;
 
-      logger.error({
-        correlationId,
-        policyName: policy.name,
-        error: error.message,
-        duration,
-      }, '[TTL_VALIDATION] TTL policy validation failed');
+      logger.error(
+        {
+          correlationId,
+          policyName: policy.name,
+          error: error.message,
+          duration,
+        },
+        '[TTL_VALIDATION] TTL policy validation failed'
+      );
 
       // Return error result
       return {
         valid: false,
-        errors: [{
-          code: 'VALIDATION_FAILED',
-          message: `Validation failed: ${error.message}`,
-          severity: 'critical',
-          suggestion: 'Check policy configuration and try again',
-        }],
+        errors: [
+          {
+            code: 'VALIDATION_FAILED',
+            message: `Validation failed: ${error.message}`,
+            severity: 'critical',
+            suggestion: 'Check policy configuration and try again',
+          },
+        ],
         warnings: [],
         impact: this.getEmptyImpactAnalysis(),
         recommendations: ['Fix validation errors and retry'],
@@ -412,12 +416,15 @@ export class TTLValidationService extends EventEmitter {
   ): Promise<TTLValidationResult> {
     const correlationId = options.correlationId || this.generateCorrelationId();
 
-    logger.info({
-      correlationId,
-      itemCount: items.length,
-      policyName: policy?.name || 'default',
-      dryRun: options.dryRun,
-    }, '[TTL_VALIDATION] Starting TTL items validation');
+    logger.info(
+      {
+        correlationId,
+        itemCount: items.length,
+        policyName: policy?.name || 'default',
+        dryRun: options.dryRun,
+      },
+      '[TTL_VALIDATION] Starting TTL items validation'
+    );
 
     try {
       const errors: ValidationError[] = [];
@@ -431,11 +438,7 @@ export class TTLValidationService extends EventEmitter {
       const batchSize = 1000;
       for (let i = 0; i < items.length; i += batchSize) {
         const batch = items.slice(i, i + batchSize);
-        const batchResults = await this.validateItemsBatch(
-          batch,
-          correlationId,
-          policy
-        );
+        const batchResults = await this.validateItemsBatch(batch, correlationId, policy);
 
         errors.push(...batchResults.errors);
         warnings.push(...batchResults.warnings);
@@ -461,7 +464,9 @@ export class TTLValidationService extends EventEmitter {
         warnings,
         impact,
         recommendations: this.generateItemRecommendations(errors, warnings),
-        predictions: options.dryRun ? await this.generateItemPredictions(items, policy) : this.getEmptyPredictions(),
+        predictions: options.dryRun
+          ? await this.generateItemPredictions(items, policy)
+          : this.getEmptyPredictions(),
         compliance: await this.checkItemsCompliance(items, policy),
         timestamp: new Date(),
         metadata: {
@@ -471,23 +476,28 @@ export class TTLValidationService extends EventEmitter {
         },
       };
 
-      logger.info({
-        correlationId,
-        valid: result.valid,
-        errorCount: result.errors.length,
-        warningCount: result.warnings.length,
-        affectedItems,
-        expiredItems,
-      }, '[TTL_VALIDATION] TTL items validation completed');
+      logger.info(
+        {
+          correlationId,
+          valid: result.valid,
+          errorCount: result.errors.length,
+          warningCount: result.warnings.length,
+          affectedItems,
+          expiredItems,
+        },
+        '[TTL_VALIDATION] TTL items validation completed'
+      );
 
       return result;
-
     } catch (error) {
-      logger.error({
-        correlationId,
-        itemCount: items.length,
-        error: error.message,
-      }, '[TTL_VALIDATION] TTL items validation failed');
+      logger.error(
+        {
+          correlationId,
+          itemCount: items.length,
+          error: error.message,
+        },
+        '[TTL_VALIDATION] TTL items validation failed'
+      );
 
       throw error;
     }
@@ -536,7 +546,8 @@ export class TTLValidationService extends EventEmitter {
       });
     }
 
-    if (policy.durationMs > 0 && policy.durationMs < 60000) { // Less than 1 minute
+    if (policy.durationMs > 0 && policy.durationMs < 60000) {
+      // Less than 1 minute
       warnings.push({
         code: 'VERY_SHORT_DURATION',
         message: 'Very short TTL duration may cause frequent expirations',
@@ -547,7 +558,8 @@ export class TTLValidationService extends EventEmitter {
       });
     }
 
-    if (policy.durationMs > 0 && policy.durationMs > 365 * 24 * 60 * 60 * 1000) { // More than 1 year
+    if (policy.durationMs > 0 && policy.durationMs > 365 * 24 * 60 * 60 * 1000) {
+      // More than 1 year
       warnings.push({
         code: 'VERY_LONG_DURATION',
         message: 'Very long TTL duration may not be optimal for storage efficiency',
@@ -574,26 +586,33 @@ export class TTLValidationService extends EventEmitter {
       for (const [index, rule] of policy.validationRules.entries()) {
         const ruleValidation = this.validateValidationRule(rule);
         if (ruleValidation.errors.length > 0) {
-          errors.push(...ruleValidation.errors.map(e => ({
-            ...e,
-            field: `validationRules[${index}]`,
-          })));
+          errors.push(
+            ...ruleValidation.errors.map((e) => ({
+              ...e,
+              field: `validationRules[${index}]`,
+            }))
+          );
         }
         if (ruleValidation.warnings.length > 0) {
-          warnings.push(...ruleValidation.warnings.map(w => ({
-            ...w,
-            field: `validationRules[${index}]`,
-          })));
+          warnings.push(
+            ...ruleValidation.warnings.map((w) => ({
+              ...w,
+              field: `validationRules[${index}]`,
+            }))
+          );
         }
       }
     }
 
-    logger.debug({
-      correlationId,
-      policyName: policy.name,
-      errorCount: errors.length,
-      warningCount: warnings.length,
-    }, '[TTL_VALIDATION] Basic policy validation completed');
+    logger.debug(
+      {
+        correlationId,
+        policyName: policy.name,
+        errorCount: errors.length,
+        warningCount: warnings.length,
+      },
+      '[TTL_VALIDATION] Basic policy validation completed'
+    );
 
     return { errors, warnings };
   }
@@ -606,11 +625,14 @@ export class TTLValidationService extends EventEmitter {
     options: TTLValidationOptions,
     correlationId: string
   ): Promise<TTLImpactAnalysis> {
-    logger.debug({
-      correlationId,
-      policyName: policy.name,
-      sampleSize: options.sampleSize,
-    }, '[TTL_VALIDATION] Starting impact analysis');
+    logger.debug(
+      {
+        correlationId,
+        policyName: policy.name,
+        sampleSize: options.sampleSize,
+      },
+      '[TTL_VALIDATION] Starting impact analysis'
+    );
 
     try {
       // Get affected items (sample if specified)
@@ -618,9 +640,9 @@ export class TTLValidationService extends EventEmitter {
 
       // Calculate impact metrics
       const affectedItems = items.length;
-      const expiredItems = items.filter(item => this.wouldExpire(item, policy)).length;
-      const extendedItems = items.filter(item => this.wouldExtendTTL(item, policy)).length;
-      const permanentItems = items.filter(item => this.wouldBecomePermanent(item, policy)).length;
+      const expiredItems = items.filter((item) => this.wouldExpire(item, policy)).length;
+      const extendedItems = items.filter((item) => this.wouldExtendTTL(item, policy)).length;
+      const permanentItems = items.filter((item) => this.wouldBecomePermanent(item, policy)).length;
 
       // Calculate storage impact
       const storageImpact = await this.calculateStorageImpact(items, policy);
@@ -641,22 +663,27 @@ export class TTLValidationService extends EventEmitter {
         businessImpact,
       };
 
-      logger.debug({
-        correlationId,
-        affectedItems,
-        expiredItems,
-        storageSavings: storageImpact.bytesSaved,
-        performanceImprovement: performanceImpact.querySpeedImprovement,
-      }, '[TTL_VALIDATION] Impact analysis completed');
+      logger.debug(
+        {
+          correlationId,
+          affectedItems,
+          expiredItems,
+          storageSavings: storageImpact.bytesSaved,
+          performanceImprovement: performanceImpact.querySpeedImprovement,
+        },
+        '[TTL_VALIDATION] Impact analysis completed'
+      );
 
       return impact;
-
     } catch (error) {
-      logger.error({
-        correlationId,
-        policyName: policy.name,
-        error: error.message,
-      }, '[TTL_VALIDATION] Impact analysis failed');
+      logger.error(
+        {
+          correlationId,
+          policyName: policy.name,
+          error: error.message,
+        },
+        '[TTL_VALIDATION] Impact analysis failed'
+      );
 
       throw error;
     }
@@ -670,10 +697,13 @@ export class TTLValidationService extends EventEmitter {
     options: TTLValidationOptions,
     correlationId: string
   ): Promise<TTLComplianceStatus> {
-    logger.debug({
-      correlationId,
-      policyName: policy.name,
-    }, '[TTL_VALIDATION] Starting compliance check');
+    logger.debug(
+      {
+        correlationId,
+        policyName: policy.name,
+      },
+      '[TTL_VALIDATION] Starting compliance check'
+    );
 
     try {
       const policies: TTLPolicyCompliance[] = [];
@@ -685,7 +715,9 @@ export class TTLValidationService extends EventEmitter {
       policies.push(retentionCompliance);
       totalScore += retentionCompliance.score;
       if (!retentionCompliance.compliant) {
-        criticalViolations += retentionCompliance.violations.filter(v => v.severity === 'critical').length;
+        criticalViolations += retentionCompliance.violations.filter(
+          (v) => v.severity === 'critical'
+        ).length;
       }
 
       // Check business rule compliance
@@ -693,7 +725,9 @@ export class TTLValidationService extends EventEmitter {
       policies.push(businessCompliance);
       totalScore += businessCompliance.score;
       if (!businessCompliance.compliant) {
-        criticalViolations += businessCompliance.violations.filter(v => v.severity === 'critical').length;
+        criticalViolations += businessCompliance.violations.filter(
+          (v) => v.severity === 'critical'
+        ).length;
       }
 
       // Check security compliance
@@ -701,7 +735,9 @@ export class TTLValidationService extends EventEmitter {
       policies.push(securityCompliance);
       totalScore += securityCompliance.score;
       if (!securityCompliance.compliant) {
-        criticalViolations += securityCompliance.violations.filter(v => v.severity === 'critical').length;
+        criticalViolations += securityCompliance.violations.filter(
+          (v) => v.severity === 'critical'
+        ).length;
       }
 
       const overallScore = policies.length > 0 ? totalScore / policies.length : 0;
@@ -715,21 +751,26 @@ export class TTLValidationService extends EventEmitter {
         recommendations: this.generateComplianceRecommendations(policies),
       };
 
-      logger.debug({
-        correlationId,
-        compliant,
-        overallScore,
-        criticalViolations,
-      }, '[TTL_VALIDATION] Compliance check completed');
+      logger.debug(
+        {
+          correlationId,
+          compliant,
+          overallScore,
+          criticalViolations,
+        },
+        '[TTL_VALIDATION] Compliance check completed'
+      );
 
       return compliance;
-
     } catch (error) {
-      logger.error({
-        correlationId,
-        policyName: policy.name,
-        error: error.message,
-      }, '[TTL_VALIDATION] Compliance check failed');
+      logger.error(
+        {
+          correlationId,
+          policyName: policy.name,
+          error: error.message,
+        },
+        '[TTL_VALIDATION] Compliance check failed'
+      );
 
       throw error;
     }
@@ -743,16 +784,19 @@ export class TTLValidationService extends EventEmitter {
     options: TTLValidationOptions,
     correlationId: string
   ): Promise<TTLDryRunPredictions> {
-    logger.debug({
-      correlationId,
-      policyName: policy.name,
-    }, '[TTL_VALIDATION] Generating dry-run predictions');
+    logger.debug(
+      {
+        correlationId,
+        policyName: policy.name,
+      },
+      '[TTL_VALIDATION] Generating dry-run predictions'
+    );
 
     try {
       const items = await this.getAffectedItems(policy, options);
 
       // Generate expiration predictions
-      const expirations: ItemExpirationPrediction[] = items.map(item => ({
+      const expirations: ItemExpirationPrediction[] = items.map((item) => ({
         itemId: item.id || 'unknown',
         kind: item.kind,
         currentPolicy: this.getCurrentPolicy(item),
@@ -780,20 +824,25 @@ export class TTLValidationService extends EventEmitter {
         costImplications,
       };
 
-      logger.debug({
-        correlationId,
-        expirationCount: expirations.length,
-        timelinePoints: timeline.length,
-      }, '[TTL_VALIDATION] Dry-run predictions generated');
+      logger.debug(
+        {
+          correlationId,
+          expirationCount: expirations.length,
+          timelinePoints: timeline.length,
+        },
+        '[TTL_VALIDATION] Dry-run predictions generated'
+      );
 
       return predictions;
-
     } catch (error) {
-      logger.error({
-        correlationId,
-        policyName: policy.name,
-        error: error.message,
-      }, '[TTL_VALIDATION] Dry-run prediction failed');
+      logger.error(
+        {
+          correlationId,
+          policyName: policy.name,
+          error: error.message,
+        },
+        '[TTL_VALIDATION] Dry-run prediction failed'
+      );
 
       throw error;
     }
@@ -819,7 +868,8 @@ export class TTLValidationService extends EventEmitter {
     this.validationRules.set('max_duration', {
       name: 'max_duration',
       validate: (policy: TTLPolicy) => {
-        if (policy.durationMs > 10 * 365 * 24 * 60 * 60 * 1000) { // 10 years
+        if (policy.durationMs > 10 * 365 * 24 * 60 * 60 * 1000) {
+          // 10 years
           return {
             valid: false,
             message: 'Duration cannot exceed 10 years',
@@ -854,12 +904,18 @@ export class TTLValidationService extends EventEmitter {
     };
   }
 
-  private validateValidationRule(rule: unknown): { errors: ValidationError[]; warnings: ValidationWarning[] } {
+  private validateValidationRule(rule: unknown): {
+    errors: ValidationError[];
+    warnings: ValidationWarning[];
+  } {
     // Implementation for validation rule validation
     return { errors: [], warnings: [] };
   }
 
-  private async getAffectedItems(policy: TTLPolicy, options: TTLValidationOptions): Promise<KnowledgeItem[]> {
+  private async getAffectedItems(
+    policy: TTLPolicy,
+    options: TTLValidationOptions
+  ): Promise<KnowledgeItem[]> {
     // Implementation for getting affected items
     return [];
   }
@@ -879,7 +935,10 @@ export class TTLValidationService extends EventEmitter {
     return false;
   }
 
-  private async calculateStorageImpact(items: KnowledgeItem[], policy?: TTLPolicy): Promise<unknown> {
+  private async calculateStorageImpact(
+    items: KnowledgeItem[],
+    policy?: TTLPolicy
+  ): Promise<unknown> {
     // Implementation for storage impact calculation
     return {
       bytesSaved: 0,
@@ -887,7 +946,10 @@ export class TTLValidationService extends EventEmitter {
     };
   }
 
-  private async calculatePerformanceImpact(items: KnowledgeItem[], policy?: TTLPolicy): Promise<unknown> {
+  private async calculatePerformanceImpact(
+    items: KnowledgeItem[],
+    policy?: TTLPolicy
+  ): Promise<unknown> {
     // Implementation for performance impact calculation
     return {
       querySpeedImprovement: 0,
@@ -895,7 +957,10 @@ export class TTLValidationService extends EventEmitter {
     };
   }
 
-  private async calculateBusinessImpact(items: KnowledgeItem[], policy?: TTLPolicy): Promise<unknown> {
+  private async calculateBusinessImpact(
+    items: KnowledgeItem[],
+    policy?: TTLPolicy
+  ): Promise<unknown> {
     // Implementation for business impact calculation
     return {
       riskLevel: 'low',
@@ -915,17 +980,26 @@ export class TTLValidationService extends EventEmitter {
     return [];
   }
 
-  private generateItemRecommendations(errors: ValidationError[], warnings: ValidationWarning[]): string[] {
+  private generateItemRecommendations(
+    errors: ValidationError[],
+    warnings: ValidationWarning[]
+  ): string[] {
     // Implementation for generating item recommendations
     return [];
   }
 
-  private async generateItemPredictions(items: KnowledgeItem[], policy?: TTLPolicy): Promise<TTLDryRunPredictions> {
+  private async generateItemPredictions(
+    items: KnowledgeItem[],
+    policy?: TTLPolicy
+  ): Promise<TTLDryRunPredictions> {
     // Implementation for generating item predictions
     return this.getEmptyPredictions();
   }
 
-  private async checkItemsCompliance(items: KnowledgeItem[], policy?: TTLPolicy): Promise<TTLComplianceStatus> {
+  private async checkItemsCompliance(
+    items: KnowledgeItem[],
+    policy?: TTLPolicy
+  ): Promise<TTLComplianceStatus> {
     // Implementation for checking items compliance
     return this.getEmptyComplianceStatus();
   }
@@ -1000,17 +1074,26 @@ export class TTLValidationService extends EventEmitter {
     return false;
   }
 
-  private generateCleanupTimeline(expirations: ItemExpirationPrediction[], policy: TTLPolicy): TTLCleanupTimeline[] {
+  private generateCleanupTimeline(
+    expirations: ItemExpirationPrediction[],
+    policy: TTLPolicy
+  ): TTLCleanupTimeline[] {
     // Implementation for cleanup timeline generation
     return [];
   }
 
-  private async predictResourceUtilization(items: KnowledgeItem[], policy: TTLPolicy): Promise<ResourceUtilizationPrediction[]> {
+  private async predictResourceUtilization(
+    items: KnowledgeItem[],
+    policy: TTLPolicy
+  ): Promise<ResourceUtilizationPrediction[]> {
     // Implementation for resource utilization prediction
     return [];
   }
 
-  private async calculateCostImplications(items: KnowledgeItem[], policy: TTLPolicy): Promise<TTCostImplications> {
+  private async calculateCostImplications(
+    items: KnowledgeItem[],
+    policy: TTLPolicy
+  ): Promise<TTCostImplications> {
     // Implementation for cost implications calculation
     return {
       storageCosts: { current: 0, predicted: 0, savings: 0, savingsPercentage: 0 },

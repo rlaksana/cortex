@@ -1,6 +1,4 @@
-﻿// @ts-nocheck
 // EMERGENCY ROLLBACK: Monitoring system type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Alert Rules Engine for MCP Cortex
@@ -10,7 +8,6 @@
  * - threshold checks with hysteresis
  * - noisy signal filtering and debouncing
  */
-
 
 export interface HysteresisConfig {
   threshold: number;
@@ -36,11 +33,7 @@ export function evaluateCondition(
   operator: 'gt' | 'lt' | 'eq' | 'ne' | 'gte' | 'lte' | 'in' | 'not_in',
   threshold: unknown
 ): boolean;
-export function evaluateCondition(
-  value: unknown,
-  operator: string,
-  threshold: unknown
-): boolean {
+export function evaluateCondition(value: unknown, operator: string, threshold: unknown): boolean {
   try {
     if (operator === 'gt') return Number(value) > Number(threshold);
     if (operator === 'lt') return Number(value) < Number(threshold);
@@ -83,7 +76,7 @@ export async function withHysteresis(
 ): Promise<boolean> {
   const start = Date.now();
   // Simple implementation: wait until threshold is crossed for delayMs
-   
+
   while (Date.now() - start < (config.delayMs ?? 0)) {
     try {
       const v = await metricFetcher();
@@ -107,7 +100,7 @@ export async function debounceSignal<T>(
 ): Promise<boolean> {
   const start = Date.now();
   let ok = true;
-   
+
   while (Date.now() - start < windowMs) {
     try {
       const v = await signal();

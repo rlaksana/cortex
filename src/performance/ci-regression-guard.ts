@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ULTIMATE FINAL EMERGENCY ROLLBACK: Remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * CI Performance Regression Guard
@@ -13,7 +11,7 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 
-import type {PerformanceTestResult } from './performance-harness.js';
+import type { PerformanceTestResult, PerformanceRegression } from './performance-harness.js';
 import type { PerformanceTestConfig } from './performance-targets.js';
 
 export interface RegressionGuardConfig {
@@ -153,7 +151,7 @@ export class CIRegressionGuard {
       trendWindowSize: 10,
       autoUpdateBaseline: true,
       performanceGateEnabled: true,
-      ...config
+      ...config,
     };
 
     this.ensureDirectories();
@@ -195,7 +193,45 @@ export class CIRegressionGuard {
 
     const regressions = this.detectRegressions(result, baseline);
     const improvements = this.detectImprovements(result, baseline);
-    const assessment = this.assessPerformance(regressions, improvements);
+
+    // Convert to PerformanceRegression format for assessment
+    const regressionAnalysis: PerformanceRegression[] = regressions.map(reg => ({
+      testName: result.config.name,
+      detected: true,
+      details: [{
+        metric: reg.metric,
+        baseline: reg.baseline,
+        current: reg.current,
+        change: reg.change,
+        changePercentage: reg.changePercentage,
+        significance: reg.severity === 'critical' ? 'major' : reg.severity === 'major' ? 'major' : 'minor'
+      }],
+      impact: {
+        severity: reg.severity === 'critical' ? 'critical' : reg.severity === 'major' ? 'high' : 'medium',
+        affectedOperations: [reg.metric],
+        recommendations: [`Investigate ${reg.metric} regression`]
+      }
+    }));
+
+    const improvementAnalysis: PerformanceRegression[] = improvements.map(imp => ({
+      testName: result.config.name,
+      detected: false,
+      details: [{
+        metric: imp.metric,
+        baseline: imp.baseline,
+        current: imp.current,
+        change: imp.change,
+        changePercentage: imp.changePercentage,
+        significance: 'minor'
+      }],
+      impact: {
+        severity: 'low',
+        affectedOperations: [imp.metric],
+        recommendations: []
+      }
+    }));
+
+    const assessment = this.assessPerformance(regressionAnalysis, improvementAnalysis);
     const ciGateStatus = this.evaluateCIGate(assessment, regressions);
 
     const report: RegressionReport = {
@@ -206,7 +242,7 @@ export class CIRegressionGuard {
       regressions,
       improvements,
       assessment,
-      ciGateStatus
+      ciGateStatus,
     };
 
     // Store regression report
@@ -214,7 +250,9 @@ export class CIRegressionGuard {
 
     // Auto-update baseline if there are significant improvements
     if (this.config.autoUpdateBaseline && improvements.length > 0) {
-      const hasSignificantImprovement = improvements.some(imp => Math.abs(imp.changePercentage) > 10);
+      const hasSignificantImprovement = improvements.some(
+        (imp) => Math.abs(imp.changePercentage) > 10
+      );
       if (hasSignificantImprovement) {
         await this.updateBaseline(result);
       }
@@ -226,7 +264,10 @@ export class CIRegressionGuard {
   /**
    * Detect performance regressions
    */
-  private detectRegressions(result: PerformanceTestResult, baseline: BaselineEntry): Array<{
+  private detectRegressions(
+    result: PerformanceTestResult,
+    baseline: BaselineEntry
+  ): Array<{
     metric: string;
     baseline: number;
     current: number;
@@ -240,12 +281,48 @@ export class CIRegressionGuard {
     const baselineMetrics = baseline.metrics;
 
     const metricDefinitions = [
-      { name: 'p50_latency', current: currentMetrics.latencies.p50, baseline: baselineMetrics.latencies.p50, target: 500, higherIsWorse: true },
-      { name: 'p95_latency', current: currentMetrics.latencies.p95, baseline: baselineMetrics.latencies.p95, target: 1000, higherIsWorse: true },
-      { name: 'p99_latency', current: currentMetrics.latencies.p99, baseline: baselineMetrics.latencies.p99, target: 2000, higherIsWorse: true },
-      { name: 'throughput', current: currentMetrics.throughput, baseline: baselineMetrics.throughput, target: 100, higherIsWorse: false },
-      { name: 'error_rate', current: currentMetrics.errorRate, baseline: baselineMetrics.errorRate, target: 1, higherIsWorse: true },
-      { name: 'memory_usage', current: currentMetrics.memoryUsage.peak, baseline: baselineMetrics.memoryUsage.peak, target: 512 * 1024 * 1024, higherIsWorse: true }
+      {
+        name: 'p50_latency',
+        current: currentMetrics.latencies.p50,
+        baseline: baselineMetrics.latencies.p50,
+        target: 500,
+        higherIsWorse: true,
+      },
+      {
+        name: 'p95_latency',
+        current: currentMetrics.latencies.p95,
+        baseline: baselineMetrics.latencies.p95,
+        target: 1000,
+        higherIsWorse: true,
+      },
+      {
+        name: 'p99_latency',
+        current: currentMetrics.latencies.p99,
+        baseline: baselineMetrics.latencies.p99,
+        target: 2000,
+        higherIsWorse: true,
+      },
+      {
+        name: 'throughput',
+        current: currentMetrics.throughput,
+        baseline: baselineMetrics.throughput,
+        target: 100,
+        higherIsWorse: false,
+      },
+      {
+        name: 'error_rate',
+        current: currentMetrics.errorRate,
+        baseline: baselineMetrics.errorRate,
+        target: 1,
+        higherIsWorse: true,
+      },
+      {
+        name: 'memory_usage',
+        current: currentMetrics.memoryUsage.peak,
+        baseline: baselineMetrics.memoryUsage.peak,
+        target: 512 * 1024 * 1024,
+        higherIsWorse: true,
+      },
     ];
 
     for (const metric of metricDefinitions) {
@@ -273,7 +350,7 @@ export class CIRegressionGuard {
           change,
           changePercentage,
           severity,
-          target: metric.target
+          target: metric.target,
         });
       }
     }
@@ -284,7 +361,10 @@ export class CIRegressionGuard {
   /**
    * Detect performance improvements
    */
-  private detectImprovements(result: PerformanceTestResult, baseline: BaselineEntry): Array<{
+  private detectImprovements(
+    result: PerformanceTestResult,
+    baseline: BaselineEntry
+  ): Array<{
     metric: string;
     baseline: number;
     current: number;
@@ -296,12 +376,42 @@ export class CIRegressionGuard {
     const baselineMetrics = baseline.metrics;
 
     const metricDefinitions = [
-      { name: 'p50_latency', current: currentMetrics.latencies.p50, baseline: baselineMetrics.latencies.p50, higherIsWorse: true },
-      { name: 'p95_latency', current: currentMetrics.latencies.p95, baseline: baselineMetrics.latencies.p95, higherIsWorse: true },
-      { name: 'p99_latency', current: currentMetrics.latencies.p99, baseline: baselineMetrics.latencies.p99, higherIsWorse: true },
-      { name: 'throughput', current: currentMetrics.throughput, baseline: baselineMetrics.throughput, higherIsWorse: false },
-      { name: 'error_rate', current: currentMetrics.errorRate, baseline: baselineMetrics.errorRate, higherIsWorse: true },
-      { name: 'memory_usage', current: currentMetrics.memoryUsage.peak, baseline: baselineMetrics.memoryUsage.peak, higherIsWorse: true }
+      {
+        name: 'p50_latency',
+        current: currentMetrics.latencies.p50,
+        baseline: baselineMetrics.latencies.p50,
+        higherIsWorse: true,
+      },
+      {
+        name: 'p95_latency',
+        current: currentMetrics.latencies.p95,
+        baseline: baselineMetrics.latencies.p95,
+        higherIsWorse: true,
+      },
+      {
+        name: 'p99_latency',
+        current: currentMetrics.latencies.p99,
+        baseline: baselineMetrics.latencies.p99,
+        higherIsWorse: true,
+      },
+      {
+        name: 'throughput',
+        current: currentMetrics.throughput,
+        baseline: baselineMetrics.throughput,
+        higherIsWorse: false,
+      },
+      {
+        name: 'error_rate',
+        current: currentMetrics.errorRate,
+        baseline: baselineMetrics.errorRate,
+        higherIsWorse: true,
+      },
+      {
+        name: 'memory_usage',
+        current: currentMetrics.memoryUsage.peak,
+        baseline: baselineMetrics.memoryUsage.peak,
+        higherIsWorse: true,
+      },
     ];
 
     for (const metric of metricDefinitions) {
@@ -318,7 +428,7 @@ export class CIRegressionGuard {
           baseline: metric.baseline,
           current: metric.current,
           change,
-          changePercentage
+          changePercentage,
         });
       }
     }
@@ -329,14 +439,17 @@ export class CIRegressionGuard {
   /**
    * Assess overall performance
    */
-  private assessPerformance(regressions: unknown[], improvements: unknown[]): {
+  private assessPerformance(
+    regressions: PerformanceRegression[],
+    improvements: PerformanceRegression[]
+  ): {
     status: 'pass' | 'warning' | 'fail';
     summary: string;
     recommendations: string[];
   } {
-    const criticalRegressions = regressions.filter(r => r.severity === 'critical');
-    const majorRegressions = regressions.filter(r => r.severity === 'major');
-    const minorRegressions = regressions.filter(r => r.severity === 'minor');
+    const criticalRegressions = regressions.filter((r) => r.impact.severity === 'critical');
+    const majorRegressions = regressions.filter((r) => r.impact.severity === 'high');
+    const minorRegressions = regressions.filter((r) => r.impact.severity === 'medium');
 
     let status: 'pass' | 'warning' | 'fail';
     let summary: string;
@@ -345,7 +458,9 @@ export class CIRegressionGuard {
     if (criticalRegressions.length > 0) {
       status = 'fail';
       summary = `❌ CRITICAL PERFORMANCE REGRESSIONS DETECTED: ${criticalRegressions.length} critical, ${majorRegressions.length} major, ${minorRegressions.length} minor`;
-      recommendations.push('🚨 BLOCK DEPLOYMENT - Critical performance regressions must be resolved');
+      recommendations.push(
+        '🚨 BLOCK DEPLOYMENT - Critical performance regressions must be resolved'
+      );
       recommendations.push('Investigate and fix critical regressions before proceeding');
     } else if (majorRegressions.length > 0) {
       status = 'warning';
@@ -372,19 +487,22 @@ export class CIRegressionGuard {
   /**
    * Evaluate CI gate status
    */
-  private evaluateCIGate(assessment: {
-    status: 'pass' | 'warning' | 'fail';
-    summary: string;
-    recommendations: string[];
-  }, regressions: Array<{
-    metric: string;
-    baseline: number;
-    current: number;
-    change: number;
-    changePercentage: number;
-    severity: 'critical' | 'major' | 'minor';
-    target: number;
-  }>): {
+  private evaluateCIGate(
+    assessment: {
+      status: 'pass' | 'warning' | 'fail';
+      summary: string;
+      recommendations: string[];
+    },
+    regressions: Array<{
+      metric: string;
+      baseline: number;
+      current: number;
+      change: number;
+      changePercentage: number;
+      severity: 'critical' | 'major' | 'minor';
+      target: number;
+    }>
+  ): {
     passed: boolean;
     reason?: string;
     canProceed: boolean;
@@ -393,18 +511,18 @@ export class CIRegressionGuard {
       return {
         passed: true,
         reason: 'Performance gate disabled',
-        canProceed: true
+        canProceed: true,
       };
     }
 
-    const criticalRegressions = regressions.filter(r => r.severity === 'critical');
-    const majorRegressions = regressions.filter(r => r.severity === 'major');
+    const criticalRegressions = regressions.filter((r) => r.severity === 'critical');
+    const majorRegressions = regressions.filter((r) => r.severity === 'major');
 
     if (criticalRegressions.length > 0) {
       return {
         passed: false,
         reason: `Critical performance regressions detected: ${criticalRegressions.length}`,
-        canProceed: false
+        canProceed: false,
       };
     }
 
@@ -412,7 +530,7 @@ export class CIRegressionGuard {
       return {
         passed: false,
         reason: `Major performance regressions detected: ${majorRegressions.length}`,
-        canProceed: false
+        canProceed: false,
       };
     }
 
@@ -420,13 +538,13 @@ export class CIRegressionGuard {
       return {
         passed: false,
         reason: assessment.summary,
-        canProceed: false
+        canProceed: false,
       };
     }
 
     return {
       passed: true,
-      canProceed: true
+      canProceed: true,
     };
   }
 
@@ -444,13 +562,13 @@ export class CIRegressionGuard {
       assessment: {
         status: 'warning',
         summary: '⚠️ NO BASELINE: No baseline available for comparison',
-        recommendations: ['Consider running baseline tests to establish performance benchmarks']
+        recommendations: ['Consider running baseline tests to establish performance benchmarks'],
       },
       ciGateStatus: {
         passed: true,
         reason: 'No baseline to compare against',
-        canProceed: true
-      }
+        canProceed: true,
+      },
     };
   }
 
@@ -478,7 +596,7 @@ export class CIRegressionGuard {
       summary: result.results.summary,
       timestamp: result.metadata.timestamp,
       testId: result.metadata.testId,
-      environment: result.metadata.environment
+      environment: result.metadata.environment,
     };
 
     const baselines = this.baselineCache.get(result.config.name) || [];
@@ -520,13 +638,13 @@ export class CIRegressionGuard {
     content += `**Generated:** ${new Date().toISOString()}\n`;
     content += `**Total Tests:** ${reports.length}\n\n`;
 
-    const passedTests = reports.filter(r => r.ciGateStatus.passed).length;
+    const passedTests = reports.filter((r) => r.ciGateStatus.passed).length;
     const failedTests = reports.length - passedTests;
 
     content += `## Executive Summary\n\n`;
     content += `- **Passed:** ${passedTests}/${reports.length} tests\n`;
     content += `- **Failed:** ${failedTests} tests\n`;
-    content += `- **Regressions Detected:** ${reports.filter(r => r.regressionDetected).length} tests\n\n`;
+    content += `- **Regressions Detected:** ${reports.filter((r) => r.regressionDetected).length} tests\n\n`;
 
     // Test results table
     content += `## Test Results\n\n`;
@@ -541,7 +659,7 @@ export class CIRegressionGuard {
     }
 
     // Detailed regression information
-    const regressionReports = reports.filter(r => r.regressionDetected);
+    const regressionReports = reports.filter((r) => r.regressionDetected);
     if (regressionReports.length > 0) {
       content += `\n## Regression Details\n\n`;
 
@@ -582,7 +700,7 @@ export class CIRegressionGuard {
    * Send notifications
    */
   private async sendNotifications(reports: RegressionReport[]): Promise<void> {
-    const failedReports = reports.filter(r => !r.ciGateStatus.passed);
+    const failedReports = reports.filter((r) => !r.ciGateStatus.passed);
 
     if (failedReports.length === 0) {
       return; // No notifications needed for passing tests
@@ -605,13 +723,13 @@ export class CIRegressionGuard {
    * Build notification message
    */
   private buildNotificationMessage(reports: RegressionReport[]): string {
-    const failedReports = reports.filter(r => !r.ciGateStatus.passed);
+    const failedReports = reports.filter((r) => !r.ciGateStatus.passed);
     const totalTests = reports.length;
 
     let message = `🚨 **Performance Regression Alert**\n\n`;
     message += `**Total Tests:** ${totalTests}\n`;
     message += `**Failed Tests:** ${failedReports.length}\n`;
-    message += `**Success Rate:** ${((totalTests - failedReports.length) / totalTests * 100).toFixed(1)}%\n\n`;
+    message += `**Success Rate:** ${(((totalTests - failedReports.length) / totalTests) * 100).toFixed(1)}%\n\n`;
 
     if (failedReports.length > 0) {
       message += `**Failed Tests:**\n`;
@@ -687,14 +805,15 @@ export class CIRegressionGuard {
     reason: string;
     blockedTests: string[];
   } {
-    const failedReports = reports.filter(r => !r.ciGateStatus.passed);
+    const failedReports = reports.filter((r) => !r.ciGateStatus.passed);
 
     return {
       canDeploy: failedReports.length === 0,
-      reason: failedReports.length > 0
-        ? `Performance regressions detected in ${failedReports.length} tests`
-        : 'All performance tests passed',
-      blockedTests: failedReports.map(r => r.testName)
+      reason:
+        failedReports.length > 0
+          ? `Performance regressions detected in ${failedReports.length} tests`
+          : 'All performance tests passed',
+      blockedTests: failedReports.map((r) => r.testName),
     };
   }
 
@@ -707,12 +826,14 @@ export class CIRegressionGuard {
     artifacts: string[];
     metrics: Record<string, unknown>;
   } {
-    const failedReports = reports.filter(r => !r.ciGateStatus.passed);
+    const failedReports = reports.filter((r) => !r.ciGateStatus.passed);
     const exitCode = failedReports.length > 0 ? 1 : 0;
 
     const summary = `Performance Tests: ${reports.length - failedReports.length}/${reports.length} passed`;
 
-    const artifacts = reports.map(r => join(this.config.reportsDir, `${r.testName}-${r.timestamp}-regression.json`));
+    const artifacts = reports.map((r) =>
+      join(this.config.reportsDir, `${r.testName}-${r.timestamp}-regression.json`)
+    );
 
     const metrics: Record<string, unknown> = {};
     for (const report of reports) {
@@ -720,7 +841,7 @@ export class CIRegressionGuard {
         status: report.ciGateStatus.passed ? 'passed' : 'failed',
         regressions: report.regressions.length,
         improvements: report.improvements.length,
-        assessment: report.assessment.status
+        assessment: report.assessment.status,
       };
     }
 
@@ -728,7 +849,7 @@ export class CIRegressionGuard {
       exitCode,
       summary,
       artifacts,
-      metrics
+      metrics,
     };
   }
 }

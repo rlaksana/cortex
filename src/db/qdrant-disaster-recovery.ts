@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Qdrant Comprehensive Disaster Recovery Procedures
  *
@@ -18,14 +14,11 @@
  * @since 2025
  */
 
-
 import { type QdrantClient } from '@qdrant/js-client-rest';
 
 import { logger } from '@/utils/logger.js';
 
-import type {
-  BackupConfiguration
-} from './qdrant-backup-config.js';
+import type { BackupConfiguration } from './qdrant-backup-config.js';
 
 /**
  * Disaster severity levels
@@ -431,7 +424,9 @@ export class DisasterRecoveryManager {
   /**
    * Declare disaster incident
    */
-  async declareIncident(declaration: Omit<IncidentDeclaration, 'incidentId' | 'declaredAt'>): Promise<{
+  async declareIncident(
+    declaration: Omit<IncidentDeclaration, 'incidentId' | 'declaredAt'>
+  ): Promise<{
     incidentId: string;
     success: boolean;
     activatedPlans: string[];
@@ -446,12 +441,15 @@ export class DisasterRecoveryManager {
     };
 
     try {
-      logger.info({
-        incidentId,
-        disasterType: declaration.disasterType,
-        severity: declaration.severity,
-        declaredBy: declaration.declaredBy,
-      }, 'Declaring disaster incident');
+      logger.info(
+        {
+          incidentId,
+          disasterType: declaration.disasterType,
+          severity: declaration.severity,
+          declaredBy: declaration.declaredBy,
+        },
+        'Declaring disaster incident'
+      );
 
       // Store incident
       this.activeIncidents.set(incidentId, incident);
@@ -465,11 +463,14 @@ export class DisasterRecoveryManager {
       // Start incident monitoring
       await this.startIncidentMonitoring(incident);
 
-      logger.info({
-        incidentId,
-        activatedPlans: activatedPlans.length,
-        notificationsSent,
-      }, 'Disaster incident declared successfully');
+      logger.info(
+        {
+          incidentId,
+          activatedPlans: activatedPlans.length,
+          notificationsSent,
+        },
+        'Disaster incident declared successfully'
+      );
 
       return {
         incidentId,
@@ -478,7 +479,6 @@ export class DisasterRecoveryManager {
         notificationsSent,
         errors: [],
       };
-
     } catch (error) {
       logger.error({ incidentId, error }, 'Failed to declare disaster incident');
       return {
@@ -524,12 +524,15 @@ export class DisasterRecoveryManager {
         throw new Error(`Recovery plan not found: ${planId}`);
       }
 
-      logger.info({
-        executionId,
-        incidentId,
-        planId,
-        executionMode: options.executionMode || 'manual',
-      }, 'Starting disaster recovery plan execution');
+      logger.info(
+        {
+          executionId,
+          incidentId,
+          planId,
+          executionMode: options.executionMode || 'manual',
+        },
+        'Starting disaster recovery plan execution'
+      );
 
       // Create execution record
       const execution: RecoveryPlanExecution = {
@@ -547,7 +550,7 @@ export class DisasterRecoveryManager {
           utilized: [],
           blocked: [],
         },
-        checkpoints: plan.phases.map(phase => ({
+        checkpoints: plan.phases.map((phase) => ({
           name: `${phase.id}-checkpoint`,
           status: 'pending',
         })),
@@ -563,11 +566,14 @@ export class DisasterRecoveryManager {
 
       for (const phase of plan.phases) {
         try {
-          logger.info({
-            executionId,
-            phaseId: phase.id,
-            phaseName: phase.name,
-          }, 'Executing recovery phase');
+          logger.info(
+            {
+              executionId,
+              phaseId: phase.id,
+              phaseName: phase.name,
+            },
+            'Executing recovery phase'
+          );
 
           execution.currentPhase = phase.id;
 
@@ -581,18 +587,22 @@ export class DisasterRecoveryManager {
           execution.progress = Math.round((completedPhases.length / plan.phases.length) * 100);
 
           // Mark phase checkpoint as completed
-          const checkpoint = execution.checkpoints.find(cp => cp.name === `${phase.id}-checkpoint`);
+          const checkpoint = execution.checkpoints.find(
+            (cp) => cp.name === `${phase.id}-checkpoint`
+          );
           if (checkpoint) {
             checkpoint.status = 'completed';
             checkpoint.completedAt = new Date().toISOString();
           }
 
-          logger.info({
-            executionId,
-            phaseId: phase.id,
-            progress: execution.progress,
-          }, 'Recovery phase completed');
-
+          logger.info(
+            {
+              executionId,
+              phaseId: phase.id,
+              progress: execution.progress,
+            },
+            'Recovery phase completed'
+          );
         } catch (error) {
           const errorMsg = `Phase ${phase.name} failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
           errors.push(errorMsg);
@@ -623,15 +633,18 @@ export class DisasterRecoveryManager {
 
       const recommendations = this.generateRecoveryRecommendations(execution, errors);
 
-      logger.info({
-        executionId,
-        incidentId,
-        planId,
-        success: execution.status === 'completed',
-        duration: execution.actualDuration,
-        completedPhases: completedPhases.length,
-        errors: errors.length,
-      }, 'Disaster recovery plan execution completed');
+      logger.info(
+        {
+          executionId,
+          incidentId,
+          planId,
+          success: execution.status === 'completed',
+          duration: execution.actualDuration,
+          completedPhases: completedPhases.length,
+          errors: errors.length,
+        },
+        'Disaster recovery plan execution completed'
+      );
 
       return {
         executionId,
@@ -641,9 +654,11 @@ export class DisasterRecoveryManager {
         errors,
         recommendations,
       };
-
     } catch (error) {
-      logger.error({ executionId, incidentId, planId, error }, 'Disaster recovery plan execution failed');
+      logger.error(
+        { executionId, incidentId, planId, error },
+        'Disaster recovery plan execution failed'
+      );
       return {
         executionId,
         success: false,
@@ -662,7 +677,9 @@ export class DisasterRecoveryManager {
     incidentId: string,
     executionId: string,
     options: {
-      validationTypes?: Array<'functional' | 'performance' | 'security' | 'data-integrity' | 'user-acceptance'>;
+      validationTypes?: Array<
+        'functional' | 'performance' | 'security' | 'data-integrity' | 'user-acceptance'
+      >;
       skipUserAcceptance?: boolean;
       requireSignOff?: boolean;
     } = {}
@@ -670,11 +687,14 @@ export class DisasterRecoveryManager {
     const validationId = this.generateValidationId();
 
     try {
-      logger.info({
-        validationId,
-        incidentId,
-        executionId,
-      }, 'Starting post-recovery validation');
+      logger.info(
+        {
+          validationId,
+          incidentId,
+          executionId,
+        },
+        'Starting post-recovery validation'
+      );
 
       const incident = this.activeIncidents.get(incidentId);
       const execution = this.activeRecoveries.get(executionId);
@@ -688,7 +708,7 @@ export class DisasterRecoveryManager {
         'performance',
         'security',
         'data-integrity',
-        'user-acceptance'
+        'user-acceptance',
       ];
 
       if (options.skipUserAcceptance) {
@@ -696,22 +716,38 @@ export class DisasterRecoveryManager {
       }
 
       // Perform validation tests
-      const validationResults = await this.executeValidationTests(validationTypes, incident, execution);
+      const validationResults = await this.executeValidationTests(
+        validationTypes,
+        incident,
+        execution
+      );
 
       // Calculate overall score
-      const overallScore = validationResults.reduce((sum, result) => sum + result.score, 0) / validationResults.length;
+      const overallScore =
+        validationResults.reduce((sum, result) => sum + result.score, 0) / validationResults.length;
 
       // Determine acceptance criteria
       const acceptanceCriteria = await this.evaluateAcceptanceCriteria(validationResults, incident);
 
       // Identify residual risks
-      const residualRisks = await this.identifyResidualRisks(incident, execution, validationResults);
+      const residualRisks = await this.identifyResidualRisks(
+        incident,
+        execution,
+        validationResults
+      );
 
       // Capture lessons learned
-      const lessonsLearned = await this.captureLessonsLearned(incident, execution, validationResults);
+      const lessonsLearned = await this.captureLessonsLearned(
+        incident,
+        execution,
+        validationResults
+      );
 
       // Generate recommendations
-      const recommendations = await this.generateValidationRecommendations(validationResults, residualRisks);
+      const recommendations = await this.generateValidationRecommendations(
+        validationResults,
+        residualRisks
+      );
 
       const validation: PostRecoveryValidation = {
         validationId,
@@ -743,18 +779,23 @@ export class DisasterRecoveryManager {
       this.validationHistory.set(validationId, validation);
       await this.saveValidationResult(validation);
 
-      logger.info({
-        validationId,
-        overallScore,
-        acceptanceCriteriaMet: acceptanceCriteria.met.length,
-        residualRisks: residualRisks.length,
-        recommendations: recommendations.length,
-      }, 'Post-recovery validation completed');
+      logger.info(
+        {
+          validationId,
+          overallScore,
+          acceptanceCriteriaMet: acceptanceCriteria.met.length,
+          residualRisks: residualRisks.length,
+          recommendations: recommendations.length,
+        },
+        'Post-recovery validation completed'
+      );
 
       return validation;
-
     } catch (error) {
-      logger.error({ validationId, incidentId, executionId, error }, 'Post-recovery validation failed');
+      logger.error(
+        { validationId, incidentId, executionId, error },
+        'Post-recovery validation failed'
+      );
       throw error;
     }
   }
@@ -803,7 +844,7 @@ export class DisasterRecoveryManager {
       const readiness = await this.assessReadiness();
 
       // Get active incidents
-      const activeIncidents = Array.from(this.activeIncidents.values()).map(incident => ({
+      const activeIncidents = Array.from(this.activeIncidents.values()).map((incident) => ({
         incidentId: incident.incidentId,
         disasterType: incident.disasterType,
         severity: incident.severity,
@@ -812,7 +853,7 @@ export class DisasterRecoveryManager {
       }));
 
       // Get active recoveries
-      const activeRecoveries = Array.from(this.activeRecoveries.values()).map(execution => ({
+      const activeRecoveries = Array.from(this.activeRecoveries.values()).map((execution) => ({
         executionId: execution.planId + '_' + execution.incidentId,
         incidentId: execution.incidentId,
         planId: execution.planId,
@@ -825,7 +866,7 @@ export class DisasterRecoveryManager {
       const recentValidations = Array.from(this.validationHistory.values())
         .sort((a, b) => new Date(b.validatedAt).getTime() - new Date(a.validatedAt).getTime())
         .slice(0, 10)
-        .map(validation => ({
+        .map((validation) => ({
           validationId: validation.validationId,
           incidentId: validation.incidentId,
           overallScore: validation.overallScore,
@@ -842,7 +883,6 @@ export class DisasterRecoveryManager {
         recentValidations,
         upcomingDrills,
       };
-
     } catch (error) {
       logger.error({ error }, 'Failed to get disaster recovery status');
       throw error;
@@ -880,17 +920,20 @@ export class DisasterRecoveryManager {
     const participants = options.participants || [];
     const duration = options.duration || 2; // Default 2 hours
 
-    logger.info({
-      testId,
-      planId,
-      scenario,
-      testType: options.testType || 'tabletop',
-      testDate,
-      participants: participants.length,
-    }, 'Scheduling disaster recovery test');
+    logger.info(
+      {
+        testId,
+        planId,
+        scenario,
+        testType: options.testType || 'tabletop',
+        testDate,
+        participants: participants.length,
+      },
+      'Scheduling disaster recovery test'
+    );
 
     // Implementation would schedule the test
-    const testScenario = plan.testing.scenarios.find(s => s.name === scenario);
+    const testScenario = plan.testing.scenarios.find((s) => s.name === scenario);
     const successCriteria = testScenario?.successCriteria || [
       'All critical recovery steps completed successfully',
       'Recovery time objectives met',
@@ -1194,7 +1237,12 @@ export class DisasterRecoveryManager {
               level: 1,
               delay: 0,
               contacts: [
-                { name: 'On-call Engineer', role: 'primary-responder', contact: 'oncall@example.com', preferred: true },
+                {
+                  name: 'On-call Engineer',
+                  role: 'primary-responder',
+                  contact: 'oncall@example.com',
+                  preferred: true,
+                },
               ],
               message: 'Disaster incident declared - immediate response required',
             },
@@ -1202,8 +1250,18 @@ export class DisasterRecoveryManager {
               level: 2,
               delay: 15,
               contacts: [
-                { name: 'Engineering Manager', role: 'incident-commander', contact: 'manager@example.com', preferred: true },
-                { name: 'Technical Lead', role: 'technical-lead', contact: 'lead@example.com', preferred: false },
+                {
+                  name: 'Engineering Manager',
+                  role: 'incident-commander',
+                  contact: 'manager@example.com',
+                  preferred: true,
+                },
+                {
+                  name: 'Technical Lead',
+                  role: 'technical-lead',
+                  contact: 'lead@example.com',
+                  preferred: false,
+                },
               ],
               message: 'Disaster incident escalating - management intervention required',
             },
@@ -1211,8 +1269,18 @@ export class DisasterRecoveryManager {
               level: 3,
               delay: 30,
               contacts: [
-                { name: 'CTO', role: 'executive-sponsor', contact: 'cto@example.com', preferred: true },
-                { name: 'VP Engineering', role: 'executive-sponsor', contact: 'vp@example.com', preferred: false },
+                {
+                  name: 'CTO',
+                  role: 'executive-sponsor',
+                  contact: 'cto@example.com',
+                  preferred: true,
+                },
+                {
+                  name: 'VP Engineering',
+                  role: 'executive-sponsor',
+                  contact: 'vp@example.com',
+                  preferred: false,
+                },
               ],
               message: 'Major disaster incident - executive notification',
             },
@@ -1240,7 +1308,12 @@ export class DisasterRecoveryManager {
               description: 'Complete data center outage simulation',
               simulationType: 'full',
               duration: 4,
-              participants: ['incident-commander', 'technical-lead', 'systems-administrator', 'database-administrator'],
+              participants: [
+                'incident-commander',
+                'technical-lead',
+                'systems-administrator',
+                'database-administrator',
+              ],
               successCriteria: [
                 'Recovery completed within RTO',
                 'Data integrity maintained',
@@ -1301,35 +1374,43 @@ export class DisasterRecoveryManager {
     logger.debug({ executionId, phaseId: phase.id }, 'Executing recovery phase procedures');
 
     for (const procedure of phase.procedures) {
-      logger.debug({
-        executionId,
-        phaseId: phase.id,
-        step: procedure.step,
-        action: procedure.action,
-      }, 'Executing recovery procedure');
-
-      // Simulate procedure execution
-      await new Promise(resolve => setTimeout(resolve, procedure.estimatedDuration * 100));
-
-      // Validate expected outcome
-      if (procedure.validationCriteria.length > 0) {
-        logger.debug({
+      logger.debug(
+        {
           executionId,
           phaseId: phase.id,
           step: procedure.step,
-          criteria: procedure.validationCriteria,
-        }, 'Validating procedure outcome');
+          action: procedure.action,
+        },
+        'Executing recovery procedure'
+      );
+
+      // Simulate procedure execution
+      await new Promise((resolve) => setTimeout(resolve, procedure.estimatedDuration * 100));
+
+      // Validate expected outcome
+      if (procedure.validationCriteria.length > 0) {
+        logger.debug(
+          {
+            executionId,
+            phaseId: phase.id,
+            step: procedure.step,
+            criteria: procedure.validationCriteria,
+          },
+          'Validating procedure outcome'
+        );
       }
     }
   }
 
   private async executeValidationTests(
-    validationTypes: Array<'functional' | 'performance' | 'security' | 'data-integrity' | 'user-acceptance'>,
+    validationTypes: Array<
+      'functional' | 'performance' | 'security' | 'data-integrity' | 'user-acceptance'
+    >,
     incident: IncidentDeclaration,
     execution: RecoveryPlanExecution
   ): Promise<PostRecoveryValidation['validationTypes']> {
     // Implementation would execute various validation tests
-    return validationTypes.map(type => ({
+    return validationTypes.map((type) => ({
       type,
       status: 'passed' as 'passed' | 'failed' | 'partial',
       score: 95 + Math.random() * 5, // Random score between 95-100
@@ -1353,7 +1434,7 @@ export class DisasterRecoveryManager {
     const notMet: string[] = [];
     const waived: string[] = [];
 
-    validationResults.forEach(result => {
+    validationResults.forEach((result) => {
       if (result.status === 'passed') {
         met.push(`${result.type} validation passed`);
       } else if (result.status === 'failed') {
@@ -1435,8 +1516,10 @@ export class DisasterRecoveryManager {
     const activatedPlans: string[] = [];
 
     for (const [planId, plan] of this.recoveryPlans) {
-      if (plan.disasterTypes.includes(incident.disasterType) &&
-          plan.severityLevels.includes(incident.severity)) {
+      if (
+        plan.disasterTypes.includes(incident.disasterType) &&
+        plan.severityLevels.includes(incident.severity)
+      ) {
         activatedPlans.push(planId);
         logger.info({ incidentId: incident.incidentId, planId }, 'Recovery plan activated');
       }
@@ -1452,11 +1535,14 @@ export class DisasterRecoveryManager {
     for (const contact of incident.emergencyContacts) {
       if (!contact.contacted) {
         // Implementation would send notification
-        logger.debug({
-          incidentId: incident.incidentId,
-          contact: contact.name,
-          role: contact.role,
-        }, 'Emergency contact notified');
+        logger.debug(
+          {
+            incidentId: incident.incidentId,
+            contact: contact.name,
+            role: contact.role,
+          },
+          'Emergency contact notified'
+        );
         notificationsSent++;
       }
     }
@@ -1486,12 +1572,14 @@ export class DisasterRecoveryManager {
     };
   }
 
-  private async getUpcomingDrills(): Promise<Array<{
-    planId: string;
-    scenario: string;
-    scheduledDate: string;
-    participants: string[];
-  }>> {
+  private async getUpcomingDrills(): Promise<
+    Array<{
+      planId: string;
+      scenario: string;
+      scheduledDate: string;
+      participants: string[];
+    }>
+  > {
     // Implementation would get upcoming drills
     return [];
   }
@@ -1559,7 +1647,10 @@ export class DisasterRecoveryManager {
   }
 
   private async saveRecoveryExecution(execution: RecoveryPlanExecution): Promise<void> {
-    logger.debug({ executionId: execution.planId + '_' + execution.incidentId }, 'Recovery execution saved');
+    logger.debug(
+      { executionId: execution.planId + '_' + execution.incidentId },
+      'Recovery execution saved'
+    );
   }
 
   private async saveValidationResult(validation: PostRecoveryValidation): Promise<void> {

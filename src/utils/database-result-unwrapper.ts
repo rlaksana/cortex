@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Database Result Unwrapper Utilities
  *
@@ -13,11 +9,9 @@
  * @since 2025
  */
 
-import type {
-  DatabaseError,
-  DatabaseResult} from '../types/database-generics.js';
-import {
-  isSuccessfulResult} from '../types/database-generics.js';
+import type { MemoryStoreResponse, StoreError } from '../types/core-interfaces.js';
+import type { DatabaseError, DatabaseResult } from '../types/database-generics.js';
+import { isSuccessfulResult } from '../types/database-generics.js';
 
 /**
  * Error thrown when DatabaseResult unwrapping fails
@@ -58,16 +52,37 @@ export function unwrapDatabaseResult<T>(
 }
 
 /**
+ * Safely unwrap a DatabaseResult<readonly T[]> to get mutable array data
+ *
+ * @param result - The DatabaseResult to unwrap
+ * @param context - Optional context for error reporting
+ * @returns The unwrapped mutable array
+ * @throws DatabaseResultUnwrapError if the result is unsuccessful
+ */
+export function unwrapDatabaseResultArray<T>(
+  result: DatabaseResult<readonly T[]>,
+  context?: Record<string, unknown>
+): T[] {
+  if (isSuccessfulResult(result)) {
+    return [...result.data];
+  }
+
+  const errorMessage = result.error?.message || 'Unknown database error';
+  throw new DatabaseResultUnwrapError(
+    `Database operation failed: ${errorMessage}`,
+    result.error,
+    context
+  );
+}
+
+/**
  * Safely unwrap a DatabaseResult<T> with a fallback value
  *
  * @param result - The DatabaseResult to unwrap
  * @param fallback - Fallback value if the result is unsuccessful
  * @returns The unwrapped data or fallback
  */
-export function unwrapDatabaseResultWithFallback<T>(
-  result: DatabaseResult<T>,
-  fallback: T
-): T {
+export function unwrapDatabaseResultWithFallback<T>(result: DatabaseResult<T>, fallback: T): T {
   if (isSuccessfulResult(result)) {
     return result.data;
   }
@@ -136,72 +151,73 @@ export function unwrapBatchDatabaseResults<T>(
  * Convert DatabaseResult wrapper types to interface-compatible return types
  * Specifically handles the conversion from DatabaseResult<MemoryStoreResponse> to MemoryStoreResponse
  */
-export function convertMemoryStoreResponse(result: DatabaseResult<{
-  items: unknown[];
-  summary: unknown;
-  stored: unknown[];
-  errors: unknown[];
-  autonomous_context: unknown;
-  observability: unknown;
-  meta: unknown;
-}>): {
-  items: unknown[];
-  summary: unknown;
-  stored: unknown[];
-  errors: unknown[];
-  skipped?: unknown[];
-  autonomous_context: unknown;
-  observability: unknown;
-  meta: unknown;
-} {
+export function convertMemoryStoreResponse(
+  result: DatabaseResult<MemoryStoreResponse>
+): MemoryStoreResponse {
   return unwrapDatabaseResult(result, { operation: 'convertMemoryStoreResponse' });
 }
 
 /**
  * Convert DatabaseResult delete response to interface-compatible format
  */
-export function convertDeleteResponse(result: DatabaseResult<{
-  deletedCount: number;
-  errors: readonly unknown[];
-}>): {
+export function convertDeleteResponse(
+  result: DatabaseResult<{
+    deletedCount: number;
+    errors: readonly StoreError[];
+  }>
+): {
   deleted: number;
-  errors: unknown[];
+  errors: StoreError[];
 } {
   const unwrapped = unwrapDatabaseResult(result, { operation: 'convertDeleteResponse' });
   return {
     deleted: unwrapped.deletedCount,
-    errors: [...unwrapped.errors]
+    errors: [...unwrapped.errors],
   };
 }
 
 /**
  * Convert DatabaseResult array response to interface-compatible format
  */
-export function convertArrayResponse<T>(result: DatabaseResult<readonly T[]>): T[] {
-  const unwrapped = unwrapDatabaseResult(result, { operation: 'convertArrayResponse' });
-  return [...unwrapped];
+export function convertArrayResponse<T>(
+  result: DatabaseResult<readonly T[]> | DatabaseResult<T[]>
+): T[] {
+  if (isSuccessfulResult(result)) {
+    return [...result.data];
+  } else {
+    const errorMessage = result.error?.message || 'Unknown database error';
+    throw new DatabaseResultUnwrapError(
+      `Database operation failed: ${errorMessage}`,
+      result.error,
+      { operation: 'convertArrayResponse' }
+    );
+  }
 }
 
 /**
  * Convert DatabaseResult search response to interface-compatible format
  */
-export function convertSearchResponse<T>(result: DatabaseResult<readonly T[]>): T[] {
+export function convertSearchResponse<T>(
+  result: DatabaseResult<readonly T[]> | DatabaseResult<T[]>
+): T[] {
   return convertArrayResponse(result);
 }
 
 /**
  * Convert DatabaseResult metrics to DatabaseMetrics interface
  */
-export function convertMetricsResponse(result: DatabaseResult<{
-  type: string;
-  healthy: boolean;
-  connectionCount?: number;
-  queryLatency?: number;
-  storageSize?: number;
-  lastHealthCheck?: string;
-  vectorCount?: number;
-  collectionInfo?: Record<string, unknown>;
-}>): {
+export function convertMetricsResponse(
+  result: DatabaseResult<{
+    type: string;
+    healthy: boolean;
+    connectionCount?: number;
+    queryLatency?: number;
+    storageSize?: number;
+    lastHealthCheck?: string;
+    vectorCount?: number;
+    collectionInfo?: Record<string, unknown>;
+  }>
+): {
   type: string;
   healthy: boolean;
   connectionCount?: number;

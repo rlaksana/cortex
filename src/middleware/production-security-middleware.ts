@@ -1,6 +1,4 @@
-// @ts-nocheck
 // COMPREHENSIVE EMERGENCY ROLLBACK: Final systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Production Security Middleware
@@ -15,7 +13,7 @@
 
 import { randomBytes } from 'crypto';
 
-import { type NextFunction,type Request, type Response } from 'express';
+import { type NextFunction, type Request, type Response } from 'express';
 import { rateLimit as createRateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 
@@ -307,7 +305,7 @@ export class ProductionSecurityMiddleware {
       try {
         // Sanitize query parameters
         if (req.query) {
-          req.query = this.sanitizeObject(req.query);
+          req.query = this.sanitizeObject(req.query) as any;
         }
 
         // Sanitize request body if it's JSON
@@ -317,7 +315,7 @@ export class ProductionSecurityMiddleware {
 
         // Sanitize URL parameters
         if (req.params) {
-          req.params = this.sanitizeObject(req.params);
+          req.params = this.sanitizeObject(req.params) as any;
         }
 
         next();

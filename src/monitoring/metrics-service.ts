@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Enhanced monitoring type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Comprehensive Metrics Service for Cortex MCP
@@ -31,23 +29,24 @@ import {
   type TypedMetricQuery,
   type TypedMetricQueryResult,
   type TypedMetricSeries,
-  validateTypedMetric} from '../types/metrics-types.js';
+  validateTypedMetric,
+  AlertState,
+} from '../types/metrics-types.js';
 import type {
   HistoricalMetrics,
   MetricsConfig,
   OperationMetadata,
-  RealTimeMetrics} from '../types/monitoring-types.js';
+  RealTimeMetrics,
+} from '../types/monitoring-types.js';
 
 // Re-export from monitoring-types for backward compatibility
-export {
-  HistoricalMetrics,
-  MetricsConfig,
-  RealTimeMetrics} from '../types/monitoring-types.js';
+export type { HistoricalMetrics, MetricsConfig, RealTimeMetrics } from '../types/monitoring-types.js';
 
 /**
  * Comprehensive metrics service
  */
 export class MetricsService extends EventEmitter {
+  private static instance?: MetricsService;
   private config: MetricsConfig;
   private collectorConfig: MetricsCollectorConfig;
   private qpsTrackers: Map<string, number[]> = new Map();
@@ -79,7 +78,7 @@ export class MetricsService extends EventEmitter {
 
     this.collectorConfig = {
       ...createDefaultCollectorConfig(),
-      ...collectorConfig
+      ...collectorConfig,
     };
 
     this.initializeMetrics();
@@ -90,10 +89,10 @@ export class MetricsService extends EventEmitter {
    * Get singleton instance
    */
   public static getInstance(config?: Partial<MetricsConfig>): MetricsService {
-    if (!(MetricsService as unknown).instance) {
-      (MetricsService as unknown).instance = new MetricsService(config);
+    if (!MetricsService.instance) {
+      MetricsService.instance = new MetricsService(config);
     }
-    return (MetricsService as unknown).instance;
+    return MetricsService.instance;
   }
 
   /**
@@ -138,12 +137,12 @@ export class MetricsService extends EventEmitter {
     const windowStart = now - this.config.qps_window_seconds * 1000;
 
     // Calculate QPS
-    const storeQPS = this.calculateQPS('memory_store', windowStart);
-    const findQPS = this.calculateQPS('memory_find', windowStart);
+    const storeQPS = this.calculateQPS(OperationType.MEMORY_STORE, windowStart);
+    const findQPS = this.calculateQPS(OperationType.MEMORY_FIND, windowStart);
 
     // Get performance summaries
-    const storeSummary = performanceCollector.getSummary('memory_store');
-    const findSummary = performanceCollector.getSummary('memory_find');
+    const storeSummary = performanceCollector.getSummary(OperationType.MEMORY_STORE);
+    const findSummary = performanceCollector.getSummary(OperationType.MEMORY_FIND);
 
     // Calculate quality metrics
     const dedupeRate = this.calculateQualityMetric('dedupe_rate');
@@ -187,14 +186,24 @@ export class MetricsService extends EventEmitter {
   getHistoricalMetrics(timeWindowMinutes: number = 60): HistoricalMetrics {
     const trends = performanceCollector.getPerformanceTrends(timeWindowMinutes);
 
-    const operationMetrics: Record<OperationType, {
+    const operationMetrics: Record<
+      OperationType,
+      {
+        count: number;
+        average_latency: number;
+        p95_latency: number;
+        p99_latency: number;
+        error_rate: number;
+        qps: number;
+      }
+    > = {} as Record<OperationType, {
       count: number;
       average_latency: number;
       p95_latency: number;
       p99_latency: number;
       error_rate: number;
       qps: number;
-    }> = {};
+    }>;
 
     for (const [operation, trend] of Object.entries(trends)) {
       operationMetrics[operation] = {
@@ -262,13 +271,13 @@ export class MetricsService extends EventEmitter {
   }> {
     const metrics = this.getRealTimeMetrics();
     const alerts: Array<{
-    type: string;
-    severity: 'low' | 'medium' | 'high' | 'critical';
-    message: string;
-    current_value: number;
-    threshold: number;
-    timestamp: number;
-  }> = [];
+      type: string;
+      severity: 'low' | 'medium' | 'high' | 'critical';
+      message: string;
+      current_value: number;
+      threshold: number;
+      timestamp: number;
+    }> = [];
 
     // QPS alerts
     if (metrics.qps.total_qps > this.config.alert_thresholds.qps_threshold) {
@@ -295,7 +304,7 @@ export class MetricsService extends EventEmitter {
     }
 
     // Error rate alerts
-    const storeSummary = performanceCollector.getSummary('memory_store');
+    const storeSummary = performanceCollector.getSummary(OperationType.MEMORY_STORE);
     const errorRate = storeSummary ? 100 - storeSummary.successRate : 0;
     if (errorRate > this.config.alert_thresholds.error_rate_threshold) {
       alerts.push({
@@ -337,11 +346,7 @@ export class MetricsService extends EventEmitter {
   /**
    * Record a gauge metric (single value that can go up or down)
    */
-  recordGauge(
-    name: string,
-    value: number,
-    labels?: Record<string, string>
-  ): void {
+  recordGauge(name: string, value: number, labels?: Record<string, string>): void {
     // Create a normalized key with labels
     const key = labels ? `${name}:${JSON.stringify(labels)}` : name;
 
@@ -362,18 +367,14 @@ export class MetricsService extends EventEmitter {
       name,
       value,
       labels,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
   /**
    * Record a counter metric (cumulative value that only increases)
    */
-  recordCounter(
-    name: string,
-    increment: number = 1,
-    labels?: Record<string, string>
-  ): void {
+  recordCounter(name: string, increment: number = 1, labels?: Record<string, string>): void {
     // Create a normalized key with labels
     const key = labels ? `${name}:${JSON.stringify(labels)}` : name;
 
@@ -396,7 +397,7 @@ export class MetricsService extends EventEmitter {
       increment,
       value: currentValue + increment,
       labels,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -428,16 +429,17 @@ export class MetricsService extends EventEmitter {
       // Log validation errors
       console.error('Typed metric validation failed:', {
         metric,
-        errors: validationResult.errors
+        errors: validationResult.errors,
       });
 
       // Still store the metric but mark as invalid
       const invalidMetric = createTypedMetric({
         ...metric,
-        metadata: {
-          ...metric.metadata,
-          validationErrors: validationResult.errors
-        }
+        labels: {
+          ...metric.labels,
+          validationErrors: JSON.stringify(validationResult.errors),
+          validationStatus: 'invalid',
+        },
       });
 
       this.storeTypedMetric(invalidMetric);
@@ -448,7 +450,7 @@ export class MetricsService extends EventEmitter {
     if (validationResult.warnings.length > 0) {
       console.warn('Typed metric validation warnings:', {
         metric,
-        warnings: validationResult.warnings
+        warnings: validationResult.warnings,
       });
     }
 
@@ -471,7 +473,7 @@ export class MetricsService extends EventEmitter {
     // Emit metric recorded event
     this.emit('typed_metric_recorded', {
       metric,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -502,8 +504,8 @@ export class MetricsService extends EventEmitter {
           staleness: 0,
           gaps: 0,
           outliers: 0,
-          lastUpdated: metric.timestamp
-        }
+          lastUpdated: metric.timestamp,
+        },
       };
       this.metricSeries.set(seriesKey, series);
     }
@@ -511,9 +513,9 @@ export class MetricsService extends EventEmitter {
     // Add new data point
     const dataPoint = {
       timestamp: metric.timestamp,
-      value: metric.value,
+      value: metric.value as number | string,
       quality: metric.quality.accuracy,
-      annotations: metric.metadata
+      annotations: metric.metadata as Record<string, unknown> | undefined,
     };
 
     series.dataPoints.push(dataPoint);
@@ -535,7 +537,7 @@ export class MetricsService extends EventEmitter {
    */
   private updateSeriesStatistics(series: TypedMetricSeries): void {
     const numericValues = series.dataPoints
-      .map(dp => typeof dp.value === 'number' ? dp.value : null)
+      .map((dp) => (typeof dp.value === 'number' ? dp.value : null))
       .filter((val): val is number => val !== null);
 
     if (numericValues.length === 0) {
@@ -553,24 +555,27 @@ export class MetricsService extends EventEmitter {
       median: sorted[Math.floor(sorted.length / 2)],
       min: sorted[0],
       max: sorted[sorted.length - 1],
-      variance: numericValues.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / numericValues.length,
-      standardDeviation: Math.sqrt(numericValues.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / numericValues.length),
+      variance:
+        numericValues.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / numericValues.length,
+      standardDeviation: Math.sqrt(
+        numericValues.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / numericValues.length
+      ),
       percentiles: {
         50: sorted[Math.floor(sorted.length * 0.5)],
         90: sorted[Math.floor(sorted.length * 0.9)],
         95: sorted[Math.floor(sorted.length * 0.95)],
-        99: sorted[Math.floor(sorted.length * 0.99)]
+        99: sorted[Math.floor(sorted.length * 0.99)],
       },
       trend: this.calculateTrend(numericValues),
-      seasonality: undefined // Complex analysis would go here
+      seasonality: undefined, // Complex analysis would go here
     };
   }
 
   /**
    * Calculate trend direction
    */
-  private calculateTrend(values: number[]): 'increasing' | 'decreasing' | 'stable' | 'volatile' {
-    if (values.length < 2) return 'stable';
+  private calculateTrend(values: number[]): import('../types/metrics-types.js').TrendDirection {
+    if (values.length < 2) return 'unknown' as import('../types/metrics-types.js').TrendDirection;
 
     const firstHalf = values.slice(0, Math.floor(values.length / 2));
     const secondHalf = values.slice(Math.floor(values.length / 2));
@@ -585,10 +590,12 @@ export class MetricsService extends EventEmitter {
     const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
     const volatility = Math.sqrt(variance) / mean;
 
-    if (volatility > 0.3) return 'volatile';
-    if (change > 0.05) return 'increasing';
-    if (change < -0.05) return 'decreasing';
-    return 'stable';
+    const { TrendDirection } = require('../types/metrics-types.js');
+
+    if (volatility > 0.3) return TrendDirection.VOLATILE;
+    if (change > 0.05) return TrendDirection.INCREASING;
+    if (change < -0.05) return TrendDirection.DECREASING;
+    return TrendDirection.STABLE;
   }
 
   /**
@@ -596,7 +603,7 @@ export class MetricsService extends EventEmitter {
    */
   private getSeriesKey(metric: TypedMetric): string {
     const dimensions = metric.dimensions
-      .map(d => `${d.name}:${d.value}`)
+      .map((d) => `${d.name}:${d.value}`)
       .sort()
       .join(',');
 
@@ -623,26 +630,22 @@ export class MetricsService extends EventEmitter {
 
     // Apply filters
     if (query.metricNames && query.metricNames.length > 0) {
-      filteredSeries = filteredSeries.filter(series =>
-        query.metricNames!.includes(series.name)
-      );
+      filteredSeries = filteredSeries.filter((series) => query.metricNames!.includes(series.name));
     }
 
     if (query.metricTypes && query.metricTypes.length > 0) {
-      filteredSeries = filteredSeries.filter(series =>
-        query.metricTypes!.includes(series.type)
-      );
+      filteredSeries = filteredSeries.filter((series) => query.metricTypes!.includes(series.type));
     }
 
     if (query.metricCategories && query.metricCategories.length > 0) {
-      filteredSeries = filteredSeries.filter(series =>
+      filteredSeries = filteredSeries.filter((series) =>
         query.metricCategories!.includes(series.category)
       );
     }
 
     if (query.components && query.components.length > 0) {
-      filteredSeries = filteredSeries.filter(series =>
-        query.components!.some(comp => series.labels.component === comp)
+      filteredSeries = filteredSeries.filter((series) =>
+        query.components!.some((comp) => series.labels.component === comp)
       );
     }
 
@@ -650,18 +653,20 @@ export class MetricsService extends EventEmitter {
     const queryStart = new Date(query.timeRange.start).getTime();
     const queryEnd = new Date(query.timeRange.end).getTime();
 
-    filteredSeries = filteredSeries.map(series => {
-      const filteredDataPoints = series.dataPoints.filter(dp => {
-        const timestamp = new Date(dp.timestamp).getTime();
-        return timestamp >= queryStart && timestamp <= queryEnd;
-      });
+    filteredSeries = filteredSeries
+      .map((series) => {
+        const filteredDataPoints = series.dataPoints.filter((dp) => {
+          const timestamp = new Date(dp.timestamp).getTime();
+          return timestamp >= queryStart && timestamp <= queryEnd;
+        });
 
-      return {
-        ...series,
-        dataPoints: filteredDataPoints,
-        totalPoints: filteredDataPoints.length
-      };
-    }).filter(series => series.totalPoints > 0);
+        return {
+          ...series,
+          dataPoints: filteredDataPoints,
+          totalPoints: filteredDataPoints.length,
+        };
+      })
+      .filter((series) => series.totalPoints > 0);
 
     // Apply aggregation if specified
     if (query.aggregation) {
@@ -688,7 +693,7 @@ export class MetricsService extends EventEmitter {
       hasMore: offset + limit < totalCount,
       nextOffset: offset + limit < totalCount ? offset + limit : undefined,
       executionTime,
-      cached: false
+      cached: false,
     };
   }
 
@@ -698,12 +703,12 @@ export class MetricsService extends EventEmitter {
   private applyAggregation(series: TypedMetricSeries[], aggregation: unknown): TypedMetricSeries[] {
     // This is a simplified implementation
     // In production, would need more sophisticated aggregation logic
-    return series.map(s => {
+    return series.map((s) => {
       const aggregatedDataPoints = this.aggregateDataPoints(s.dataPoints, aggregation);
       return {
         ...s,
         dataPoints: aggregatedDataPoints,
-        aggregation
+        aggregation: aggregation as import('../types/metrics-types.js').MetricAggregation,
       };
     });
   }
@@ -711,25 +716,39 @@ export class MetricsService extends EventEmitter {
   /**
    * Aggregate data points
    */
-  private aggregateDataPoints(dataPoints: unknown[], aggregation: unknown): unknown[] {
+  private aggregateDataPoints(dataPoints: import('../types/metrics-types.js').TypedMetricDataPoint[], aggregation: unknown): import('../types/metrics-types.js').TypedMetricDataPoint[] {
     // Simplified aggregation - in production would implement windowed aggregation
-    if (aggregation.function === 'avg' && dataPoints.length > 0) {
+    const agg = aggregation as { function?: string; field?: string; direction?: string };
+    const { TypedMetricDataPoint } = require('../types/metrics-types.js');
+
+    if (agg.function === 'avg' && dataPoints.length > 0) {
       const numericValues = dataPoints
-        .map(dp => typeof dp.value === 'number' ? dp.value : 0)
-        .filter(val => !isNaN(val));
+        .map((dp) => {
+          return typeof dp.value === 'number' ? dp.value : Number(dp.value) || 0;
+        })
+        .filter((val) => !isNaN(val));
 
       if (numericValues.length > 0) {
         const avg = numericValues.reduce((a, b) => a + b, 0) / numericValues.length;
-        return [{
-          timestamp: dataPoints[dataPoints.length - 1].timestamp,
-          value: avg,
-          quality: 1.0,
-          annotations: { aggregation: 'avg' }
-        }];
+        const lastPoint = dataPoints[dataPoints.length - 1] as { timestamp?: string };
+        return [
+          {
+            timestamp: lastPoint.timestamp || new Date().toISOString(),
+            value: avg,
+            quality: 1.0,
+            annotations: { aggregation: 'avg' },
+          },
+        ];
       }
     }
 
-    return dataPoints;
+    // Ensure we return the correct type
+    return dataPoints.map(dp => ({
+      timestamp: dp.timestamp || new Date().toISOString(),
+      value: dp.value,
+      quality: dp.quality ?? 1.0,
+      annotations: dp.annotations
+    }));
   }
 
   /**
@@ -737,7 +756,8 @@ export class MetricsService extends EventEmitter {
    */
   private applyOrdering(series: TypedMetricSeries[], orderBy: unknown[]): TypedMetricSeries[] {
     return series.sort((a, b) => {
-      for (const order of orderBy) {
+      for (const orderSpec of orderBy) {
+        const order = orderSpec as { field?: string; direction?: string };
         let comparison = 0;
 
         switch (order.field) {
@@ -768,13 +788,15 @@ export class MetricsService extends EventEmitter {
   /**
    * Create a metric alert
    */
-  createMetricAlert(alert: Omit<TypedMetricAlert, 'id' | 'state' | 'stateHistory' | 'metadata'>): string {
+  createMetricAlert(
+    alert: Omit<TypedMetricAlert, 'id' | 'state' | 'stateHistory' | 'metadata'>
+  ): string {
     const alertId = `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     const fullAlert: TypedMetricAlert = {
       ...alert,
       id: alertId,
-      state: 'ok' as const,
+      state: AlertState.OK,
       stateHistory: [],
       metadata: {
         created: new Date().toISOString(),
@@ -782,12 +804,12 @@ export class MetricsService extends EventEmitter {
         createdBy: 'system',
         updatedBy: 'system',
         tags: [],
-        owner: alert.metadata?.owner,
-        team: alert.metadata?.team,
-        service: alert.metadata?.service,
-        runbook: alert.metadata?.runbook,
-        documentation: alert.metadata?.documentation
-      }
+        owner: 'system',
+        team: 'platform',
+        service: 'metrics-service',
+        runbook: '/docs/runbooks/metrics-alerts',
+        documentation: '/docs/metrics',
+      },
     };
 
     this.alerts.set(alertId, fullAlert);
@@ -801,14 +823,14 @@ export class MetricsService extends EventEmitter {
    * Check for metric alerts based on threshold conditions
    */
   private checkMetricAlerts(metric: TypedMetric): void {
-    for (const alert of this.alerts.values()) {
+    for (const alert of Array.from(this.alerts.values())) {
       if (!alert.enabled) continue;
 
       // Check if this metric matches the alert's query
       const queryResult = this.queryTypedMetrics(alert.condition.metricQuery);
-      const matchingSeries = queryResult.series.find(series =>
-        series.name === metric.name &&
-        this.dimensionsMatch(series.dimensions, metric.dimensions)
+      const matchingSeries = queryResult.series.find(
+        (series) =>
+          series.name === metric.name && this.dimensionsMatch(series.dimensions, metric.dimensions)
       );
 
       if (matchingSeries) {
@@ -826,9 +848,22 @@ export class MetricsService extends EventEmitter {
   private dimensionsMatch(seriesDimensions: unknown[], metricDimensions: unknown[]): boolean {
     if (seriesDimensions.length !== metricDimensions.length) return false;
 
-    return seriesDimensions.every(sd =>
-      metricDimensions.some(md => sd.name === md.name && sd.value === md.value)
-    );
+    return seriesDimensions.every((sd) => {
+      if (!sd || typeof sd !== 'object' || !('name' in sd) || !('value' in sd)) {
+        return false;
+      }
+
+      const seriesDim = sd as { name: unknown; value: unknown };
+
+      return metricDimensions.some((md) => {
+        if (!md || typeof md !== 'object' || !('name' in md) || !('value' in md)) {
+          return false;
+        }
+
+        const metricDim = md as { name: unknown; value: unknown };
+        return seriesDim.name === metricDim.name && seriesDim.value === metricDim.value;
+      });
+    });
   }
 
   /**
@@ -843,29 +878,33 @@ export class MetricsService extends EventEmitter {
       if (!threshold.enabled) continue;
 
       let triggered = false;
-      switch (threshold.operator) {
+      // Use threshold.condition for operator and value according to slo-interfaces definition
+      const operator = threshold.condition?.operator || 'gt';
+      const valueThreshold = threshold.condition?.value || threshold.threshold;
+
+      switch (operator) {
         case 'gt':
-          triggered = value > threshold.value;
+          triggered = value > valueThreshold;
           break;
         case 'gte':
-          triggered = value >= threshold.value;
+          triggered = value >= valueThreshold;
           break;
         case 'lt':
-          triggered = value < threshold.value;
+          triggered = value < valueThreshold;
           break;
         case 'lte':
-          triggered = value <= threshold.value;
+          triggered = value <= valueThreshold;
           break;
         case 'eq':
-          triggered = value === threshold.value;
+          triggered = value === valueThreshold;
           break;
       }
 
       if (triggered) {
         if (threshold.severity === 'critical') {
-          newState = 'critical';
-        } else if (threshold.severity === 'error' && newState !== 'critical') {
-          newState = 'warning';
+          newState = AlertState.CRITICAL;
+        } else if (threshold.severity === 'error' && newState !== AlertState.CRITICAL) {
+          newState = AlertState.WARNING;
         }
         break;
       }
@@ -879,7 +918,7 @@ export class MetricsService extends EventEmitter {
         timestamp: new Date().toISOString(),
         reason: `Value ${value} crossed threshold`,
         value,
-        threshold: alert.condition.thresholds[0]?.value
+        threshold: alert.condition.thresholds[0]?.condition?.value || alert.condition.thresholds[0]?.threshold || 0,
       };
 
       alert.stateHistory.push(transition);
@@ -890,7 +929,7 @@ export class MetricsService extends EventEmitter {
         alert,
         previousState: currentState,
         newState,
-        transition
+        transition,
       });
     }
   }
@@ -906,9 +945,7 @@ export class MetricsService extends EventEmitter {
    * Get metric alerts by severity
    */
   getMetricAlertsBySeverity(severity: AlertSeverity): TypedMetricAlert[] {
-    return Array.from(this.alerts.values()).filter(alert =>
-      alert.severity === severity
-    );
+    return Array.from(this.alerts.values()).filter((alert) => alert.severity === severity);
   }
 
   /**
@@ -917,7 +954,7 @@ export class MetricsService extends EventEmitter {
   exportTypedMetrics(format: OutputFormat = OutputFormat.JSON, query?: TypedMetricQuery): string {
     const queryResult = query
       ? this.queryTypedMetrics(query)
-      : { series: Array.from(this.metricSeries.values()) } as TypedMetricQueryResult;
+      : ({ series: Array.from(this.metricSeries.values()) } as TypedMetricQueryResult);
 
     switch (format) {
       case OutputFormat.PROMETHEUS:
@@ -926,13 +963,17 @@ export class MetricsService extends EventEmitter {
         return this.exportCsvFormat(queryResult.series);
       case OutputFormat.JSON:
       default:
-        return JSON.stringify({
-          query: queryResult.query,
-          series: queryResult.series,
-          totalCount: queryResult.totalCount,
-          executionTime: queryResult.executionTime,
-          timestamp: Date.now()
-        }, null, 2);
+        return JSON.stringify(
+          {
+            query: queryResult.query,
+            series: queryResult.series,
+            totalCount: queryResult.totalCount,
+            executionTime: queryResult.executionTime,
+            timestamp: Date.now(),
+          },
+          null,
+          2
+        );
     }
   }
 
@@ -949,13 +990,12 @@ export class MetricsService extends EventEmitter {
       // Create metric name with dimensions
       const metricName = s.name.replace(/[^a-zA-Z0-9_]/g, '_');
       const dimensions = [
-        ...s.dimensions.map(d => `${d.name}="${d.value}"`),
-        ...Object.entries(s.labels).map(([k, v]) => `${k}="${v}"`)
+        ...s.dimensions.map((d) => `${d.name}="${d.value}"`),
+        ...Object.entries(s.labels).map(([k, v]) => `${k}="${v}"`),
       ];
 
-      const fullMetricName = dimensions.length > 0
-        ? `${metricName}{${dimensions.join(',')}}`
-        : metricName;
+      const fullMetricName =
+        dimensions.length > 0 ? `${metricName}{${dimensions.join(',')}}` : metricName;
 
       output += `${fullMetricName} ${latestPoint.value} ${new Date(latestPoint.timestamp).getTime() / 1000}\n`;
     }
@@ -968,12 +1008,10 @@ export class MetricsService extends EventEmitter {
    */
   private exportCsvFormat(series: TypedMetricSeries[]): string {
     const headers = ['timestamp', 'metric_name', 'metric_type', 'value', 'quality'];
-    const dimensionNames = Array.from(new Set(
-      series.flatMap(s => s.dimensions.map(d => d.name))
-    ));
-    const labelNames = Array.from(new Set(
-      series.flatMap(s => Object.keys(s.labels))
-    ));
+    const dimensionNames = Array.from(
+      new Set(series.flatMap((s) => s.dimensions.map((d) => d.name)))
+    );
+    const labelNames = Array.from(new Set(series.flatMap((s) => Object.keys(s.labels))));
 
     headers.push(...dimensionNames, ...labelNames);
 
@@ -981,17 +1019,11 @@ export class MetricsService extends EventEmitter {
 
     for (const s of series) {
       for (const point of s.dataPoints) {
-        const row = [
-          point.timestamp,
-          s.name,
-          s.type,
-          point.value,
-          point.quality
-        ];
+        const row = [point.timestamp, s.name, s.type, point.value, point.quality];
 
         // Add dimensions
         for (const dimName of dimensionNames) {
-          const dim = s.dimensions.find(d => d.name === dimName);
+          const dim = s.dimensions.find((d) => d.name === dimName);
           row.push(dim ? `"${dim.value}"` : '');
         }
 
@@ -1040,7 +1072,11 @@ export class MetricsService extends EventEmitter {
     }
   }
 
-  private trackQualityMetrics(operation: OperationType, metadata: OperationMetadata, success: boolean): void {
+  private trackQualityMetrics(
+    operation: OperationType,
+    metadata: OperationMetadata,
+    success: boolean
+  ): void {
     // Track deduplication rate
     if (metadata.duplicates_found !== undefined) {
       const tracker = this.qualityMetrics.get('dedupe_rate')!;

@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Canary Deployment Orchestrator
  *
@@ -25,7 +20,11 @@ import { logger } from '@/utils/logger.js';
 
 import { KillSwitchScope, killSwitchService, KillSwitchTrigger } from './kill-switch-service.js';
 import { metricsService } from '../../monitoring/metrics-service.js';
-import { featureFlagService, FlagStatus, TargetingStrategy } from '../feature-flag/feature-flag-service.js';
+import {
+  featureFlagService,
+  FlagStatus,
+  TargetingStrategy,
+} from '../feature-flag/feature-flag-service.js';
 
 // ============================================================================
 // Types and Interfaces
@@ -268,7 +267,9 @@ export class CanaryOrchestrator extends EventEmitter {
   /**
    * Create a new canary deployment
    */
-  createDeployment(config: Omit<CanaryDeploymentConfig, 'id' | 'createdAt'>): CanaryDeploymentConfig {
+  createDeployment(
+    config: Omit<CanaryDeploymentConfig, 'id' | 'createdAt'>
+  ): CanaryDeploymentConfig {
     const id = this.generateId();
     const now = new Date();
 
@@ -369,7 +370,6 @@ export class CanaryOrchestrator extends EventEmitter {
       await this.startPhase(deploymentId, 0);
 
       return deploymentId;
-
     } catch (error) {
       deployment.status = CanaryStatus.FAILED;
       deployment.endTime = new Date();
@@ -395,7 +395,10 @@ export class CanaryOrchestrator extends EventEmitter {
       return false;
     }
 
-    if (deployment.status !== CanaryStatus.ACTIVE && deployment.status !== CanaryStatus.MONITORING) {
+    if (
+      deployment.status !== CanaryStatus.ACTIVE &&
+      deployment.status !== CanaryStatus.MONITORING
+    ) {
       logger.warn('Cannot pause deployment in current status', {
         deploymentId,
         status: deployment.status,
@@ -464,7 +467,10 @@ export class CanaryOrchestrator extends EventEmitter {
       return false;
     }
 
-    if (deployment.status !== CanaryStatus.ACTIVE && deployment.status !== CanaryStatus.MONITORING) {
+    if (
+      deployment.status !== CanaryStatus.ACTIVE &&
+      deployment.status !== CanaryStatus.MONITORING
+    ) {
       logger.warn('Cannot promote deployment in current status', {
         deploymentId,
         status: deployment.status,
@@ -481,7 +487,7 @@ export class CanaryOrchestrator extends EventEmitter {
     }
 
     // Check if phase meets success criteria (unless forced)
-    if (!force && !await this.checkPhaseSuccessCriteria(deployment, currentPhase)) {
+    if (!force && !(await this.checkPhaseSuccessCriteria(deployment, currentPhase))) {
       logger.warn('Phase does not meet success criteria for promotion', {
         deploymentId,
         phaseId: currentPhase.id,
@@ -508,14 +514,21 @@ export class CanaryOrchestrator extends EventEmitter {
   /**
    * Rollback canary deployment
    */
-  async rollbackDeployment(deploymentId: string, reason?: string, triggeredBy?: string): Promise<boolean> {
+  async rollbackDeployment(
+    deploymentId: string,
+    reason?: string,
+    triggeredBy?: string
+  ): Promise<boolean> {
     const deployment = this.deployments.get(deploymentId);
     if (!deployment) {
       logger.warn('Deployment not found for rollback', { deploymentId });
       return false;
     }
 
-    if (deployment.status === CanaryStatus.ROLLING_BACK || deployment.status === CanaryStatus.ROLLED_BACK) {
+    if (
+      deployment.status === CanaryStatus.ROLLING_BACK ||
+      deployment.status === CanaryStatus.ROLLED_BACK
+    ) {
       logger.warn('Deployment already rolling back or rolled back', { deploymentId });
       return false;
     }
@@ -574,7 +587,6 @@ export class CanaryOrchestrator extends EventEmitter {
       });
 
       return true;
-
     } catch (error) {
       logger.error('Error during canary deployment rollback', {
         deploymentId,
@@ -642,7 +654,6 @@ export class CanaryOrchestrator extends EventEmitter {
       });
 
       return true;
-
     } catch (error) {
       logger.error('Error completing canary deployment', {
         deploymentId,
@@ -678,7 +689,7 @@ export class CanaryOrchestrator extends EventEmitter {
     // 5. Setup load balancer configuration
 
     // For now, we'll simulate the initialization
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
   /**
@@ -763,7 +774,10 @@ export class CanaryOrchestrator extends EventEmitter {
       stable: {
         endpoint: `stable-${deployment.config.serviceName}`,
         weight: 100 - deployment.config.initialTrafficPercentage,
-        instances: [`stable-${deployment.config.serviceName}-1`, `stable-${deployment.config.serviceName}-2`],
+        instances: [
+          `stable-${deployment.config.serviceName}-1`,
+          `stable-${deployment.config.serviceName}-2`,
+        ],
       },
       canary: {
         endpoint: `canary-${deployment.config.serviceName}-${deployment.config.canaryVersion}`,
@@ -847,15 +861,18 @@ export class CanaryOrchestrator extends EventEmitter {
 
     switch (config.trafficShiftStrategy) {
       case TrafficShiftStrategy.LINEAR:
-        return config.initialTrafficPercentage +
-               (config.targetTrafficPercentage - config.initialTrafficPercentage) *
-               (phaseIndex / (config.phases.length - 1));
+        return (
+          config.initialTrafficPercentage +
+          (config.targetTrafficPercentage - config.initialTrafficPercentage) *
+            (phaseIndex / (config.phases.length - 1))
+        );
 
       case TrafficShiftStrategy.EXPONENTIAL:
         const progress = phaseIndex / (config.phases.length - 1);
-        return config.initialTrafficPercentage +
-               (config.targetTrafficPercentage - config.initialTrafficPercentage) *
-               Math.pow(progress, 2);
+        return (
+          config.initialTrafficPercentage +
+          (config.targetTrafficPercentage - config.initialTrafficPercentage) * Math.pow(progress, 2)
+        );
 
       case TrafficShiftStrategy.MANUAL:
         return phase.trafficPercentage;
@@ -868,7 +885,10 @@ export class CanaryOrchestrator extends EventEmitter {
   /**
    * Update traffic routing
    */
-  private async updateTrafficRouting(deployment: CanaryDeployment, canaryPercentage: number): Promise<void> {
+  private async updateTrafficRouting(
+    deployment: CanaryDeployment,
+    canaryPercentage: number
+  ): Promise<void> {
     const routing = this.trafficRouting.get(deployment.config.id);
     if (!routing) {
       return;
@@ -936,7 +956,10 @@ export class CanaryOrchestrator extends EventEmitter {
   /**
    * Start deployment monitoring
    */
-  private startDeploymentMonitoring(deploymentId: string, deployment: CanaryDeployment): Promise<void> {
+  private startDeploymentMonitoring(
+    deploymentId: string,
+    deployment: CanaryDeployment
+  ): Promise<void> {
     const interval = setInterval(async () => {
       await this.monitorDeployment(deploymentId, deployment);
     }, deployment.config.healthCheckIntervalMs);
@@ -965,7 +988,10 @@ export class CanaryOrchestrator extends EventEmitter {
   /**
    * Monitor deployment health and metrics
    */
-  private async monitorDeployment(deploymentId: string, deployment: CanaryDeployment): Promise<void> {
+  private async monitorDeployment(
+    deploymentId: string,
+    deployment: CanaryDeployment
+  ): Promise<void> {
     try {
       deployment.status = CanaryStatus.MONITORING;
       deployment.metadata.lastHealthCheck = new Date();
@@ -997,7 +1023,6 @@ export class CanaryOrchestrator extends EventEmitter {
           await this.rollbackDeployment(deploymentId, 'Maximum deployment time exceeded', 'system');
         }
       }
-
     } catch (error) {
       logger.error('Error monitoring deployment', {
         deploymentId,
@@ -1037,7 +1062,8 @@ export class CanaryOrchestrator extends EventEmitter {
   private updateDeploymentMetrics(deployment: CanaryDeployment, metrics: PhaseMetrics): void {
     deployment.metrics.totalRequests += metrics.requests;
     deployment.metrics.totalErrors += metrics.errors;
-    deployment.metrics.overallErrorRate = (deployment.metrics.totalErrors / deployment.metrics.totalRequests) * 100;
+    deployment.metrics.overallErrorRate =
+      (deployment.metrics.totalErrors / deployment.metrics.totalRequests) * 100;
     deployment.metrics.overallAvailability = Math.max(
       deployment.metrics.overallAvailability,
       metrics.availability
@@ -1053,7 +1079,10 @@ export class CanaryOrchestrator extends EventEmitter {
   /**
    * Check rollback thresholds
    */
-  private async checkRollbackThresholds(deployment: CanaryDeployment, metrics: PhaseMetrics): Promise<boolean> {
+  private async checkRollbackThresholds(
+    deployment: CanaryDeployment,
+    metrics: PhaseMetrics
+  ): Promise<boolean> {
     const thresholds = deployment.config.rollbackThresholds;
 
     return (
@@ -1067,7 +1096,10 @@ export class CanaryOrchestrator extends EventEmitter {
   /**
    * Check phase success criteria
    */
-  private async checkPhaseSuccessCriteria(deployment: CanaryDeployment, phase: DeploymentPhase): Promise<boolean> {
+  private async checkPhaseSuccessCriteria(
+    deployment: CanaryDeployment,
+    phase: DeploymentPhase
+  ): Promise<boolean> {
     if (!phase.metrics) {
       return false;
     }
@@ -1078,7 +1110,11 @@ export class CanaryOrchestrator extends EventEmitter {
         continue;
       }
 
-      const meetsCriteria = this.compareMetricValue(metricValue, criterion.operator, criterion.threshold);
+      const meetsCriteria = this.compareMetricValue(
+        metricValue,
+        criterion.operator,
+        criterion.threshold
+      );
       if (!meetsCriteria) {
         return false;
       }
@@ -1092,13 +1128,20 @@ export class CanaryOrchestrator extends EventEmitter {
    */
   private getMetricValue(metrics: PhaseMetrics, metricName: string): number | null {
     switch (metricName) {
-      case 'errorRate': return metrics.errorRate;
-      case 'averageLatency': return metrics.averageLatency;
-      case 'p95Latency': return metrics.p95Latency;
-      case 'p99Latency': return metrics.p99Latency;
-      case 'availability': return metrics.availability;
-      case 'requests': return metrics.requests;
-      default: return null;
+      case 'errorRate':
+        return metrics.errorRate;
+      case 'averageLatency':
+        return metrics.averageLatency;
+      case 'p95Latency':
+        return metrics.p95Latency;
+      case 'p99Latency':
+        return metrics.p99Latency;
+      case 'availability':
+        return metrics.availability;
+      case 'requests':
+        return metrics.requests;
+      default:
+        return null;
     }
   }
 
@@ -1107,10 +1150,14 @@ export class CanaryOrchestrator extends EventEmitter {
    */
   private compareMetricValue(value: number, operator: string, threshold: number): boolean {
     switch (operator) {
-      case 'less_than': return value < threshold;
-      case 'greater_than': return value > threshold;
-      case 'equals': return value === threshold;
-      default: return false;
+      case 'less_than':
+        return value < threshold;
+      case 'greater_than':
+        return value > threshold;
+      case 'equals':
+        return value === threshold;
+      default:
+        return false;
     }
   }
 
@@ -1119,16 +1166,18 @@ export class CanaryOrchestrator extends EventEmitter {
    */
   private getCurrentPhaseMetrics(deployment: CanaryDeployment): PhaseMetrics {
     const currentPhase = deployment.phases[deployment.currentPhase || 0];
-    return currentPhase?.metrics || {
-      requests: 0,
-      errors: 0,
-      errorRate: 0,
-      averageLatency: 0,
-      p95Latency: 0,
-      p99Latency: 0,
-      availability: 0,
-      timestamp: new Date(),
-    };
+    return (
+      currentPhase?.metrics || {
+        requests: 0,
+        errors: 0,
+        errorRate: 0,
+        averageLatency: 0,
+        p95Latency: 0,
+        p99Latency: 0,
+        availability: 0,
+        timestamp: new Date(),
+      }
+    );
   }
 
   // ============================================================================
@@ -1215,9 +1264,10 @@ export class CanaryOrchestrator extends EventEmitter {
    */
   getActiveDeployments(): CanaryDeployment[] {
     return Array.from(this.deployments.values()).filter(
-      deployment => deployment.status !== CanaryStatus.COMPLETED &&
-                   deployment.status !== CanaryStatus.FAILED &&
-                   deployment.status !== CanaryStatus.ROLLED_BACK
+      (deployment) =>
+        deployment.status !== CanaryStatus.COMPLETED &&
+        deployment.status !== CanaryStatus.FAILED &&
+        deployment.status !== CanaryStatus.ROLLED_BACK
     );
   }
 
@@ -1250,14 +1300,20 @@ export class CanaryOrchestrator extends EventEmitter {
 
     return {
       totalDeployments: deployments.length + this.deploymentHistory.length,
-      activeDeployments: deployments.filter(d =>
-        d.status === CanaryStatus.ACTIVE ||
-        d.status === CanaryStatus.MONITORING ||
-        d.status === CanaryStatus.PAUSED
+      activeDeployments: deployments.filter(
+        (d) =>
+          d.status === CanaryStatus.ACTIVE ||
+          d.status === CanaryStatus.MONITORING ||
+          d.status === CanaryStatus.PAUSED
       ).length,
-      completedDeployments: this.deploymentHistory.filter(d => d.status === CanaryStatus.COMPLETED).length,
-      failedDeployments: this.deploymentHistory.filter(d => d.status === CanaryStatus.FAILED).length,
-      rolledBackDeployments: this.deploymentHistory.filter(d => d.status === CanaryStatus.ROLLED_BACK).length,
+      completedDeployments: this.deploymentHistory.filter(
+        (d) => d.status === CanaryStatus.COMPLETED
+      ).length,
+      failedDeployments: this.deploymentHistory.filter((d) => d.status === CanaryStatus.FAILED)
+        .length,
+      rolledBackDeployments: this.deploymentHistory.filter(
+        (d) => d.status === CanaryStatus.ROLLED_BACK
+      ).length,
     };
   }
 

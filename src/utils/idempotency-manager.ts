@@ -1,6 +1,4 @@
-// @ts-nocheck
 // FINAL COMPREHENSIVE EMERGENCY ROLLBACK: Utility layer type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * P2-P3: Advanced Idempotency Management System
@@ -26,6 +24,12 @@ import { createHash } from 'crypto';
 import { v5 as uuidv5 } from 'uuid';
 
 import { logger } from '@/utils/logger.js';
+import {
+  isNumber,
+  isObject,
+  safePropertyAccess,
+  safePropertyAccessEnhanced,
+} from '@/utils/type-guards.js';
 
 // === Type Definitions ===
 
@@ -259,11 +263,11 @@ export class IdempotencyManager {
    * Normalize payload for fingerprinting
    */
   private normalizePayload(payload: unknown): unknown {
-    if (!payload || typeof payload !== 'object') {
+    if (!isObject(payload)) {
       return payload;
     }
 
-    const normalized: unknown = {};
+    const normalized: Record<string, unknown> = {};
     const transientFields = ['timestamp', 'id', 'uuid', 'created_at', 'updated_at', 'nonce'];
 
     for (const [key, value] of Object.entries(payload)) {
@@ -273,9 +277,9 @@ export class IdempotencyManager {
 
       if (Array.isArray(value)) {
         normalized[key] = value.map((item) =>
-          typeof item === 'object' ? this.normalizePayload(item) : item
+          isObject(item) ? this.normalizePayload(item) : item
         );
-      } else if (typeof value === 'object' && value !== null) {
+      } else if (isObject(value)) {
         normalized[key] = this.normalizePayload(value);
       } else {
         normalized[key] = value;
@@ -289,11 +293,11 @@ export class IdempotencyManager {
    * Normalize metadata for fingerprinting
    */
   private normalizeMetadata(metadata: unknown): unknown {
-    if (!metadata || typeof metadata !== 'object') {
+    if (!isObject(metadata)) {
       return {};
     }
 
-    const normalized: unknown = {};
+    const normalized: Record<string, unknown> = {};
     const relevantFields = ['user_id', 'session_id', 'operation_type', 'resource_id'];
 
     for (const [key, value] of Object.entries(metadata)) {
@@ -439,7 +443,7 @@ export class IdempotencyManager {
 
           return {
             cache_hit: true,
-            result: existingRecord.result,
+            result: existingRecord.result as T,
             key,
             record: existingRecord,
           };
@@ -491,7 +495,7 @@ export class IdempotencyManager {
           expires_at: Date.now() + ttl * 1000,
           access_count: 1,
           last_accessed: Date.now(),
-          metadata: options.metadata || {},
+          metadata: isObject(options.metadata) ? (options.metadata as Record<string, unknown>) : {},
           status: 'pending',
         };
 
@@ -561,7 +565,7 @@ export class IdempotencyManager {
         if (duplicateRecord.status === 'completed') {
           return {
             cache_hit: true,
-            result: duplicateRecord.result,
+            result: duplicateRecord.result as T,
             key,
             record: duplicateRecord,
             fingerprint_duplicate: true,
@@ -919,14 +923,29 @@ export class IdempotencyManager {
     ];
     const rows = [headers.join(',')];
 
+    // Safe property access with validation
+    const timestamp = safePropertyAccess(data, 'timestamp', isNumber, Date.now());
+    const cacheStats = safePropertyAccessEnhanced(data, 'cache_stats', isObject);
+    const metrics = safePropertyAccessEnhanced(data, 'metrics', isObject);
+
+    const totalRecords = cacheStats
+      ? safePropertyAccess(cacheStats, 'total_records', isNumber, 0)
+      : 0;
+    const cacheHits = metrics ? safePropertyAccess(metrics, 'cache_hits', isNumber, 0) : 0;
+    const cacheMisses = metrics ? safePropertyAccess(metrics, 'cache_misses', isNumber, 0) : 0;
+    const cacheHitRate = metrics ? safePropertyAccess(metrics, 'cache_hit_rate', isNumber, 0) : 0;
+    const avgRecordSize = metrics
+      ? safePropertyAccess(metrics, 'avg_record_size_bytes', isNumber, 0)
+      : 0;
+
     rows.push(
       [
-        data.timestamp,
-        data.cache_stats.total_records,
-        data.metrics.cache_hits,
-        data.metrics.cache_misses,
-        data.metrics.cache_hit_rate.toFixed(4),
-        data.metrics.avg_record_size_bytes.toFixed(2),
+        timestamp.toString(),
+        totalRecords.toString(),
+        cacheHits.toString(),
+        cacheMisses.toString(),
+        cacheHitRate.toFixed(4),
+        avgRecordSize.toFixed(2),
       ].join(',')
     );
 

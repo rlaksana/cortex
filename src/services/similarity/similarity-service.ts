@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 import { logger } from '@/utils/logger.js';
 
 import { qdrant } from '../../db/qdrant-client.js';
@@ -324,7 +320,10 @@ export class SimilarityService implements ISimilarityService {
   /**
    * Calculate title similarity
    */
-  private calculateTitleSimilarity(data1: Record<string, unknown>, data2: Record<string, unknown>): number {
+  private calculateTitleSimilarity(
+    data1: Record<string, unknown>,
+    data2: Record<string, unknown>
+  ): number {
     const title1 = this.extractTitle(data1);
     const title2 = this.extractTitle(data2);
 

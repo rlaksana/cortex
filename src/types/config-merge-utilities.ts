@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Configuration Merge Utilities with Type Safety
  *
@@ -9,12 +5,11 @@
  * with type safety, conflict resolution, and detailed reporting of merge operations.
  */
 
-import type {
-  Config,
-  JSONArray,
-  JSONObject} from './base-types.js';
-import type {
-  safeGetProperty} from './safe-property-access.js';
+import type { Config, JSONArray, JSONObject, MutableDict } from './base-types.js';
+import { safeGetProperty } from './safe-property-access.js';
+
+// Mutable version of Config for internal merge operations
+type MutableConfig = MutableDict<import('./base-types.js').JSONValue>;
 
 // ============================================================================
 // Merge Configuration Types
@@ -24,12 +19,12 @@ import type {
  * Merge strategy for handling conflicts
  */
 export type MergeStrategy =
-  | 'overwrite'      // Later values overwrite earlier ones
-  | 'preserve'       // Keep earlier values, ignore later ones
-  | 'merge'          // Try to merge objects/arrays
-  | 'error'          // Throw error on conflicts
-  | 'callback'       // Use custom callback to resolve conflicts
-  | 'prefer-source'  // Prefer source object values
+  | 'overwrite' // Later values overwrite earlier ones
+  | 'preserve' // Keep earlier values, ignore later ones
+  | 'merge' // Try to merge objects/arrays
+  | 'error' // Throw error on conflicts
+  | 'callback' // Use custom callback to resolve conflicts
+  | 'prefer-source' // Prefer source object values
   | 'prefer-target'; // Prefer target object values
 
 /**
@@ -53,7 +48,7 @@ export interface MergeResult {
  */
 export interface MergeConflict {
   /** Conflict type */
-  readonly type: MergeConflictType;
+  type: MergeConflictType;
   /** Path where conflict occurred */
   readonly path: string;
   /** Source value */
@@ -61,13 +56,13 @@ export interface MergeConflict {
   /** Target value */
   readonly targetValue: unknown;
   /** Resolved value (if conflict was resolved) */
-  readonly resolvedValue?: unknown;
+  resolvedValue?: unknown;
   /** Resolution strategy used */
-  readonly resolution?: MergeStrategy;
+  resolution?: MergeStrategy;
   /** Custom resolution callback used */
-  readonly resolver?: ConflictResolver;
+  resolver?: ConflictResolver;
   /** Conflict description */
-  readonly description: string;
+  description: string;
   /** Suggestions for resolving the conflict */
   readonly suggestions?: string[];
 }
@@ -97,53 +92,52 @@ export interface MergeWarning {
  */
 export interface MergeStats {
   /** Number of source objects merged */
-  readonly sourcesMerged: number;
+  sourcesMerged: number;
   /** Number of target objects merged */
-  readonly targetsMerged: number;
+  targetsMerged: number;
   /** Number of properties processed */
-  readonly propertiesProcessed: number;
+  propertiesProcessed: number;
   /** Number of conflicts resolved */
-  readonly conflictsResolved: number;
+  conflictsResolved: number;
   /** Number of conflicts unresolved */
-  readonly conflictsUnresolved: number;
+  conflictsUnresolved: number;
   /** Number of warnings generated */
-  readonly warningsGenerated: number;
+  warningsGenerated: number;
   /** Merge duration in milliseconds */
-  readonly durationMs: number;
+  durationMs: number;
   /** Size of merged configuration */
-  readonly mergedSize: number;
+  mergedSize: number;
 }
 
 /**
  * Merge conflict types
  */
 export type MergeConflictType =
-  | 'TYPE_MISMATCH'     // Types don't match and can't be merged
-  | 'VALUE_CONFLICT'    // Both have values but strategy is 'error'
+  | 'TYPE_MISMATCH' // Types don't match and can't be merged
+  | 'VALUE_CONFLICT' // Both have values but strategy is 'error'
   | 'STRUCTURE_MISMATCH' // Object/array structure doesn't match
   | 'READONLY_CONFLICT' // Attempting to modify read-only property
   | 'CIRCULAR_REFERENCE' // Circular reference detected during merge
-  | 'DEPTH_EXCEEDED'    // Maximum merge depth exceeded
-  | 'INVALID_PATH'      // Invalid property path
+  | 'DEPTH_EXCEEDED' // Maximum merge depth exceeded
+  | 'INVALID_PATH' // Invalid property path
   | 'SERIALIZATION_ERROR'; // Error during value serialization
 
 /**
  * Merge warning codes
  */
 export type MergeWarningCode =
-  | 'TYPE_COERCION'     // Type was coerced during merge
-  | 'LOSSY_MERGE'       // Information was lost during merge
-  | 'DEPRECATED_VALUE'  // Deprecated value was used
-  | 'DEFAULT_OVERRIDE'  // Default value was overridden
-  | 'EMPTY_MERGE'       // Merged empty object/array
-  | 'DUPLICATE_PROPERTY'; // Property exists in multiple sources
+  | 'TYPE_COERCION' // Type was coerced during merge
+  | 'LOSSY_MERGE' // Information was lost during merge
+  | 'DEPRECATED_VALUE' // Deprecated value was used
+  | 'DEFAULT_OVERRIDE' // Default value was overridden
+  | 'EMPTY_MERGE' // Merged empty object/array
+  | 'DUPLICATE_PROPERTY' // Property exists in multiple sources
+  | 'CIRCULAR_REFERENCE'; // Circular reference detected
 
 /**
  * Conflict resolver function
  */
-export type ConflictResolver = (
-  conflict: MergeConflict
-) => {
+export type ConflictResolver = (conflict: MergeConflict) => {
   resolved: boolean;
   value?: unknown;
   strategy?: MergeStrategy;
@@ -233,16 +227,13 @@ export class ConfigMergeEngine {
     onProgress: () => {},
     cloneSources: true,
     validateMerged: false,
-    transformers: new Map()
+    transformers: new Map(),
   };
 
   /**
    * Merge multiple configuration sources
    */
-  merge(
-    sources: MergeSource[],
-    options: MergeOptions = {}
-  ): MergeResult {
+  merge(sources: MergeSource[], options: MergeOptions = {}): MergeResult {
     const mergedOptions = { ...this.defaultOptions, ...options };
     const startTime = Date.now();
 
@@ -256,7 +247,7 @@ export class ConfigMergeEngine {
       conflictsUnresolved: 0,
       warningsGenerated: 0,
       durationMs: 0,
-      mergedSize: 0
+      mergedSize: 0,
     };
 
     // Sort sources by priority (highest first)
@@ -267,26 +258,28 @@ export class ConfigMergeEngine {
         success: true,
         merged: {},
         conflicts: [],
-        warnings: [{
-          code: 'EMPTY_MERGE',
-          message: 'No sources provided for merge',
-          path: '',
-          values: {},
-          severity: 'low'
-        }],
-        stats
+        warnings: [
+          {
+            code: 'EMPTY_MERGE',
+            message: 'No sources provided for merge',
+            path: '',
+            values: {},
+            severity: 'low',
+          },
+        ],
+        stats,
       };
     }
 
     // Start with highest priority source as base
-    let merged: Config = this.cloneSource(sortedSources[0].config, mergedOptions);
+    let merged: MutableConfig = this.cloneSource(sortedSources[0].config, mergedOptions);
 
     // Merge remaining sources
     for (let i = 1; i < sortedSources.length; i++) {
       const source = sortedSources[i];
-      const sourceConfig = mergedOptions.cloneSources ?
-        this.cloneSource(source.config, mergedOptions) :
-        source.config;
+      const sourceConfig = mergedOptions.cloneSources
+        ? this.cloneSource(source.config, mergedOptions)
+        : source.config;
 
       const mergeResult = this.mergeConfigs(
         merged,
@@ -312,8 +305,8 @@ export class ConfigMergeEngine {
             warnings,
             stats: {
               ...stats,
-              durationMs: Date.now() - startTime
-            }
+              durationMs: Date.now() - startTime,
+            },
           };
         }
       }
@@ -324,11 +317,11 @@ export class ConfigMergeEngine {
     stats.mergedSize = this.calculateSize(merged);
 
     return {
-      success: conflicts.filter(c => !c.resolvedValue).length === 0,
+      success: conflicts.filter((c) => !c.resolvedValue).length === 0,
       merged,
       conflicts,
       warnings,
-      stats
+      stats,
     };
   }
 
@@ -345,7 +338,7 @@ export class ConfigMergeEngine {
     stats: MergeStats
   ): { success: boolean; merged: Config; conflicts: MergeConflict[] } {
     const newConflicts: MergeConflict[] = [];
-    const merged: Config = { ...target };
+    const merged: MutableConfig = { ...target };
 
     // Track visited objects for circular reference detection
     const visited = new WeakMap<object, string>();
@@ -366,8 +359,9 @@ export class ConfigMergeEngine {
     conflicts.push(...newConflicts);
 
     return {
-      success: newConflicts.filter(c => !c.resolvedValue).length === 0,
-      merged
+      success: newConflicts.filter((c) => !c.resolvedValue).length === 0,
+      merged,
+      conflicts,
     };
   }
 
@@ -393,7 +387,7 @@ export class ConfigMergeEngine {
         sourceValue: source,
         targetValue: target,
         description: `Maximum merge depth of ${options.maxDepth} exceeded`,
-        suggestions: [`Increase maxDepth limit`, `Restructure configuration to reduce nesting`]
+        suggestions: [`Increase maxDepth limit`, `Restructure configuration to reduce nesting`],
       });
       return;
     }
@@ -410,7 +404,7 @@ export class ConfigMergeEngine {
             message: `Circular reference detected: ${path} -> ${existingPath}`,
             path,
             values: { source, target },
-            severity: 'medium'
+            severity: 'medium',
           });
           return;
         } else {
@@ -420,7 +414,7 @@ export class ConfigMergeEngine {
             sourceValue: source,
             targetValue: target,
             description: `Circular reference detected: ${path} -> ${existingPath}`,
-            suggestions: [`Enable circular reference handling`, `Restructure configuration`]
+            suggestions: [`Enable circular reference handling`, `Restructure configuration`],
           });
           return;
         }
@@ -511,7 +505,7 @@ export class ConfigMergeEngine {
       sourceValue,
       targetValue,
       description: `Conflict at ${path}: target has ${typeof targetValue}, source has ${typeof sourceValue}`,
-      suggestions: this.getConflictSuggestions(targetValue, sourceValue, strategy)
+      suggestions: this.getConflictSuggestions(targetValue, sourceValue, strategy),
     };
 
     switch (strategy) {
@@ -630,7 +624,7 @@ export class ConfigMergeEngine {
             message: `Could not merge values at ${path}, using source value`,
             path,
             values: { source: sourceValue, target: targetValue, resolved: sourceValue },
-            severity: 'medium'
+            severity: 'medium',
           });
         }
         break;
@@ -643,7 +637,7 @@ export class ConfigMergeEngine {
             sourceValue,
             targetValue,
             description: `Conflict at ${path}`,
-            suggestions: []
+            suggestions: [],
           };
 
           const result = options.conflictResolver(conflict);
@@ -670,10 +664,15 @@ export class ConfigMergeEngine {
     options: Required<MergeOptions>
   ): { success: boolean; value: unknown } {
     // Handle object merging
-    if (targetValue !== null && typeof targetValue === 'object' &&
-        sourceValue !== null && typeof sourceValue === 'object' &&
-        !Array.isArray(targetValue) && !Array.isArray(sourceValue)) {
-      const merged: JSONObject = { ...targetValue as JSONObject, ...sourceValue as JSONObject };
+    if (
+      targetValue !== null &&
+      typeof targetValue === 'object' &&
+      sourceValue !== null &&
+      typeof sourceValue === 'object' &&
+      !Array.isArray(targetValue) &&
+      !Array.isArray(sourceValue)
+    ) {
+      const merged: JSONObject = { ...(targetValue as JSONObject), ...(sourceValue as JSONObject) };
       return { success: true, value: merged };
     }
 
@@ -705,7 +704,7 @@ export class ConfigMergeEngine {
         return { success: true, value: source };
 
       case 'intersect':
-        const intersection = target.filter(item => source.includes(item));
+        const intersection = target.filter((item) => source.includes(item));
         return { success: true, value: intersection };
 
       case 'merge':
@@ -733,13 +732,13 @@ export class ConfigMergeEngine {
       return; // Don't modify read-only sources
     }
 
-    target[key] = value;
+    target[key] = value as import('./base-types.js').JSONValue;
   }
 
   /**
    * Clone a source object
    */
-  private cloneSource(source: Config, options: Required<MergeOptions>): Config {
+  private cloneSource(source: Config, options: Required<MergeOptions>): MutableConfig {
     try {
       return JSON.parse(JSON.stringify(source));
     } catch (error) {
@@ -783,9 +782,13 @@ export class ConfigMergeEngine {
     switch (strategy) {
       case 'merge':
         if (typeof targetValue === 'object' && typeof sourceValue === 'object') {
-          suggestions.push('Objects will be merged, source properties will overwrite target properties');
+          suggestions.push(
+            'Objects will be merged, source properties will overwrite target properties'
+          );
         } else {
-          suggestions.push('Cannot merge different types, consider using overwrite or preserve strategy');
+          suggestions.push(
+            'Cannot merge different types, consider using overwrite or preserve strategy'
+          );
         }
         break;
 
@@ -826,7 +829,7 @@ export function preferNewerResolver(): ConflictResolver {
       resolved: true,
       value: conflict.sourceValue,
       strategy: 'prefer-source',
-      message: `Prefered newer value from source`
+      message: `Prefered newer value from source`,
     };
   };
 }
@@ -840,7 +843,7 @@ export function preferOlderResolver(): ConflictResolver {
       resolved: true,
       value: conflict.targetValue,
       strategy: 'prefer-target',
-      message: `Preserved existing value from target`
+      message: `Preserved existing value from target`,
     };
   };
 }
@@ -858,13 +861,13 @@ export function numericMaxResolver(): ConflictResolver {
       return {
         resolved: true,
         value: maxValue,
-        message: `Used maximum value: ${maxValue}`
+        message: `Used maximum value: ${maxValue}`,
       };
     }
 
     return {
       resolved: false,
-      message: 'Cannot resolve non-numeric values'
+      message: 'Cannot resolve non-numeric values',
     };
   };
 }
@@ -882,13 +885,13 @@ export function numericMinResolver(): ConflictResolver {
       return {
         resolved: true,
         value: minValue,
-        message: `Used minimum value: ${minValue}`
+        message: `Used minimum value: ${minValue}`,
       };
     }
 
     return {
       resolved: false,
-      message: 'Cannot resolve non-numeric values'
+      message: 'Cannot resolve non-numeric values',
     };
   };
 }
@@ -903,13 +906,13 @@ export function arrayConcatResolver(): ConflictResolver {
       return {
         resolved: true,
         value: concatenated,
-        message: `Concatenated arrays (${conflict.targetValue.length} + ${conflict.sourceValue.length} items)`
+        message: `Concatenated arrays (${conflict.targetValue.length} + ${conflict.sourceValue.length} items)`,
       };
     }
 
     return {
       resolved: false,
-      message: 'Cannot concatenate non-array values'
+      message: 'Cannot concatenate non-array values',
     };
   };
 }
@@ -919,15 +922,25 @@ export function arrayConcatResolver(): ConflictResolver {
  */
 export function stringConcatResolver(separator: string = ', '): ConflictResolver {
   return (conflict) => {
-    const targetStr = typeof conflict.targetValue === 'string' ? conflict.targetValue : String(conflict.targetValue);
-    const sourceStr = typeof conflict.sourceValue === 'string' ? conflict.sourceValue : String(conflict.sourceValue);
+    const targetStr =
+      typeof conflict.targetValue === 'string'
+        ? conflict.targetValue
+        : String(conflict.targetValue);
+    const sourceStr =
+      typeof conflict.sourceValue === 'string'
+        ? conflict.sourceValue
+        : String(conflict.sourceValue);
 
-    const concatenated = targetStr ? (sourceStr ? `${targetStr}${separator}${sourceStr}` : targetStr) : sourceStr;
+    const concatenated = targetStr
+      ? sourceStr
+        ? `${targetStr}${separator}${sourceStr}`
+        : targetStr
+      : sourceStr;
 
     return {
       resolved: true,
       value: concatenated,
-      message: `Concatenated strings with separator: ${separator}`
+      message: `Concatenated strings with separator: ${separator}`,
     };
   };
 }
@@ -946,10 +959,7 @@ export function createMergeEngine(): ConfigMergeEngine {
 /**
  * Merge configurations with sensible defaults
  */
-export function mergeConfigs(
-  sources: MergeSource[],
-  options: MergeOptions = {}
-): MergeResult {
+export function mergeConfigs(sources: MergeSource[], options: MergeOptions = {}): MergeResult {
   const engine = new ConfigMergeEngine();
   return engine.merge(sources, options);
 }
@@ -967,14 +977,14 @@ export function mergeTwoConfigs(
     id: 'source',
     priority: 10,
     config: source,
-    readOnly: false
+    readOnly: false,
   };
 
   const targetInfo: MergeSource = {
     id: 'target',
     priority: 5,
     config: target,
-    readOnly: false
+    readOnly: false,
   };
 
   return engine.merge([targetInfo, sourceInfo], options);
@@ -995,42 +1005,36 @@ export function createMergeSource(
     priority,
     config,
     metadata,
-    readOnly
+    readOnly,
   };
 }
 
 /**
  * Create merge source from environment variables
  */
-export function createEnvSource(
-  prefix: string = '',
-  priority: number = 10
-): MergeSource {
-  const config: Config = {};
+export function createEnvSource(prefix: string = '', priority: number = 10): MergeSource {
+  const config: MutableConfig = {};
 
   if (typeof process !== 'undefined' && process.env) {
     for (const [key, value] of Object.entries(process.env)) {
       if (key.startsWith(prefix)) {
         const configKey = key.substring(prefix.length).toLowerCase();
-        config[configKey] = value;
+        config[configKey] = value as import('./base-types.js').JSONValue;
       }
     }
   }
 
   return createMergeSource('environment', config, priority, {
     source: 'environment',
-    prefix
+    prefix,
   });
 }
 
 /**
  * Create merge source from command line arguments
  */
-export function createArgSource(
-  argv: string[] = process.argv,
-  priority: number = 20
-): MergeSource {
-  const config: Config = {};
+export function createArgSource(argv: string[] = process.argv, priority: number = 20): MergeSource {
+  const config: MutableConfig = {};
   const args = argv.slice(2); // Remove node and script name
 
   for (let i = 0; i < args.length; i++) {
@@ -1043,20 +1047,20 @@ export function createArgSource(
       if (key.includes('=')) {
         // --key=value format
         const [k, v] = key.split('=', 2);
-        config[k] = v;
+        config[k] = v as import('./base-types.js').JSONValue;
       } else if (nextArg && !nextArg.startsWith('--')) {
         // --key value format
-        config[key] = nextArg;
+        config[key] = nextArg as import('./base-types.js').JSONValue;
         i++; // Skip the next arg
       } else {
         // --key (boolean flag)
-        config[key] = true;
+        config[key] = true as import('./base-types.js').JSONValue;
       }
     }
   }
 
   return createMergeSource('command-line', config, priority, {
-    source: 'command-line'
+    source: 'command-line',
   });
 }
 
@@ -1072,15 +1076,17 @@ export function formatMergeResult(result: MergeResult): string {
     `Conflicts unresolved: ${result.stats.conflictsUnresolved}`,
     `Warnings generated: ${result.stats.warningsGenerated}`,
     `Merge duration: ${result.stats.durationMs}ms`,
-    `Merged config size: ${result.stats.mergedSize} bytes`
+    `Merged config size: ${result.stats.mergedSize} bytes`,
   ];
 
   if (result.conflicts.length > 0) {
     lines.push('\nConflicts:');
-    result.conflicts.slice(0, 10).forEach(conflict => {
+    result.conflicts.slice(0, 10).forEach((conflict) => {
       lines.push(`  - ${conflict.path}: ${conflict.description}`);
       if (conflict.resolution) {
-        lines.push(`    Resolution: ${conflict.resolution} -> ${JSON.stringify(conflict.resolvedValue)}`);
+        lines.push(
+          `    Resolution: ${conflict.resolution} -> ${JSON.stringify(conflict.resolvedValue)}`
+        );
       }
     });
 
@@ -1091,7 +1097,7 @@ export function formatMergeResult(result: MergeResult): string {
 
   if (result.warnings.length > 0) {
     lines.push('\nWarnings:');
-    result.warnings.slice(0, 10).forEach(warning => {
+    result.warnings.slice(0, 10).forEach((warning) => {
       lines.push(`  - ${warning.path}: ${warning.message} (${warning.code})`);
     });
 
@@ -1115,12 +1121,12 @@ export function validateMergeResult(result: MergeResult): {
   const warnings: string[] = [];
 
   // Check for unresolved conflicts
-  if (result.conflictsUnresolved > 0) {
-    errors.push(`${result.conflictsUnresolved} conflicts were not resolved`);
+  if (result.stats.conflictsUnresolved > 0) {
+    errors.push(`${result.stats.conflictsUnresolved} conflicts were not resolved`);
   }
 
   // Check for critical warnings
-  const criticalWarnings = result.warnings.filter(w => w.severity === 'high');
+  const criticalWarnings = result.warnings.filter((w) => w.severity === 'high');
   if (criticalWarnings.length > 0) {
     warnings.push(`${criticalWarnings.length} high-severity warnings generated`);
   }
@@ -1128,6 +1134,6 @@ export function validateMergeResult(result: MergeResult): {
   return {
     valid: errors.length === 0,
     errors,
-    warnings
+    warnings,
   };
 }

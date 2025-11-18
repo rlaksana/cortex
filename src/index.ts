@@ -1,9 +1,6 @@
 #!/usr/bin/env node
 
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Core entry point type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
-
 
 /**
  * Cortex Memory MCP Server - Main Entry Point
@@ -29,13 +26,22 @@ import { createMcpServer } from './entry-point-factory.js';
 // Start the server
 async function main() {
   try {
+    // Validate log level with proper typing
+    const validLogLevels = ['error', 'warn', 'info', 'debug'] as const;
+    type LogLevel = typeof validLogLevels[number];
+
+    const logLevel: LogLevel = process.env.LOG_LEVEL &&
+      validLogLevels.includes(process.env.LOG_LEVEL.toLowerCase() as LogLevel)
+      ? (process.env.LOG_LEVEL.toLowerCase() as LogLevel)
+      : 'info';
+
     // Create server instance with verbose configuration
     const server = createMcpServer({
       logger: {
-        level: process.env.LOG_LEVEL as unknown || 'info',
+        level: logLevel,
         silent: false,
-        prefix: 'CORTEX-MAIN'
-      }
+        prefix: 'CORTEX-MAIN',
+      },
     });
 
     // Initialize the server
@@ -47,7 +53,6 @@ async function main() {
     // Server is now running
     server.getLogger().info('Cortex Memory MCP Server started successfully!');
     server.getLogger().info('Available tools: memory_store, memory_find, system_status');
-
   } catch (error) {
     console.error('❌ Failed to start Cortex Memory MCP Server:', error);
     process.exit(1);

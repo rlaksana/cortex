@@ -1,7 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
 /**
  * Cortex Memory MCP Server - Silent Entry Point
@@ -105,7 +102,7 @@ async function main() {
   const config: SilentConfig = {
     debugMode,
     captureLogs: !debugMode,
-    restoreOnError: true
+    restoreOnError: true,
   };
 
   const silentManager = new SilentModeManager(config);
@@ -119,8 +116,8 @@ async function main() {
       logger: {
         level: 'error', // Only log errors in silent mode
         silent: true,
-        prefix: debugMode ? 'CORTEX-SILENT-DEBUG' : 'CORTEX-SILENT'
-      }
+        prefix: debugMode ? 'CORTEX-SILENT-DEBUG' : 'CORTEX-SILENT',
+      },
     });
 
     silentManager.debugLog('Server instance created, initializing...');
@@ -141,7 +138,6 @@ async function main() {
     }
 
     silentManager.debugLog('Silent MCP Server started and ready for connections');
-
   } catch (error) {
     silentManager.debugLog('Server startup failed:', error);
 

@@ -1,10 +1,12 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { IncidentData, ScopeFilter } from '../../types/knowledge-data.js';
-import { isArray, isBoolean, isDict, isString, safePropertyAccess } from '../../utils/type-guards.js';
+import {
+  isArray,
+  isBoolean,
+  isDict,
+  isString,
+  safePropertyAccess,
+} from '../../utils/type-guards.js';
 
 export async function storeIncident(data: IncidentData, scope: ScopeFilter): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
@@ -17,14 +19,16 @@ export async function storeIncident(data: IncidentData, scope: ScopeFilter): Pro
       severity: data.severity || 'medium',
       impact: data.impact_level || 'unknown',
       resolution_status: data.status || 'open',
-      affected_services: safePropertyAccess(data, 'affected_services', isArray) || undefined,
+      affected_services: safePropertyAccess(data, 'affected_services', isArray as any) || undefined,
       business_impact: data.description || '',
-      recovery_actions: safePropertyAccess(data, 'recovery_actions', isArray)
-        ? JSON.stringify(safePropertyAccess(data, 'recovery_actions', isArray))
+      recovery_actions: safePropertyAccess(data, 'recovery_actions', isArray as any)
+        ? JSON.stringify(safePropertyAccess(data, 'recovery_actions', isArray as any))
         : undefined,
-      follow_up_required: safePropertyAccess(data, 'follow_up_required', isBoolean) || false,
-      incident_commander: safePropertyAccess(data, 'incident_commander', isString) || undefined,
-      timeline: safePropertyAccess(data, 'timeline', isArray) ? JSON.stringify(safePropertyAccess(data, 'timeline', isArray)) : undefined,
+      follow_up_required: safePropertyAccess(data, 'follow_up_required', isBoolean as any) || false,
+      incident_commander: safePropertyAccess(data, 'incident_commander', isString as any) || undefined,
+      timeline: safePropertyAccess(data, 'timeline', isArray as any)
+        ? JSON.stringify(safePropertyAccess(data, 'timeline', isArray as any))
+        : undefined,
       root_cause_analysis: data.root_cause_analysis,
       resolution: data.resolution,
       tags: {
@@ -76,7 +80,7 @@ export async function findIncidents(
     }
 
     const incidentObj = incident as Record<string, unknown>;
-    const tags = safePropertyAccess(incidentObj, 'tags', isDict);
+    const tags = safePropertyAccess(incidentObj, 'tags', isDict as any);
 
     return {
       id: String(incidentObj.id || ''),
@@ -88,7 +92,8 @@ export async function findIncidents(
       status: safePropertyAccess(incidentObj, 'resolution_status', isString) || 'open',
       timeline: safePropertyAccess(incidentObj, 'timeline', isString),
       root_cause: safePropertyAccess(incidentObj, 'root_cause_analysis', isString) || undefined,
-      root_cause_analysis: safePropertyAccess(incidentObj, 'root_cause_analysis', isString) || undefined,
+      root_cause_analysis:
+        safePropertyAccess(incidentObj, 'root_cause_analysis', isString) || undefined,
       resolution: safePropertyAccess(incidentObj, 'resolution', isString) || undefined,
       lessons_learned: tags ? safePropertyAccess(tags, 'lessons_learned', isString) : undefined,
       recovery_actions: safePropertyAccess(incidentObj, 'recovery_actions', isString),
@@ -124,22 +129,41 @@ export async function updateIncident(
   // Update using store method
   const updatedIncident = {
     ...existingObj,
-    title: data.title ?? safePropertyAccess(existingObj, 'title', isString) || '',
-    severity: data.severity ?? safePropertyAccess(existingObj, 'severity', isString) || 'medium',
-    impact: data.impact_level ?? safePropertyAccess(existingObj, 'impact', isString) || 'unknown',
-    resolution_status: data.status ?? safePropertyAccess(existingObj, 'resolution_status', isString) || 'open',
-    affected_services: safePropertyAccess(data, 'affected_services', isArray) ?? safePropertyAccess(existingObj, 'affected_services', isArray),
-    business_impact: data.description ?? safePropertyAccess(existingObj, 'business_impact', isString) || '',
-    recovery_actions: safePropertyAccess(data, 'recovery_actions', isArray) ?? safePropertyAccess(existingObj, 'recovery_actions', isArray),
-    follow_up_required: safePropertyAccess(data, 'follow_up_required', isBoolean) ?? safePropertyAccess(existingObj, 'follow_up_required', isBoolean) || false,
-    incident_commander: safePropertyAccess(data, 'incident_commander', isString) ?? safePropertyAccess(existingObj, 'incident_commander', isString),
-    timeline: safePropertyAccess(data, 'timeline', isArray) ?? safePropertyAccess(existingObj, 'timeline', isArray),
-    root_cause_analysis: data.root_cause_analysis ?? safePropertyAccess(existingObj, 'root_cause_analysis', isString),
+    title: data.title ?? (safePropertyAccess(existingObj, 'title', isString) || ''),
+    severity: data.severity ?? (safePropertyAccess(existingObj, 'severity', isString) || 'medium'),
+    impact: data.impact_level ?? (safePropertyAccess(existingObj, 'impact', isString) || 'unknown'),
+    resolution_status:
+      data.status ?? (safePropertyAccess(existingObj, 'resolution_status', isString) || 'open'),
+    affected_services:
+      safePropertyAccess(data, 'affected_services', isArray) ??
+      safePropertyAccess(existingObj, 'affected_services', isArray),
+    business_impact:
+      data.description ?? (safePropertyAccess(existingObj, 'business_impact', isString) || ''),
+    recovery_actions:
+      safePropertyAccess(data, 'recovery_actions', isArray) ??
+      safePropertyAccess(existingObj, 'recovery_actions', isArray),
+    follow_up_required:
+      safePropertyAccess(data, 'follow_up_required', isBoolean as any) ??
+      (safePropertyAccess(existingObj, 'follow_up_required', isBoolean) || false),
+    incident_commander:
+      safePropertyAccess(data, 'incident_commander', isString as any) ??
+      safePropertyAccess(existingObj, 'incident_commander', isString),
+    timeline:
+      safePropertyAccess(data, 'timeline', isArray) ??
+      safePropertyAccess(existingObj, 'timeline', isArray),
+    root_cause_analysis:
+      data.root_cause_analysis ?? safePropertyAccess(existingObj, 'root_cause_analysis', isString),
     resolution: data.resolution ?? safePropertyAccess(existingObj, 'resolution', isString),
     tags: {
       ...(safePropertyAccess(existingObj, 'tags', isDict) || {}),
       ...scope,
-      lessons_learned: data.lessons_learned ?? safePropertyAccess(safePropertyAccess(existingObj, 'tags', isDict) || {}, 'lessons_learned', isString),
+      lessons_learned:
+        data.lessons_learned ??
+        safePropertyAccess(
+          safePropertyAccess(existingObj, 'tags', isDict) || {},
+          'lessons_learned',
+          isString
+        ),
     },
     updated_at: new Date().toISOString(),
   };

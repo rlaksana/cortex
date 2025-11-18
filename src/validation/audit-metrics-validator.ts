@@ -9,22 +9,22 @@
  * @since 2025
  */
 
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
+// Import TypedAuditEvent directly from the audit-types module
 import {
   AuditCategory,
+  ComplianceFramework,
+  ComplianceRegulation,
+  SensitivityLevel,
+  type TypedAuditEvent,
+} from '../types/audit-types.js';
+import {
   AuditEventType,
   AuditOperation,
   AuditSource,
-  ComplianceFramework,
-  ComplianceRegulation,
   MetricCategory,
-  MetricType,
-  SensitivityLevel,
-  type TypedAuditEvent,
-  type TypedMetric} from '../types/index.js';
+  type MetricType,
+  type TypedMetric,
+} from '../types/index.js';
 
 // ============================================================================
 // Core Validation Configuration
@@ -59,12 +59,12 @@ export interface CustomValidationRule {
 }
 
 /**
- * Validation function type
+ * Validation function type (supports both sync and async)
  */
 export type ValidationFunction = (
   data: TypedAuditEvent | TypedMetric,
   context?: ValidationContext
-) => ValidationResult;
+) => ValidationResult | Promise<ValidationResult>;
 
 /**
  * Recovery action for validation failures
@@ -84,7 +84,7 @@ export enum RecoveryType {
   LOG_WARNING = 'log_warning',
   LOG_ERROR = 'log_error',
   ESCALATE = 'escalate',
-  IGNORE = 'ignore'
+  IGNORE = 'ignore',
 }
 
 /**
@@ -143,7 +143,7 @@ export enum ValidationSeverity {
   INFO = 'info',
   WARNING = 'warning',
   ERROR = 'error',
-  CRITICAL = 'critical'
+  CRITICAL = 'critical',
 }
 
 /**
@@ -157,7 +157,8 @@ export interface ValidationError {
   expected?: unknown;
   ruleId?: string;
   timestamp: string;
-  stack?: string;
+  stack?: string | undefined;
+  recommendation?: string; // Added for compatibility with consolidated types
 }
 
 /**
@@ -182,6 +183,7 @@ export interface ValidationSuggestion {
   action: string;
   priority: number; // 1-10
   ruleId?: string;
+  timestamp?: string; // Added for compatibility with consolidated types
 }
 
 /**
@@ -193,7 +195,7 @@ export enum SuggestionType {
   SECURITY = 'security',
   PERFORMANCE = 'performance',
   COMPLIANCE = 'compliance',
-  MAINTENANCE = 'maintenance'
+  MAINTENANCE = 'maintenance',
 }
 
 /**
@@ -233,16 +235,16 @@ export class AuditMetricsValidator {
         auditValidation: 1000,
         metricValidation: 500,
         batchValidation: 5000,
-        customRuleExecution: 200
+        customRuleExecution: 200,
       },
       reporting: {
         includeStackTrace: false,
         includeContext: true,
         includePerformanceMetrics: true,
         aggregateResults: true,
-        reportInterval: 60000
+        reportInterval: 60000,
       },
-      ...config
+      ...config,
     };
 
     this.performanceTracker = new ValidationPerformanceTracker();
@@ -260,7 +262,7 @@ export class AuditMetricsValidator {
     const validationContext: ValidationContext = {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
-      ...context
+      ...context,
     };
 
     try {
@@ -275,40 +277,40 @@ export class AuditMetricsValidator {
             context: validationContext,
             performance: {
               ...cached.performance,
-              timestamp: new Date().toISOString()
-            }
+              timestamp: new Date().toISOString(),
+            },
           };
         }
         this.performanceTracker.recordCacheMiss('audit');
       }
 
       const errors: ValidationError[] = [];
-      const warnings: ValidationWarning[] = [];
-      const suggestions: ValidationSuggestion[] = [];
+      const _warnings: ValidationWarning[] = [];
+      const _suggestions: ValidationSuggestion[] = [];
       let rulesExecuted = 0;
 
       // Core validation rules
-      rulesExecuted += await this.validateCoreAuditFields(event, errors, warnings, suggestions);
+      rulesExecuted += this.validateCoreAuditFields(event, errors, _warnings, _suggestions);
 
       // Business logic validation
-      rulesExecuted += await this.validateAuditBusinessLogic(event, errors, warnings, suggestions);
+      rulesExecuted += this.validateAuditBusinessLogic(event, errors, _warnings, _suggestions);
 
       // Compliance validation
-      rulesExecuted += await this.validateAuditCompliance(event, errors, warnings, suggestions);
+      rulesExecuted += this.validateAuditCompliance(event, errors, _warnings, _suggestions);
 
       // Security validation
-      rulesExecuted += await this.validateAuditSecurity(event, errors, warnings, suggestions);
+      rulesExecuted += this.validateAuditSecurity(event, errors, _warnings, _suggestions);
 
       // Performance validation
-      rulesExecuted += await this.validateAuditPerformance(event, errors, warnings, suggestions);
+      rulesExecuted += this.validateAuditPerformance(event, errors, _warnings, _suggestions);
 
       // Custom validation rules
       for (const rule of this.config.customRules) {
         if (rule.enabled && (rule.type === 'audit' || rule.type === 'both')) {
           const ruleResult = await this.executeCustomRule(rule, event, validationContext);
           errors.push(...ruleResult.errors);
-          warnings.push(...ruleResult.warnings);
-          suggestions.push(...ruleResult.suggestions);
+          _warnings.push(...ruleResult.warnings);
+          _suggestions.push(...ruleResult.suggestions);
           rulesExecuted++;
         }
       }
@@ -318,19 +320,19 @@ export class AuditMetricsValidator {
 
       const result: ValidationResult = {
         isValid: errors.length === 0,
-        severity: this.calculateSeverity(errors, warnings),
+        severity: this.calculateSeverity(errors, _warnings),
         errors,
-        warnings,
-        suggestions,
+        warnings: _warnings,
+        suggestions: _suggestions,
         performance: {
           duration,
           memoryUsage,
           rulesExecuted,
           cacheHits: this.performanceTracker.getCacheHits('audit'),
           cacheMisses: this.performanceTracker.getCacheMisses('audit'),
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
-        context: validationContext
+        context: validationContext,
       };
 
       // Cache result if enabled
@@ -340,7 +342,6 @@ export class AuditMetricsValidator {
       }
 
       return result;
-
     } catch (error) {
       return this.createErrorResult(error as Error, validationContext, startTime);
     }
@@ -357,7 +358,7 @@ export class AuditMetricsValidator {
     const validationContext: ValidationContext = {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
-      ...context
+      ...context,
     };
 
     try {
@@ -372,40 +373,40 @@ export class AuditMetricsValidator {
             context: validationContext,
             performance: {
               ...cached.performance,
-              timestamp: new Date().toISOString()
-            }
+              timestamp: new Date().toISOString(),
+            },
           };
         }
         this.performanceTracker.recordCacheMiss('metric');
       }
 
       const errors: ValidationError[] = [];
-      const warnings: ValidationWarning[] = [];
-      const suggestions: ValidationSuggestion[] = [];
+      const _warnings: ValidationWarning[] = [];
+      const _suggestions: ValidationSuggestion[] = [];
       let rulesExecuted = 0;
 
       // Core validation rules
-      rulesExecuted += await this.validateCoreMetricFields(metric, errors, warnings, suggestions);
+      rulesExecuted += this.validateCoreMetricFields(metric, errors, _warnings, _suggestions);
 
       // Data type validation
-      rulesExecuted += await this.validateMetricDataTypes(metric, errors, warnings, suggestions);
+      rulesExecuted += this.validateMetricDataTypes(metric, errors, _warnings, _suggestions);
 
       // Value range validation
-      rulesExecuted += await this.validateMetricValueRanges(metric, errors, warnings, suggestions);
+      rulesExecuted += this.validateMetricValueRanges(metric, errors, _warnings, _suggestions);
 
       // Quality validation
-      rulesExecuted += await this.validateMetricQuality(metric, errors, warnings, suggestions);
+      rulesExecuted += this.validateMetricQuality(metric, errors, _warnings, _suggestions);
 
       // Performance validation
-      rulesExecuted += await this.validateMetricPerformance(metric, errors, warnings, suggestions);
+      rulesExecuted += this.validateMetricPerformance(metric, errors, _warnings, _suggestions);
 
       // Custom validation rules
       for (const rule of this.config.customRules) {
         if (rule.enabled && (rule.type === 'metric' || rule.type === 'both')) {
           const ruleResult = await this.executeCustomRule(rule, metric, validationContext);
           errors.push(...ruleResult.errors);
-          warnings.push(...ruleResult.warnings);
-          suggestions.push(...ruleResult.suggestions);
+          _warnings.push(...ruleResult.warnings);
+          _suggestions.push(...ruleResult.suggestions);
           rulesExecuted++;
         }
       }
@@ -415,19 +416,19 @@ export class AuditMetricsValidator {
 
       const result: ValidationResult = {
         isValid: errors.length === 0,
-        severity: this.calculateSeverity(errors, warnings),
+        severity: this.calculateSeverity(errors, _warnings),
         errors,
-        warnings,
-        suggestions,
+        warnings: _warnings,
+        suggestions: _suggestions,
         performance: {
           duration,
           memoryUsage,
           rulesExecuted,
           cacheHits: this.performanceTracker.getCacheHits('metric'),
           cacheMisses: this.performanceTracker.getCacheMisses('metric'),
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
-        context: validationContext
+        context: validationContext,
       };
 
       // Cache result if enabled
@@ -437,7 +438,6 @@ export class AuditMetricsValidator {
       }
 
       return result;
-
     } catch (error) {
       return this.createErrorResult(error as Error, validationContext, startTime);
     }
@@ -462,8 +462,8 @@ export class AuditMetricsValidator {
         totalDuration: 0,
         averageDuration: 0,
         memoryUsage: 0,
-        rulesExecuted: 0
-      }
+        rulesExecuted: 0,
+      },
     };
 
     try {
@@ -478,7 +478,7 @@ export class AuditMetricsValidator {
 
         for (const batch of batches) {
           const batchResults = await Promise.all(
-            batch.map(event => this.validateAuditEvent(event, context))
+            batch.map((event) => this.validateAuditEvent(event, context))
           );
           results.push(...batchResults);
         }
@@ -510,9 +510,8 @@ export class AuditMetricsValidator {
         results,
         summary,
         duration: Date.now() - startTime,
-        context
+        context,
       };
-
     } catch (error) {
       return this.createBatchErrorResult(error as Error, context, startTime, events.length);
     }
@@ -537,8 +536,8 @@ export class AuditMetricsValidator {
         totalDuration: 0,
         averageDuration: 0,
         memoryUsage: 0,
-        rulesExecuted: 0
-      }
+        rulesExecuted: 0,
+      },
     };
 
     try {
@@ -553,7 +552,7 @@ export class AuditMetricsValidator {
 
         for (const batch of batches) {
           const batchResults = await Promise.all(
-            batch.map(metric => this.validateMetric(metric, context))
+            batch.map((metric) => this.validateMetric(metric, context))
           );
           results.push(...batchResults);
         }
@@ -585,9 +584,8 @@ export class AuditMetricsValidator {
         results,
         summary,
         duration: Date.now() - startTime,
-        context
+        context,
       };
-
     } catch (error) {
       return this.createBatchErrorResult(error as Error, context, startTime, metrics.length);
     }
@@ -597,12 +595,12 @@ export class AuditMetricsValidator {
   // Private Validation Methods - Audit Events
   // ============================================================================
 
-  private async validateCoreAuditFields(
+  private validateCoreAuditFields(
     event: TypedAuditEvent,
     errors: ValidationError[],
-    warnings: ValidationWarning[],
-    suggestions: ValidationSuggestion[]
-  ): Promise<number> {
+    _warnings: ValidationWarning[],
+    _suggestions: ValidationSuggestion[]
+  ): number {
     let rulesExecuted = 0;
 
     // Required field validation
@@ -612,7 +610,7 @@ export class AuditMetricsValidator {
         message: 'Event ID is required and cannot be empty',
         field: 'id',
         value: event.id,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -622,7 +620,7 @@ export class AuditMetricsValidator {
         message: 'Entity type is required and cannot be empty',
         field: 'entityType',
         value: event.entityType,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -632,7 +630,7 @@ export class AuditMetricsValidator {
         message: 'Entity ID is required and cannot be empty',
         field: 'entityId',
         value: event.entityId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -644,7 +642,7 @@ export class AuditMetricsValidator {
         field: 'eventType',
         value: event.eventType,
         expected: Object.values(AuditEventType),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -655,7 +653,7 @@ export class AuditMetricsValidator {
         field: 'category',
         value: event.category,
         expected: Object.values(AuditCategory),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -666,7 +664,7 @@ export class AuditMetricsValidator {
         field: 'operation',
         value: event.operation,
         expected: Object.values(AuditOperation),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -677,7 +675,7 @@ export class AuditMetricsValidator {
         field: 'source',
         value: event.source,
         expected: Object.values(AuditSource),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -689,7 +687,7 @@ export class AuditMetricsValidator {
         message: 'Invalid timestamp format',
         field: 'timestamp',
         value: event.timestamp,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } else {
       const now = new Date();
@@ -697,24 +695,24 @@ export class AuditMetricsValidator {
       const pastThreshold = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000); // 1 year ago
 
       if (eventTimestamp > futureThreshold) {
-        warnings.push({
+        _warnings.push({
           code: 'AUDIT_009',
           message: 'Event timestamp is significantly in the future',
           field: 'timestamp',
           value: event.timestamp,
           recommendation: 'Check system clock synchronization',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
       if (eventTimestamp < pastThreshold) {
-        warnings.push({
+        _warnings.push({
           code: 'AUDIT_010',
           message: 'Event timestamp is more than 1 year old',
           field: 'timestamp',
           value: event.timestamp,
           recommendation: 'Verify this is intentional for historical data',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     }
@@ -727,7 +725,7 @@ export class AuditMetricsValidator {
         field: 'success',
         value: event.success,
         expected: 'boolean',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -735,47 +733,58 @@ export class AuditMetricsValidator {
     return rulesExecuted;
   }
 
-  private async validateAuditBusinessLogic(
+  private validateAuditBusinessLogic(
     event: TypedAuditEvent,
     errors: ValidationError[],
-    warnings: ValidationWarning[],
-    suggestions: ValidationSuggestion[]
-  ): Promise<number> {
+    _warnings: ValidationWarning[],
+    _suggestions: ValidationSuggestion[]
+  ): number {
     let rulesExecuted = 0;
 
     // Operation-specific validation
-    if (event.operation === AuditOperation.DELETE && event.newData && Object.keys(event.newData).length > 0) {
-      warnings.push({
+    if (
+      event.operation === AuditOperation.DELETE &&
+      event.newData &&
+      Object.keys(event.newData).length > 0
+    ) {
+      _warnings.push({
         code: 'AUDIT_012',
         message: 'Delete operations should not have new data',
         field: 'newData',
         value: event.newData,
         recommendation: 'Remove new data from delete operations',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
-    if (event.operation === AuditOperation.CREATE && event.oldData && Object.keys(event.oldData).length > 0) {
-      warnings.push({
+    if (
+      event.operation === AuditOperation.CREATE &&
+      event.oldData &&
+      Object.keys(event.oldData).length > 0
+    ) {
+      _warnings.push({
         code: 'AUDIT_013',
         message: 'Create operations should not have old data',
         field: 'oldData',
         value: event.oldData,
         recommendation: 'Remove old data from create operations',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
     // Category/operation consistency
-    const categoryOperationConflicts = this.getCategoryOperationConflicts(event.category, event.operation);
+    const categoryOperationConflicts = this.getCategoryOperationConflicts(
+      event.category,
+      event.operation
+    );
     if (categoryOperationConflicts.length > 0) {
-      warnings.push({
+      _warnings.push({
         code: 'AUDIT_014',
         message: `Operation ${event.operation} is unusual for category ${event.category}`,
         field: 'operation',
         value: event.operation,
         recommendation: categoryOperationConflicts.join(', '),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -783,13 +792,13 @@ export class AuditMetricsValidator {
     if (event.changedFields && Array.isArray(event.changedFields)) {
       const hasDataChanges = event.oldData || event.newData;
       if (!hasDataChanges && event.changedFields.length > 0) {
-        warnings.push({
+        _warnings.push({
           code: 'AUDIT_015',
           message: 'Changed fields specified but no data changes found',
           field: 'changedFields',
           value: event.changedFields,
           recommendation: 'Ensure changed fields match actual data changes',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     }
@@ -802,29 +811,30 @@ export class AuditMetricsValidator {
           message: 'Duration cannot be negative',
           field: 'duration',
           value: event.duration,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
-      } else if (event.duration > 300000) { // 5 minutes
-        warnings.push({
+      } else if (event.duration > 300000) {
+        // 5 minutes
+        _warnings.push({
           code: 'AUDIT_017',
           message: 'Operation duration exceeds 5 minutes',
           field: 'duration',
           value: event.duration,
           recommendation: 'Consider optimizing long-running operations',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     }
 
     // User context validation
     if (event.sensitivity === SensitivityLevel.SECRET && !event.userId) {
-      warnings.push({
+      _warnings.push({
         code: 'AUDIT_018',
         message: 'Secret-level events should have user identification',
         field: 'userId',
         value: event.userId,
         recommendation: 'Add user context for high-sensitivity events',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -832,34 +842,34 @@ export class AuditMetricsValidator {
     return rulesExecuted;
   }
 
-  private async validateAuditCompliance(
+  private validateAuditCompliance(
     event: TypedAuditEvent,
     errors: ValidationError[],
-    warnings: ValidationWarning[],
-    suggestions: ValidationSuggestion[]
-  ): Promise<number> {
+    _warnings: ValidationWarning[],
+    _suggestions: ValidationSuggestion[]
+  ): number {
     let rulesExecuted = 0;
 
     // GDPR compliance checks
     if (event.compliance.frameworks.includes(ComplianceFramework.GDPR)) {
       if (event.operation === AuditOperation.DELETE) {
         if (!event.metadata.dataOwner) {
-          warnings.push({
+          _warnings.push({
             code: 'AUDIT_019',
             message: 'GDPR compliance requires data owner for delete operations',
             field: 'metadata.dataOwner',
             recommendation: 'Specify data owner for GDPR delete operations',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
         }
 
         if (!event.compliance.regulations.includes(ComplianceRegulation.GDPR_ARTICLE_17)) {
-          suggestions.push({
+          _suggestions.push({
             type: SuggestionType.COMPLIANCE,
             message: 'Consider adding GDPR Article 17 (right to erasure) reference',
             action: 'Add GDPR_ARTICLE_17 to compliance regulations',
             priority: 7,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
         }
       }
@@ -867,37 +877,40 @@ export class AuditMetricsValidator {
 
     // SOX compliance checks
     if (event.compliance.frameworks.includes(ComplianceFramework.SOX)) {
-      if (event.category === AuditCategory.FINANCIAL && !event.changed_by) {
-        warnings.push({
+      if (event.category === AuditCategory.BUSINESS && !event.userId) {
+        _warnings.push({
           code: 'AUDIT_020',
           message: 'SOX compliance requires user attribution for financial events',
           field: 'changed_by',
           recommendation: 'Add user attribution for financial audit events',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
       if (!event.compliance.retentionPeriod) {
-        suggestions.push({
+        _suggestions.push({
           type: SuggestionType.COMPLIANCE,
           message: 'SOX requires defined retention periods',
           action: 'Define retention period for SOX compliance',
           priority: 8,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     }
 
     // Data classification validation
-    if (event.sensitivity === SensitivityLevel.RESTRICTED || event.sensitivity === SensitivityLevel.SECRET) {
+    if (
+      event.sensitivity === SensitivityLevel.RESTRICTED ||
+      event.sensitivity === SensitivityLevel.SECRET
+    ) {
       if (!event.compliance.frameworks || event.compliance.frameworks.length === 0) {
-        warnings.push({
+        _warnings.push({
           code: 'AUDIT_021',
           message: 'High sensitivity events should have compliance frameworks',
           field: 'compliance.frameworks',
           value: event.compliance.frameworks,
           recommendation: 'Add relevant compliance frameworks for high-sensitivity data',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     }
@@ -906,12 +919,12 @@ export class AuditMetricsValidator {
     return rulesExecuted;
   }
 
-  private async validateAuditSecurity(
+  private validateAuditSecurity(
     event: TypedAuditEvent,
     errors: ValidationError[],
-    warnings: ValidationWarning[],
-    suggestions: ValidationSuggestion[]
-  ): Promise<number> {
+    _warnings: ValidationWarning[],
+    _suggestions: ValidationSuggestion[]
+  ): number {
     let rulesExecuted = 0;
 
     // IP address validation
@@ -922,16 +935,16 @@ export class AuditMetricsValidator {
           message: 'Invalid IP address format',
           field: 'ipAddress',
           value: event.ipAddress,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       } else if (this.isPrivateIPAddress(event.ipAddress) && event.source === AuditSource.API) {
-        warnings.push({
+        _warnings.push({
           code: 'AUDIT_023',
           message: 'API request from private IP address',
           field: 'ipAddress',
           value: event.ipAddress,
           recommendation: 'Verify this is expected internal traffic',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     }
@@ -939,24 +952,24 @@ export class AuditMetricsValidator {
     // User agent validation
     if (event.userAgent) {
       if (event.userAgent.length > 500) {
-        warnings.push({
+        _warnings.push({
           code: 'AUDIT_024',
           message: 'User agent string is unusually long',
           field: 'userAgent',
           value: event.userAgent.length,
           recommendation: 'Check for potential injection or malformed data',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
       if (this.detectSuspiciousUserAgent(event.userAgent)) {
-        warnings.push({
+        _warnings.push({
           code: 'AUDIT_025',
           message: 'Suspicious user agent detected',
           field: 'userAgent',
           value: event.userAgent,
           recommendation: 'Review for potential security threats',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     }
@@ -969,7 +982,7 @@ export class AuditMetricsValidator {
           message: 'Invalid country code',
           field: 'location.country',
           value: event.location.country,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     }
@@ -984,49 +997,51 @@ export class AuditMetricsValidator {
     return rulesExecuted;
   }
 
-  private async validateAuditPerformance(
+  private validateAuditPerformance(
     event: TypedAuditEvent,
     errors: ValidationError[],
-    warnings: ValidationWarning[],
-    suggestions: ValidationSuggestion[]
-  ): Promise<number> {
+    _warnings: ValidationWarning[],
+    _suggestions: ValidationSuggestion[]
+  ): number {
     let rulesExecuted = 0;
 
     // Metadata size validation
     const metadataSize = JSON.stringify(event.metadata).length;
-    if (metadataSize > 10000) { // 10KB
-      warnings.push({
+    if (metadataSize > 10000) {
+      // 10KB
+      _warnings.push({
         code: 'AUDIT_027',
         message: 'Large metadata payload detected',
         field: 'metadata',
         value: metadataSize,
         recommendation: 'Consider reducing metadata size or using references',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
     // Tags validation
     if (event.tags && Object.keys(event.tags).length > 50) {
-      warnings.push({
+      _warnings.push({
         code: 'AUDIT_028',
         message: 'Large number of tags may impact performance',
         field: 'tags',
         value: Object.keys(event.tags).length,
         recommendation: 'Consider reducing the number of tags',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
     // Data payload validation
     const dataSize = this.calculateDataSize(event.oldData) + this.calculateDataSize(event.newData);
-    if (dataSize > 100000) { // 100KB
-      warnings.push({
+    if (dataSize > 100000) {
+      // 100KB
+      _warnings.push({
         code: 'AUDIT_029',
         message: 'Large data payload detected',
         field: 'oldData/newData',
         value: dataSize,
         recommendation: 'Consider data compression or references for large payloads',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -1038,32 +1053,22 @@ export class AuditMetricsValidator {
   // Private Validation Methods - Metrics
   // ============================================================================
 
-  private async validateCoreMetricFields(
+  private validateCoreMetricFields(
     metric: TypedMetric,
     errors: ValidationError[],
-    warnings: ValidationWarning[],
-    suggestions: ValidationSuggestion[]
-  ): Promise<number> {
+    _warnings: ValidationWarning[],
+    _suggestions: ValidationSuggestion[]
+  ): number {
     let rulesExecuted = 0;
 
     // Required field validation
-    if (!metric.id || metric.id.trim() === '') {
-      errors.push({
-        code: 'METRIC_001',
-        message: 'Metric ID is required and cannot be empty',
-        field: 'id',
-        value: metric.id,
-        timestamp: new Date().toISOString()
-      });
-    }
-
     if (!metric.name || metric.name.trim() === '') {
       errors.push({
-        code: 'METRIC_002',
+        code: 'METRIC_001',
         message: 'Metric name is required and cannot be empty',
         field: 'name',
         value: metric.name,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -1073,19 +1078,27 @@ export class AuditMetricsValidator {
         message: 'Component is required and cannot be empty',
         field: 'component',
         value: metric.component,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
-    // Enum validation
-    if (!Object.values(MetricType).includes(metric.type)) {
+    // Metric type validation
+    const validMetricTypes: MetricType[] = [
+      'counter',
+      'gauge',
+      'histogram',
+      'summary',
+      'timer',
+      'ratio',
+    ];
+    if (!validMetricTypes.includes(metric.type as MetricType)) {
       errors.push({
         code: 'METRIC_004',
         message: `Invalid metric type: ${metric.type}`,
         field: 'type',
         value: metric.type,
-        expected: Object.values(MetricType),
-        timestamp: new Date().toISOString()
+        expected: validMetricTypes,
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -1096,7 +1109,7 @@ export class AuditMetricsValidator {
         field: 'category',
         value: metric.category,
         expected: Object.values(MetricCategory),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -1108,21 +1121,12 @@ export class AuditMetricsValidator {
         message: 'Invalid timestamp format',
         field: 'timestamp',
         value: metric.timestamp,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
-    // Quality validation
-    if (metric.quality.accuracy < 0 || metric.quality.accuracy > 1) {
-      errors.push({
-        code: 'METRIC_007',
-        message: 'Quality accuracy must be between 0 and 1',
-        field: 'quality.accuracy',
-        value: metric.quality.accuracy,
-        expected: '0-1 range',
-        timestamp: new Date().toISOString()
-      });
-    }
+    // Quality validation - accuracy field doesn't exist in TypedMetric interface
+    // Available fields: status, completeness, lastValidated
 
     if (metric.quality.completeness < 0 || metric.quality.completeness > 1) {
       errors.push({
@@ -1131,7 +1135,7 @@ export class AuditMetricsValidator {
         field: 'quality.completeness',
         value: metric.quality.completeness,
         expected: '0-1 range',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -1139,12 +1143,12 @@ export class AuditMetricsValidator {
     return rulesExecuted;
   }
 
-  private async validateMetricDataTypes(
+  private validateMetricDataTypes(
     metric: TypedMetric,
     errors: ValidationError[],
-    warnings: ValidationWarning[],
-    suggestions: ValidationSuggestion[]
-  ): Promise<number> {
+    _warnings: ValidationWarning[],
+    _suggestions: ValidationSuggestion[]
+  ): number {
     let rulesExecuted = 0;
 
     // Value type validation based on metric type
@@ -1155,7 +1159,7 @@ export class AuditMetricsValidator {
           message: 'Metric value cannot be NaN',
           field: 'value',
           value: metric.value,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
@@ -1165,54 +1169,54 @@ export class AuditMetricsValidator {
           message: 'Metric value must be finite',
           field: 'value',
           value: metric.value,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
       // Metric type-specific validations
-      if (metric.type === MetricType.COUNTER && metric.value < 0) {
-        warnings.push({
+      if (metric.type === 'counter' && metric.value < 0) {
+        _warnings.push({
           code: 'METRIC_011',
           message: 'Counter metrics should have non-negative values',
           field: 'value',
           value: metric.value,
           recommendation: 'Check for counter reset logic',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
-      if (metric.type === MetricType.PERCENTILE && (metric.value < 0 || metric.value > 100)) {
-        warnings.push({
+      if (metric.type === 'percentile' && (metric.value < 0 || metric.value > 100)) {
+        _warnings.push({
           code: 'METRIC_012',
           message: 'Percentile metrics should be between 0 and 100',
           field: 'value',
           value: metric.value,
           recommendation: 'Verify percentile calculation logic',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     }
 
     // Dimension validation
-    for (const dimension of metric.dimensions) {
-      if (!dimension.name || !dimension.value) {
+    for (const [dimensionName, dimensionValue] of Object.entries(metric.dimensions)) {
+      if (!dimensionName || !dimensionValue) {
         errors.push({
           code: 'METRIC_013',
           message: 'Dimension name and value are required',
           field: 'dimensions',
-          value: dimension,
-          timestamp: new Date().toISOString()
+          value: { name: dimensionName, value: dimensionValue },
+          timestamp: new Date().toISOString(),
         });
       }
 
-      if (dimension.name.length > 100) {
-        warnings.push({
+      if (dimensionName.length > 100) {
+        _warnings.push({
           code: 'METRIC_014',
           message: 'Dimension name is very long',
           field: 'dimensions',
-          value: dimension.name,
+          value: dimensionName,
           recommendation: 'Consider shorter dimension names',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     }
@@ -1221,57 +1225,70 @@ export class AuditMetricsValidator {
     return rulesExecuted;
   }
 
-  private async validateMetricValueRanges(
+  private validateMetricValueRanges(
     metric: TypedMetric,
     errors: ValidationError[],
-    warnings: ValidationWarning[],
-    suggestions: ValidationSuggestion[]
-  ): Promise<number> {
+    _warnings: ValidationWarning[],
+    _suggestions: ValidationSuggestion[]
+  ): number {
     let rulesExecuted = 0;
 
     if (typeof metric.value === 'number' && metric.metadata.bounds) {
-      const { bounds } = metric.metadata;
+      const bounds = metric.metadata.bounds as {
+        min?: number;
+        max?: number;
+        expectedRange?: [number, number];
+        criticalRange?: [number, number];
+      };
 
       // Check against min/max bounds
       if (bounds.min !== undefined && metric.value < bounds.min) {
-        warnings.push({
+        _warnings.push({
           code: 'METRIC_015',
           message: 'Metric value below minimum bound',
           field: 'value',
           value: metric.value,
           recommendation: `Value should be >= ${bounds.min}`,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
       if (bounds.max !== undefined && metric.value > bounds.max) {
-        warnings.push({
+        _warnings.push({
           code: 'METRIC_016',
           message: 'Metric value above maximum bound',
           field: 'value',
           value: metric.value,
           recommendation: `Value should be <= ${bounds.max}`,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
       // Check against expected range
-      if (bounds.expectedRange && Array.isArray(bounds.expectedRange) && bounds.expectedRange.length === 2) {
+      if (
+        bounds.expectedRange &&
+        Array.isArray(bounds.expectedRange) &&
+        bounds.expectedRange.length === 2
+      ) {
         const [min, max] = bounds.expectedRange;
         if (metric.value < min || metric.value > max) {
-          warnings.push({
+          _warnings.push({
             code: 'METRIC_017',
             message: 'Metric value outside expected range',
             field: 'value',
             value: metric.value,
             recommendation: `Expected range: [${min}, ${max}]`,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
         }
       }
 
       // Check against critical range
-      if (bounds.criticalRange && Array.isArray(bounds.criticalRange) && bounds.criticalRange.length === 2) {
+      if (
+        bounds.criticalRange &&
+        Array.isArray(bounds.criticalRange) &&
+        bounds.criticalRange.length === 2
+      ) {
         const [min, max] = bounds.criticalRange;
         if (metric.value < min || metric.value > max) {
           errors.push({
@@ -1280,7 +1297,7 @@ export class AuditMetricsValidator {
             field: 'value',
             value: metric.value,
             recommendation: `Critical range violation: [${min}, ${max}]`,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
         }
       }
@@ -1290,12 +1307,12 @@ export class AuditMetricsValidator {
     return rulesExecuted;
   }
 
-  private async validateMetricQuality(
+  private validateMetricQuality(
     metric: TypedMetric,
     errors: ValidationError[],
-    warnings: ValidationWarning[],
-    suggestions: ValidationSuggestion[]
-  ): Promise<number> {
+    _warnings: ValidationWarning[],
+    _suggestions: ValidationSuggestion[]
+  ): number {
     let rulesExecuted = 0;
 
     // Quality threshold validation
@@ -1305,19 +1322,19 @@ export class AuditMetricsValidator {
       consistency: 0.85,
       timeliness: 0.9,
       validity: 0.9,
-      reliability: 0.85
+      reliability: 0.85,
     };
 
     for (const [qualityMetric, threshold] of Object.entries(qualityThresholds)) {
       const value = metric.quality[qualityMetric as keyof typeof metric.quality];
       if (typeof value === 'number' && value < threshold) {
-        warnings.push({
+        _warnings.push({
           code: 'METRIC_019',
           message: `Low ${qualityMetric} quality score`,
           field: `quality.${qualityMetric}`,
           value: value,
           recommendation: `Investigate ${qualityMetric} issues (threshold: ${threshold})`,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     }
@@ -1327,13 +1344,13 @@ export class AuditMetricsValidator {
     const maxValidationAge = 24 * 60 * 60 * 1000; // 24 hours
 
     if (validationAge > maxValidationAge) {
-      warnings.push({
+      _warnings.push({
         code: 'METRIC_020',
         message: 'Metric quality validation is stale',
         field: 'quality.lastValidated',
         value: metric.quality.lastValidated,
         recommendation: 'Refresh metric quality validation',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -1341,49 +1358,50 @@ export class AuditMetricsValidator {
     return rulesExecuted;
   }
 
-  private async validateMetricPerformance(
+  private validateMetricPerformance(
     metric: TypedMetric,
     errors: ValidationError[],
-    warnings: ValidationWarning[],
-    suggestions: ValidationSuggestion[]
-  ): Promise<number> {
+    _warnings: ValidationWarning[],
+    _suggestions: ValidationSuggestion[]
+  ): number {
     let rulesExecuted = 0;
 
     // Metadata size validation
     const metadataSize = JSON.stringify(metric.metadata).length;
-    if (metadataSize > 5000) { // 5KB
-      warnings.push({
+    if (metadataSize > 5000) {
+      // 5KB
+      _warnings.push({
         code: 'METRIC_021',
         message: 'Large metadata payload detected',
         field: 'metadata',
         value: metadataSize,
         recommendation: 'Consider reducing metadata size',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
     // Dimensions count validation
-    if (metric.dimensions.length > 20) {
-      warnings.push({
+    if (Object.keys(metric.dimensions).length > 20) {
+      _warnings.push({
         code: 'METRIC_022',
         message: 'High cardinality detected (many dimensions)',
         field: 'dimensions',
         value: metric.dimensions.length,
         recommendation: 'Consider reducing dimensionality for better performance',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
     // Labels count validation
-    const labelsCount = Object.keys(metric.labels).length;
+    const labelsCount = Object.keys(metric.labels || {}).length;
     if (labelsCount > 50) {
-      warnings.push({
+      _warnings.push({
         code: 'METRIC_023',
         message: 'High number of labels may impact performance',
         field: 'labels',
         value: labelsCount,
         recommendation: 'Consider reducing the number of labels',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -1404,31 +1422,32 @@ export class AuditMetricsValidator {
 
     try {
       // Apply timeout to custom rule execution
+      const validatorResult = rule.validator(data, context);
       const result = await this.withTimeout(
-        rule.validator(data, context),
+        Promise.resolve(validatorResult),
         this.config.timeouts.customRuleExecution,
         `Custom rule ${rule.id} timed out`
-      ) as ValidationResult;
+      );
 
       const duration = Date.now() - startTime;
 
       return {
         isValid: result.errors.length === 0,
         severity: this.calculateSeverity(result.errors, result.warnings),
-        errors: result.errors.map(error => ({
+        errors: result.errors.map((error) => ({
           ...error,
           ruleId: rule.id,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         })),
-        warnings: result.warnings.map(warning => ({
+        warnings: result.warnings.map((warning) => ({
           ...warning,
           ruleId: rule.id,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         })),
-        suggestions: result.suggestions.map(suggestion => ({
+        suggestions: result.suggestions.map((suggestion) => ({
           ...suggestion,
           ruleId: rule.id,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         })),
         performance: {
           duration,
@@ -1436,22 +1455,25 @@ export class AuditMetricsValidator {
           rulesExecuted: 1,
           cacheHits: 0,
           cacheMisses: 0,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
-        context
+        context,
       };
-
     } catch (error) {
       return {
         isValid: false,
         severity: ValidationSeverity.ERROR,
-        errors: [{
-          code: 'CUSTOM_RULE_ERROR',
-          message: `Custom rule ${rule.id} failed: ${(error as Error).message}`,
-          ruleId: rule.id,
-          timestamp: new Date().toISOString(),
-          stack: this.config.reporting.includeStackTrace ? (error as Error).stack : undefined
-        }],
+        errors: [
+          {
+            code: 'CUSTOM_RULE_ERROR',
+            message: `Custom rule ${rule.id} failed: ${(error as Error).message}`,
+            ruleId: rule.id,
+            timestamp: new Date().toISOString(),
+            stack: this.config.reporting.includeStackTrace
+              ? ((error as Error).stack ?? undefined)
+              : undefined,
+          },
+        ],
         warnings: [],
         suggestions: [],
         performance: {
@@ -1460,9 +1482,9 @@ export class AuditMetricsValidator {
           rulesExecuted: 1,
           cacheHits: 0,
           cacheMisses: 0,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
-        context
+        context,
       };
     }
   }
@@ -1471,32 +1493,44 @@ export class AuditMetricsValidator {
   // Utility Methods
   // ============================================================================
 
-  private calculateSeverity(errors: ValidationError[], warnings: ValidationWarning[]): ValidationSeverity {
+  private calculateSeverity(
+    errors: ValidationError[],
+    _warnings: ValidationWarning[]
+  ): ValidationSeverity {
     if (errors.length > 0) {
       return ValidationSeverity.ERROR;
     }
-    if (warnings.length > 5) {
+    if (_warnings.length > 5) {
       return ValidationSeverity.WARNING;
     }
-    if (warnings.length > 0) {
+    if (_warnings.length > 0) {
       return ValidationSeverity.INFO;
     }
     return ValidationSeverity.DEBUG;
   }
 
-  private getCategoryOperationConflicts(category: AuditCategory, operation: AuditOperation): string[] {
+  private getCategoryOperationConflicts(
+    category: AuditCategory,
+    operation: AuditOperation
+  ): string[] {
     const conflicts: string[] = [];
 
     // Define unusual category/operation combinations
     const unusualCombinations: Record<AuditCategory, AuditOperation[]> = {
       [AuditCategory.SECURITY]: [AuditOperation.CREATE],
       [AuditCategory.SYSTEM]: [AuditOperation.CREATE, AuditOperation.UPDATE],
-      [AuditCategory.PERFORMANCE]: [AuditOperation.CREATE, AuditOperation.UPDATE, AuditOperation.DELETE],
+      [AuditCategory.PERFORMANCE]: [
+        AuditOperation.CREATE,
+        AuditOperation.UPDATE,
+        AuditOperation.DELETE,
+      ],
       [AuditCategory.BUSINESS]: [],
       [AuditCategory.COMPLIANCE]: [],
       [AuditCategory.OPERATION]: [],
       [AuditCategory.DATA]: [],
-      [AuditCategory.ACCESS]: []
+      [AuditCategory.ACCESS]: [],
+      [AuditCategory.QUALITY]: [],
+      [AuditCategory.NETWORK]: [],
     };
 
     if (unusualCombinations[category]?.includes(operation)) {
@@ -1508,7 +1542,8 @@ export class AuditMetricsValidator {
 
   private isValidIPAddress(ip: string): boolean {
     // IPv4 regex
-    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    const ipv4Regex =
+      /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
     // IPv6 regex (simplified)
     const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
@@ -1522,10 +1557,10 @@ export class AuditMetricsValidator {
       /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
       /^192\.168\./,
       /^127\./,
-      /^169\.254\./
+      /^169\.254\./,
     ];
 
-    return privateRanges.some(range => range.test(ip));
+    return privateRanges.some((range) => range.test(ip));
   }
 
   private detectSuspiciousUserAgent(userAgent: string): boolean {
@@ -1537,10 +1572,10 @@ export class AuditMetricsValidator {
       /nikto/i,
       /nmap/i,
       /curl/i,
-      /wget/i
+      /wget/i,
     ];
 
-    return suspiciousPatterns.some(pattern => pattern.test(userAgent));
+    return suspiciousPatterns.some((pattern) => pattern.test(userAgent));
   }
 
   private isValidCountryCode(country: string): boolean {
@@ -1559,7 +1594,7 @@ export class AuditMetricsValidator {
       entityType: event.entityType,
       entityId: event.entityId,
       operation: event.operation,
-      timestamp: event.timestamp
+      timestamp: event.timestamp,
     };
     return `audit:${Buffer.from(JSON.stringify(keyData)).toString('base64')}`;
   }
@@ -1570,16 +1605,12 @@ export class AuditMetricsValidator {
       type: metric.type,
       component: metric.component,
       dimensions: metric.dimensions,
-      timestamp: metric.timestamp
+      timestamp: metric.timestamp,
     };
     return `metric:${Buffer.from(JSON.stringify(keyData)).toString('base64')}`;
   }
 
-  private setCacheWithSizeLimit<K, V>(
-    cache: Map<K, V>,
-    key: K,
-    value: V
-  ): void {
+  private setCacheWithSizeLimit<K, V>(cache: Map<K, V>, key: K, value: V): void {
     if (cache.size >= this.config.cacheSize) {
       // Remove oldest entry (simple LRU)
       const firstKey = cache.keys().next().value;
@@ -1598,12 +1629,14 @@ export class AuditMetricsValidator {
     return {
       isValid: false,
       severity: ValidationSeverity.CRITICAL,
-      errors: [{
-        code: 'VALIDATION_ERROR',
-        message: error.message,
-        timestamp: new Date().toISOString(),
-        stack: this.config.reporting.includeStackTrace ? error.stack : undefined
-      }],
+      errors: [
+        {
+          code: 'VALIDATION_ERROR',
+          message: error.message,
+          timestamp: new Date().toISOString(),
+          stack: this.config.reporting.includeStackTrace ? (error.stack ?? undefined) : undefined,
+        },
+      ],
       warnings: [],
       suggestions: [],
       performance: {
@@ -1612,9 +1645,9 @@ export class AuditMetricsValidator {
         rulesExecuted: 0,
         cacheHits: 0,
         cacheMisses: 0,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      context
+      context,
     };
   }
 
@@ -1636,11 +1669,11 @@ export class AuditMetricsValidator {
           totalDuration: Date.now() - (startTime || Date.now()),
           averageDuration: 0,
           memoryUsage: process.memoryUsage().heapUsed,
-          rulesExecuted: 0
-        }
+          rulesExecuted: 0,
+        },
       },
       duration: Date.now() - (startTime || Date.now()),
-      context
+      context: context || undefined,
     };
   }
 
@@ -1667,7 +1700,7 @@ export class AuditMetricsValidator {
         enabled: true,
         priority: 8,
         validator: this.validateAuditDataIntegrity.bind(this),
-        errorMessage: 'Audit data integrity check failed'
+        errorMessage: 'Audit data integrity check failed',
       },
       {
         id: 'metric_anomaly_detection',
@@ -1677,7 +1710,7 @@ export class AuditMetricsValidator {
         enabled: true,
         priority: 6,
         validator: this.detectMetricAnomalies.bind(this),
-        errorMessage: 'Metric anomaly detected'
+        errorMessage: 'Metric anomaly detected',
       }
     );
 
@@ -1687,14 +1720,14 @@ export class AuditMetricsValidator {
     }
   }
 
-  private async validateAuditDataIntegrity(
+  private validateAuditDataIntegrity(
     data: TypedAuditEvent | TypedMetric,
     context?: ValidationContext
-  ): Promise<ValidationResult> {
+  ): ValidationResult {
     // Implement data integrity checks
     const errors: ValidationError[] = [];
-    const warnings: ValidationWarning[] = [];
-    const suggestions: ValidationSuggestion[] = [];
+    const _warnings: ValidationWarning[] = [];
+    const _suggestions: ValidationSuggestion[] = [];
 
     if ('oldData' in data) {
       const auditEvent = data as TypedAuditEvent;
@@ -1703,14 +1736,15 @@ export class AuditMetricsValidator {
         const oldSize = JSON.stringify(auditEvent.oldData).length;
         const newSize = JSON.stringify(auditEvent.newData).length;
 
-        if (Math.abs(oldSize - newSize) > 100000) { // 100KB difference
-          warnings.push({
+        if (Math.abs(oldSize - newSize) > 100000) {
+          // 100KB difference
+          _warnings.push({
             code: 'DATA_INTEGRITY_001',
             message: 'Significant data size change detected',
             field: 'oldData/newData',
             value: { oldSize, newSize },
             recommendation: 'Verify data change is intentional',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
         }
       }
@@ -1718,73 +1752,74 @@ export class AuditMetricsValidator {
 
     return {
       isValid: errors.length === 0,
-      severity: this.calculateSeverity(errors, warnings),
+      severity: this.calculateSeverity(errors, _warnings),
       errors,
-      warnings,
-      suggestions,
+      warnings: _warnings,
+      suggestions: _suggestions,
       performance: {
         duration: 0,
         memoryUsage: 0,
         rulesExecuted: 1,
         cacheHits: 0,
         cacheMisses: 0,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      context
+      context,
     };
   }
 
-  private async detectMetricAnomalies(
+  private detectMetricAnomalies(
     data: TypedAuditEvent | TypedMetric,
     context?: ValidationContext
-  ): Promise<ValidationResult> {
+  ): ValidationResult {
     // Implement metric anomaly detection
     const errors: ValidationError[] = [];
-    const warnings: ValidationWarning[] = [];
-    const suggestions: ValidationSuggestion[] = [];
+    const _warnings: ValidationWarning[] = [];
+    const _suggestions: ValidationSuggestion[] = [];
 
     if ('value' in data && typeof data.value === 'number') {
       const metric = data as TypedMetric;
 
       // Simple anomaly detection based on value ranges
-      if (Math.abs(metric.value) > 1000000) { // Very large values
-        warnings.push({
+      if (Math.abs(metric.value) > 1000000) {
+        // Very large values
+        _warnings.push({
           code: 'METRIC_ANOMALY_001',
           message: 'Unusually large metric value detected',
           field: 'value',
           value: metric.value,
           recommendation: 'Verify metric value is correct',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
-      if (metric.value === 0 && metric.type === MetricType.COUNTER) {
-        warnings.push({
+      if (metric.value === 0 && metric.type === 'counter') {
+        _warnings.push({
           code: 'METRIC_ANOMALY_002',
           message: 'Counter metric with zero value may indicate reset issue',
           field: 'value',
           value: metric.value,
           recommendation: 'Check counter initialization logic',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     }
 
     return {
       isValid: errors.length === 0,
-      severity: this.calculateSeverity(errors, warnings),
+      severity: this.calculateSeverity(errors, _warnings),
       errors,
-      warnings,
-      suggestions,
+      warnings: _warnings,
+      suggestions: _suggestions,
       performance: {
         duration: 0,
         memoryUsage: 0,
         rulesExecuted: 1,
         cacheHits: 0,
         cacheMisses: 0,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      context
+      context,
     };
   }
 }
@@ -1862,15 +1897,15 @@ export function createDefaultValidationConfig(): ValidationConfig {
       auditValidation: 1000,
       metricValidation: 500,
       batchValidation: 5000,
-      customRuleExecution: 200
+      customRuleExecution: 200,
     },
     reporting: {
       includeStackTrace: false,
       includeContext: true,
       includePerformanceMetrics: true,
       aggregateResults: true,
-      reportInterval: 60000
-    }
+      reportInterval: 60000,
+    },
   };
 }
 

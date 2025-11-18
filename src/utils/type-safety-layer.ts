@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Utility type guard compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Type Safety Layer
@@ -83,16 +81,29 @@ export function toChunkMetadata(metadata: unknown): {
     chunk_index: toNumber(meta.chunk_index),
     total_chunks: toNumber(meta.total_chunks),
     parent_id: toString(meta.parent_id),
-    extracted_title: toString(meta.extracted_title)
+    extracted_title: toString(meta.extracted_title),
   };
 }
 
 /**
  * Convert database errors to compatible format
  */
-export function toDatabaseError(error: Error | string, code?: string): Error & { code?: string; severity?: string; retryable?: boolean } {
+export function toDatabaseError(
+  error: Error | string,
+  code?: string
+): Error & {
+  code?: string;
+  severity?: string;
+  retryable?: boolean;
+  originalError?: Error | string;
+} {
   const message = typeof error === 'string' ? error : error.message;
-  const enhancedError = new Error(message) as unknown;
+  const enhancedError = new Error(message) as Error & {
+    code?: string;
+    severity?: string;
+    retryable?: boolean;
+    originalError?: Error | string;
+  };
   enhancedError.code = code || 'UNKNOWN_ERROR';
   enhancedError.severity = 'error';
   enhancedError.retryable = false;
@@ -122,11 +133,12 @@ export function toSearchResult(point: unknown): {
   payload?: Record<string, unknown>;
   vector?: number[];
 } {
+  const pointData = point as Record<string, unknown>;
   return {
-    id: validatePointId(point.id),
-    score: toNumber(point.score, 0),
-    payload: toPayload(point.payload),
-    vector: point.vector || []
+    id: validatePointId(pointData.id as string | number),
+    score: toNumber(pointData.score as number, 0),
+    payload: toPayload(pointData.payload as Record<string, unknown>),
+    vector: (pointData.vector as number[]) || [],
   };
 }
 
@@ -134,7 +146,7 @@ export function toSearchResult(point: unknown): {
  * Batch convert scored points to search results
  */
 export function toSearchResults(points: unknown[]): unknown[] {
-  return points.map(point => toSearchResult(point));
+  return points.map((point) => toSearchResult(point));
 }
 
 /**
@@ -151,7 +163,7 @@ export function safeWrapper<T extends unknown[], R>(
       if (errorHandler) {
         return errorHandler(error);
       }
-      throw toDatabaseError(error);
+      throw toDatabaseError(error instanceof Error ? error : new Error(String(error)));
     }
   };
 }
@@ -170,7 +182,7 @@ export function safeAsyncWrapper<T extends unknown[], R>(
       if (errorHandler) {
         return await errorHandler(error);
       }
-      throw toDatabaseError(error);
+      throw toDatabaseError(error instanceof Error ? error : new Error(String(error)));
     }
   };
 }
@@ -199,10 +211,11 @@ export function getProperty<T>(obj: unknown, path: string, fallback?: T): T {
   let current: unknown = obj;
 
   for (const key of keys) {
-    if (current === null || current === undefined || !(key in current)) {
+    if (current === null || current === undefined || !(key in (current as unknown))) {
       return fallback as T;
     }
-    current = current[key];
+    const currentObj = current as unknown;
+    current = currentObj[key];
   }
 
   return current as T;
@@ -218,10 +231,10 @@ export function setProperty(obj: unknown, path: string, value: unknown): Record<
 
   for (let i = 0; i < keys.length - 1; i++) {
     const key = keys[i];
-    if (!(key in current) || !isObject(current[key])) {
-      current[key] = {};
+    if (!(key in (current as unknown)) || !isObject((current as unknown)[key])) {
+      (current as unknown)[key] = {};
     }
-    current = current[key];
+    current = (current as unknown)[key];
   }
 
   current[keys[keys.length - 1]] = value;

@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Background Processor Service
  *
@@ -142,7 +138,7 @@ export class BackgroundProcessorService extends EventEmitter {
     const startTime = Date.now();
 
     while (this.activeJobs.size > 0 && Date.now() - startTime < maxWaitTime) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     // Cancel remaining active jobs
@@ -221,8 +217,10 @@ export class BackgroundProcessorService extends EventEmitter {
    * Get processor status
    */
   getStatus(): BackgroundProcessorStatus {
-    const completedJobs = Array.from(this.jobs.values()).filter(job => job.status === 'completed');
-    const failedJobs = Array.from(this.jobs.values()).filter(job => job.status === 'failed');
+    const completedJobs = Array.from(this.jobs.values()).filter(
+      (job) => job.status === 'completed'
+    );
+    const failedJobs = Array.from(this.jobs.values()).filter((job) => job.status === 'failed');
 
     // Calculate average processing time
     const totalProcessingTime = completedJobs.reduce((sum, job) => {
@@ -232,9 +230,8 @@ export class BackgroundProcessorService extends EventEmitter {
       return sum;
     }, 0);
 
-    const averageProcessingTime = completedJobs.length > 0
-      ? totalProcessingTime / completedJobs.length
-      : 0;
+    const averageProcessingTime =
+      completedJobs.length > 0 ? totalProcessingTime / completedJobs.length : 0;
 
     return {
       status: this.isRunning ? 'running' : 'stopped',
@@ -282,7 +279,7 @@ export class BackgroundProcessorService extends EventEmitter {
       job.startedAt = new Date();
 
       // Process job asynchronously
-      this.processJob(job).catch(error => {
+      this.processJob(job).catch((error) => {
         logger.error({ jobId: job.id, error }, 'Job processing failed');
       });
     }
@@ -299,7 +296,7 @@ export class BackgroundProcessorService extends EventEmitter {
 
       // TODO: Implement actual job processing logic
       // For now, simulate processing
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+      await new Promise((resolve) => setTimeout(resolve, Math.random() * 1000));
 
       job.status = 'completed';
       job.completedAt = new Date();
@@ -312,7 +309,6 @@ export class BackgroundProcessorService extends EventEmitter {
 
       logger.debug({ jobId: job.id, processingTime }, 'Job completed successfully');
       this.emit('jobCompleted', job);
-
     } catch (error) {
       logger.error({ jobId: job.id, error }, 'Job processing failed');
 
@@ -353,7 +349,7 @@ export class BackgroundProcessorService extends EventEmitter {
    * Sort queue by priority
    */
   private sortQueue(): void {
-    const priorityOrder = { 'critical': 4, 'high': 3, 'normal': 2, 'low': 1 };
+    const priorityOrder = { critical: 4, high: 3, normal: 2, low: 1 };
 
     this.queue.sort((a, b) => {
       const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];

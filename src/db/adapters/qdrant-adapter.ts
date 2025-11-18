@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Qdrant Database Adapter
  *
@@ -19,18 +15,14 @@
  * @author Cortex Team
  * @version 2.0.0
  * @since 2025
+ *
+ * TypeScript Recovery: Phase 2.2e - Assessing remaining TypeScript compatibility issues
  */
-
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Interface fragmentation causing 100+ TypeScript errors
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
 import * as crypto from 'crypto';
 
-import { QdrantClient, type QdrantClientConfig  } from '@qdrant/js-client-rest';
+import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAI } from 'openai';
-
-import { logger } from '@/utils/logger.js';
 
 import type { ExpiryTimeLabel } from '../../constants/expiry-times.js';
 import {
@@ -51,31 +43,81 @@ import type {
   StoreError,
   StoreResult,
 } from '../../types/core-interfaces.js';
+import type {
+  BatchResult,
+  CollectionId,
+  DatabaseCapabilities,
+  DatabaseConnection,
+  DatabaseOperation,
+  DatabaseResult,
+  MutationBuilder,
+  PointId,
+  QueryBuilder,
+  QueryFilter,
+  QueryOptions,
+  ReadConsistency,
+  Transaction,
+  TransactionOptions,
+} from '../../types/database-generics.js';
 import { calculateItemExpiry } from '../../utils/expiry-utils.js';
+import { logger } from '../../utils/logger.js';
 import {
   createFindObservability,
   createStoreObservability,
 } from '../../utils/observability-helper.js';
+import {
+  hasPropertySimple,
+  safePropertyAccess,
+  isString,
+  isNumber,
+  isObject,
+  hasMessage,
+  isErrorLike
+} from '../../utils/type-guards.js';
+import {
+  isDatabaseResult,
+  isSuccessfulDatabaseResult,
+  isFailedDatabaseResult,
+  unwrapDatabaseResult,
+  unwrapDatabaseResultAsArray,
+  isQdrantPoint,
+  isQdrantSearchResponse,
+  isQdrantMetricsResponse,
+  isMemoryFindResponse,
+  isVectorConfig,
+  hasShould,
+  hasScoreThreshold,
+  hasWithVector,
+  hasTitleAndName,
+  hasDescriptionAndContent,
+  safeErrorProperty,
+  safeQdrantPointAccess
+} from '../../utils/database-type-guards.js';
 
 // Search mode type definition
 type SearchMode = 'auto' | 'deep' | 'fast';
 
 import type {
-  CollectionConfig,
   Condition,
   Filter,
   MemoryFilter,
-  QdrantClientConfig,
   QdrantPointStruct,
   QdrantScoredPoint,
   RangeCondition,
 } from '../../types/database.js';
-import type {
+import {
   ConnectionError,
-  DatabaseResult,
+  DatabaseError,
   NotFoundError,
-  PointId,
+  SystemError,
 } from '../../types/database-generics.js';
+
+// Concrete DatabaseError implementation for Qdrant
+class QdrantDatabaseError extends DatabaseError {
+  constructor(message: string, code: string, cause?: Error) {
+    super(message, code, 'high', true, undefined, cause);
+  }
+}
 import type {
   DatabaseMetrics,
   DeleteOptions,
@@ -104,6 +146,15 @@ export interface QdrantCollectionInfo {
 }
 
 /**
+ * Configuration for local Qdrant client
+ */
+export interface LocalQdrantClientConfig {
+  readonly url: string;
+  readonly timeout?: number;
+  apiKey?: string; // Remove readonly to allow conditional assignment
+}
+
+/**
  * Qdrant collection statistics interface
  */
 export interface QdrantCollectionStats {
@@ -118,13 +169,12 @@ export interface QdrantCollectionStats {
 /**
  * Qdrant adapter implementing vector database operations
  */
-// Note: @ts-nocheck removed - strategic type fixes applied for public API safety
 // =============================================================================
 // QDRANT ADAPTER - MAIN FILE
 // =============================================================================
 // This file has been refactored into focused modules:
 // - Client bootstrap: src/db/qdrant/qdrant-client.ts
-// - Collection management: src/db/qdrant/qdrant-collections.ts  
+// - Collection management: src/db/qdrant/qdrant-collections.ts
 // - Query/search: src/db/qdrant/qdrant-queries.ts
 // - Index/maintenance: src/db/qdrant/qdrant-maintenance.ts
 // - Health/diagnostics: src/db/qdrant/qdrant-health.ts
@@ -135,7 +185,6 @@ export interface QdrantCollectionStats {
 // =============================================================================
 // IMPORTS FROM MODULARIZED QDRANT ADAPTER
 // =============================================================================
-import { createClient } from '../qdrant/qdrant-client';
 
 export class QdrantAdapter implements IVectorAdapter {
   private client!: QdrantClient;
@@ -146,14 +195,7 @@ export class QdrantAdapter implements IVectorAdapter {
   private healthProbe = createQdrantHealthProbe();
   private bootstrapService?: ReturnType<typeof createQdrantBootstrap>;
   private haConfig?: HAConfig;
-  private capabilities!: {
-    supportsVectors: boolean;
-    supportsFullTextSearch: boolean;
-    supportsPayloadFiltering: boolean;
-    maxBatchSize: number;
-    supportedDistanceMetrics: string[];
-    supportedOperations: string[];
-  };
+  private capabilities!: DatabaseCapabilities;
   private readonly COLLECTION_NAME = 'knowledge_items';
   private qdrantCircuitBreaker = circuitBreakerManager.getCircuitBreaker('qdrant', {
     failureThreshold: 2, // Lower threshold for faster failure detection in tests
@@ -177,7 +219,10 @@ export class QdrantAdapter implements IVectorAdapter {
     };
   }
 
-  private createErrorResult<T>(error: DatabaseError, metadata?: Record<string, unknown>): DatabaseResult<T> {
+  private createErrorResult<T>(
+    error: DatabaseError,
+    metadata?: Record<string, unknown>
+  ): DatabaseResult<T> {
     return {
       success: false,
       error,
@@ -193,20 +238,25 @@ export class QdrantAdapter implements IVectorAdapter {
       const result = await operation();
       return this.createSuccessResult(result, { operation: operationName });
     } catch (error) {
-      const dbError = error instanceof DatabaseError
-        ? error
-        : new DatabaseError(`Failed ${operationName}: ${error instanceof Error ? error.message : String(error)}`, 'OPERATION_ERROR', error instanceof Error ? error : undefined);
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : new SystemError(
+              `Failed ${operationName}: ${error instanceof Error ? error.message : String(error)}`,
+              { operation: operationName },
+              error instanceof Error ? error : undefined
+            );
       return this.createErrorResult(dbError, { operation: operationName });
     }
   }
 
-// =============================================================================
-// CLIENT BOOTSTRAP SECTION
-// =============================================================================
-// =============================================================================
-// CLIENT BOOTSTRAP SECTION
-// =============================================================================
-// Delegated to: src/db/qdrant/qdrant-client.ts
+  // =============================================================================
+  // CLIENT BOOTSTRAP SECTION
+  // =============================================================================
+  // =============================================================================
+  // CLIENT BOOTSTRAP SECTION
+  // =============================================================================
+  // Delegated to: src/db/qdrant/qdrant-client.ts
   constructor(config: VectorConfig) {
     // Store config for later async initialization
     this.config = {
@@ -222,6 +272,10 @@ export class QdrantAdapter implements IVectorAdapter {
       connectionTimeout: config.connectionTimeout || 30000,
       maxConnections: config.maxConnections || 10,
       collectionName: config.collectionName || 'knowledge_items',
+      // Required VectorConfig properties
+      size: config.size || config.vectorSize || 1536,
+      embeddingModel: config.embeddingModel || 'text-embedding-3-small',
+      batchSize: config.batchSize || 10,
     };
 
     // Initialize clients - will be enhanced asynchronously
@@ -242,7 +296,8 @@ export class QdrantAdapter implements IVectorAdapter {
       ]);
 
       // Update config with resolved keys
-      const resolvedApiKey = this.config.apiKey || qdrantKey?.value || process.env.QDRANT_API_KEY || '';
+      const resolvedApiKey =
+        this.config.apiKey || qdrantKey?.value || process.env.QDRANT_API_KEY || '';
       const resolvedOpenAIKey = openaiKey?.value || process.env.OPENAI_API_KEY || '';
 
       // Initialize Qdrant client
@@ -312,11 +367,13 @@ export class QdrantAdapter implements IVectorAdapter {
     }
 
     this.capabilities = {
-      supportsVectors: true,
+      supportsTransactions: false,
+      supportsVectorSearch: true,
       supportsFullTextSearch: true,
-      supportsPayloadFiltering: true,
+      supportsBatchOperations: true,
+      supportsStreaming: false,
       maxBatchSize: 100,
-      supportedDistanceMetrics: ['Cosine', 'Euclid', 'Dot', 'Manhattan'],
+      maxConnections: 10,
       supportedOperations: [
         'store',
         'update',
@@ -328,7 +385,11 @@ export class QdrantAdapter implements IVectorAdapter {
         'generateEmbedding',
         'similarityDetection',
         'deduplication',
+        'backup',
+        'restore',
+        'optimize',
       ],
+      consistencyLevels: ['strong', 'eventual'] as ReadConsistency[],
     };
   }
 
@@ -412,13 +473,17 @@ export class QdrantAdapter implements IVectorAdapter {
       logger.info('✅ Qdrant adapter initialized successfully');
     } catch (error) {
       logger.error({ error }, '❌ Failed to initialize Qdrant adapter');
-      throw new ConnectionError('Failed to initialize Qdrant connection', error as Error);
+      throw new ConnectionError(
+        'Failed to initialize Qdrant connection',
+        { originalError: error instanceof Error ? error.message : String(error) },
+        error instanceof Error ? error : undefined
+      );
     }
   }
 
-// =============================================================================
-// HEALTH/DIAGNOSTICS SECTION
-// =============================================================================
+  // =============================================================================
+  // HEALTH/DIAGNOSTICS SECTION
+  // =============================================================================
 
   async healthCheck(): Promise<boolean> {
     try {
@@ -429,7 +494,10 @@ export class QdrantAdapter implements IVectorAdapter {
       }, 'qdrant_health_check');
     } catch (error) {
       logger.error({ error }, 'Qdrant health check failed');
-      this.logQdrantCircuitBreakerEvent('health_check_failure', error);
+      this.logQdrantCircuitBreakerEvent(
+        'health_check_failure',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return false;
     }
   }
@@ -450,10 +518,10 @@ export class QdrantAdapter implements IVectorAdapter {
       };
     } catch (error) {
       logger.error({ error }, 'Failed to get Qdrant metrics');
-      throw new DatabaseError(
+      throw new SystemError(
         'Failed to retrieve database metrics',
-        'METRICS_ERROR',
-        error as Error
+        { operation: 'getMetrics' },
+        error instanceof Error ? error : undefined
       );
     }
   }
@@ -465,231 +533,253 @@ export class QdrantAdapter implements IVectorAdapter {
       logger.info('Qdrant adapter closed');
     } catch (error) {
       logger.error({ error }, 'Error closing Qdrant adapter');
-      throw new DatabaseError('Failed to close Qdrant adapter', 'CLOSE_ERROR', error as Error);
+      throw new SystemError(
+        'Failed to close Qdrant adapter',
+        { operation: 'close' },
+        error instanceof Error ? error : undefined
+      );
     }
   }
 
   // === Knowledge Storage Operations ===
 
-  async store(items: readonly KnowledgeItem[], options: StoreOptions = {}): Promise<DatabaseResult<MemoryStoreResponse>> {
+  async store(
+    items: readonly KnowledgeItem[],
+    options: StoreOptions = {}
+  ): Promise<DatabaseResult<MemoryStoreResponse>> {
     return this.wrapAsyncOperation(async () => {
       return await this.qdrantCircuitBreaker.execute(async () => {
-      await this.ensureInitialized();
-      const startTime = Date.now();
+        await this.ensureInitialized();
+        const startTime = Date.now();
 
-      const { batchSize = 100, skipDuplicates = false } = options;
+        const { batchSize = 100, skipDuplicates = false } = options;
 
-      try {
-        logger.debug({ itemCount: items.length, options }, 'Storing items in Qdrant');
+        try {
+          logger.debug({ itemCount: items.length, options }, 'Storing items in Qdrant');
 
-        const stored: StoreResult[] = [];
-        const errors: StoreError[] = [];
-        const itemResults: ItemResult[] = [];
+          const stored: StoreResult[] = [];
+          const errors: StoreError[] = [];
+          const itemResults: ItemResult[] = [];
 
-        // Process items in batches
-        for (let i = 0; i < items.length; i += batchSize) {
-          const batch = items.slice(i, i + batchSize);
+          // Process items in batches
+          for (let i = 0; i < items.length; i += batchSize) {
+            const batch = items.slice(i, i + batchSize);
 
-          for (let j = 0; j < batch.length; j++) {
-            const item = batch[j];
-            const index = i + j;
+            for (let j = 0; j < batch.length; j++) {
+              const item = batch[j];
+              const index = i + j;
 
-            try {
-              // Generate content hash for deduplication
-              const contentHash = this.generateContentHash(item);
+              try {
+                // Generate content hash for deduplication
+                const contentHash = this.generateContentHash(item);
 
-              // Check for duplicates if requested
-              if (skipDuplicates) {
-                const existing = await this.findByHash(contentHash);
-                if (existing.length > 0) {
-                  const existingPoint = existing[0];
-                  const existingId = typeof existingPoint.id === 'object' && 'uuid' in existingPoint.id
-                    ? existingPoint.id.uuid
-                    : typeof existingPoint.id === 'object' && 'num' in existingPoint.id
-                    ? (existingPoint.id.num as number).toString()
-                    : existingPoint.id.toString();
+                // Check for duplicates if requested
+                if (skipDuplicates) {
+                  const existing = await this.findByHash(contentHash);
+                  if (existing.length > 0) {
+                    const existingPoint = existing[0];
+                    const existingId =
+                      typeof existingPoint.id === 'object' && 'uuid' in existingPoint.id
+                        ? existingPoint.id.uuid
+                        : typeof existingPoint.id === 'object' && 'num' in existingPoint.id
+                          ? (existingPoint.id.num as number).toString()
+                          : existingPoint.id.toString();
 
-                  stored.push({
-                    id: existingId,
-                    status: 'skipped_dedupe',
-                    kind: item.kind,
-                    created_at: existingPoint.payload?.created_at as string || new Date().toISOString(),
-                  });
+                    stored.push({
+                      id: existingId,
+                      status: 'skipped_dedupe',
+                      kind: item.kind,
+                      created_at:
+                        (existingPoint.payload?.created_at as string) || new Date().toISOString(),
+                    });
 
-                  // Add to item results
-                  const skippedResult: ItemResult = {
-                    input_index: index,
-                    status: 'skipped_dedupe',
-                    kind: item.kind,
-                    reason: 'Duplicate content',
-                    existing_id: existingId,
-                    created_at: existingPoint.payload?.created_at as string || new Date().toISOString(),
-                  };
-                  if (item.content !== undefined) {
-                    skippedResult.content = item.content;
+                    // Add to item results
+                    const skippedResult: ItemResult = {
+                      input_index: index,
+                      status: 'skipped_dedupe',
+                      kind: item.kind,
+                      reason: 'Duplicate content',
+                      existing_id: existingId,
+                      created_at:
+                        (existingPoint.payload?.created_at as string) || new Date().toISOString(),
+                    };
+                    if (item.content !== undefined) {
+                      skippedResult.content = item.content;
+                    }
+                    itemResults.push(skippedResult);
+                    continue;
                   }
-                  itemResults.push(skippedResult);
-                  continue;
                 }
+
+                // Generate embedding with chunking context if available
+                const content = this.extractContentForEmbedding(item);
+                const chunkingContext = item.data.is_chunk
+                  ? {
+                      is_chunk: true as const,
+                      chunk_index: Number(item.data.chunk_index) || 0,
+                      total_chunks: Number(item.data.total_chunks) || 1,
+                      parent_id: String(item.data.parent_id || ''),
+                      extracted_title: String(item.data.extracted_title || ''),
+                    }
+                  : undefined;
+                const embedding = await this.generateEmbeddingWithContext(content, chunkingContext);
+
+                // Generate sparse vector for keyword search
+                const sparseVector = this.generateSparseVector(content);
+
+                // Calculate TTL and expiry for this item
+                const expiryAt = this.calculateItemExpiryWithPolicy(item);
+                const ttlEpoch = this.calculateTTLEpoch(expiryAt);
+
+                // Create point for Qdrant
+                const point = {
+                  id: item.id || `qdrant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  vector: [...embedding],
+                  sparse_vector: {
+                    content_sparse: sparseVector,
+                  },
+                  payload: {
+                    kind: item.kind || 'section',
+                    scope: item.scope || {},
+                    data: item.data || {},
+                    content_hash: contentHash,
+                    created_at: item.created_at || new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    content,
+                    expiry_at: expiryAt,
+                    ttl_policy: this.getTTLPolicyForKind(item.kind),
+                  },
+                };
+
+                // Add TTL epoch for Qdrant's native TTL if not permanent
+                if (ttlEpoch !== null) {
+                  const qdrantPoint = point as QdrantPointStruct & { ttl_epoch?: number };
+                  qdrantPoint.ttl_epoch = ttlEpoch;
+                }
+
+                // Store in Qdrant
+                await this.client.upsert(this.COLLECTION_NAME, {
+                  wait: true,
+                  points: [point],
+                });
+
+                stored.push({
+                  id: point.id,
+                  status: 'inserted',
+                  kind: item.kind,
+                  created_at: new Date().toISOString(),
+                });
+
+                // Add to item results
+                const storedResult: ItemResult = {
+                  input_index: index,
+                  status: 'stored',
+                  kind: item.kind,
+                  id: point.id,
+                  created_at: new Date().toISOString(),
+                };
+                if (item.content !== undefined) {
+                  storedResult.content = item.content;
+                }
+                itemResults.push(storedResult);
+              } catch (error) {
+                const storeError: StoreError = {
+                  index,
+                  error_code: 'STORE_ERROR',
+                  message: error instanceof Error ? error.message : 'Unknown error',
+                };
+                errors.push(storeError);
+
+                // Add to item results
+                const errorResult: ItemResult = {
+                  input_index: index,
+                  status: 'validation_error',
+                  kind: item.kind,
+                  reason: error instanceof Error ? error.message : 'Unknown error',
+                  error_code: 'STORE_ERROR',
+                };
+                if (item.content !== undefined) {
+                  errorResult.content = item.content;
+                }
+                itemResults.push(errorResult);
               }
-
-              // Generate embedding with chunking context if available
-              const content = this.extractContentForEmbedding(item);
-              const chunkingContext = item.data.is_chunk
-                ? {
-                    is_chunk: true,
-                    chunk_index: item.data.chunk_index,
-                    total_chunks: item.data.total_chunks,
-                    parent_id: item.data.parent_id,
-                    extracted_title: item.data.extracted_title,
-                  }
-                : undefined;
-              const embedding = await this.generateEmbedding(content, chunkingContext);
-
-              // Generate sparse vector for keyword search
-              const sparseVector = this.generateSparseVector(content);
-
-              // Calculate TTL and expiry for this item
-              const expiryAt = this.calculateItemExpiryWithPolicy(item);
-              const ttlEpoch = this.calculateTTLEpoch(expiryAt);
-
-              // Create point for Qdrant
-              const point = {
-                id: item.id || `qdrant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                vector: embedding,
-                sparse_vector: {
-                  content_sparse: sparseVector,
-                },
-                payload: {
-                  kind: item.kind || 'section',
-                  scope: item.scope || {},
-                  data: item.data || {},
-                  content_hash: contentHash,
-                  created_at: item.created_at || new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                  content,
-                  expiry_at: expiryAt,
-                  ttl_policy: this.getTTLPolicyForKind(item.kind),
-                },
-              };
-
-              // Add TTL epoch for Qdrant's native TTL if not permanent
-              if (ttlEpoch !== null) {
-                const qdrantPoint = point as QdrantPointStruct & { ttl_epoch?: number };
-                qdrantPoint.ttl_epoch = ttlEpoch;
-              }
-
-              // Store in Qdrant
-              await this.client.upsert(this.COLLECTION_NAME, {
-                wait: true,
-                points: [point],
-              });
-
-              stored.push({
-                id: point.id,
-                status: 'inserted',
-                kind: item.kind,
-                created_at: new Date().toISOString(),
-              });
-
-              // Add to item results
-              const storedResult: ItemResult = {
-                input_index: index,
-                status: 'stored',
-                kind: item.kind,
-                id: point.id,
-                created_at: new Date().toISOString(),
-              };
-              if (item.content !== undefined) {
-                storedResult.content = item.content;
-              }
-              itemResults.push(storedResult);
-            } catch (error) {
-              const storeError: StoreError = {
-                index,
-                error_code: 'STORE_ERROR',
-                message: error instanceof Error ? error.message : 'Unknown error',
-              };
-              errors.push(storeError);
-
-              // Add to item results
-              const errorResult: ItemResult = {
-                input_index: index,
-                status: 'validation_error',
-                kind: item.kind,
-                reason: error instanceof Error ? error.message : 'Unknown error',
-                error_code: 'STORE_ERROR',
-              };
-              if (item.content !== undefined) {
-                errorResult.content = item.content;
-              }
-              itemResults.push(errorResult);
             }
           }
+
+          // Generate autonomous context
+          const autonomousContext = this.generateAutonomousContext(stored, errors);
+
+          // Generate summary from item results
+          const summary: BatchSummary = {
+            stored: itemResults.filter((item) => item.status === 'stored').length,
+            skipped_dedupe: itemResults.filter((item) => item.status === 'skipped_dedupe').length,
+            business_rule_blocked: itemResults.filter(
+              (item) => item.status === 'business_rule_blocked'
+            ).length,
+            validation_error: itemResults.filter((item) => item.status === 'validation_error')
+              .length,
+            total: itemResults.length,
+          };
+
+          logger.debug(
+            {
+              stored: stored.length,
+              errors: errors.length,
+              items: itemResults.length,
+            },
+            'Qdrant store operation completed'
+          );
+
+          return {
+            // Enhanced response format
+            items: itemResults,
+            summary,
+
+            // Legacy fields for backward compatibility
+            stored,
+            errors,
+            autonomous_context: autonomousContext,
+
+            // Observability metadata
+            observability: createStoreObservability(
+              true, // vector_used
+              false, // degraded (Qdrant adapter assumes not degraded)
+              Date.now() - startTime,
+              0.8 // confidence score
+            ),
+
+            // Required meta field for unified response format
+            meta: {
+              strategy: 'vector',
+              vector_used: true,
+              degraded: false,
+              source: 'qdrant-adapter',
+              execution_time_ms: Date.now() - startTime,
+              confidence_score: 0.8,
+              truncated: false,
+            },
+          };
+        } catch (error) {
+          logger.error({ error, itemCount: items.length }, 'Qdrant store operation failed');
+          this.logQdrantCircuitBreakerEvent(
+            'store_failure',
+            error instanceof Error ? error : new Error(String(error)),
+            { itemCount: items.length }
+          );
+          throw new SystemError(
+            'Failed to store items in Qdrant',
+            { operation: 'store', itemCount: items.length },
+            error instanceof Error ? error : undefined
+          );
         }
-
-        // Generate autonomous context
-        const autonomousContext = this.generateAutonomousContext(stored, errors);
-
-        // Generate summary from item results
-        const summary: BatchSummary = {
-          stored: itemResults.filter((item) => item.status === 'stored').length,
-          skipped_dedupe: itemResults.filter((item) => item.status === 'skipped_dedupe').length,
-          business_rule_blocked: itemResults.filter(
-            (item) => item.status === 'business_rule_blocked'
-          ).length,
-          validation_error: itemResults.filter((item) => item.status === 'validation_error').length,
-          total: itemResults.length,
-        };
-
-        logger.debug(
-          {
-            stored: stored.length,
-            errors: errors.length,
-            items: itemResults.length,
-          },
-          'Qdrant store operation completed'
-        );
-
-        return {
-          // Enhanced response format
-          items: itemResults,
-          summary,
-
-          // Legacy fields for backward compatibility
-          stored,
-          errors,
-          autonomous_context: autonomousContext,
-
-          // Observability metadata
-          observability: createStoreObservability(
-            true, // vector_used
-            false, // degraded (Qdrant adapter assumes not degraded)
-            Date.now() - startTime,
-            0.8 // confidence score
-          ),
-
-          // Required meta field for unified response format
-          meta: {
-            strategy: 'vector',
-            vector_used: true,
-            degraded: false,
-            source: 'qdrant-adapter',
-            execution_time_ms: Date.now() - startTime,
-            confidence_score: 0.8,
-            truncated: false,
-          },
-        };
-      } catch (error) {
-        logger.error({ error, itemCount: items.length }, 'Qdrant store operation failed');
-        this.logQdrantCircuitBreakerEvent('store_failure', error, { itemCount: items.length });
-        throw new DatabaseError('Failed to store items in Qdrant', 'STORE_ERROR', error as Error);
-      }
-    }, 'qdrant_store');
+      }, 'qdrant_store');
     }, 'store');
   }
 
-  async update(items: readonly KnowledgeItem[], options: StoreOptions = {}): Promise<DatabaseResult<MemoryStoreResponse>> {
+  async update(
+    items: readonly KnowledgeItem[],
+    options: StoreOptions = {}
+  ): Promise<DatabaseResult<MemoryStoreResponse>> {
     // For Qdrant, update is the same as store (upsert)
     return await this.store(items, { ...options, upsert: true });
   }
@@ -709,7 +799,7 @@ export class QdrantAdapter implements IVectorAdapter {
         logger.debug({ ids, options }, 'Deleting items from Qdrant');
 
         // Convert PointId array to string array for Qdrant client
-        const idStrings = ids.map(id => typeof id === 'string' ? id : String(id));
+        const idStrings = ids.map((id) => (typeof id === 'string' ? id : String(id)));
 
         for (const [index, id] of idStrings.entries()) {
           try {
@@ -745,7 +835,11 @@ export class QdrantAdapter implements IVectorAdapter {
         return { deletedCount: deleted, errors };
       } catch (error) {
         logger.error({ error, ids }, 'Qdrant delete operation failed');
-        throw new DatabaseError('Failed to delete items from Qdrant', 'DELETE_ERROR', error as Error);
+        throw new SystemError(
+          'Failed to delete items from Qdrant',
+          { operation: 'delete', ids },
+          error instanceof Error ? error : undefined
+        );
       }
     }, 'delete');
   }
@@ -756,59 +850,68 @@ export class QdrantAdapter implements IVectorAdapter {
 
       try {
         // Convert PointId array to string array for Qdrant client
-        const idStrings = ids.map(id => typeof id === 'string' ? id : String(id));
+        const idStrings = ids.map((id) => (typeof id === 'string' ? id : String(id)));
 
         const results = await this.client.retrieve(this.COLLECTION_NAME, {
           ids: idStrings,
           with_payload: true,
         });
 
-        return results.map((point) => this.pointToKnowledgeItem(point));
+        return results.map((point) =>
+          this.pointToKnowledgeItem(point as unknown as QdrantScoredPoint)
+        );
       } catch (error) {
         logger.error({ error, ids }, 'Failed to find items by ID in Qdrant');
-        throw new DatabaseError('Failed to find items by ID', 'FIND_ERROR', error as Error);
+        throw new QdrantDatabaseError(
+          'Failed to find items by ID',
+          'FIND_ERROR',
+          error instanceof Error ? error : new Error(String(error))
+        );
       }
     }, 'findById');
   }
 
   // === Search Operations ===
 
-// =============================================================================
-// QUERY/SEARCH SECTION
-// =============================================================================
+  // =============================================================================
+  // QUERY/SEARCH SECTION
+  // =============================================================================
 
-  async search(query: SearchQuery, options: SearchOptions = {}): Promise<DatabaseResult<MemoryFindResponse>> {
+  async search(
+    query: SearchQuery,
+    options: SearchOptions = {}
+  ): Promise<DatabaseResult<MemoryFindResponse>> {
     return this.wrapAsyncOperation(async () => {
       await this.ensureInitialized();
       const startTime = Date.now();
 
       // No options needed for now
 
-      try {
-        logger.debug({ query, options }, 'Searching Qdrant');
+      logger.debug({ query, options }, 'Searching Qdrant');
 
-        // Determine search mode
-        const mode: SearchMode = (query.mode as SearchMode) || 'auto';
-        let searchResult: DatabaseResult<readonly SearchResult[]>;
+      // Determine search mode
+      const mode: SearchMode = (query.mode as SearchMode) || 'auto';
+      let searchResult: DatabaseResult<readonly SearchResult[]>;
 
-        switch (mode) {
-          case 'auto':
-            searchResult = await this.hybridSearch(query.query, options);
-            break;
-          case 'deep':
-            searchResult = await this.semanticSearch(query.query, options);
-            break;
-          case 'fast':
-            searchResult = await this.exactSearch(query.query, options);
-            break;
-          default:
-            searchResult = await this.hybridSearch(query.query, options);
-            break;
-        }
+      switch (mode) {
+        case 'auto':
+          searchResult = await this.hybridSearch(query.query, options);
+          break;
+        case 'deep':
+          searchResult = await this.semanticSearch(query.query, options);
+          break;
+        case 'fast':
+          searchResult = await this.exactSearch(query.query, options);
+          break;
+        default:
+          searchResult = await this.hybridSearch(query.query, options);
+          break;
+      }
 
-        if (!searchResult.success) {
-          return this.createErrorResult(searchResult.error, { operation: 'search', mode, query: query.query });
-        }
+      if (!searchResult.success) {
+        const errorResult = searchResult as { success: false; error: DatabaseError };
+        throw errorResult.error;
+      }
 
         const searchResults = [...searchResult.data]; // Convert readonly to mutable
 
@@ -831,7 +934,8 @@ export class QdrantAdapter implements IVectorAdapter {
           results_found: limitedResults.length,
           confidence_average:
             limitedResults.length > 0
-              ? limitedResults.reduce((sum, r) => sum + r.confidence_score, 0) / limitedResults.length
+              ? limitedResults.reduce((sum, r) => sum + r.confidence_score, 0) /
+                limitedResults.length
               : 0,
           user_message_suggestion:
             limitedResults.length > 0
@@ -848,7 +952,7 @@ export class QdrantAdapter implements IVectorAdapter {
           'Qdrant search completed'
         );
 
-        return this.createSuccessResult({
+        return {
           results: limitedResults,
           items: limitedResults,
           total_count: limitedResults.length,
@@ -861,7 +965,8 @@ export class QdrantAdapter implements IVectorAdapter {
             false, // degraded (Qdrant adapter assumes not degraded)
             Date.now() - startTime,
             limitedResults.length > 0
-              ? limitedResults.reduce((sum, r) => sum + r.confidence_score, 0) / limitedResults.length
+              ? limitedResults.reduce((sum, r) => sum + r.confidence_score, 0) /
+                  limitedResults.length
               : 0
           ),
 
@@ -879,22 +984,25 @@ export class QdrantAdapter implements IVectorAdapter {
                 : 0,
             truncated: false,
           },
-        }, { operation: 'search', mode, resultCount: limitedResults.length });
-      } catch (error) {
-        logger.error({ error, query }, 'Qdrant search operation failed');
-        throw new DatabaseError('Failed to search Qdrant', 'SEARCH_ERROR', error as Error);
-      }
+        };
     }, 'search');
   }
 
-  async semanticSearch(query: string, options: SearchOptions = {}): Promise<DatabaseResult<readonly SearchResult[]>> {
+  async semanticSearch(
+    query: string,
+    options: SearchOptions = {}
+  ): Promise<DatabaseResult<readonly SearchResult[]>> {
     await this.ensureInitialized();
 
     const { limit = 50, score_threshold = 0.7 } = options;
 
     try {
       // Generate embedding for query
-      const queryEmbedding = await this.generateEmbedding(query);
+      const embeddingResult = await this.generateEmbedding(query);
+      if (isFailedDatabaseResult(embeddingResult)) {
+        throw embeddingResult.error;
+      }
+      const queryEmbedding = [...embeddingResult.data];
 
       // Build filter for scope and types
       const searchFilter = this.buildSearchFilter({});
@@ -915,7 +1023,7 @@ export class QdrantAdapter implements IVectorAdapter {
     } catch (error) {
       logger.error({ error, query }, 'Qdrant semantic search failed');
       return this.createErrorResult(
-        new DatabaseError(
+        new QdrantDatabaseError(
           'Failed to perform semantic search',
           'SEMANTIC_SEARCH_ERROR',
           error as Error
@@ -925,7 +1033,10 @@ export class QdrantAdapter implements IVectorAdapter {
     }
   }
 
-  async exactSearch(query: string, options: SearchOptions = {}): Promise<DatabaseResult<readonly SearchResult[]>> {
+  async exactSearch(
+    query: string,
+    options: SearchOptions = {}
+  ): Promise<DatabaseResult<readonly SearchResult[]>> {
     await this.ensureInitialized();
 
     const { limit = 50, score_threshold = 0.3 } = options;
@@ -943,7 +1054,7 @@ export class QdrantAdapter implements IVectorAdapter {
         limit,
         score_threshold,
         with_payload: ['kind', 'scope', 'data', 'created_at', 'content'],
-        filter: searchFilter,
+        filter: searchFilter as any,
       });
 
       return this.createSuccessResult(
@@ -953,53 +1064,35 @@ export class QdrantAdapter implements IVectorAdapter {
     } catch (error) {
       logger.error({ error, query }, 'Qdrant exact search failed');
       return this.createErrorResult(
-        new DatabaseError(
+        new QdrantDatabaseError(
           'Failed to perform exact search',
           'EXACT_SEARCH_ERROR',
-          error as Error
+          error instanceof Error ? error : new Error(String(error))
         ),
         { operation: 'exact_search', query }
       );
     }
   }
 
-  async findNearest(
-    embedding: number[],
-    limit: number = 10,
-    threshold: number = 0.5
-  ): Promise<SearchResult[]> {
-    await this.ensureInitialized();
-
-    try {
-      const response = await this.client.search(this.COLLECTION_NAME, {
-        vector: embedding,
-        limit,
-        score_threshold: threshold,
-        with_payload: ['kind', 'scope', 'data', 'created_at'],
-      });
-
-      return response.map((result) => this.searchResultToSearchResult(result, 'semantic'));
-    } catch (error) {
-      logger.error({ error }, 'Qdrant find nearest failed');
-      throw new DatabaseError(
-        'Failed to find nearest vectors',
-        'FIND_NEAREST_ERROR',
-        error as Error
-      );
-    }
-  }
-
-  async hybridSearch(query: string, options: SearchOptions = {}): Promise<DatabaseResult<readonly SearchResult[]>> {
+  async hybridSearch(
+    query: string,
+    options: SearchOptions = {}
+  ): Promise<DatabaseResult<readonly SearchResult[]>> {
     await this.ensureInitialized();
 
     const { limit = 50 } = options;
 
     try {
       // Generate both embeddings
-      const [queryEmbedding] = await Promise.all([
+      const [embeddingResult] = await Promise.all([
         this.generateEmbedding(query),
         Promise.resolve(this.generateSparseVector(query)),
       ]);
+
+      if (isFailedDatabaseResult(embeddingResult)) {
+        throw embeddingResult.error;
+      }
+      const queryEmbedding = [...embeddingResult.data];
 
       // Build filter
       const searchFilter = this.buildSearchFilter({});
@@ -1010,7 +1103,7 @@ export class QdrantAdapter implements IVectorAdapter {
         limit,
         score_threshold: 0.5,
         with_payload: ['kind', 'scope', 'data', 'created_at', 'content'],
-        filter: searchFilter,
+        filter: searchFilter as unknown,
       });
 
       return this.createSuccessResult(
@@ -1020,10 +1113,10 @@ export class QdrantAdapter implements IVectorAdapter {
     } catch (error) {
       logger.error({ error, query }, 'Qdrant hybrid search failed');
       return this.createErrorResult(
-        new DatabaseError(
+        new QdrantDatabaseError(
           'Failed to perform hybrid search',
           'HYBRID_SEARCH_ERROR',
-          error as Error
+          error instanceof Error ? error : new Error(String(error))
         ),
         { operation: 'hybrid_search', query }
       );
@@ -1034,239 +1127,401 @@ export class QdrantAdapter implements IVectorAdapter {
 
   async storeByKind(
     kind: string,
-    items: KnowledgeItem[],
+    items: readonly KnowledgeItem[],
     options: StoreOptions = {}
-  ): Promise<MemoryStoreResponse> {
+  ): Promise<DatabaseResult<MemoryStoreResponse>> {
     // Filter items by kind and store them
     const filteredItems = items.filter((item) => item.kind === kind);
     return await this.store(filteredItems, options);
   }
 
   async searchByKind(
-    kinds: string[],
+    kinds: readonly string[],
     query: SearchQuery,
     options: SearchOptions = {}
-  ): Promise<MemoryFindResponse> {
-    const response = await this.search(query, options);
+  ): Promise<DatabaseResult<MemoryFindResponse>> {
+    const searchResult = await this.search(query, options);
+
+    if (!searchResult.success) {
+      return searchResult; // Return the error result directly
+    }
 
     // Filter results by kinds
-    const filteredResults = response.results.filter((result) => kinds.includes(result.kind));
+    const filteredResults = searchResult.data.results.filter((result) =>
+      kinds.includes(result.kind)
+    );
 
-    return {
-      ...response,
-      results: filteredResults,
-      total_count: filteredResults.length,
-    };
+    return this.createSuccessResult(
+      {
+        ...searchResult.data,
+        results: filteredResults,
+        total_count: filteredResults.length,
+      },
+      { operation: 'searchByKind', kinds, query: query.text || 'vector_search' }
+    );
   }
 
   async findByScope(
     scope: { project?: string; branch?: string; org?: string },
     options: SearchOptions = {}
-  ): Promise<KnowledgeItem[]> {
-    await this.ensureInitialized();
+  ): Promise<DatabaseResult<readonly KnowledgeItem[]>> {
+    return this.wrapAsyncOperation(async () => {
+      await this.ensureInitialized();
 
-    try {
-      // Build filter for scope
-      const searchFilter = this.buildSearchFilter({ scope });
+      try {
+        // Build filter for scope
+        const searchFilter = this.buildSearchFilter({ scope });
 
-      // Search using a generic embedding (space or common term)
-      const genericEmbedding = await this.generateEmbedding('knowledge');
+        // Search using a generic embedding (space or common term)
+        const embeddingResult = await this.generateEmbedding('knowledge');
+        if (isFailedDatabaseResult(embeddingResult)) {
+          throw embeddingResult.error;
+        }
+        const genericEmbedding = [...embeddingResult.data];
 
-      const response = await this.client.search(this.COLLECTION_NAME, {
-        vector: genericEmbedding,
-        limit: options.cache ? 1000 : 1000, // Large limit for scope search
-        score_threshold: 0.1,
-        with_payload: true,
-        filter: searchFilter,
-      });
+        const response = await this.client.search(this.COLLECTION_NAME, {
+          vector: genericEmbedding,
+          limit: options.cache ? 1000 : 1000, // Large limit for scope search
+          score_threshold: 0.1,
+          with_payload: true,
+                    filter: searchFilter as unknown,
+        });
 
-      return response.map((result) => this.pointToKnowledgeItem(result));
-    } catch (error) {
-      logger.error({ error, scope }, 'Qdrant scope search failed');
-      throw new DatabaseError(
-        'Failed to search by scope in Qdrant',
-        'SCOPE_SEARCH_ERROR',
-        error as Error
-      );
-    }
+        return response.map((result) =>
+          this.pointToKnowledgeItem(result as unknown as QdrantScoredPoint)
+        );
+      } catch (error) {
+        logger.error({ error, scope }, 'Qdrant scope search failed');
+        throw new QdrantDatabaseError(
+          'Failed to search by scope in Qdrant',
+          'SCOPE_SEARCH_ERROR',
+          error instanceof Error ? error : new Error(String(error))
+        );
+      }
+    }, 'findByScope');
   }
 
   // === Advanced Operations ===
 
-  async findSimilar(item: KnowledgeItem, threshold: number = 0.7): Promise<SearchResult[]> {
-    await this.ensureInitialized();
+  async findSimilar(
+    item: KnowledgeItem,
+    threshold: number = 0.7
+  ): Promise<DatabaseResult<readonly SearchResult[]>> {
+    return this.wrapAsyncOperation(async () => {
+      await this.ensureInitialized();
 
-    try {
-      // Generate embedding for the item with chunking context if available
-      const content = this.extractContentForEmbedding(item);
-      const chunkingContext = item.data.is_chunk
-        ? {
-            is_chunk: true,
-            chunk_index: item.data.chunk_index,
-            total_chunks: item.data.total_chunks,
-            parent_id: item.data.parent_id,
-            extracted_title: item.data.extracted_title,
-          }
-        : undefined;
-      const embedding = await this.generateEmbedding(content, chunkingContext);
+      try {
+        // Generate embedding for the item with chunking context if available
+        const content = this.extractContentForEmbedding(item);
+        const chunkingContext = item.data.is_chunk
+          ? {
+              is_chunk: true,
+              chunk_index: item.data.chunk_index as number,
+              total_chunks: item.data.total_chunks as number,
+              parent_id: item.data.parent_id as string,
+              extracted_title: item.data.extracted_title as string,
+            }
+          : undefined;
+        const embedding = await this.generateEmbeddingWithContext(content, chunkingContext);
 
-      // Search for similar items
-      const response = await this.client.search(this.COLLECTION_NAME, {
-        vector: embedding,
-        limit: 10,
-        score_threshold: threshold,
-        with_payload: ['kind', 'scope', 'data', 'created_at'],
-        filter: {
-          must_not: [{ key: 'id', match: { value: item.id } }],
-        },
-      });
+        // Search for similar items
+        const response = await this.client.search(this.COLLECTION_NAME, {
+          vector: [...embedding],
+          limit: 10,
+          score_threshold: threshold,
+          with_payload: ['kind', 'scope', 'data', 'created_at'],
+                    filter: {
+            must_not: [{ key: 'id', match: { value: item.id } }],
+          } as unknown,
+        });
 
-      return response.map((result) => this.searchResultToSearchResult(result, 'semantic'));
-    } catch (error) {
-      logger.error({ error, itemId: item.id }, 'Qdrant similarity search failed');
-      throw new DatabaseError(
-        'Failed to find similar items in Qdrant',
-        'SIMILARITY_SEARCH_ERROR',
-        error as Error
-      );
-    }
+        return response.map((result) => this.searchResultToSearchResult(result, 'semantic'));
+      } catch (error) {
+        logger.error({ error, itemId: item.id }, 'Qdrant similarity search failed');
+        throw new QdrantDatabaseError(
+          'Failed to find similar items in Qdrant',
+          'SIMILARITY_SEARCH_ERROR',
+          error instanceof Error ? error : new Error(String(error))
+        );
+      }
+    }, 'findSimilar');
   }
 
   async checkDuplicates(
-    items: KnowledgeItem[]
-  ): Promise<{ duplicates: KnowledgeItem[]; originals: KnowledgeItem[] }> {
-    const duplicates: KnowledgeItem[] = [];
-    const originals: KnowledgeItem[] = [];
+    items: readonly KnowledgeItem[]
+  ): Promise<
+    DatabaseResult<{
+      duplicates: readonly KnowledgeItem[];
+      originals: readonly KnowledgeItem[];
+      similarityThreshold: number;
+    }>
+  > {
+    return this.wrapAsyncOperation(async () => {
+      const duplicates: KnowledgeItem[] = [];
+      const originals: KnowledgeItem[] = [];
 
-    for (const item of items) {
-      const contentHash = this.generateContentHash(item);
-      const existing = await this.findByHash(contentHash);
+      for (const item of items) {
+        const contentHash = this.generateContentHash(item);
+        const existing = await this.findByHash(contentHash);
 
-      if (existing.length > 0) {
-        duplicates.push(item);
-      } else {
-        originals.push(item);
-      }
-    }
-
-    return { duplicates, originals };
-  }
-
-  async getStatistics(scope?: { project?: string; branch?: string; org?: string }): Promise<{
-    totalItems: number;
-    itemsByKind: Record<string, number>;
-    storageSize: number;
-    lastUpdated: string;
-    vectorCount: number;
-  }> {
-    await this.ensureInitialized();
-
-    try {
-      // Get collection info
-      const collectionInfo = await this.client.getCollection(this.COLLECTION_NAME);
-      const totalItems = collectionInfo.vectors_count || 0;
-
-      // Get a sample of items to determine kinds
-      const sample = await this.client.scroll(this.COLLECTION_NAME, {
-        limit: 1000,
-        with_payload: ['kind'],
-        filter: scope ? this.buildSearchFilter({ scope }) : undefined,
-      });
-
-      const itemsByKind: Record<string, number> = {};
-      let lastUpdated = new Date().toISOString();
-
-      for (const point of sample.points) {
-        const payload = point.payload || {};
-        const kind = typeof payload.kind === 'string' ? payload.kind : 'unknown';
-        itemsByKind[kind] = (itemsByKind[kind] || 0) + 1;
-
-        const updatedAt = typeof payload.updated_at === 'string' ? payload.updated_at : undefined;
-        if (updatedAt && updatedAt > lastUpdated) {
-          lastUpdated = updatedAt;
+        if (existing.length > 0) {
+          duplicates.push(item);
+        } else {
+          originals.push(item);
         }
       }
 
       return {
-        totalItems,
-        itemsByKind,
-        storageSize: totalItems * ((this.config.vectorSize || 1536) * 4), // Rough estimate
-        lastUpdated,
-        vectorCount: totalItems,
+        duplicates: duplicates as readonly KnowledgeItem[],
+        originals: originals as readonly KnowledgeItem[],
+        similarityThreshold: 0.95,
       };
-    } catch (error) {
-      logger.error({ error }, 'Failed to get Qdrant statistics');
-      throw new DatabaseError('Failed to retrieve statistics', 'STATISTICS_ERROR', error as Error);
-    }
+    }, 'checkDuplicates');
+  }
+
+  async getStatistics(scope?: { project?: string; branch?: string; org?: string }): Promise<
+    DatabaseResult<{
+      totalItems: number;
+      itemsByKind: Record<string, number>;
+      storageSize: number;
+      lastUpdated: string;
+      vectorCount: number;
+    }>
+  > {
+    return this.wrapAsyncOperation(async () => {
+      await this.ensureInitialized();
+
+      try {
+        // Get collection info
+        const collectionInfo = await this.client.getCollection(this.COLLECTION_NAME);
+        const totalItems = collectionInfo.vectors_count || 0;
+
+        // Get a sample of items to determine kinds
+        const sample = await this.client.scroll(this.COLLECTION_NAME, {
+          limit: 1000,
+          with_payload: ['kind'],
+                    filter: scope ? (this.buildSearchFilter({ scope }) as unknown) : undefined,
+        });
+
+        const itemsByKind: Record<string, number> = {};
+        let lastUpdated = new Date().toISOString();
+
+        for (const point of sample.points) {
+          const payload = point.payload || {};
+          const kind = typeof payload.kind === 'string' ? payload.kind : 'unknown';
+          itemsByKind[kind] = (itemsByKind[kind] || 0) + 1;
+
+          const updatedAt = typeof payload.updated_at === 'string' ? payload.updated_at : undefined;
+          if (updatedAt && updatedAt > lastUpdated) {
+            lastUpdated = updatedAt;
+          }
+        }
+
+        return {
+          totalItems,
+          itemsByKind,
+          storageSize: totalItems * ((this.config.vectorSize || 1536) * 4), // Rough estimate
+          lastUpdated,
+          vectorCount: totalItems,
+        };
+      } catch (error) {
+        logger.error({ error }, 'Failed to get Qdrant statistics');
+        throw new QdrantDatabaseError(
+          'Failed to retrieve statistics',
+          'STATISTICS_ERROR',
+          error instanceof Error ? error : new Error(String(error))
+        );
+      }
+    }, 'getStatistics');
   }
 
   // === Batch Operations ===
 
   async bulkStore(
-    items: KnowledgeItem[],
+    items: readonly KnowledgeItem[],
     options: StoreOptions = {}
-  ): Promise<MemoryStoreResponse> {
-    return await this.store(items, { ...options, batchSize: 100 });
-  }
+  ): Promise<DatabaseResult<BatchResult<KnowledgeItem>>> {
+    return this.wrapAsyncOperation(async () => {
+      const startTime = Date.now();
+      const result = await this.store(items, { ...options, batchSize: 100 });
 
-  async bulkDelete(filter: MemoryFilter & { before?: string }): Promise<{ deleted: number }> {
-    await this.ensureInitialized();
-
-    try {
-      // Build filter for bulk delete
-      const filterConfig: MemoryFilter = {};
-      if (filter.kind) filterConfig.kind = filter.kind;
-      if (filter.scope) filterConfig.scope = filter.scope;
-      const searchFilter = this.buildSearchFilter(filterConfig);
-
-      // Find items to delete
-      const toDelete = await this.client.scroll(this.COLLECTION_NAME, {
-        limit: 10000, // Large limit for bulk operation
-        with_payload: ['id'],
-        filter: searchFilter,
-      });
-
-      if (toDelete.points.length === 0) {
-        return { deleted: 0 };
+      if (isFailedDatabaseResult(result)) {
+        const error = result.error;
+        return {
+          totalCount: items.length,
+          successCount: 0,
+          failureCount: items.length,
+          results: items.map(
+            (item) =>
+              ({
+                success: false,
+                error: error,
+              }) as DatabaseResult<KnowledgeItem>
+          ),
+          errors: [error],
+          executionTimeMs: Date.now() - startTime,
+        };
       }
 
-      const ids = toDelete.points.map((point) => point.id);
+      // Convert MemoryStoreResponse to BatchResult
+      const successCount = result.data.stored.length;
+      const failureCount = result.data.errors.length;
+      const skippedCount = result.data.skipped?.length || 0;
 
-      // Delete items
-      await this.client.delete(this.COLLECTION_NAME, {
-        wait: true,
-        points: ids,
-      });
+      const batchResults: DatabaseResult<KnowledgeItem>[] = [];
 
-      logger.debug({ deleted: ids.length, filter }, 'Qdrant bulk delete completed');
-      return { deleted: ids.length };
-    } catch (error) {
-      logger.error({ error, filter }, 'Qdrant bulk delete failed');
-      throw new DatabaseError(
-        'Failed to bulk delete items in Qdrant',
-        'BULK_DELETE_ERROR',
-        error as Error
-      );
-    }
+      // Add successful results
+      for (const stored of result.data.stored) {
+        batchResults.push({
+          success: true,
+          data: items.find((item) => item.id === stored.id)!,
+        });
+      }
+
+      // Add error results
+      for (const storeError of result.data.errors) {
+        const errorId = safePropertyAccess(storeError as unknown, 'id', isString);
+        const item = items.find((item) => item.id === errorId);
+        if (item) {
+          batchResults.push({
+            success: false,
+            error: new QdrantDatabaseError(storeError.message, 'BULK_STORE_ERROR'),
+          });
+        }
+      }
+
+      // Add skipped results
+      for (const skipped of result.data.skipped || []) {
+        const item = items.find((item) => item.id === skipped.id);
+        if (item) {
+          batchResults.push({
+            success: true,
+            data: item,
+          });
+        }
+      }
+
+      return {
+        totalCount: items.length,
+        successCount,
+        failureCount,
+        results: batchResults,
+        errors: result.data.errors.map(
+          (e) => new QdrantDatabaseError(e.message, 'BULK_STORE_ERROR')
+        ),
+        executionTimeMs: Date.now() - startTime,
+      };
+    }, 'bulkStore');
+  }
+
+  async bulkDelete(
+    filter: QueryFilter<Record<string, unknown>>,
+    options?: DeleteOptions
+  ): Promise<DatabaseResult<{ deletedCount: number }>> {
+    return this.wrapAsyncOperation(async () => {
+      await this.ensureInitialized();
+
+      try {
+        // Convert QueryFilter to internal MemoryFilter format
+        const filterConfig: MemoryFilter = {};
+        if (filter.kind) filterConfig.kind = String(filter.kind);
+        if (filter.scope) filterConfig.scope = filter.scope as unknown;
+        const searchFilter = this.buildSearchFilter(filterConfig);
+
+        // Find items to delete
+        const toDelete = await this.client.scroll(this.COLLECTION_NAME, {
+          limit: 10000, // Large limit for bulk operation
+          with_payload: ['id'],
+                    filter: searchFilter as unknown,
+        });
+
+        if (toDelete.points.length === 0) {
+          return { deletedCount: 0 };
+        }
+
+        const ids = toDelete.points.map((point) => point.id);
+
+        // Delete items
+        await this.client.delete(this.COLLECTION_NAME, {
+          wait: true,
+          points: ids,
+        });
+
+        logger.debug({ deletedCount: ids.length, filter }, 'Qdrant bulk delete completed');
+        return { deletedCount: ids.length };
+      } catch (error) {
+        logger.error({ error, filter }, 'Qdrant bulk delete failed');
+        throw new QdrantDatabaseError(
+          'Failed to bulk delete items in Qdrant',
+          'BULK_DELETE_ERROR',
+          error instanceof Error ? error : new Error(String(error))
+        );
+      }
+    }, 'bulkDelete');
   }
 
   async bulkSearch(
-    queries: SearchQuery[],
+    queries: readonly SearchQuery[],
     options: SearchOptions = {}
-  ): Promise<MemoryFindResponse[]> {
-    const results: MemoryFindResponse[] = [];
+  ): Promise<DatabaseResult<MemoryFindResponse[]>> {
+    try {
+      const results: MemoryFindResponse[] = [];
+      for (const query of queries) {
+        const searchResult = await this.search(query, options);
 
-    for (const query of queries) {
-      const result = await this.search(query, options);
-      results.push(result);
+        if (!searchResult.success) {
+          const failureResult = searchResult as { success: false; error: DatabaseError };
+          throw (
+            failureResult.error ??
+            new SystemError('Bulk search failed due to an unknown error', { operation: 'bulkSearch' })
+          );
+        }
+
+        results.push(searchResult.data);
+      }
+
+      const metadata = {
+        operation: 'bulkSearch',
+        queriesProcessed: queries.length,
+        totalResults: results.reduce((sum, r) => sum + r.total_count, 0),
+      };
+
+      return this.createSuccessResult(results, metadata);
+    } catch (error) {
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : new SystemError(
+              `Failed bulkSearch: ${error instanceof Error ? error.message : String(error)}`,
+              { operation: 'bulkSearch' },
+              error instanceof Error ? error : undefined
+            );
+      return this.createErrorResult(dbError, { operation: 'bulkSearch' });
     }
-
-    return results;
   }
 
   // === Vector Operations ===
 
-  async generateEmbedding(
+  async generateEmbedding(content: string): Promise<DatabaseResult<readonly number[]>> {
+    return this.wrapAsyncOperation(async () => {
+      // Use enhanced embedding service if available
+      if (this.embeddingService) {
+        const result = await this.embeddingService.generateEmbeddingWithContext(content, {});
+        return result.vector as readonly number[];
+      }
+
+      // Fallback to OpenAI direct API
+      const response = await this.openai.embeddings.create({
+        model: 'text-embedding-ada-002',
+        input: content,
+      });
+
+      return response.data[0].embedding as readonly number[];
+    }, 'generateEmbedding');
+  }
+
+  // Helper method with chunking context for internal use
+  async generateEmbeddingWithContext(
     content: string,
     chunkingContext?: {
       is_chunk?: boolean;
@@ -1295,226 +1550,249 @@ export class QdrantAdapter implements IVectorAdapter {
       return response.data[0].embedding;
     } catch (error) {
       logger.error({ error, contentLength: content.length }, 'Failed to generate embedding');
-      throw new DatabaseError('Failed to generate embedding', 'EMBEDDING_ERROR', error as Error);
+      throw new QdrantDatabaseError(
+        'Failed to generate embedding',
+        'EMBEDDING_ERROR',
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 
   async storeWithEmbeddings(
-    items: Array<KnowledgeItem & { embedding: number[] }>
-  ): Promise<MemoryStoreResponse> {
-    const startTime = Date.now();
-    await this.ensureInitialized();
+    items: readonly (KnowledgeItem & { embedding: number[] })[]
+  ): Promise<DatabaseResult<MemoryStoreResponse>> {
+    return this.wrapAsyncOperation(async () => {
+      const startTime = Date.now();
+      await this.ensureInitialized();
 
-    const stored: StoreResult[] = [];
-    const errors: StoreError[] = [];
-    const itemResults: ItemResult[] = [];
+      const stored: StoreResult[] = [];
+      const errors: StoreError[] = [];
+      const itemResults: ItemResult[] = [];
 
-    try {
-      const points = items.map((item) => ({
-        id: item.id || `qdrant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        vector: item.embedding,
-        payload: {
-          kind: item.kind,
-          scope: item.scope,
-          data: item.data,
-          content_hash: this.generateContentHash(item),
-          created_at: item.created_at || new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          content: this.extractContentForEmbedding(item),
-        },
-      }));
+      try {
+        const points = items.map((item) => ({
+          id: item.id || `qdrant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          vector: item.embedding,
+          payload: {
+            kind: item.kind,
+            scope: item.scope,
+            data: item.data,
+            content_hash: this.generateContentHash(item),
+            created_at: item.created_at || new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            content: this.extractContentForEmbedding(item),
+          },
+        }));
 
-      // Store in batch
-      await this.client.upsert(this.COLLECTION_NAME, {
-        wait: true,
-        points,
-      });
-
-      points.forEach((point, index) => {
-        stored.push({
-          id: point.id,
-          status: 'inserted',
-          kind: point.payload.kind,
-          created_at: point.payload.created_at,
+        // Store in batch
+        await this.client.upsert(this.COLLECTION_NAME, {
+          wait: true,
+          points,
         });
 
-        // Add to item results
-        const storedResult: ItemResult = {
-          input_index: index,
-          status: 'stored',
-          kind: point.payload.kind,
-          id: point.id,
-          created_at: point.payload.created_at,
+        points.forEach((point, index) => {
+          stored.push({
+            id: point.id,
+            status: 'inserted',
+            kind: point.payload.kind,
+            created_at: point.payload.created_at,
+          });
+
+          // Add to item results
+          const storedResult: ItemResult = {
+            input_index: index,
+            status: 'stored',
+            kind: point.payload.kind,
+            id: point.id,
+            created_at: point.payload.created_at,
+          };
+          const originalItem = items[index];
+          if (originalItem.content !== undefined) {
+            storedResult.content = originalItem.content;
+          }
+          itemResults.push(storedResult);
+        });
+
+        // Generate autonomous context
+        const autonomousContext = this.generateAutonomousContext(stored, errors);
+
+        // Generate summary from item results
+        const summary: BatchSummary = {
+          stored: itemResults.filter((item) => item.status === 'stored').length,
+          skipped_dedupe: itemResults.filter((item) => item.status === 'skipped_dedupe').length,
+          business_rule_blocked: itemResults.filter(
+            (item) => item.status === 'business_rule_blocked'
+          ).length,
+          validation_error: itemResults.filter((item) => item.status === 'validation_error').length,
+          total: itemResults.length,
         };
-        const originalItem = items[index];
-        if (originalItem.content !== undefined) {
-          storedResult.content = originalItem.content;
-        }
-        itemResults.push(storedResult);
-      });
 
-      // Generate autonomous context
-      const autonomousContext = this.generateAutonomousContext(stored, errors);
+        return {
+          // Enhanced response format
+          items: itemResults,
+          summary,
 
-      // Generate summary from item results
-      const summary: BatchSummary = {
-        stored: itemResults.filter((item) => item.status === 'stored').length,
-        skipped_dedupe: itemResults.filter((item) => item.status === 'skipped_dedupe').length,
-        business_rule_blocked: itemResults.filter((item) => item.status === 'business_rule_blocked')
-          .length,
-        validation_error: itemResults.filter((item) => item.status === 'validation_error').length,
-        total: itemResults.length,
-      };
+          // Legacy fields for backward compatibility
+          stored,
+          errors,
+          autonomous_context: autonomousContext,
+          observability: createStoreObservability(true, false, Date.now() - startTime, 0.9),
 
-      return {
-        // Enhanced response format
-        items: itemResults,
-        summary,
-
-        // Legacy fields for backward compatibility
-        stored,
-        errors,
-        autonomous_context: autonomousContext,
-        observability: createStoreObservability(true, false, Date.now() - startTime, 0.9),
-
-        // Required meta field for unified response format
-        meta: {
-          strategy: 'vector',
-          vector_used: true,
-          degraded: false,
-          source: 'qdrant-adapter',
-          execution_time_ms: Date.now() - startTime,
-          confidence_score: 0.9,
-          truncated: false,
-        },
-      };
-    } catch (error) {
-      logger.error(
-        { error, itemCount: items.length },
-        'Failed to store items with embeddings in Qdrant'
-      );
-      throw new DatabaseError(
-        'Failed to store items with embeddings',
-        'STORE_WITH_EMBEDDINGS_ERROR',
-        error as Error
-      );
-    }
-  }
-
-  async vectorSearch(embedding: number[], options: SearchOptions = {}): Promise<SearchResult[]> {
-    await this.ensureInitialized();
-
-    const { limit = 50, score_threshold = 0.5 } = options;
-
-    try {
-      const response = await this.client.search(this.COLLECTION_NAME, {
-        vector: embedding,
-        limit,
-        score_threshold,
-        with_payload: ['kind', 'scope', 'data', 'created_at'],
-      });
-
-      return response.map((result) => this.searchResultToSearchResult(result, 'vector'));
-    } catch (error) {
-      logger.error({ error }, 'Qdrant vector search failed');
-      throw new DatabaseError(
-        'Failed to perform vector search',
-        'VECTOR_SEARCH_ERROR',
-        error as Error
-      );
-    }
+          // Required meta field for unified response format
+          meta: {
+            strategy: 'vector',
+            vector_used: true,
+            degraded: false,
+            source: 'qdrant-adapter',
+            execution_time_ms: Date.now() - startTime,
+            confidence_score: 0.9,
+            truncated: false,
+          },
+        };
+      } catch (error) {
+        logger.error(
+          { error, itemCount: items.length },
+          'Failed to store items with embeddings in Qdrant'
+        );
+        throw new QdrantDatabaseError(
+          'Failed to store items with embeddings',
+          'STORE_WITH_EMBEDDINGS_ERROR',
+          error instanceof Error ? error : new Error(String(error))
+        );
+      }
+    }, 'storeWithEmbeddings');
   }
 
   // === Administrative Operations ===
 
-  async backup(destination?: string): Promise<string> {
-    await this.ensureInitialized();
+  async backup(
+    destination?: string
+  ): Promise<DatabaseResult<{ backupId: string; backupPath: string }>> {
+    return this.wrapAsyncOperation(async () => {
+      await this.ensureInitialized();
 
-    try {
-      // Create snapshot
-      const snapshotResult = await this.client.createSnapshot(this.COLLECTION_NAME);
-      if (!snapshotResult) {
-        throw new DatabaseError('Failed to create snapshot - null response', 'BACKUP_ERROR');
-      }
-      const snapshotName = snapshotResult.name;
-
-      logger.info({ snapshotName, destination }, 'Qdrant snapshot created');
-      return snapshotName;
-    } catch (error) {
-      logger.error({ error }, 'Failed to create Qdrant snapshot');
-      throw new DatabaseError('Failed to create backup', 'BACKUP_ERROR', error as Error);
-    }
-  }
-
-  async restore(_source: string): Promise<void> {
-    throw new DatabaseError('Qdrant restore not implemented', 'UNSUPPORTED_OPERATION');
-  }
-
-  async updateCollectionSchema(config: Partial<CollectionConfig>): Promise<void> {
-    await this.ensureInitialized();
-
-    try {
-      await this.client.updateCollection(this.COLLECTION_NAME, config);
-      logger.info('Qdrant collection schema updated');
-    } catch (error) {
-      logger.error({ error }, 'Failed to update Qdrant collection schema');
-      throw new DatabaseError(
-        'Failed to update collection schema',
-        'SCHEMA_UPDATE_ERROR',
-        error as Error
-      );
-    }
-  }
-
-  async optimize(): Promise<void> {
-    await this.ensureInitialized();
-
-    try {
-      // Trigger collection optimization
-      await this.client.updateCollection(this.COLLECTION_NAME, {
-        optimizers_config: {
-          deleted_threshold: 0.2,
-          vacuum_min_vector_number: 1000,
-          default_segment_number: 2,
-        },
-      });
-
-      logger.info('Qdrant collection optimization completed');
-    } catch (error) {
-      logger.error({ error }, 'Failed to optimize Qdrant collection');
-      throw new DatabaseError('Failed to optimize Qdrant', 'OPTIMIZE_ERROR', error as Error);
-    }
-  }
-
-  async validate(): Promise<{ valid: boolean; issues: string[] }> {
-    const issues: string[] = [];
-
-    try {
-      // Check connection
-      const healthy = await this.healthCheck();
-      if (!healthy) {
-        issues.push('Qdrant connection unhealthy');
-      }
-
-      // Check collection existence
-      const collections = await this.client.getCollections();
-      const exists = collections.collections.some((c) => c.name === this.COLLECTION_NAME);
-      if (!exists) {
-        issues.push(`Missing collection: ${this.COLLECTION_NAME}`);
-      }
-
-      // Test vector search
       try {
-        await this.vectorSearch(new Array(1536).fill(0));
-      } catch {
-        issues.push('Vector search functionality failed');
-      }
+        // Create snapshot
+        const snapshotResult = await this.client.createSnapshot(this.COLLECTION_NAME);
+        if (!snapshotResult) {
+          throw new QdrantDatabaseError(
+            'Failed to create snapshot - null response',
+            'BACKUP_ERROR'
+          );
+        }
+        const snapshotName = snapshotResult.name;
+        const backupPath = destination || `backups/${snapshotName}`;
 
-      return { valid: issues.length === 0, issues };
-    } catch (error) {
-      issues.push(`Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      return { valid: false, issues };
-    }
+        logger.info({ snapshotName, destination, backupPath }, 'Qdrant snapshot created');
+        return {
+          backupId: snapshotName,
+          backupPath: backupPath,
+        };
+      } catch (error) {
+        logger.error({ error }, 'Failed to create Qdrant snapshot');
+        throw new QdrantDatabaseError(
+          'Failed to create backup',
+          'BACKUP_ERROR',
+          error instanceof Error ? error : new Error(String(error))
+        );
+      }
+    }, 'backup');
+  }
+
+  async restore(
+    _source: string
+  ): Promise<DatabaseResult<{ restored: boolean; itemCount: number }>> {
+    return this.wrapAsyncOperation(async () => {
+      throw new QdrantDatabaseError('Qdrant restore not implemented', 'UNSUPPORTED_OPERATION');
+    }, 'restore');
+  }
+
+  async updateCollectionSchema(
+    config: Partial<VectorConfig>
+  ): Promise<DatabaseResult<{ updated: boolean }>> {
+    return this.wrapAsyncOperation(async () => {
+      await this.ensureInitialized();
+
+      try {
+        await this.client.updateCollection(this.COLLECTION_NAME, config);
+        logger.info('Qdrant collection schema updated');
+        return { updated: true };
+      } catch (error) {
+        logger.error({ error }, 'Failed to update Qdrant collection schema');
+        throw new QdrantDatabaseError(
+          'Failed to update collection schema',
+          'SCHEMA_UPDATE_ERROR',
+          error instanceof Error ? error : new Error(String(error))
+        );
+      }
+    }, 'updateCollectionSchema');
+  }
+
+  async optimize(): Promise<DatabaseResult<{ optimized: boolean; timeMs: number }>> {
+    return this.wrapAsyncOperation(async () => {
+      await this.ensureInitialized();
+
+      const startTime = Date.now();
+
+      try {
+        // Trigger collection optimization
+        await this.client.updateCollection(this.COLLECTION_NAME, {
+          optimizers_config: {
+            deleted_threshold: 0.2,
+            vacuum_min_vector_number: 1000,
+            default_segment_number: 2,
+          },
+        });
+
+        logger.info('Qdrant collection optimization completed');
+        return {
+          optimized: true,
+          timeMs: Date.now() - startTime,
+        };
+      } catch (error) {
+        logger.error({ error }, 'Failed to optimize Qdrant collection');
+        throw new QdrantDatabaseError(
+          'Failed to optimize Qdrant',
+          'OPTIMIZE_ERROR',
+          error instanceof Error ? error : new Error(String(error))
+        );
+      }
+    }, 'optimize');
+  }
+
+  async validate(): Promise<DatabaseResult<{ valid: boolean; issues: string[] }>> {
+    return this.wrapAsyncOperation(async () => {
+      const issues: string[] = [];
+
+      try {
+        // Check connection
+        const healthy = await this.healthCheck();
+        if (!healthy) {
+          issues.push('Qdrant connection unhealthy');
+        }
+
+        // Check collection existence
+        const collections = await this.client.getCollections();
+        const exists = collections.collections.some((c) => c.name === this.COLLECTION_NAME);
+        if (!exists) {
+          issues.push(`Missing collection: ${this.COLLECTION_NAME}`);
+        }
+
+        // Test vector search
+        try {
+          await this.vectorSearch(new Array(1536).fill(0));
+        } catch {
+          issues.push('Vector search functionality failed');
+        }
+
+        return { valid: issues.length === 0, issues };
+      } catch (error) {
+        issues.push(
+          `Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+        return { valid: false, issues };
+      }
+    }, 'validate');
   }
 
   // === Interface Implementation Methods ===
@@ -1523,46 +1801,50 @@ export class QdrantAdapter implements IVectorAdapter {
     return this.client;
   }
 
-  async getCapabilities(): Promise<{
-    supportsVectors: boolean;
-    supportsFullTextSearch: boolean;
-    supportsPayloadFiltering: boolean;
-    maxBatchSize: number;
-    supportedDistanceMetrics: string[];
-    supportedOperations: string[];
-  }> {
+  async getCapabilities(): Promise<DatabaseCapabilities> {
+    await this.ensureClientsInitialized();
     return this.capabilities;
   }
 
-  async testFunctionality(operation: string): Promise<boolean> {
-    try {
-      switch (operation) {
-        case 'connection':
-          return await this.healthCheck();
-        case 'search':
-          await this.search({ query: 'test', limit: 1 });
-          return true;
-        case 'vector_search': {
-          const embedding = await this.generateEmbedding('test');
-          await this.vectorSearch(embedding);
-          return true;
+  async testFunctionality(operation: string): Promise<DatabaseResult<boolean>> {
+    return this.wrapAsyncOperation(async () => {
+      try {
+        switch (operation) {
+          case 'connection':
+            return await this.healthCheck();
+          case 'search': {
+            const searchResult = await this.search({ query: 'test', limit: 1 });
+            return searchResult.success;
+          }
+          case 'vector_search': {
+            const embeddingResult = await this.generateEmbedding('test');
+            if (isFailedDatabaseResult(embeddingResult)) {
+              throw embeddingResult.error;
+            }
+            const vectorResult = await this.vectorSearch([...embeddingResult.data]);
+            return vectorResult.success;
+          }
+          case 'store': {
+            const testItem: KnowledgeItem = {
+              kind: 'section',
+              scope: { project: 'test' },
+              data: { title: 'Test', content: 'Test content' },
+            };
+            const storeResult = await this.store([testItem]);
+            return storeResult.success;
+          }
+          default:
+            return false;
         }
-        case 'store': {
-          const testItem: KnowledgeItem = {
-            kind: 'section',
-            scope: { project: 'test' },
-            data: { title: 'Test', content: 'Test content' },
-          };
-          await this.store([testItem]);
-          return true;
-        }
-        default:
-          return false;
+      } catch (error) {
+        logger.error({ operation, error }, 'Functionality test failed');
+        throw new QdrantDatabaseError(
+          'Functionality test failed',
+          'TEST_FUNCTIONALITY_ERROR',
+          error instanceof Error ? error : new Error(String(error))
+        );
       }
-    } catch (error) {
-      logger.error({ operation, error }, 'Functionality test failed');
-      return false;
-    }
+    }, 'testFunctionality');
   }
 
   // === Private Helper Methods ===
@@ -1573,9 +1855,9 @@ export class QdrantAdapter implements IVectorAdapter {
     }
   }
 
-// =============================================================================
-// COLLECTION MANAGEMENT SECTION  
-// =============================================================================
+  // =============================================================================
+  // COLLECTION MANAGEMENT SECTION
+  // =============================================================================
 
   private async ensureCollection(): Promise<void> {
     try {
@@ -1645,36 +1927,38 @@ export class QdrantAdapter implements IVectorAdapter {
     const data = item.data;
     switch (item.kind) {
       case 'section':
-        parts.push(data.title || '');
-        parts.push(data.content || '');
-        parts.push(data.heading || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.content || ''));
+        parts.push(String(data.heading || ''));
         break;
       case 'decision':
-        parts.push(data.title || '');
-        parts.push(data.rationale || '');
-        parts.push(data.component || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.rationale || ''));
+        parts.push(String(data.component || ''));
         break;
       case 'issue':
-        parts.push(data.title || '');
-        parts.push(data.description || '');
-        parts.push(data.status || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.description || ''));
+        parts.push(String(data.status || ''));
         break;
       case 'todo':
-        parts.push(data.title || '');
-        parts.push(data.description || '');
-        parts.push(data.status || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.description || ''));
+        parts.push(String(data.status || ''));
         break;
       case 'runbook':
-        parts.push(data.title || '');
-        parts.push(data.description || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.description || ''));
         if (Array.isArray(data.steps)) {
-          parts.push(data.steps.join(' '));
+          parts.push(data.steps.map(String).join(' '));
         }
         break;
       default:
         // Generic extraction
-        parts.push(data.title || data.name || '');
-        parts.push(data.description || data.content || '');
+        const title = safePropertyAccess(data, 'title', isString) || safePropertyAccess(data, 'name', isString) || '';
+        parts.push(String(title));
+        const description = safePropertyAccess(data, 'description', isString) || safePropertyAccess(data, 'content', isString) || '';
+        parts.push(String(description));
         if (typeof data === 'string') {
           parts.push(data);
         } else {
@@ -1842,9 +2126,11 @@ export class QdrantAdapter implements IVectorAdapter {
 
       if (expiryConditions.length > 0) {
         // Combine existing expiry conditions with non-expired filter
-        qdrantFilter.must.push(nonExpiredCondition);
+        qdrantFilter.must.push(nonExpiredCondition as unknown);
       } else {
-        expiryConditions.push(...nonExpiredCondition.should);
+        if (hasShould(nonExpiredCondition)) {
+          expiryConditions.push(...nonExpiredCondition.should);
+        }
       }
     }
 
@@ -1864,11 +2150,12 @@ export class QdrantAdapter implements IVectorAdapter {
 
   private pointToKnowledgeItem(point: QdrantScoredPoint): KnowledgeItem {
     const payload = point.payload || {};
-    const id = typeof point.id === 'object' && 'uuid' in point.id
-      ? point.id.uuid
-      : typeof point.id === 'object' && 'num' in point.id
-      ? point.id.num.toString()
-      : point.id.toString();
+    const id =
+      typeof point.id === 'object' && 'uuid' in point.id
+        ? point.id.uuid
+        : typeof point.id === 'object' && 'num' in point.id
+          ? point.id.num.toString()
+          : point.id.toString();
 
     return {
       id,
@@ -1881,13 +2168,24 @@ export class QdrantAdapter implements IVectorAdapter {
     };
   }
 
-  private searchResultToSearchResult(result: QdrantScoredPoint, matchType: string): SearchResult {
-    const payload = result.payload || {};
-    const id = typeof result.id === 'object' && 'uuid' in result.id
-      ? result.id.uuid
-      : typeof result.id === 'object' && 'num' in result.id
-      ? result.id.num.toString()
-      : result.id.toString();
+  private searchResultToSearchResult(result: unknown, matchType: string): SearchResult {
+    // Type-safe casting for Qdrant response compatibility
+    const qdrantPoint = result as unknown as QdrantScoredPoint;
+    const payload = qdrantPoint.payload || {};
+
+    // Handle different ID formats from Qdrant response
+    let id: string;
+    if (typeof qdrantPoint.id === 'object' && qdrantPoint.id !== null) {
+      if ('uuid' in qdrantPoint.id) {
+        id = qdrantPoint.id.uuid as string;
+      } else if ('num' in qdrantPoint.id) {
+        id = qdrantPoint.id.num.toString();
+      } else {
+        id = JSON.stringify(qdrantPoint.id);
+      }
+    } else {
+      id = String(qdrantPoint.id);
+    }
 
     return {
       id,
@@ -1895,9 +2193,11 @@ export class QdrantAdapter implements IVectorAdapter {
       scope: (payload.scope as Record<string, unknown>) || {},
       data: (payload.data as Record<string, unknown>) || {},
       created_at: (payload.created_at as string) || new Date().toISOString(),
-      confidence_score: result.score || 0,
+      confidence_score: qdrantPoint.score || 0,
       match_type: matchType as 'exact' | 'fuzzy' | 'semantic',
-      ...(payload.content ? { highlight: [`${(payload.content as string).substring(0, 200)}...`] } : {}),
+      ...(payload.content
+        ? { highlight: [`${(payload.content as string).substring(0, 200)}...`] }
+        : {}),
     };
   }
 
@@ -1914,11 +2214,11 @@ export class QdrantAdapter implements IVectorAdapter {
   }): Promise<QdrantScoredPoint[]> {
     await this.ensureInitialized();
 
-    const searchParams: unknown = {
+    const searchParams: Parameters<QdrantClient['search']>[1] = {
       vector: params.vector,
       limit: params.limit || 50,
-      with_payload: params.with_payload || true,
-      filter: params.filter,
+      with_payload: params.with_payload ?? true,
+      filter: params.filter ? (params.filter as unknown as Record<string, unknown>) : undefined,
     };
 
     if (params.score_threshold !== undefined) {
@@ -1929,7 +2229,8 @@ export class QdrantAdapter implements IVectorAdapter {
       searchParams.with_vector = true;
     }
 
-    return await this.client.search(this.COLLECTION_NAME, searchParams);
+    const result = await this.client.search(this.COLLECTION_NAME, searchParams);
+    return result as unknown as QdrantScoredPoint[];
   }
 
   private matchesScope(
@@ -1980,7 +2281,7 @@ export class QdrantAdapter implements IVectorAdapter {
       };
     } catch (error) {
       logger.error({ error }, 'Failed to get Qdrant collection stats');
-      throw new DatabaseError(
+      throw new QdrantDatabaseError(
         'Failed to retrieve collection stats',
         'COLLECTION_STATS_ERROR',
         error as Error
@@ -1988,17 +2289,38 @@ export class QdrantAdapter implements IVectorAdapter {
     }
   }
 
-  async getCollectionInfo(): Promise<QdrantCollectionInfo> {
-    try {
-      return (await this.client.getCollection(this.COLLECTION_NAME)) as QdrantCollectionInfo;
-    } catch (error) {
-      logger.error({ error }, 'Failed to get Qdrant collection info');
-      throw new DatabaseError(
-        'Failed to retrieve collection info',
-        'COLLECTION_INFO_ERROR',
-        error as Error
-      );
-    }
+  async getCollectionInfo(): Promise<
+    DatabaseResult<{
+      name: string;
+      config: VectorConfig;
+      status: 'healthy' | 'degraded' | 'unhealthy';
+      metadata: Readonly<Record<string, unknown>>;
+    }>
+  > {
+    return this.wrapAsyncOperation(async () => {
+      try {
+        const collectionInfo = await this.client.getCollection(this.COLLECTION_NAME);
+
+        // Convert Qdrant collection info to expected format
+        return {
+          name: this.COLLECTION_NAME,
+          config: this.config,
+          status: 'healthy', // Qdrant doesn't provide health status directly, assume healthy if collection exists
+          metadata: {
+            vectorSize: collectionInfo.config.params.vectors.size,
+            distance: collectionInfo.config.params.vectors.distance,
+            pointsCount: collectionInfo.points_count,
+          } as Readonly<Record<string, unknown>>,
+        };
+      } catch (error) {
+        logger.error({ error }, 'Failed to get Qdrant collection info');
+        throw new QdrantDatabaseError(
+          'Failed to retrieve collection info',
+          'COLLECTION_INFO_ERROR',
+          error as Error
+        );
+      }
+    }, 'getCollectionInfo');
   }
 
   /**
@@ -2006,106 +2328,116 @@ export class QdrantAdapter implements IVectorAdapter {
    * Efficiently finds items that have expired based on expiry_at timestamp
    */
   async findExpiredItems(options: {
-    expiry_before?: string;
-    limit?: number;
-    scope?: Record<string, unknown>;
-    kinds?: string[];
-  }): Promise<KnowledgeItem[]> {
-    await this.ensureInitialized();
+    readonly expiry_before?: string;
+    readonly limit?: number;
+    readonly scope?: {
+      readonly project?: string;
+      readonly branch?: string;
+      readonly org?: string;
+    };
+    readonly kinds?: readonly string[];
+  }): Promise<DatabaseResult<readonly KnowledgeItem[]>> {
+    return this.wrapAsyncOperation(async () => {
+      await this.ensureInitialized();
 
-    try {
-      const { expiry_before = new Date().toISOString(), limit = 1000, scope, kinds } = options;
+      try {
+        const { expiry_before = new Date().toISOString(), limit = 1000, scope, kinds } = options;
 
-      logger.debug(
-        {
-          expiry_before,
-          limit,
-          scope,
-          kinds,
-        },
-        'Finding expired items using Qdrant filtering'
-      );
-
-      // Build filter for expired items
-      const filterConditions: Condition[] = [
-        {
-          key: 'expiry_at',
-          range: {
-            lt: expiry_before,
+        logger.debug(
+          {
+            expiry_before,
+            limit,
+            scope,
+            kinds,
           },
-        },
-        {
-          key: 'expiry_at',
-          is_not_null: {},
-        },
-      ];
+          'Finding expired items using Qdrant filtering'
+        );
 
-      // Add kind filters if specified
-      if (kinds && kinds.length > 0) {
-        const kindConditions = kinds.map((kind) => ({
-          key: 'kind',
-          match: { value: kind },
+        // Build filter for expired items
+        const filterConditions: Condition[] = [
+          {
+            key: 'expiry_at',
+            range: {
+              lt: expiry_before,
+            },
+          },
+          {
+            key: 'expiry_at',
+            is_not_null: {},
+          },
+        ];
+
+        // Add kind filters if specified
+        if (kinds && kinds.length > 0) {
+          const kindConditions = kinds.map((kind) => ({
+            key: 'kind',
+            match: { value: kind },
+          }));
+
+          filterConditions.push({
+            or: kindConditions,
+          });
+        }
+
+        // Build Qdrant filter
+        const qdrantFilter = {
+          must: filterConditions,
+        };
+
+        // Add scope filters if specified
+        if (scope) {
+          const scopeFilter = this.buildSearchFilter({ scope });
+          if (scopeFilter) {
+            qdrantFilter.must.push(...scopeFilter.must);
+          }
+        }
+
+        // Use a generic embedding for search (we're filtering, not semantic search)
+        const embeddingResult = await this.generateEmbedding('expired item');
+        if (isFailedDatabaseResult(embeddingResult)) {
+          throw embeddingResult.error;
+        }
+        const genericEmbedding = [...embeddingResult.data];
+
+        // Search for expired items
+        const response = await this.searchWithCompatibleTypes({
+          vector: genericEmbedding,
+          limit,
+          with_payload: true,
+          filter: qdrantFilter,
+          score_threshold: 0.0, // Accept all matches since we're filtering by expiry
+        });
+
+        const expiredItems = response.map((result) => ({
+          ...this.pointToKnowledgeItem(result),
+          score: result.score || 0,
         }));
 
-        filterConditions.push({
-          or: kindConditions,
-        });
+        logger.debug(
+          {
+            total_found: expiredItems.length,
+            expiry_before,
+            limit,
+          },
+          'Found expired items using Qdrant filtering'
+        );
+
+        return expiredItems as readonly KnowledgeItem[];
+      } catch (error) {
+        logger.error(
+          {
+            error,
+            options,
+          },
+          'Failed to find expired items in Qdrant'
+        );
+        throw new QdrantDatabaseError(
+          'Failed to find expired items',
+          'EXPIRED_ITEMS_SEARCH_ERROR',
+          error as Error
+        );
       }
-
-      // Build Qdrant filter
-      const qdrantFilter = {
-        must: filterConditions,
-      };
-
-      // Add scope filters if specified
-      if (scope) {
-        const scopeFilter = this.buildSearchFilter({ scope });
-        if (scopeFilter) {
-          qdrantFilter.must.push(...scopeFilter.must);
-        }
-      }
-
-      // Use a generic embedding for search (we're filtering, not semantic search)
-      const genericEmbedding = await this.generateEmbedding('expired item');
-
-      // Search for expired items
-      const response = await this.searchWithCompatibleTypes({
-        vector: genericEmbedding,
-        limit,
-        with_payload: true,
-        filter: qdrantFilter,
-        score_threshold: 0.0, // Accept all matches since we're filtering by expiry
-      });
-
-      const expiredItems = response.map((result) => ({
-        ...this.pointToKnowledgeItem(result),
-        score: result.score || 0,
-      }));
-
-      logger.debug(
-        {
-          total_found: expiredItems.length,
-          expiry_before,
-          limit,
-        },
-        'Found expired items using Qdrant filtering'
-      );
-
-      return expiredItems;
-    } catch (error) {
-      logger.error(
-        {
-          error,
-          options,
-        },
-        'Failed to find expired items in Qdrant'
-      );
-      throw new DatabaseError(
-        'Failed to find expired items',
-        'EXPIRED_ITEMS_SEARCH_ERROR',
-        error as Error
-      );
-    }
+    }, 'findExpiredItems');
   }
 
   // === Health and HA Operations ===
@@ -2133,8 +2465,12 @@ export class QdrantAdapter implements IVectorAdapter {
     // Add HA nodes to health probe
     for (const node of haConfig.nodes) {
       if (node.id !== 'primary') {
-        this.healthProbe.addNode(node.id, {
-          type: 'qdrant',
+        const nodeUrl = new URL(node.url);
+        const nodeConfig: VectorConfig = {
+          ...this.config,
+          host: nodeUrl.hostname,
+          port: parseInt(nodeUrl.port) || 6333,
+          database: this.config.collectionName || 'default',
           url: node.url,
           apiKey: node.apiKey,
           qdrant: {
@@ -2142,7 +2478,14 @@ export class QdrantAdapter implements IVectorAdapter {
             apiKey: node.apiKey,
             timeout: 10000,
           },
-        });
+        };
+
+        if (!isVectorConfig(nodeConfig)) {
+          logger.warn('HA node configuration is invalid', { nodeId: node.id, config: nodeConfig });
+          continue;
+        }
+
+        this.healthProbe.addNode(node.id, nodeConfig);
       }
     }
 
@@ -2254,7 +2597,7 @@ export class QdrantAdapter implements IVectorAdapter {
         scope: { project: 'test' },
       });
 
-      if (searchResult.results.length === 0) {
+      if (!searchResult.success || searchResult.data.results.length === 0) {
         result.errors.push('Read operation failed during failover');
         return result;
       }
@@ -2322,7 +2665,11 @@ export class QdrantAdapter implements IVectorAdapter {
   /**
    * Log Qdrant circuit breaker events with proper context
    */
-  private logQdrantCircuitBreakerEvent(event: string, error?: Error, metadata?: Record<string, unknown>): void {
+  private logQdrantCircuitBreakerEvent(
+    event: string,
+    error?: Error,
+    metadata?: Record<string, unknown>
+  ): void {
     const qdrantStats = this.qdrantCircuitBreaker.getStats();
     const openaiStats = this.openaiCircuitBreaker.getStats();
 
@@ -2386,520 +2733,343 @@ export class QdrantAdapter implements IVectorAdapter {
     this.openaiCircuitBreaker.reset();
     logger.info('OpenAI embeddings circuit breaker reset');
   }
-}
 
-// =============================================================================
-// QDRANT ADAPTER - CLIENT BOOTSTRAP MODULE
-// =============================================================================
-// This module handles Qdrant and OpenAI client initialization, configuration,
-// and connection management.
-// =============================================================================
+  // === Missing IVectorAdapter Interface Methods ===
 
-
-
-import { getKeyVaultService } from '../../../config/key-vault';
-import { EmbeddingService } from '../../../services/embedding/embedding-service';
-import { DatabaseError } from '../../../types/database-types';
-import { circuitBreakerManager } from '../../../utils/circuit-breaker';
-import { logger } from '../../../utils/logger';
-import { type VectorConfig } from '../../database-interface';
-
-/**
- * Qdrant client configuration with all necessary parameters
- */
-export interface LocalQdrantClientConfig {
-  url: string;
-  timeout: number;
-  apiKey?: string;
-}
-
-/**
- * Client bootstrap result containing initialized clients
- */
-export interface ClientBootstrapResult {
-  qdrantClient: QdrantClient;
-  openaiClient?: OpenAI;
-  embeddingService?: EmbeddingService;
-  config: VectorConfig;
-}
-
-/**
- * Creates and initializes Qdrant and OpenAI clients with key vault integration
- */
-export async function createClient(config: VectorConfig): Promise<QdrantClient> {
-  const keyVault = getKeyVaultService();
-
-  try {
-    // Get API keys from key vault
-    const [qdrantKey, openaiKey] = await Promise.all([
-      keyVault.get_key_by_name('qdrant_api_key'),
-      keyVault.get_key_by_name('openai_api_key'),
-    ]);
-
-    // Update config with resolved keys
-    const resolvedApiKey = config.apiKey || qdrantKey?.value || process.env.QDRANT_API_KEY || '';
-    const resolvedOpenAIKey = openaiKey?.value || process.env.OPENAI_API_KEY || '';
-
-    // Initialize Qdrant client
-    const clientConfig: LocalQdrantClientConfig = {
-      url: config.url || 'http://localhost:6333',
-      timeout: config.connectionTimeout,
+  /**
+   * Get database connection information
+   */
+  getConnection(): DatabaseConnection<unknown> {
+    return {
+      client: this.client,
+      isConnected: this.initialized,
+      lastHealthCheck: new Date(),
+      connectionId: `qdrant-${Date.now()}`,
+      endpoint: `${this.config.host}:${this.config.port}`,
+      capabilities: {
+        supportsTransactions: false,
+        supportsVectorSearch: true,
+        supportsFullTextSearch: false,
+        supportsBatchOperations: true,
+        supportsStreaming: false,
+        maxBatchSize: 1000,
+        maxConnections: 10,
+        supportedOperations: ['search', 'store', 'delete', 'update', 'bulkStore', 'bulkDelete'],
+        consistencyLevels: ['strong'],
+      } as DatabaseCapabilities,
     };
-
-    if (resolvedApiKey) {
-      clientConfig.apiKey = resolvedApiKey;
-    }
-
-    const client = new QdrantClient(clientConfig);
-
-    logger.info('Qdrant client initialized with key vault integration');
-    return client;
-  } catch (error) {
-    logger.warn(
-      { error },
-      'Failed to initialize clients from key vault, using environment fallback'
-    );
-
-    // Fallback to environment variables
-    const fallbackApiKey = config.apiKey || process.env.QDRANT_API_KEY || '';
-
-    const clientConfig: LocalQdrantClientConfig = {
-      url: config.url || 'http://localhost:6333',
-      timeout: config.connectionTimeout,
-    };
-
-    if (fallbackApiKey) {
-      clientConfig.apiKey = fallbackApiKey;
-    }
-
-    const client = new QdrantClient(clientConfig);
-    return client;
-  }
-}
-
-/**
- * Creates OpenAI client for embeddings
- */
-export function createOpenAIClient(apiKey: string): OpenAI {
-  return new OpenAI({
-    apiKey,
-  });
-}
-
-/**
- * Creates embedding service for enhanced chunking support
- */
-export function createEmbeddingService(apiKey: string): EmbeddingService {
-  return new EmbeddingService({
-    apiKey,
-  });
-}
-
-/**
- * Validates client configuration
- */
-export function validateClientConfig(config: VectorConfig): { isValid: boolean; errors: string[] } {
-  const errors: string[] = [];
-
-  if (!config.url && !process.env.QDRANT_URL) {
-    errors.push('Qdrant URL is required');
   }
 
-  if (!config.connectionTimeout || config.connectionTimeout < 1000) {
-    errors.push('Connection timeout must be at least 1000ms');
+  /**
+   * Create query builder for advanced searches
+   */
+  createQueryBuilder(): QueryBuilder<Record<string, unknown>> {
+    throw new Error('QueryBuilder not implemented - use search methods instead');
   }
 
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
-}
+  /**
+   * Search using query filter
+   */
+  async findByFilter(
+    filter: QueryFilter<Record<string, unknown>>,
+    options?: QueryOptions<Record<string, unknown>>
+  ): Promise<DatabaseResult<readonly Record<string, unknown>[]>> {
+    return this.wrapAsyncOperation(async () => {
+      // Convert filter to search query and delegate to search method
+      const searchQuery: SearchQuery = {
+        query: '',
+        filters: filter as unknown,
+        limit: options?.limit || 100,
+      };
 
-/**
- * Tests client connectivity
- */
-export async function testClientConnection(client: QdrantClient, timeoutMs: number = 5000): Promise<boolean> {
-  try {
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Connection test timeout')), timeoutMs);
-    });
-
-    await Promise.race([
-      client.getCollections(),
-      timeoutPromise,
-    ]);
-
-    return true;
-  } catch (error) {
-    logger.error({ error }, 'Client connection test failed');
-    return false;
-  }
-}
-
-/**
- * Creates a circuit breaker for Qdrant operations
- */
-export function createQdrantCircuitBreaker() {
-  return circuitBreakerManager.getCircuitBreaker('qdrant', {
-    failureThreshold: 2,
-    recoveryTimeoutMs: 10000,
-    failureRateThreshold: 0.4,
-    minimumCalls: 2,
-  });
-}
-
-/**
- * Creates a circuit breaker for OpenAI operations
- */
-export function createOpenAICircuitBreaker() {
-  return circuitBreakerManager.getCircuitBreaker('openai', {
-    failureThreshold: 3,
-    recoveryTimeoutMs: 30000,
-    failureRateThreshold: 0.4,
-    minimumCalls: 5,
-  });
-}
-
-// =============================================================================
-// QDRANT ADAPTER - CLIENT BOOTSTRAP MODULE
-// =============================================================================
-// This module handles Qdrant and OpenAI client initialization, configuration,
-// and connection management.
-// =============================================================================
-
-
-
-
-
-
-
-
-
-
-/**
- * Qdrant client configuration with all necessary parameters
- */
-export interface LocalQdrantClientConfig {
-  url: string;
-  timeout: number;
-  apiKey?: string;
-}
-
-/**
- * Client bootstrap result containing initialized clients
- */
-export interface ClientBootstrapResult {
-  qdrantClient: QdrantClient;
-  openaiClient?: OpenAI;
-  embeddingService?: EmbeddingService;
-  config: VectorConfig;
-}
-
-/**
- * Creates and initializes Qdrant and OpenAI clients with key vault integration
- */
-export async function createClient(config: VectorConfig): Promise<QdrantClient> {
-  const keyVault = getKeyVaultService();
-
-  try {
-    // Get API keys from key vault
-    const [qdrantKey, openaiKey] = await Promise.all([
-      keyVault.get_key_by_name('qdrant_api_key'),
-      keyVault.get_key_by_name('openai_api_key'),
-    ]);
-
-    // Update config with resolved keys
-    const resolvedApiKey = config.apiKey || qdrantKey?.value || process.env.QDRANT_API_KEY || '';
-    const resolvedOpenAIKey = openaiKey?.value || process.env.OPENAI_API_KEY || '';
-
-    // Initialize Qdrant client
-    const clientConfig: LocalQdrantClientConfig = {
-      url: config.url || 'http://localhost:6333',
-      timeout: config.connectionTimeout,
-    };
-
-    if (resolvedApiKey) {
-      clientConfig.apiKey = resolvedApiKey;
-    }
-
-    const client = new QdrantClient(clientConfig);
-
-    logger.info('Qdrant client initialized with key vault integration');
-    return client;
-  } catch (error) {
-    logger.warn(
-      { error },
-      'Failed to initialize clients from key vault, using environment fallback'
-    );
-
-    // Fallback to environment variables
-    const fallbackApiKey = config.apiKey || process.env.QDRANT_API_KEY || '';
-
-    const clientConfig: LocalQdrantClientConfig = {
-      url: config.url || 'http://localhost:6333',
-      timeout: config.connectionTimeout,
-    };
-
-    if (fallbackApiKey) {
-      clientConfig.apiKey = fallbackApiKey;
-    }
-
-    const client = new QdrantClient(clientConfig);
-    return client;
-  }
-}
-
-/**
- * Creates OpenAI client for embeddings
- */
-export function createOpenAIClient(apiKey: string): OpenAI {
-  return new OpenAI({
-    apiKey,
-  });
-}
-
-/**
- * Creates embedding service for enhanced chunking support
- */
-export function createEmbeddingService(apiKey: string): EmbeddingService {
-  return new EmbeddingService({
-    apiKey,
-  });
-}
-
-/**
- * Validates client configuration
- */
-export function validateClientConfig(config: VectorConfig): { isValid: boolean; errors: string[] } {
-  const errors: string[] = [];
-
-  if (!config.url && !process.env.QDRANT_URL) {
-    errors.push('Qdrant URL is required');
+      const result = await this.search(searchQuery, options as unknown);
+      if (result.success) {
+        const records = result.data.results.map((item) => item.data || {});
+        return records as readonly Record<string, unknown>[];
+      } else {
+        throw new Error('Search failed');
+      }
+    }, 'findByFilter');
   }
 
-  if (!config.connectionTimeout || config.connectionTimeout < 1000) {
-    errors.push('Connection timeout must be at least 1000ms');
+  /**
+   * Create mutation builder for batch operations
+   */
+  createMutationBuilder(): MutationBuilder<Record<string, unknown>> {
+    throw new Error('MutationBuilder not implemented - use bulk operations instead');
   }
 
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
-}
-
-/**
- * Tests client connectivity
- */
-export async function testClientConnection(client: QdrantClient, timeoutMs: number = 5000): Promise<boolean> {
-  try {
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Connection test timeout')), timeoutMs);
-    });
-
-    await Promise.race([
-      client.getCollections(),
-      timeoutPromise,
-    ]);
-
-    return true;
-  } catch (error) {
-    logger.error({ error }, 'Client connection test failed');
-    return false;
-  }
-}
-
-/**
- * Creates a circuit breaker for Qdrant operations
- */
-export function createQdrantCircuitBreaker() {
-  return circuitBreakerManager.getCircuitBreaker('qdrant', {
-    failureThreshold: 2,
-    recoveryTimeoutMs: 10000,
-    failureRateThreshold: 0.4,
-    minimumCalls: 2,
-  });
-}
-
-/**
- * Creates a circuit breaker for OpenAI operations
- */
-export function createOpenAICircuitBreaker() {
-  return circuitBreakerManager.getCircuitBreaker('openai', {
-    failureThreshold: 3,
-    recoveryTimeoutMs: 30000,
-    failureRateThreshold: 0.4,
-    minimumCalls: 5,
-  });
-}
-
-// =============================================================================
-// QDRANT ADAPTER - CLIENT BOOTSTRAP MODULE
-// =============================================================================
-// This module handles Qdrant and OpenAI client initialization, configuration,
-// and connection management.
-// =============================================================================
-
-
-
-
-
-
-
-
-
-
-/**
- * Qdrant client configuration with all necessary parameters
- */
-export interface LocalQdrantClientConfig {
-  url: string;
-  timeout: number;
-  apiKey?: string;
-}
-
-/**
- * Client bootstrap result containing initialized clients
- */
-export interface ClientBootstrapResult {
-  qdrantClient: QdrantClient;
-  openaiClient?: OpenAI;
-  embeddingService?: EmbeddingService;
-  config: VectorConfig;
-}
-
-/**
- * Creates and initializes Qdrant and OpenAI clients with key vault integration
- */
-export async function createClient(config: VectorConfig): Promise<QdrantClient> {
-  const keyVault = getKeyVaultService();
-
-  try {
-    // Get API keys from key vault
-    const [qdrantKey, openaiKey] = await Promise.all([
-      keyVault.get_key_by_name('qdrant_api_key'),
-      keyVault.get_key_by_name('openai_api_key'),
-    ]);
-
-    // Update config with resolved keys
-    const resolvedApiKey = config.apiKey || qdrantKey?.value || process.env.QDRANT_API_KEY || '';
-    const resolvedOpenAIKey = openaiKey?.value || process.env.OPENAI_API_KEY || '';
-
-    // Initialize Qdrant client
-    const clientConfig: LocalQdrantClientConfig = {
-      url: config.url || 'http://localhost:6333',
-      timeout: config.connectionTimeout,
-    };
-
-    if (resolvedApiKey) {
-      clientConfig.apiKey = resolvedApiKey;
-    }
-
-    const client = new QdrantClient(clientConfig);
-
-    logger.info('Qdrant client initialized with key vault integration');
-    return client;
-  } catch (error) {
-    logger.warn(
-      { error },
-      'Failed to initialize clients from key vault, using environment fallback'
-    );
-
-    // Fallback to environment variables
-    const fallbackApiKey = config.apiKey || process.env.QDRANT_API_KEY || '';
-
-    const clientConfig: LocalQdrantClientConfig = {
-      url: config.url || 'http://localhost:6333',
-      timeout: config.connectionTimeout,
-    };
-
-    if (fallbackApiKey) {
-      clientConfig.apiKey = fallbackApiKey;
-    }
-
-    const client = new QdrantClient(clientConfig);
-    return client;
-  }
-}
-
-/**
- * Creates OpenAI client for embeddings
- */
-export function createOpenAIClient(apiKey: string): OpenAI {
-  return new OpenAI({
-    apiKey,
-  });
-}
-
-/**
- * Creates embedding service for enhanced chunking support
- */
-export function createEmbeddingService(apiKey: string): EmbeddingService {
-  return new EmbeddingService({
-    apiKey,
-  });
-}
-
-/**
- * Validates client configuration
- */
-export function validateClientConfig(config: VectorConfig): { isValid: boolean; errors: string[] } {
-  const errors: string[] = [];
-
-  if (!config.url && !process.env.QDRANT_URL) {
-    errors.push('Qdrant URL is required');
+  /**
+   * Generate multiple embeddings for batch processing
+   */
+  async generateEmbeddingsBatch(
+    contents: readonly string[]
+  ): Promise<DatabaseResult<readonly number[][]>> {
+    return this.wrapAsyncOperation(async () => {
+      const embeddings: number[][] = [];
+      for (const content of contents) {
+        const result = await this.generateEmbedding(content);
+        if (result.success) {
+          embeddings.push([...result.data]);
+        } else {
+          throw new Error(`Failed to generate embedding for content: ${content}`);
+        }
+      }
+      return embeddings as readonly number[][];
+    }, 'generateEmbeddingsBatch');
   }
 
-  if (!config.connectionTimeout || config.connectionTimeout < 1000) {
-    errors.push('Connection timeout must be at least 1000ms');
+  /**
+   * Search using vector similarity
+   */
+  async vectorSearch(
+    embedding: readonly number[],
+    options?: SearchOptions
+  ): Promise<DatabaseResult<readonly SearchResult[]>> {
+    return this.wrapAsyncOperation(async () => {
+      // For vector search, we need to use Qdrant client directly
+      const collectionName = this.config.collectionName || 'knowledge';
+      const searchResult = await this.client.search(collectionName, {
+        vector: [...embedding],
+        limit: options?.limit || 10,
+        score_threshold: options?.score_threshold || 0.7,
+      });
+
+      const results = searchResult.map((point: unknown) =>
+        this.searchResultToSearchResult(point, 'semantic')
+      );
+
+      return results as readonly SearchResult[];
+    }, 'vectorSearch');
   }
 
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
-}
-
-/**
- * Tests client connectivity
- */
-export async function testClientConnection(client: QdrantClient, timeoutMs: number = 5000): Promise<boolean> {
-  try {
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Connection test timeout')), timeoutMs);
-    });
-
-    await Promise.race([
-      client.getCollections(),
-      timeoutPromise,
-    ]);
-
-    return true;
-  } catch (error) {
-    logger.error({ error }, 'Client connection test failed');
-    return false;
+  /**
+   * Find nearest neighbors for a vector
+   */
+  async findNearest(
+    embedding: readonly number[],
+    limit?: number,
+    threshold?: number
+  ): Promise<DatabaseResult<readonly SearchResult[]>> {
+    return this.wrapAsyncOperation(async () => {
+      const result = await this.vectorSearch(embedding, { limit, score_threshold: threshold });
+      return result.success ? result.data : [];
+    }, 'findNearest');
   }
-}
 
-/**
- * Creates a circuit breaker for Qdrant operations
- */
-export function createQdrantCircuitBreaker() {
-  return circuitBreakerManager.getCircuitBreaker('qdrant', {
-    failureThreshold: 2,
-    recoveryTimeoutMs: 10000,
-    failureRateThreshold: 0.4,
-    minimumCalls: 2,
-  });
-}
+  /**
+   * Vector similarity search with multiple vectors
+   */
+  async findNearestMultiple(
+    embeddings: readonly number[][],
+    limit?: number,
+    threshold?: number
+  ): Promise<DatabaseResult<readonly SearchResult[][]>> {
+    return this.wrapAsyncOperation(async () => {
+      const results: SearchResult[][] = [];
+      for (const embedding of embeddings) {
+        const nearestResult = await this.findNearest(embedding, limit, threshold);
+        if (nearestResult.success) {
+          results.push([...nearestResult.data]);
+        } else {
+          results.push([]);
+        }
+      }
+      return results as readonly SearchResult[][];
+    }, 'findNearestMultiple');
+  }
 
-/**
- * Creates a circuit breaker for OpenAI operations
- */
-export function createOpenAICircuitBreaker() {
-  return circuitBreakerManager.getCircuitBreaker('openai', {
-    failureThreshold: 3,
-    recoveryTimeoutMs: 30000,
-    failureRateThreshold: 0.4,
-    minimumCalls: 5,
-  });
+  /**
+   * Begin a new transaction
+   */
+  async beginTransaction(
+    options?: TransactionOptions
+  ): Promise<DatabaseResult<Transaction<unknown>>> {
+    return this.wrapAsyncOperation(async () => {
+      throw new Error('Transactions not supported in Qdrant adapter');
+    }, 'beginTransaction');
+  }
+
+  /**
+   * Execute operations within a transaction
+   */
+  async executeTransaction<T>(
+    operations: readonly DatabaseOperation<unknown, T>[],
+    options?: TransactionOptions
+  ): Promise<DatabaseResult<readonly T[]>> {
+    return this.wrapAsyncOperation(async () => {
+      throw new Error('Transactions not supported in Qdrant adapter');
+    }, 'executeTransaction');
+  }
+
+  /**
+   * Create a new collection
+   */
+  async createCollection(
+    name: string,
+    config: VectorConfig
+  ): Promise<DatabaseResult<{ created: boolean; collectionId: CollectionId }>> {
+    return this.wrapAsyncOperation(async () => {
+      await this.client.createCollection(name, {
+        vectors: {
+          size: config.vectorSize || 1536,
+          distance: config.distanceMetric || 'Cosine',
+        },
+      });
+      return { created: true, collectionId: name as CollectionId };
+    }, 'createCollection');
+  }
+
+  /**
+   * Delete a collection
+   */
+  async deleteCollection(name: string): Promise<DatabaseResult<{ deleted: boolean }>> {
+    return this.wrapAsyncOperation(async () => {
+      await this.client.deleteCollection(name);
+      return { deleted: true };
+    }, 'deleteCollection');
+  }
+
+  /**
+   * List all collections
+   */
+  async listCollections(): Promise<DatabaseResult<readonly { name: string; status: string }[]>> {
+    return this.wrapAsyncOperation(async () => {
+      const collections = await this.client.getCollections();
+      return collections.collections.map((col) => ({
+        name: col.name,
+        status: 'healthy',
+      }));
+    }, 'listCollections');
+  }
+
+  /**
+   * Get raw Qdrant client
+   */
+  getRawClient(): unknown {
+    return this.client;
+  }
+
+  /**
+   * Get performance metrics
+   */
+  async getPerformanceMetrics(): Promise<
+    DatabaseResult<{
+      queryLatency: number;
+      indexingLatency: number;
+      throughput: number;
+      errorRate: number;
+      cacheHitRate?: number;
+    }>
+  > {
+    return this.wrapAsyncOperation(async () => {
+      const metrics = await this.getMetrics();
+
+      // Safely access metrics properties
+      const safeMetrics = isQdrantMetricsResponse(metrics) ? metrics : {
+        averageSearchTime: 0,
+        averageIndexingTime: 0,
+        totalOperations: 0,
+        errorRate: 0,
+        cacheHitRate: 0,
+      };
+
+      return {
+        queryLatency: safeMetrics.averageSearchTime,
+        indexingLatency: safeMetrics.averageIndexingTime,
+        throughput: safeMetrics.totalOperations,
+        errorRate: safeMetrics.errorRate,
+        cacheHitRate: safeMetrics.cacheHitRate,
+      };
+    }, 'getPerformanceMetrics');
+  }
+
+  /**
+   * Health check with detailed status
+   */
+  async detailedHealthCheck(): Promise<
+    DatabaseResult<{
+      healthy: boolean;
+      connectionStatus: string;
+      collectionStatus: string;
+      issues: readonly string[];
+      recommendations?: readonly string[];
+    }>
+  > {
+    return this.wrapAsyncOperation(async () => {
+      const isHealthy = await this.healthCheck();
+      const collectionInfo = await this.getCollectionInfo();
+
+      const issues: string[] = [];
+      const recommendations: string[] = [];
+
+      if (!isHealthy) {
+        issues.push('Database connection unhealthy');
+        recommendations.push('Check network connectivity and authentication');
+      }
+
+      if (!collectionInfo.success) {
+        issues.push('Collection access failed');
+        recommendations.push('Verify collection exists and permissions are correct');
+      }
+
+      return {
+        healthy: isHealthy && collectionInfo.success,
+        connectionStatus: isHealthy ? 'connected' : 'disconnected',
+        collectionStatus: collectionInfo.success ? 'available' : 'unavailable',
+        issues,
+        recommendations,
+      };
+    }, 'detailedHealthCheck');
+  }
+
+  /**
+   * Check if operation is supported
+   */
+  supportsOperation(operation: string): boolean {
+    const supportedOps = [
+      'search',
+      'store',
+      'update',
+      'delete',
+      'findById',
+      'semanticSearch',
+      'hybridSearch',
+      'exactSearch',
+      'bulkStore',
+      'bulkDelete',
+      'generateEmbedding',
+      'backup',
+      'restore',
+      'optimize',
+      'validate',
+    ];
+    return supportedOps.includes(operation);
+  }
+
+  /**
+   * Get list of supported operations
+   */
+  getSupportedOperations(): readonly string[] {
+    return [
+      'search',
+      'store',
+      'update',
+      'delete',
+      'findById',
+      'semanticSearch',
+      'hybridSearch',
+      'exactSearch',
+      'bulkStore',
+      'bulkDelete',
+      'generateEmbedding',
+      'backup',
+      'restore',
+      'optimize',
+      'validate',
+      'createCollection',
+      'deleteCollection',
+      'listCollections',
+    ] as const;
+  }
 }

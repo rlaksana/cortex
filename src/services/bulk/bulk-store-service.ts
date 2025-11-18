@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Bulk Store Service
  *
@@ -21,10 +17,9 @@
 
 import { EventEmitter } from 'node:events';
 
-import { logger } from '@/utils/logger.js';
-
 import type { AuthContext } from '../../types/auth-types.js';
 import type { KnowledgeItem } from '../../types/core-interfaces.js';
+import { logger } from '../../utils/logger.js';
 import { type MemoryStoreOrchestratorQdrant } from '../orchestrators/memory-store-orchestrator-qdrant.js';
 import { type RetryWorkerService } from '../workers/retry-worker-service.js';
 

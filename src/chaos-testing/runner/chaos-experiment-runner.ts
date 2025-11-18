@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Automated Chaos Experiment Runner
  *
@@ -545,12 +541,14 @@ export class ChaosExperimentRunner extends EventEmitter {
     await this.degradationVerifier.startMonitoring(context.scenario, context.context);
 
     // Start alert verification
-    const alertExpectations = context.scenario.verification.alerting.expectedAlerts.map(alert => ({
-      alertType: alert.name,
-      expectedSeverity: alert.severity as 'low' | 'medium' | 'high' | 'critical',
-      expectedWithinMs: context.scenario.verification.alerting.maxAlertDelay,
-      description: `Expected alert: ${alert.name} from ${alert.source}`
-    }));
+    const alertExpectations = context.scenario.verification.alerting.expectedAlerts.map(
+      (alert) => ({
+        alertType: alert.name,
+        expectedSeverity: alert.severity as 'low' | 'medium' | 'high' | 'critical',
+        expectedWithinMs: context.scenario.verification.alerting.maxAlertDelay,
+        description: `Expected alert: ${alert.name} from ${alert.source}`,
+      })
+    );
 
     await this.alertVerifier.startMonitoring(context.scenario.id, alertExpectations);
   }

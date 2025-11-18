@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ULTIMATE FINAL EMERGENCY ROLLBACK: Remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * HTTP Request/Response Runtime Validation
@@ -42,16 +40,12 @@ export class ZodRequestValidator<T extends SerializableRequestBody> implements R
 
   validate(body: T): ValidationResult {
     try {
-      const result = this.schema.safeParse(body, {
-        strict: this.options.strict ?? false,
-      });
+      const result = this.schema.safeParse(body);
 
       if (!result.success) {
         return {
           isValid: false,
-          errors: result.error.issues.map(issue =>
-            `${issue.path.join('.')}: ${issue.message}`
-          ),
+          errors: result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`),
         };
       }
 
@@ -70,9 +64,7 @@ export class ZodRequestValidator<T extends SerializableRequestBody> implements R
   }
 
   sanitize(body: T): T {
-    const result = this.schema.safeParse(body, {
-      strict: this.options.strict ?? false,
-    });
+    const result = this.schema.safeParse(body);
 
     if (!result.success) {
       throw new Error(`Sanitization failed: ${result.error.message}`);
@@ -97,9 +89,11 @@ export class ZodResponseValidator<T> implements ResponseValidator<T> {
 
   validate(data: unknown): data is T {
     try {
-      const result = this.schema.safeParse(data, {
-        strict: this.options.strict ?? false,
-      });
+      // Use strict mode if specified and schema supports it
+      const schema = this.options.strict && 'strict' in this.schema && typeof this.schema.strict === 'function'
+        ? this.schema.strict()
+        : this.schema;
+      const result = schema.safeParse(data);
 
       return result.success;
     } catch {
@@ -108,9 +102,7 @@ export class ZodResponseValidator<T> implements ResponseValidator<T> {
   }
 
   transform(data: unknown): T {
-    const result = this.schema.safeParse(data, {
-      strict: this.options.strict ?? false,
-    });
+    const result = this.schema.safeParse(data);
 
     if (!result.success) {
       throw new Error(`Response transformation failed: ${result.error.message}`);
@@ -204,40 +196,54 @@ export const SearchRequestSchema = z.object({
   query: z.string().min(1),
   filters: z.record(z.unknown()).optional(),
   pagination: PaginationRequestSchema.optional(),
-  sorting: z.array(z.object({
-    field: z.string(),
-    direction: z.enum(['asc', 'desc']),
-  })).optional(),
+  sorting: z
+    .array(
+      z.object({
+        field: z.string(),
+        direction: z.enum(['asc', 'desc']),
+      })
+    )
+    .optional(),
 });
 
 /**
  * Batch operation request schema
  */
 export const BatchRequestSchema = z.object({
-  operations: z.array(z.object({
-    id: z.string(),
-    type: z.enum(['create', 'update', 'delete']),
-    data: z.unknown().optional(),
-  })).max(1000), // Limit batch size
-  options: z.object({
-    continueOnError: z.boolean().default(false),
-    returnFailures: z.boolean().default(true),
-  }).optional(),
+  operations: z
+    .array(
+      z.object({
+        id: z.string(),
+        type: z.enum(['create', 'update', 'delete']),
+        data: z.unknown().optional(),
+      })
+    )
+    .max(1000), // Limit batch size
+  options: z
+    .object({
+      continueOnError: z.boolean().default(false),
+      returnFailures: z.boolean().default(true),
+    })
+    .optional(),
 });
 
 /**
  * Batch operation response schema
  */
 export const BatchResponseSchema = z.object({
-  results: z.array(z.object({
-    id: z.string(),
-    success: z.boolean(),
-    data: z.unknown().optional(),
-    error: z.object({
-      code: z.string(),
-      message: z.string(),
-    }).optional(),
-  })),
+  results: z.array(
+    z.object({
+      id: z.string(),
+      success: z.boolean(),
+      data: z.unknown().optional(),
+      error: z
+        .object({
+          code: z.string(),
+          message: z.string(),
+        })
+        .optional(),
+    })
+  ),
   summary: z.object({
     total: z.number().nonnegative(),
     successful: z.number().nonnegative(),
@@ -252,7 +258,9 @@ export const BatchResponseSchema = z.object({
 /**
  * JSON API request validator
  */
-export class JsonApiRequestValidator<T extends SerializableRequestBody> extends ZodRequestValidator<T> {
+export class JsonApiRequestValidator<
+  T extends SerializableRequestBody,
+> extends ZodRequestValidator<T> {
   constructor(schema: ZodType<T, ZodTypeDef, unknown>) {
     super(schema, {
       strict: true,
@@ -260,7 +268,7 @@ export class JsonApiRequestValidator<T extends SerializableRequestBody> extends 
     });
   }
 
-  validate(body: T): ValidationResult {
+  public override validate(body: T): ValidationResult {
     // First validate that it's valid JSON
     try {
       if (typeof body !== 'string') {
@@ -291,7 +299,7 @@ export class JsonApiResponseValidator<T> extends ZodResponseValidator<T> {
     });
   }
 
-  validate(data: unknown): data is T {
+  public override validate(data: unknown): data is T {
     // First ensure it's parsed JSON
     if (typeof data === 'string') {
       try {
@@ -338,14 +346,17 @@ export class FormDataRequestValidator implements RequestValidator<FormData> {
   sanitize(body: FormData): FormData {
     const sanitized = new FormData();
 
-    for (const [key, value] of body.entries()) {
+    // Use for...of loop with proper Iterator typing
+    for (const [key, value] of body as unknown as Array<[string, FormDataEntryValue]>) {
       if (this.fieldValidators[key]) {
         const validator = this.fieldValidators[key];
         const result = validator.safeParse(value);
         if (result.success) {
-          sanitized.set(key, result.data);
+          // result.data should be FormDataEntryValue compatible
+          sanitized.set(key, result.data as string | Blob);
         }
       } else {
+        // value is already FormDataEntryValue (string | File which extends Blob)
         sanitized.set(key, value);
       }
     }
@@ -376,7 +387,9 @@ export class FileUploadValidator implements RequestValidator<File> {
 
     // Check file type
     if (this.options.allowedTypes && !this.options.allowedTypes.includes(body.type)) {
-      errors.push(`File type ${body.type} not allowed. Allowed types: ${this.options.allowedTypes.join(', ')}`);
+      errors.push(
+        `File type ${body.type} not allowed. Allowed types: ${this.options.allowedTypes.join(', ')}`
+      );
     }
 
     return {
@@ -443,14 +456,15 @@ export function isTextResponse<T>(
 export function isPaginatedResponse<T>(
   response: TypedHttpResponse<T>
 ): response is TypedHttpResponse<T> & {
-  data: { data: unknown[]; pagination: Record<string, unknown> }
+  data: { data: unknown[]; pagination: Record<string, unknown> };
 } {
+  const data = response.data as Record<string, unknown>;
   return (
     typeof response.data === 'object' &&
     response.data !== null &&
-    'data' in response.data &&
-    'pagination' in response.data &&
-    Array.isArray((response.data as unknown).data)
+    'data' in data &&
+    'pagination' in data &&
+    Array.isArray(data.data)
   );
 }
 
@@ -460,15 +474,18 @@ export function isPaginatedResponse<T>(
 export function hasErrorBody<T>(
   response: TypedHttpResponse<T>
 ): response is TypedHttpResponse<T> & {
-  data: { error: { code: string; message: string } }
+  data: { error: { code: string; message: string } };
 } {
+  const data = response.data as Record<string, unknown>;
+  const error = data.error as Record<string, unknown>;
   return (
     typeof response.data === 'object' &&
     response.data !== null &&
-    'error' in response.data &&
-    typeof (response.data as unknown).error === 'object' &&
-    'code' in (response.data as unknown).error &&
-    'message' in (response.data as unknown).error
+    'error' in data &&
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'message' in error
   );
 }
 
@@ -484,7 +501,7 @@ export function createContentTypeValidator(
 ): (response: TypedHttpResponse) => boolean {
   return (response) => {
     const contentType = response.headers.get('content-type') || '';
-    return allowedTypes.some(type => contentType.includes(type));
+    return allowedTypes.some((type) => contentType.includes(type));
   };
 }
 
@@ -552,7 +569,7 @@ export function safeTransformResponseData<T>(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -562,16 +579,19 @@ export function safeTransformResponseData<T>(
  */
 export function transformPartialResponseData<T extends Record<string, unknown>>(
   data: unknown,
-  schema: ZodType<T, ZodTypeDef, unknown>
+  schema: z.ZodType<T, ZodTypeDef, unknown>
 ): Partial<T> {
-  const partialSchema = schema.partial();
+  // Check if schema is a ZodObject to use partial()
+  const partialSchema = schema instanceof z.ZodObject
+    ? schema.partial()
+    : schema;
   const result = partialSchema.safeParse(data);
 
   if (!result.success) {
     throw new Error(`Partial response transformation failed: ${result.error.message}`);
   }
 
-  return result.data;
+  return result.data as Partial<T>;
 }
 
 // ============================================================================
@@ -581,9 +601,7 @@ export function transformPartialResponseData<T extends Record<string, unknown>>(
 /**
  * Combine multiple validators
  */
-export function combineValidators<T>(
-  validators: RequestValidator<T>[]
-): RequestValidator<T> {
+export function combineValidators<T>(validators: RequestValidator<T>[]): RequestValidator<T> {
   return {
     validate(body: T): ValidationResult {
       const allErrors: string[] = [];
@@ -602,8 +620,8 @@ export function combineValidators<T>(
     },
 
     sanitize(body: T): T {
-      return validators.reduce((current, validator) =>
-        validator.sanitize ? validator.sanitize(current) : current,
+      return validators.reduce(
+        (current, validator) => (validator.sanitize ? validator.sanitize(current) : current),
         body
       );
     },
@@ -677,7 +695,8 @@ export function createCrudValidator<T>(
   return {
     create: new ZodRequestValidator(createSchema),
     update: new ZodRequestValidator(
-      updateSchema || createSchema.partial()
+      (updateSchema ||
+      (createSchema instanceof z.ZodObject ? createSchema.partial() : createSchema)) as ZodType<Partial<T>, ZodTypeDef, unknown>
     ),
     read: new ZodResponseValidator(createSchema),
     list: new ZodResponseValidator(z.array(createSchema)),
@@ -687,13 +706,18 @@ export function createCrudValidator<T>(
 /**
  * Create validator for REST API endpoints
  */
-export function createRestApiValidator<
-  TRequest extends SerializableRequestBody,
-  TResponse
->(
+export function createRestApiValidator<TRequest extends SerializableRequestBody, TResponse>(
   requestSchema: ZodType<TRequest, ZodTypeDef, unknown>,
   responseSchema: ZodType<TResponse, ZodTypeDef, unknown>,
-  errorSchema: ZodType<{ error: { code: string; message: string } }, ZodTypeDef, unknown> = ErrorResponseSchema
+  errorSchema: ZodType<
+    { error: { code: string; message: string } },
+    ZodTypeDef,
+    unknown
+  > = ErrorResponseSchema as ZodType<
+    { error: { code: string; message: string } },
+    ZodTypeDef,
+    unknown
+  >
 ): {
   request: ZodRequestValidator<TRequest>;
   response: ZodResponseValidator<TResponse>;
@@ -724,19 +748,19 @@ export function createGraphQLValidator<TQuery, TMutation>(
   });
 
   return {
-    query: new ZodRequestValidator(requestSchema),
+    query: new ZodRequestValidator(requestSchema) as ZodRequestValidator<{ query: string; variables?: Record<string, unknown> }>,
     queryResponse: new ZodResponseValidator(
       z.object({
         data: querySchema.optional(),
         errors: z.array(z.unknown()).optional(),
       })
-    ),
-    mutation: new ZodRequestValidator(requestSchema),
+    ) as ZodResponseValidator<{ data: TQuery; errors?: unknown[] }>,
+    mutation: new ZodRequestValidator(requestSchema) as ZodRequestValidator<{ query: string; variables?: Record<string, unknown> }>,
     mutationResponse: new ZodResponseValidator(
       z.object({
         data: mutationSchema.optional(),
         errors: z.array(z.unknown()).optional(),
       })
-    ),
+    ) as ZodResponseValidator<{ data: TMutation; errors?: unknown[] }>,
   };
 }

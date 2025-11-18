@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTE FINAL EMERGENCY ROLLBACK: Last remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * SLO Monitoring Integration
@@ -36,7 +34,7 @@ import { SLOReportingService } from '../services/slo-reporting-service.js';
 import { SLOService } from '../services/slo-service.js';
 import type {
   AlertCorrelation,
-AlertSeverity, 
+  AlertSeverity,
   AutomatedResponse,
   BudgetAlert,
   CircuitBreakerStats,
@@ -45,8 +43,26 @@ AlertSeverity,
   SLOAlert,
   SLOEvaluation,
   SLOHealthStatus,
-  SLOMonitoringConfig} from '../types/slo-interfaces.js';
-
+  SLOMonitoringConfig,
+  CircuitBreakerAlert,
+  CircuitBreakerStateChangeEvent,
+  SLOBreachIncidentEvent,
+  SLOBreachWarningEvent,
+  RetryBudgetAlertEvent,
+  DegradationLevelChangeEvent,
+  CircuitBreakerWithMethods,
+  SLOPeriod,
+  SLOStatus,
+} from '../types/slo-interfaces.js';
+import {
+  isCircuitBreakerAlert,
+  isCircuitBreakerStateChangeEvent,
+  isSLOBreachIncidentEvent,
+  isSLOBreachWarningEvent,
+  isRetryBudgetAlertEvent,
+  isDegradationLevelChangeEvent,
+  isCircuitBreakerWithMethods,
+} from '../types/slo-interfaces.js';
 
 /**
  * SLO Monitoring Integration Service
@@ -58,7 +74,7 @@ export class SLOMonitoringIntegration extends EventEmitter {
   private reportingService: SLOReportingService;
   private circuitBreakerMonitor: CircuitBreakerMonitor;
   private circuitDashboard: EnhancedCircuitDashboard;
-  private sloDashboard: SLODashboardService;
+  private sloDashboard: SLODashboardService & CircuitBreakerWithMethods;
   private retryMonitor: RetryBudgetMonitor;
   private degradationManager: QdrantGracefulDegradationManager;
 
@@ -91,9 +107,11 @@ export class SLOMonitoringIntegration extends EventEmitter {
     this.reportingService = new SLOReportingService(this.sloService);
     this.circuitBreakerMonitor = new CircuitBreakerMonitor();
     this.circuitDashboard = new EnhancedCircuitDashboard();
-    this.sloDashboard = new SLODashboardService(this.sloService);
+    this.sloDashboard = new SLODashboardService(this.sloService) as SLODashboardService & CircuitBreakerWithMethods;
     this.retryMonitor = new RetryBudgetMonitor();
-    this.degradationManager = new QdrantGracefulDegradationManager(/* qdrantAdapter */ {} as unknown);
+    this.degradationManager = new QdrantGracefulDegradationManager(
+      /* qdrantAdapter */ {} as any
+    );
   }
 
   /**
@@ -134,7 +152,6 @@ export class SLOMonitoringIntegration extends EventEmitter {
       this.isStarted = true;
       this.emit('started', 'SLO Monitoring Integration started successfully');
       logger.info('🎯 SLO Monitoring Integration started successfully');
-
     } catch (error) {
       logger.error({ error }, 'Failed to start SLO Monitoring Integration');
       throw error;
@@ -171,7 +188,6 @@ export class SLOMonitoringIntegration extends EventEmitter {
       this.isStarted = false;
       this.emit('stopped', 'SLO Monitoring Integration stopped successfully');
       logger.info('SLO Monitoring Integration stopped successfully');
-
     } catch (error) {
       logger.error({ error }, 'Failed to stop SLO Monitoring Integration');
       throw error;
@@ -275,7 +291,7 @@ export class SLOMonitoringIntegration extends EventEmitter {
    */
   private async performSLOEvaluations(): Promise<void> {
     const slos = await this.sloService.getAllSLOs();
-    const activeSLOs = slos.filter(slo => slo.active);
+    const activeSLOs = slos.filter((slo) => slo.active);
 
     for (const slo of activeSLOs) {
       try {
@@ -291,7 +307,7 @@ export class SLOMonitoringIntegration extends EventEmitter {
    */
   private async calculateErrorBudgets(): Promise<void> {
     const slos = await this.sloService.getAllSLOs();
-    const activeSLOs = slos.filter(slo => slo.active);
+    const activeSLOs = slos.filter((slo) => slo.active);
 
     for (const slo of activeSLOs) {
       try {
@@ -310,12 +326,20 @@ export class SLOMonitoringIntegration extends EventEmitter {
 
     // Check for circuits that need attention
     for (const [name, circuitStats] of Object.entries(stats.circuitBreakers)) {
-      if ((circuitStats as unknown).state === 'OPEN') {
-        this.emit('alert:circuit_open', { name, stats: circuitStats });
+      // Use type guard to ensure we have CircuitBreakerStats
+      const typedStats = circuitStats as any;
+
+      // Safely access properties with defaults
+      const state = typedStats?.state || 'closed';
+      const failureRate = typeof typedStats?.failureRate === 'number' ? typedStats.failureRate : 0;
+
+      if (state === 'open') {
+        this.emit('alert:circuit_open', { name, stats: { state, failureRate, name } as CircuitBreakerStats });
       }
 
-      if ((circuitStats as unknown).failureRate > 0.5) { // 50% failure rate
-        this.emit('alert:circuit_degraded', { name, stats: circuitStats });
+      if (failureRate > 0.5) {
+        // 50% failure rate
+        this.emit('alert:circuit_degraded', { name, stats: { state, failureRate, name } as CircuitBreakerStats });
       }
     }
   }
@@ -326,9 +350,9 @@ export class SLOMonitoringIntegration extends EventEmitter {
   private async refreshDashboards(): Promise<void> {
     // Trigger dashboard data refresh
     try {
-      (this.sloDashboard as unknown).broadcastToAll('data:refresh', {
+      this.sloDashboard.broadcastToAll('data:refresh', {
         timestamp: new Date(),
-        trigger: { type: 'alert', id: 'scheduled_refresh' }
+        trigger: { type: 'alert', id: 'scheduled_refresh' },
       });
     } catch (error) {
       // Dashboard refresh failed, but continue
@@ -352,45 +376,81 @@ export class SLOMonitoringIntegration extends EventEmitter {
           sli: 'api-availability-sli', // Reference to SLI ID
           objective: {
             target: 99, // 99% availability
-            period: 'rolling_30_days' as unknown,
+            period: 'rolling_30_days' as SLOPeriod,
             window: {
               type: 'rolling' as const,
-              duration: 30 * 24 * 60 * 60 * 1000 // 30 days in milliseconds
-            }
+              duration: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
+            },
           },
           budgeting: {
             errorBudget: 1, // 1% allowable failures
             burnRateAlerts: [
-              { name: 'warning', threshold: 2, window: { type: 'rolling' as const, duration: 60 * 60 * 1000 }, severity: 'warning' as unknown, alertWhenRemaining: 50 },
-              { name: 'critical', threshold: 5, window: { type: 'rolling' as const, duration: 60 * 60 * 1000 }, severity: 'critical' as unknown, alertWhenRemaining: 20 }
-            ]
+              {
+                name: 'warning',
+                threshold: 2,
+                window: { type: 'rolling' as const, duration: 60 * 60 * 1000 },
+                severity: 'warning' as 'warning',
+                alertWhenRemaining: 50,
+              },
+              {
+                name: 'critical',
+                threshold: 5,
+                window: { type: 'rolling' as const, duration: 60 * 60 * 1000 },
+                severity: 'critical' as 'critical',
+                alertWhenRemaining: 20,
+              },
+            ],
           },
           alerting: {
             enabled: true,
             thresholds: [
-              { name: 'burn_rate_warning', condition: { operator: 'gt' as const, value: 2, evaluationWindow: { type: 'rolling' as const, duration: 60 * 60 * 1000 } }, severity: 'warning' as const, threshold: 2, duration: 300000, cooldown: 900000, enabled: true },
-              { name: 'burn_rate_critical', condition: { operator: 'gt' as const, value: 5, evaluationWindow: { type: 'rolling' as const, duration: 60 * 60 * 1000 } }, severity: 'critical' as const, threshold: 5, duration: 60000, cooldown: 300000, enabled: true }
+              {
+                name: 'burn_rate_warning',
+                condition: {
+                  operator: 'gt' as const,
+                  value: 2,
+                  evaluationWindow: { type: 'rolling' as const, duration: 60 * 60 * 1000 },
+                },
+                severity: 'warning' as const,
+                threshold: 2,
+                duration: 300000,
+                cooldown: 900000,
+                enabled: true,
+              },
+              {
+                name: 'burn_rate_critical',
+                condition: {
+                  operator: 'gt' as const,
+                  value: 5,
+                  evaluationWindow: { type: 'rolling' as const, duration: 60 * 60 * 1000 },
+                },
+                severity: 'critical' as const,
+                threshold: 5,
+                duration: 60000,
+                cooldown: 300000,
+                enabled: true,
+              },
             ],
             notificationChannels: ['default'],
-            escalationPolicy: 'default'
+            escalationPolicy: 'default',
           },
           ownership: {
             team: 'platform',
             individuals: ['team-lead@company.com'],
             contact: {
               email: 'platform-team@company.com',
-              slack: '#platform-alerts'
-            }
+              slack: '#platform-alerts',
+            },
           },
-          status: 'active' as unknown,
+          status: 'active' as SLOStatus,
           active: true,
           metadata: {
             createdAt: new Date(),
             updatedAt: new Date(),
             businessImpact: 'Critical for customer experience',
             dependencies: ['database-service', 'auth-service'],
-            relatedSLOs: []
-          }
+            relatedSLOs: [],
+          },
         },
         {
           id: 'database-response-time-slo',
@@ -399,45 +459,81 @@ export class SLOMonitoringIntegration extends EventEmitter {
           sli: 'database-response-time-sli', // Reference to SLI ID
           objective: {
             target: 95, // 95th percentile under 100ms
-            period: 'rolling_7_days' as unknown,
+            period: 'rolling_7_days' as SLOPeriod,
             window: {
               type: 'rolling' as const,
-              duration: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
-            }
+              duration: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+            },
           },
           budgeting: {
             errorBudget: 5, // 5% allowable failures
             burnRateAlerts: [
-              { name: 'warning', threshold: 3, window: { type: 'rolling' as const, duration: 60 * 60 * 1000 }, severity: 'warning' as unknown, alertWhenRemaining: 50 },
-              { name: 'critical', threshold: 10, window: { type: 'rolling' as const, duration: 60 * 60 * 1000 }, severity: 'critical' as unknown, alertWhenRemaining: 20 }
-            ]
+              {
+                name: 'warning',
+                threshold: 3,
+                window: { type: 'rolling' as const, duration: 60 * 60 * 1000 },
+                severity: 'warning' as 'warning',
+                alertWhenRemaining: 50,
+              },
+              {
+                name: 'critical',
+                threshold: 10,
+                window: { type: 'rolling' as const, duration: 60 * 60 * 1000 },
+                severity: 'critical' as 'critical',
+                alertWhenRemaining: 20,
+              },
+            ],
           },
           alerting: {
             enabled: true,
             thresholds: [
-              { name: 'burn_rate_warning', condition: { operator: 'gt' as const, value: 3, evaluationWindow: { type: 'rolling' as const, duration: 60 * 60 * 1000 } }, severity: 'warning' as const, threshold: 3, duration: 120000, cooldown: 600000, enabled: true },
-              { name: 'burn_rate_critical', condition: { operator: 'gt' as const, value: 10, evaluationWindow: { type: 'rolling' as const, duration: 60 * 60 * 1000 } }, severity: 'critical' as const, threshold: 10, duration: 60000, cooldown: 300000, enabled: true }
+              {
+                name: 'burn_rate_warning',
+                condition: {
+                  operator: 'gt' as const,
+                  value: 3,
+                  evaluationWindow: { type: 'rolling' as const, duration: 60 * 60 * 1000 },
+                },
+                severity: 'warning' as const,
+                threshold: 3,
+                duration: 120000,
+                cooldown: 600000,
+                enabled: true,
+              },
+              {
+                name: 'burn_rate_critical',
+                condition: {
+                  operator: 'gt' as const,
+                  value: 10,
+                  evaluationWindow: { type: 'rolling' as const, duration: 60 * 60 * 1000 },
+                },
+                severity: 'critical' as const,
+                threshold: 10,
+                duration: 60000,
+                cooldown: 300000,
+                enabled: true,
+              },
             ],
             notificationChannels: ['default'],
-            escalationPolicy: 'default'
+            escalationPolicy: 'default',
           },
           ownership: {
             team: 'database',
             individuals: ['dba-team@company.com'],
             contact: {
               email: 'dba-team@company.com',
-              slack: '#database-alerts'
-            }
+              slack: '#database-alerts',
+            },
           },
-          status: 'active' as unknown,
+          status: 'active' as SLOStatus,
           active: true,
           metadata: {
             createdAt: new Date(),
             updatedAt: new Date(),
             businessImpact: 'Affects all database-dependent services',
             dependencies: ['database-cluster'],
-            relatedSLOs: []
-          }
+            relatedSLOs: [],
+          },
         },
         {
           id: 'memory-store-success-rate-slo',
@@ -446,46 +542,82 @@ export class SLOMonitoringIntegration extends EventEmitter {
           sli: 'memory-store-success-rate-sli', // Reference to SLI ID
           objective: {
             target: 99.9, // 99.9% success rate
-            period: 'rolling_24_hours' as unknown,
+            period: 'rolling_24_hours' as SLOPeriod,
             window: {
               type: 'rolling' as const,
-              duration: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
-            }
+              duration: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+            },
           },
           budgeting: {
             errorBudget: 0.1, // 0.1% allowable failures
             burnRateAlerts: [
-              { name: 'warning', threshold: 2, window: { type: 'rolling' as const, duration: 60 * 60 * 1000 }, severity: 'warning' as unknown, alertWhenRemaining: 50 },
-              { name: 'critical', threshold: 5, window: { type: 'rolling' as const, duration: 60 * 60 * 1000 }, severity: 'critical' as unknown, alertWhenRemaining: 20 }
-            ]
+              {
+                name: 'warning',
+                threshold: 2,
+                window: { type: 'rolling' as const, duration: 60 * 60 * 1000 },
+                severity: 'warning' as 'warning',
+                alertWhenRemaining: 50,
+              },
+              {
+                name: 'critical',
+                threshold: 5,
+                window: { type: 'rolling' as const, duration: 60 * 60 * 1000 },
+                severity: 'critical' as 'critical',
+                alertWhenRemaining: 20,
+              },
+            ],
           },
           alerting: {
             enabled: true,
             thresholds: [
-              { name: 'burn_rate_warning', condition: { operator: 'gt' as const, value: 2, evaluationWindow: { type: 'rolling' as const, duration: 60 * 60 * 1000 } }, severity: 'warning' as const, threshold: 2, duration: 180000, cooldown: 600000, enabled: true },
-              { name: 'burn_rate_critical', condition: { operator: 'gt' as const, value: 5, evaluationWindow: { type: 'rolling' as const, duration: 60 * 60 * 1000 } }, severity: 'critical' as const, threshold: 5, duration: 60000, cooldown: 300000, enabled: true }
+              {
+                name: 'burn_rate_warning',
+                condition: {
+                  operator: 'gt' as const,
+                  value: 2,
+                  evaluationWindow: { type: 'rolling' as const, duration: 60 * 60 * 1000 },
+                },
+                severity: 'warning' as const,
+                threshold: 2,
+                duration: 180000,
+                cooldown: 600000,
+                enabled: true,
+              },
+              {
+                name: 'burn_rate_critical',
+                condition: {
+                  operator: 'gt' as const,
+                  value: 5,
+                  evaluationWindow: { type: 'rolling' as const, duration: 60 * 60 * 1000 },
+                },
+                severity: 'critical' as const,
+                threshold: 5,
+                duration: 60000,
+                cooldown: 300000,
+                enabled: true,
+              },
             ],
             notificationChannels: ['default'],
-            escalationPolicy: 'default'
+            escalationPolicy: 'default',
           },
           ownership: {
             team: 'platform',
             individuals: ['memory-team@company.com'],
             contact: {
               email: 'memory-team@company.com',
-              slack: '#memory-alerts'
-            }
+              slack: '#memory-alerts',
+            },
           },
-          status: 'active' as unknown,
+          status: 'active' as SLOStatus,
           active: true,
           metadata: {
             createdAt: new Date(),
             updatedAt: new Date(),
             businessImpact: 'Critical for memory-dependent operations',
             dependencies: ['memory-cluster'],
-            relatedSLOs: []
-          }
-        }
+            relatedSLOs: [],
+          },
+        },
       ];
 
       for (const sloConfig of defaultSLOs) {
@@ -508,27 +640,27 @@ export class SLOMonitoringIntegration extends EventEmitter {
         {
           type: 'custom',
           condition: 'failure_rate < 0.1 for 5m',
-          delay: 300000 // 5 minutes
+          delay: 300000, // 5 minutes
         },
         {
           type: 'custom',
           condition: 'circuit_open > 10m',
-          delay: 600000 // 10 minutes
+          delay: 600000, // 10 minutes
         },
         {
           type: 'custom',
           condition: 'circuit_open > 15m',
-          delay: 900000 // 15 minutes
-        }
+          delay: 900000, // 15 minutes
+        },
       ],
       status: 'pending',
       startedAt: new Date(),
       effectiveness: {
         resolvedIssue: false,
         timeToResolution: 0,
-        sideEffects: []
+        sideEffects: [],
       },
-      enabled: true
+      enabled: true,
     });
 
     // Error budget automation
@@ -539,37 +671,40 @@ export class SLOMonitoringIntegration extends EventEmitter {
         {
           type: 'custom',
           condition: 'budget_remaining < 0.1',
-          delay: 0 // immediate
+          delay: 0, // immediate
         },
         {
           type: 'custom',
           condition: 'budget_remaining < 0.05',
-          delay: 60000 // 1 minute
+          delay: 60000, // 1 minute
         },
         {
           type: 'custom',
           condition: 'budget_remaining < 0.01',
-          delay: 300000 // 5 minutes
-        }
+          delay: 300000, // 5 minutes
+        },
       ],
       status: 'pending',
       startedAt: new Date(),
       effectiveness: {
         resolvedIssue: false,
         timeToResolution: 0,
-        sideEffects: []
+        sideEffects: [],
       },
-      enabled: true
+      enabled: true,
     });
   }
 
   // Event Handlers
   private async handleSLOEvaluation(evaluation: SLOEvaluation): Promise<void> {
-    logger.debug({
-      sloId: evaluation.sloId,
-      status: evaluation.status,
-      value: evaluation.value
-    }, 'SLO evaluation completed');
+    logger.debug(
+      {
+        sloId: evaluation.sloId,
+        status: evaluation.status,
+        value: evaluation.value,
+      },
+      'SLO evaluation completed'
+    );
 
     // Correlate with circuit breaker status
     await this.correlateWithCircuitBreaker(evaluation);
@@ -579,11 +714,14 @@ export class SLOMonitoringIntegration extends EventEmitter {
   }
 
   private handleBudgetAlert(alert: BudgetAlert): void {
-    logger.warn({
-      sloId: alert.sloId,
-      alertType: alert.alertType,
-      burnRate: alert.burnRate
-    }, 'Budget alert triggered');
+    logger.warn(
+      {
+        sloId: alert.sloId,
+        alertType: alert.alertType,
+        burnRate: alert.burnRate,
+      },
+      'Budget alert triggered'
+    );
 
     // Trigger automated response
     if (this.config.automatedResponseEnabled) {
@@ -597,11 +735,14 @@ export class SLOMonitoringIntegration extends EventEmitter {
   }
 
   private handleBudgetExhausted(budget: ErrorBudget): void {
-    logger.error({
-      sloId: budget.sloId,
-      remaining: budget.remaining,
-      consumption: budget.consumption
-    }, 'Error budget exhausted');
+    logger.error(
+      {
+        sloId: budget.sloId,
+        remaining: budget.remaining,
+        consumption: budget.consumption,
+      },
+      'Error budget exhausted'
+    );
 
     // Immediate automated response
     if (this.config.automatedResponseEnabled) {
@@ -615,11 +756,19 @@ export class SLOMonitoringIntegration extends EventEmitter {
   }
 
   private handleBreachDetected(incident: unknown): void {
-    logger.error({
-      sloId: incident.sloId,
-      breachType: incident.breachType,
-      severity: incident.severity
-    }, 'SLO breach detected');
+    if (!isSLOBreachIncidentEvent(incident)) {
+      logger.warn({ incident }, 'Invalid SLO breach incident object received');
+      return;
+    }
+
+    logger.error(
+      {
+        sloId: incident.sloId,
+        breachType: incident.breachType,
+        severity: incident.severity,
+      },
+      'SLO breach detected'
+    );
 
     // Correlate with other alerts
     if (this.config.alertCorrelationEnabled) {
@@ -631,22 +780,38 @@ export class SLOMonitoringIntegration extends EventEmitter {
   }
 
   private handleBreachWarning(warning: unknown): void {
-    logger.warn({
-      sloId: warning.sloId,
-      warningType: warning.warningType,
-      projectedBreach: warning.projectedBreach
-    }, 'SLO breach warning');
+    if (!isSLOBreachWarningEvent(warning)) {
+      logger.warn({ warning }, 'Invalid SLO breach warning object received');
+      return;
+    }
+
+    logger.warn(
+      {
+        sloId: warning.sloId,
+        warningType: warning.warningType,
+        projectedBreach: warning.projectedBreach,
+      },
+      'SLO breach warning'
+    );
 
     // Preventive measures
     this.triggerPreventiveMeasures(warning);
   }
 
   private handleCircuitBreakerAlert(alert: unknown): void {
-    logger.warn({
-      circuitName: alert.circuitName,
-      alertType: alert.alertType,
-      failureRate: alert.failureRate
-    }, 'Circuit breaker alert');
+    if (!isCircuitBreakerAlert(alert)) {
+      logger.warn({ alert }, 'Invalid circuit breaker alert object received');
+      return;
+    }
+
+    logger.warn(
+      {
+        circuitName: alert.circuitName,
+        alertType: alert.alertType,
+        failureRate: alert.failureRate,
+      },
+      'Circuit breaker alert'
+    );
 
     // Check SLO impact
     this.checkSLOImpact(alert);
@@ -656,38 +821,62 @@ export class SLOMonitoringIntegration extends EventEmitter {
   }
 
   private handleCircuitStateChanged(event: unknown): void {
-    logger.info({
-      circuitName: event.circuitName,
-      oldState: event.oldState,
-      newState: event.newState
-    }, 'Circuit breaker state changed');
+    if (!isCircuitBreakerStateChangeEvent(event)) {
+      logger.warn({ event }, 'Invalid circuit breaker state change event received');
+      return;
+    }
+
+    logger.info(
+      {
+        circuitName: event.circuitName,
+        oldState: event.oldState,
+        newState: event.newState,
+      },
+      'Circuit breaker state changed'
+    );
 
     // Update SLO evaluations if needed
     this.updateSLOEvaluationsForCircuit(event);
 
     // Trigger response if critical
-    if (event.newState === 'OPEN') {
+    if (event.newState === 'open') {
       this.triggerCircuitBreakerResponse(event);
     }
   }
 
   private handleRetryBudgetAlert(alert: unknown): void {
-    logger.warn({
-      serviceName: alert.serviceName,
-      alertType: alert.alertType,
-      retryRate: alert.retryRate
-    }, 'Retry budget alert');
+    if (!isRetryBudgetAlertEvent(alert)) {
+      logger.warn({ alert }, 'Invalid retry budget alert object received');
+      return;
+    }
+
+    logger.warn(
+      {
+        serviceName: alert.serviceName,
+        alertType: alert.alertType,
+        retryRate: alert.retryRate,
+      },
+      'Retry budget alert'
+    );
 
     // Check impact on SLOs
     this.checkSLOImpactFromRetryBudget(alert);
   }
 
   private handleDegradationLevelChanged(event: unknown): void {
-    logger.info({
-      component: event.component,
-      oldLevel: event.oldLevel,
-      newLevel: event.newLevel
-    }, 'Degradation level changed');
+    if (!isDegradationLevelChangeEvent(event)) {
+      logger.warn({ event }, 'Invalid degradation level change event received');
+      return;
+    }
+
+    logger.info(
+      {
+        component: event.component,
+        oldLevel: event.oldLevel,
+        newLevel: event.newLevel,
+      },
+      'Degradation level changed'
+    );
 
     // Adjust SLO targets based on degradation
     this.adjustSLOTargets(event);
@@ -757,29 +946,22 @@ export class SLOMonitoringIntegration extends EventEmitter {
    * Get comprehensive monitoring snapshot
    */
   async getMonitoringSnapshot(): Promise<IntegratedMonitoringSnapshot> {
-    const [
-      sloStatus,
-      errorBudgets,
-      circuitBreakerStats,
-      retryBudgetStats,
-      degradationStats
-    ] = await Promise.all([
-      this.getSLOHealthStatus(),
-      this.getErrorBudgetSnapshot(),
-      this.getCircuitBreakerSnapshot(),
-      this.getRetryBudgetSnapshot(),
-      this.getDegradationSnapshot()
-    ]);
+    const [sloStatus, errorBudgets, circuitBreakerStats, retryBudgetStats, degradationStats] =
+      await Promise.all([
+        this.getSLOHealthStatus(),
+        this.getErrorBudgetSnapshot(),
+        this.getCircuitBreakerSnapshot(),
+        this.getRetryBudgetSnapshot(),
+        this.getDegradationSnapshot(),
+      ]);
 
     return {
       timestamp: new Date(),
-      circuitBreakers: circuitBreakerStats,
-      retryBudgets: retryBudgetStats,
-      degradation: degradationStats,
-      alerts: [],
-      automatedResponses: Array.from(this.automatedResponses.values()),
-      healthScore: 85
-    } as unknown;
+      slos: [], // Would be populated from actual SLO status
+      services: [], // Would be populated from service health checks
+      incidents: [], // Would be populated from incident management
+      alerts: [], // Would be populated from alert system
+    };
   }
 
   private async getSLOHealthStatus(): Promise<SLOHealthStatus> {
@@ -817,16 +999,20 @@ export class SLOMonitoringIntegration extends EventEmitter {
     // Transform SLOAlert[] to expected interface format
     const sloAlerts: SLOAlert[] = []; // Would be populated from actual alert system
 
-    return sloAlerts.map(alert => ({
+    return sloAlerts.map((alert) => ({
       id: alert.id,
       rule: `slo-${alert.type}`,
       severity: alert.severity,
-      state: alert.resolved ? 'resolved' : 'firing' as const,
-      value: alert.metadata.threshold
+      state: alert.resolved ? 'resolved' : ('firing' as const),
+      value: alert.metadata.threshold,
     }));
   }
 
-  private calculateOverallHealthScore(sloStatus: unknown, errorBudgets: unknown, circuitBreakers: unknown): number {
+  private calculateOverallHealthScore(
+    sloStatus: unknown,
+    errorBudgets: unknown,
+    circuitBreakers: unknown
+  ): number {
     // Implementation for calculating overall health score
     return 0.95; // placeholder
   }

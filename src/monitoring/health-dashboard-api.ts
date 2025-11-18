@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Enhanced monitoring type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Comprehensive Health Dashboard API
@@ -19,21 +17,20 @@ import { ProductionLogger } from '@/utils/logger.js';
 
 import {
   type CircuitBreakerHealthStatus,
-  circuitBreakerMonitor} from './circuit-breaker-monitor.js';
-import {
-  type ContainerHealthState,
-  containerProbesHandler} from './container-probes.js';
+  circuitBreakerMonitor,
+} from './circuit-breaker-monitor.js';
+import { type ContainerHealthState, containerProbesHandler } from './container-probes.js';
 import {
   enhancedPerformanceCollector,
   type MCPOperationMetrics,
-  type SystemPerformanceMetrics} from './enhanced-performance-collector.js';
+  type SystemPerformanceMetrics,
+} from './enhanced-performance-collector.js';
 import {
   type MCPServerHealthMetrics,
-  mcpServerHealthMonitor} from './mcp-server-health-monitor.js';
+  mcpServerHealthMonitor,
+} from './mcp-server-health-monitor.js';
 import { type QdrantHealthCheckResult } from './qdrant-health-monitor.js';
-import {
-  DependencyType,
-  HealthStatus} from '../types/unified-health-interfaces.js';
+import { DependencyType, HealthStatus } from '../types/unified-health-interfaces.js';
 const logger = ProductionLogger;
 
 /**
@@ -282,9 +279,16 @@ export class HealthDashboardAPIHandler {
         },
         components: {
           total: circuitBreakerStats.size + 4, // MCP + Qdrant + System + Circuit Breakers
-          healthy: Array.from(circuitBreakerStats.values()).filter(c => c.healthStatus === HealthStatus.HEALTHY).length + 2,
-          degraded: Array.from(circuitBreakerStats.values()).filter(c => c.healthStatus === HealthStatus.DEGRADED).length,
-          unhealthy: Array.from(circuitBreakerStats.values()).filter(c => c.healthStatus === HealthStatus.UNHEALTHY).length,
+          healthy:
+            Array.from(circuitBreakerStats.values()).filter(
+              (c) => c.healthStatus === HealthStatus.HEALTHY
+            ).length + 2,
+          degraded: Array.from(circuitBreakerStats.values()).filter(
+            (c) => c.healthStatus === HealthStatus.DEGRADED
+          ).length,
+          unhealthy: Array.from(circuitBreakerStats.values()).filter(
+            (c) => c.healthStatus === HealthStatus.UNHEALTHY
+          ).length,
         },
         performance: {
           requestsPerSecond: mcpMetrics.requestsPerSecond,
@@ -300,9 +304,11 @@ export class HealthDashboardAPIHandler {
         },
         alerts: {
           active: circuitBreakerMonitor.getActiveAlerts().length,
-          critical: circuitBreakerMonitor.getActiveAlerts().filter(a => a.severity === 'critical').length,
-          warning: circuitBreakerMonitor.getActiveAlerts().filter(a => a.severity === 'warning').length,
-          info: circuitBreakerMonitor.getActiveAlerts().filter(a => a.severity === 'info').length,
+          critical: circuitBreakerMonitor.getActiveAlerts().filter((a) => a.severity === 'critical')
+            .length,
+          warning: circuitBreakerMonitor.getActiveAlerts().filter((a) => a.severity === 'warning')
+            .length,
+          info: circuitBreakerMonitor.getActiveAlerts().filter((a) => a.severity === 'info').length,
         },
         trends: {
           healthTrend: this.calculateHealthTrend(),
@@ -313,7 +319,6 @@ export class HealthDashboardAPIHandler {
 
       this.setCache(cacheKey, summary, this.config.caching.realtimeTtlSeconds);
       this.sendResponse(res, 200, summary, requestId, Date.now() - startTime);
-
     } catch (error) {
       this.handleError(res, error, requestId, Date.now() - startTime);
     }
@@ -360,7 +365,8 @@ export class HealthDashboardAPIHandler {
         {
           name: 'system-resources',
           type: DependencyType.MONITORING,
-          status: mcpMetrics.memoryUsagePercent > 90 ? HealthStatus.UNHEALTHY : HealthStatus.HEALTHY,
+          status:
+            mcpMetrics.memoryUsagePercent > 90 ? HealthStatus.UNHEALTHY : HealthStatus.HEALTHY,
           responseTime: 0,
           errorRate: 0,
         },
@@ -395,7 +401,6 @@ export class HealthDashboardAPIHandler {
 
       this.setCache(cacheKey, realtimeData, this.config.caching.realtimeTtlSeconds);
       this.sendResponse(res, 200, realtimeData, requestId, Date.now() - startTime);
-
     } catch (error) {
       this.handleError(res, error, requestId, Date.now() - startTime);
     }
@@ -417,7 +422,7 @@ export class HealthDashboardAPIHandler {
       const { timeRange, interval = '5m' } = req.query;
       const timeRangeStr = Array.isArray(timeRange) ? timeRange[0] : timeRange;
       const intervalStr = Array.isArray(interval) ? interval[0] : interval;
-      const [start, end] = (timeRangeStr as string || '1h').split('..');
+      const [start, end] = ((timeRangeStr as string) || '1h').split('..');
 
       const cacheKey = `dashboard:historical:${timeRangeStr}:${intervalStr}`;
       const cached = this.getFromCache(cacheKey);
@@ -428,12 +433,15 @@ export class HealthDashboardAPIHandler {
 
       // Calculate time range
       const endTime = end ? new Date(end).getTime() : Date.now();
-      const startTimeMs = start ? new Date(start as string).getTime() : endTime - (60 * 60 * 1000); // Default 1 hour
+      const startTimeMs = start ? new Date(start as string).getTime() : endTime - 60 * 60 * 1000; // Default 1 hour
       const intervalMs = this.parseInterval(intervalStr as string);
 
       // Get historical data
       const mcpHistory = mcpServerHealthMonitor.getHealthHistory(100);
-      const performanceHistory = enhancedPerformanceCollector.getTimeSeriesData('response_time', endTime - startTimeMs);
+      const performanceHistory = enhancedPerformanceCollector.getTimeSeriesData(
+        'response_time',
+        endTime - startTimeMs
+      );
 
       // Generate time series data
       const timestamps: string[] = [];
@@ -449,8 +457,8 @@ export class HealthDashboardAPIHandler {
         timestamps.push(new Date(time).toISOString());
 
         // Find closest historical data point
-        const historyPoint = mcpHistory.find(h =>
-          Math.abs(h.timestamp.getTime() - time) < intervalMs
+        const historyPoint = mcpHistory.find(
+          (h) => Math.abs(h.timestamp.getTime() - time) < intervalMs
         );
 
         if (historyPoint) {
@@ -501,7 +509,6 @@ export class HealthDashboardAPIHandler {
 
       this.setCache(cacheKey, historicalData, this.config.caching.historicalTtlSeconds);
       this.sendResponse(res, 200, historicalData, requestId, Date.now() - startTime);
-
     } catch (error) {
       this.handleError(res, error, requestId, Date.now() - startTime);
     }
@@ -542,7 +549,7 @@ export class HealthDashboardAPIHandler {
       let filteredAlerts = circuitBreakerAlerts;
 
       if (severity) {
-        filteredAlerts = filteredAlerts.filter(a => a.severity === severity);
+        filteredAlerts = filteredAlerts.filter((a) => a.severity === severity);
       }
 
       if (limit) {
@@ -553,14 +560,13 @@ export class HealthDashboardAPIHandler {
         alerts: filteredAlerts,
         summary: {
           total: filteredAlerts.length,
-          critical: filteredAlerts.filter(a => a.severity === 'critical').length,
-          warning: filteredAlerts.filter(a => a.severity === 'warning').length,
-          info: filteredAlerts.filter(a => a.severity === 'info').length,
+          critical: filteredAlerts.filter((a) => a.severity === 'critical').length,
+          warning: filteredAlerts.filter((a) => a.severity === 'warning').length,
+          info: filteredAlerts.filter((a) => a.severity === 'info').length,
         },
       };
 
       this.sendResponse(res, 200, alertsData, requestId, Date.now() - startTime);
-
     } catch (error) {
       this.handleError(res, error, requestId, Date.now() - startTime);
     }
@@ -613,7 +619,6 @@ export class HealthDashboardAPIHandler {
       res.setHeader('Content-Type', contentType);
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.send(data);
-
     } catch (error) {
       this.handleError(res, error, requestId, Date.now() - startTime);
     }
@@ -622,8 +627,8 @@ export class HealthDashboardAPIHandler {
   /**
    * Setup Express routes
    */
-  setupRoutes(app: unknown): void {
-    const router = app.router || app;
+  setupRoutes(app: any): void {
+    const router = app && typeof app.use === 'function' ? app : app;
 
     // Apply middleware
     if (this.config.enableCors) {
@@ -647,12 +652,18 @@ export class HealthDashboardAPIHandler {
 
     // Health check for the API itself
     router.get(`${this.config.basePath}/health`, (req: Request, res: Response) => {
-      this.sendResponse(res, 200, {
-        status: 'healthy',
-        version: this.config.version,
-        timestamp: new Date().toISOString(),
-        features: this.config.features,
-      }, this.generateRequestId(), 0);
+      this.sendResponse(
+        res,
+        200,
+        {
+          status: 'healthy',
+          version: this.config.version,
+          timestamp: new Date().toISOString(),
+          features: this.config.features,
+        },
+        this.generateRequestId(),
+        0
+      );
     });
 
     logger.info(
@@ -667,7 +678,13 @@ export class HealthDashboardAPIHandler {
 
   // Private helper methods
 
-  private sendResponse(res: Response, statusCode: number, data: unknown, requestId: string, processingTime: number): void {
+  private sendResponse(
+    res: Response,
+    statusCode: number,
+    data: unknown,
+    requestId: string,
+    processingTime: number
+  ): void {
     const response: APIResponse = {
       success: true,
       data,
@@ -682,7 +699,14 @@ export class HealthDashboardAPIHandler {
     res.status(statusCode).json(response);
   }
 
-  private sendError(res: Response, statusCode: number, code: string, message: string, requestId: string, details?: unknown): void {
+  private sendError(
+    res: Response,
+    statusCode: number,
+    code: string,
+    message: string,
+    requestId: string,
+    details?: unknown
+  ): void {
     const response: APIResponse = {
       success: false,
       error: {
@@ -701,7 +725,12 @@ export class HealthDashboardAPIHandler {
     res.status(statusCode).json(response);
   }
 
-  private handleError(res: Response, error: unknown, requestId: string, processingTime: number): void {
+  private handleError(
+    res: Response,
+    error: unknown,
+    requestId: string,
+    processingTime: number
+  ): void {
     logger.error({ error, requestId }, 'Health dashboard API error');
 
     this.sendError(
@@ -758,10 +787,10 @@ export class HealthDashboardAPIHandler {
 
   private parseInterval(interval: string): number {
     const units: Record<string, number> = {
-      's': 1000,
-      'm': 60 * 1000,
-      'h': 60 * 60 * 1000,
-      'd': 24 * 60 * 60 * 1000,
+      s: 1000,
+      m: 60 * 1000,
+      h: 60 * 60 * 1000,
+      d: 24 * 60 * 60 * 1000,
     };
 
     const match = interval.match(/^(\d+)([smhd])$/);
@@ -785,8 +814,8 @@ export class HealthDashboardAPIHandler {
     const recent = history.slice(0, 5);
     const older = history.slice(5, 10);
 
-    const recentHealthy = recent.filter(h => h.status === HealthStatus.HEALTHY).length;
-    const olderHealthy = older.filter(h => h.status === HealthStatus.HEALTHY).length;
+    const recentHealthy = recent.filter((h) => h.status === HealthStatus.HEALTHY).length;
+    const olderHealthy = older.filter((h) => h.status === HealthStatus.HEALTHY).length;
 
     if (recentHealthy > olderHealthy) return 'improving';
     if (recentHealthy < olderHealthy) return 'degrading';
@@ -883,10 +912,13 @@ export class HealthDashboardAPIHandler {
   }
 
   private corsMiddleware() {
-    return (req: Request, res: Response, next: unknown) => {
+    return (req: Request, res: Response, next: () => void) => {
       res.header('Access-Control-Allow-Origin', '*');
       res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+      res.header(
+        'Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+      );
 
       if (req.method === 'OPTIONS') {
         res.sendStatus(200);
@@ -897,7 +929,7 @@ export class HealthDashboardAPIHandler {
   }
 
   private authMiddleware() {
-    return (req: Request, res: Response, next: unknown) => {
+    return (req: Request, res: Response, next: () => void) => {
       // Simple auth implementation - would use proper auth in production
       const apiKey = req.headers['x-api-key'] as string;
       const expectedKey = process.env.DASHBOARD_API_KEY;
@@ -913,7 +945,7 @@ export class HealthDashboardAPIHandler {
   private rateLimitMiddleware() {
     const requests = new Map<string, { count: number; resetTime: number }>();
 
-    return (req: Request, res: Response, next: unknown) => {
+    return (req: Request, res: Response, next: () => void) => {
       const clientId = req.ip || 'unknown';
       const now = Date.now();
       const windowMs = 60 * 1000; // 1 minute
@@ -929,7 +961,13 @@ export class HealthDashboardAPIHandler {
       clientData.count++;
 
       if (clientData.count > maxRequests) {
-        this.sendError(res, 429, 'RATE_LIMIT_EXCEEDED', 'Too many requests', this.generateRequestId());
+        this.sendError(
+          res,
+          429,
+          'RATE_LIMIT_EXCEEDED',
+          'Too many requests',
+          this.generateRequestId()
+        );
         return;
       }
 

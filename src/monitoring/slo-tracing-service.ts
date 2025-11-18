@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * SLO Tracing Service
  *
@@ -12,8 +8,9 @@
  * @since 2025-11-14
  */
 
-import { EventEmitter } from 'events';
 import { randomUUID } from 'crypto';
+
+import { EventEmitter } from 'events';
 
 // ============================================================================
 // Tracing Interfaces
@@ -39,7 +36,7 @@ export interface TraceLog {
   timestamp: number;
   level: 'debug' | 'info' | 'warn' | 'error';
   message: string;
-  fields?: Record<string, any>;
+  fields?: Record<string, unknown>;
 }
 
 export type SpanStatus = 'ok' | 'error' | 'timeout' | 'cancelled' | 'unknown';
@@ -92,7 +89,7 @@ export const TRACING_OPERATIONS = {
   // System Operations
   HTTP_REQUEST: 'http.request',
   DATABASE_CONNECTION: 'db.connection',
-  CACHE_ACCESS: 'cache.access'
+  CACHE_ACCESS: 'cache.access',
 } as const;
 
 export const COMPONENTS = {
@@ -101,7 +98,7 @@ export const COMPONENTS = {
   QDRANT_ADAPTER: 'qdrant-adapter',
   AI_ORCHESTRATOR: 'ai-orchestrator',
   DEDUPLICATION_SERVICE: 'deduplication-service',
-  HTTP_CLIENT: 'http-client'
+  HTTP_CLIENT: 'http-client',
 } as const;
 
 export const STANDARD_TAGS = {
@@ -117,7 +114,7 @@ export const STANDARD_TAGS = {
   DB_SYSTEM: 'db.system',
   DB_STATEMENT: 'db.statement',
   PEER_SERVICE: 'peer.service',
-  PEER_ADDRESS: 'peer.address'
+  PEER_ADDRESS: 'peer.address',
 } as const;
 
 // ============================================================================
@@ -141,7 +138,7 @@ export class SLOTracingService extends EventEmitter {
       enablePropagation: true,
       propagationHeaders: ['x-trace-id', 'x-span-id', 'x-parent-span-id', 'x-trace-flags'],
       spanRetentionHours: 24,
-      ...config
+      ...config,
     };
 
     this.startRetentionCleanup();
@@ -169,11 +166,11 @@ export class SLOTracingService extends EventEmitter {
       tags: {
         [STANDARD_TAGS.SERVICE_NAME]: this.config.serviceName,
         [STANDARD_TAGS.OPERATION_NAME]: operationName,
-        ...tags
+        ...tags,
       },
       logs: [],
       service: this.config.serviceName,
-      component: this.extractComponentFromOperation(operationName)
+      component: this.extractComponentFromOperation(operationName),
     };
 
     this.activeSpans.set(spanId, span);
@@ -182,7 +179,7 @@ export class SLOTracingService extends EventEmitter {
     this.traceContexts.set(spanId, {
       traceId,
       spanId,
-      sampled: true
+      sampled: true,
     });
 
     this.emit('span_started', span);
@@ -239,7 +236,7 @@ export class SLOTracingService extends EventEmitter {
     spanId: string,
     level: 'debug' | 'info' | 'warn' | 'error',
     message: string,
-    fields?: Record<string, any>
+    fields?: Record<string, unknown>
   ): void {
     const span = this.activeSpans.get(spanId);
     if (!span) {
@@ -250,7 +247,7 @@ export class SLOTracingService extends EventEmitter {
       timestamp: Date.now(),
       level,
       message,
-      fields
+      fields,
     };
 
     span.logs.push(log);
@@ -279,7 +276,7 @@ export class SLOTracingService extends EventEmitter {
     return {
       traceId,
       spanId,
-      sampled: true
+      sampled: true,
     };
   }
 
@@ -295,21 +292,13 @@ export class SLOTracingService extends EventEmitter {
   /**
    * Create a span for MCP tool execution
    */
-  startMCPToolSpan(
-    toolName: string,
-    inputSize?: number,
-    parentContext?: TraceContext
-  ): TraceSpan {
-    return this.startSpan(
-      TRACING_OPERATIONS.MCP_TOOL_EXECUTION,
-      parentContext,
-      {
-        [STANDARD_TAGS.COMPONENT]: COMPONENTS.MCP_SERVER,
-        'tool.name': toolName,
-        'tool.input_size': inputSize || 0,
-        'span.kind': 'server'
-      }
-    );
+  startMCPToolSpan(toolName: string, inputSize?: number, parentContext?: TraceContext): TraceSpan {
+    return this.startSpan(TRACING_OPERATIONS.MCP_TOOL_EXECUTION, parentContext, {
+      [STANDARD_TAGS.COMPONENT]: COMPONENTS.MCP_SERVER,
+      'tool.name': toolName,
+      'tool.input_size': inputSize || 0,
+      'span.kind': 'server',
+    });
   }
 
   /**
@@ -320,22 +309,19 @@ export class SLOTracingService extends EventEmitter {
     memoryId?: string,
     parentContext?: TraceContext
   ): TraceSpan {
-    const operationName = operation === 'store'
-      ? TRACING_OPERATIONS.MEMORY_STORE
-      : operation === 'find'
-      ? TRACING_OPERATIONS.MEMORY_FIND
-      : TRACING_OPERATIONS.MEMORY_DELETE;
+    const operationName =
+      operation === 'store'
+        ? TRACING_OPERATIONS.MEMORY_STORE
+        : operation === 'find'
+          ? TRACING_OPERATIONS.MEMORY_FIND
+          : TRACING_OPERATIONS.MEMORY_DELETE;
 
-    return this.startSpan(
-      operationName,
-      parentContext,
-      {
-        [STANDARD_TAGS.COMPONENT]: COMPONENTS.MEMORY_STORE,
-        'memory.operation': operation,
-        'memory.id': memoryId || 'unknown',
-        'span.kind': 'server'
-      }
-    );
+    return this.startSpan(operationName, parentContext, {
+      [STANDARD_TAGS.COMPONENT]: COMPONENTS.MEMORY_STORE,
+      'memory.operation': operation,
+      'memory.id': memoryId || 'unknown',
+      'span.kind': 'server',
+    });
   }
 
   /**
@@ -346,26 +332,23 @@ export class SLOTracingService extends EventEmitter {
     collectionName?: string,
     parentContext?: TraceContext
   ): TraceSpan {
-    const operationName = operation === 'search'
-      ? TRACING_OPERATIONS.QDRANT_SEARCH
-      : operation === 'insert'
-      ? TRACING_OPERATIONS.QDRANT_INSERT
-      : operation === 'update'
-      ? TRACING_OPERATIONS.QDRANT_UPDATE
-      : TRACING_OPERATIONS.QDRANT_DELETE;
+    const operationName =
+      operation === 'search'
+        ? TRACING_OPERATIONS.QDRANT_SEARCH
+        : operation === 'insert'
+          ? TRACING_OPERATIONS.QDRANT_INSERT
+          : operation === 'update'
+            ? TRACING_OPERATIONS.QDRANT_UPDATE
+            : TRACING_OPERATIONS.QDRANT_DELETE;
 
-    return this.startSpan(
-      operationName,
-      parentContext,
-      {
-        [STANDARD_TAGS.COMPONENT]: COMPONENTS.QDRANT_ADAPTER,
-        [STANDARD_TAGS.DB_SYSTEM]: 'qdrant',
-        'db.operation': operation,
-        'db.collection': collectionName || 'unknown',
-        [STANDARD_TAGS.PEER_SERVICE]: 'qdrant',
-        'span.kind': 'client'
-      }
-    );
+    return this.startSpan(operationName, parentContext, {
+      [STANDARD_TAGS.COMPONENT]: COMPONENTS.QDRANT_ADAPTER,
+      [STANDARD_TAGS.DB_SYSTEM]: 'qdrant',
+      'db.operation': operation,
+      'db.collection': collectionName || 'unknown',
+      [STANDARD_TAGS.PEER_SERVICE]: 'qdrant',
+      'span.kind': 'client',
+    });
   }
 
   /**
@@ -376,22 +359,19 @@ export class SLOTracingService extends EventEmitter {
     model?: string,
     parentContext?: TraceContext
   ): TraceSpan {
-    const operationName = operation === 'embedding'
-      ? TRACING_OPERATIONS.EMBEDDING_GENERATION
-      : operation === 'orchestration'
-      ? TRACING_OPERATIONS.AI_ORCHESTRATION
-      : TRACING_OPERATIONS.AI_INFERENCE;
+    const operationName =
+      operation === 'embedding'
+        ? TRACING_OPERATIONS.EMBEDDING_GENERATION
+        : operation === 'orchestration'
+          ? TRACING_OPERATIONS.AI_ORCHESTRATION
+          : TRACING_OPERATIONS.AI_INFERENCE;
 
-    return this.startSpan(
-      operationName,
-      parentContext,
-      {
-        [STANDARD_TAGS.COMPONENT]: COMPONENTS.AI_ORCHESTRATOR,
-        'ai.operation': operation,
-        'ai.model': model || 'unknown',
-        'span.kind': 'client'
-      }
-    );
+    return this.startSpan(operationName, parentContext, {
+      [STANDARD_TAGS.COMPONENT]: COMPONENTS.AI_ORCHESTRATOR,
+      'ai.operation': operation,
+      'ai.model': model || 'unknown',
+      'span.kind': 'client',
+    });
   }
 
   /**
@@ -399,8 +379,8 @@ export class SLOTracingService extends EventEmitter {
    */
   getTraceSpans(traceId: string): TraceSpan[] {
     return [
-      ...Array.from(this.activeSpans.values()).filter(span => span.traceId === traceId),
-      ...this.completedSpans.filter(span => span.traceId === traceId)
+      ...Array.from(this.activeSpans.values()).filter((span) => span.traceId === traceId),
+      ...this.completedSpans.filter((span) => span.traceId === traceId),
     ];
   }
 
@@ -419,13 +399,15 @@ export class SLOTracingService extends EventEmitter {
   }): TraceSpan[] {
     const allSpans = [...this.activeSpans.values(), ...this.completedSpans];
 
-    return allSpans.filter(span => {
+    return allSpans.filter((span) => {
       if (filter.service && span.service !== filter.service) return false;
       if (filter.component && span.component !== filter.component) return false;
       if (filter.operationName && span.operationName !== filter.operationName) return false;
       if (filter.status && span.status !== filter.status) return false;
-      if (filter.minDuration && (!span.duration || span.duration < filter.minDuration)) return false;
-      if (filter.maxDuration && (!span.duration || span.duration > filter.maxDuration)) return false;
+      if (filter.minDuration && (!span.duration || span.duration < filter.minDuration))
+        return false;
+      if (filter.maxDuration && (!span.duration || span.duration > filter.maxDuration))
+        return false;
       if (filter.startTime && span.startTime < filter.startTime) return false;
       if (filter.endTime && span.startTime > filter.endTime) return false;
 
@@ -441,15 +423,18 @@ export class SLOTracingService extends EventEmitter {
     errorRate: number;
     p95Latency: number;
     p99Latency: number;
-    operationBreakdown: Record<string, {
-      count: number;
-      errorRate: number;
-      avgLatency: number;
-    }>;
+    operationBreakdown: Record<
+      string,
+      {
+        count: number;
+        errorRate: number;
+        avgLatency: number;
+      }
+    >;
   } {
-    const cutoff = Date.now() - (timeWindowMinutes * 60 * 1000);
-    const relevantSpans = this.completedSpans.filter(span =>
-      span.endTime && span.endTime >= cutoff && span.duration
+    const cutoff = Date.now() - timeWindowMinutes * 60 * 1000;
+    const relevantSpans = this.completedSpans.filter(
+      (span) => span.endTime && span.endTime >= cutoff && span.duration
     );
 
     if (relevantSpans.length === 0) {
@@ -458,22 +443,25 @@ export class SLOTracingService extends EventEmitter {
         errorRate: 0,
         p95Latency: 0,
         p99Latency: 0,
-        operationBreakdown: {}
+        operationBreakdown: {},
       };
     }
 
-    const durations = relevantSpans.map(span => span.duration!).sort((a, b) => a - b);
-    const errorCount = relevantSpans.filter(span => span.status === 'error').length;
+    const durations = relevantSpans.map((span) => span.duration!).sort((a, b) => a - b);
+    const errorCount = relevantSpans.filter((span) => span.status === 'error').length;
 
     const p95Index = Math.floor(durations.length * 0.95);
     const p99Index = Math.floor(durations.length * 0.99);
 
     // Calculate operation breakdown
-    const operationBreakdown: Record<string, {
-      count: number;
-      errorRate: number;
-      avgLatency: number;
-    }> = {};
+    const operationBreakdown: Record<
+      string,
+      {
+        count: number;
+        errorRate: number;
+        avgLatency: number;
+      }
+    > = {};
 
     for (const span of relevantSpans) {
       const op = span.operationName;
@@ -481,7 +469,7 @@ export class SLOTracingService extends EventEmitter {
         operationBreakdown[op] = {
           count: 0,
           errorRate: 0,
-          avgLatency: 0
+          avgLatency: 0,
         };
       }
 
@@ -506,7 +494,7 @@ export class SLOTracingService extends EventEmitter {
       errorRate: (errorCount / relevantSpans.length) * 100,
       p95Latency: durations[p95Index] || 0,
       p99Latency: durations[p99Index] || 0,
-      operationBreakdown
+      operationBreakdown,
     };
   }
 
@@ -518,11 +506,15 @@ export class SLOTracingService extends EventEmitter {
 
     switch (format) {
       case 'json':
-        return JSON.stringify({
-          spans: allSpans,
-          timestamp: Date.now(),
-          totalCount: allSpans.length
-        }, null, 2);
+        return JSON.stringify(
+          {
+            spans: allSpans,
+            timestamp: Date.now(),
+            totalCount: allSpans.length,
+          },
+          null,
+          2
+        );
 
       case 'jaeger':
         return this.exportJaegerFormat(allSpans);
@@ -539,15 +531,15 @@ export class SLOTracingService extends EventEmitter {
    * Cleanup old spans
    */
   cleanup(): void {
-    const cutoff = Date.now() - (this.config.spanRetentionHours * 60 * 60 * 1000);
+    const cutoff = Date.now() - this.config.spanRetentionHours * 60 * 60 * 1000;
 
-    this.completedSpans = this.completedSpans.filter(span =>
-      (span.endTime || span.startTime) >= cutoff
+    this.completedSpans = this.completedSpans.filter(
+      (span) => (span.endTime || span.startTime) >= cutoff
     );
 
     this.emit('cleanup_completed', {
       spansRemoved: this.completedSpans.length,
-      cutoff
+      cutoff,
     });
   }
 
@@ -562,9 +554,10 @@ export class SLOTracingService extends EventEmitter {
     spanByComponent: Record<string, number>;
     spanByStatus: Record<string, number>;
   } {
-    const completedWithDuration = this.completedSpans.filter(span => span.duration);
+    const completedWithDuration = this.completedSpans.filter((span) => span.duration);
     const totalDuration = completedWithDuration.reduce((sum, span) => sum + span.duration!, 0);
-    const avgDuration = completedWithDuration.length > 0 ? totalDuration / completedWithDuration.length : 0;
+    const avgDuration =
+      completedWithDuration.length > 0 ? totalDuration / completedWithDuration.length : 0;
 
     const spanByComponent: Record<string, number> = {};
     const spanByStatus: Record<string, number> = {};
@@ -580,7 +573,7 @@ export class SLOTracingService extends EventEmitter {
       totalSpans: this.activeSpans.size + this.completedSpans.length,
       averageSpanDuration: avgDuration,
       spanByComponent,
-      spanByStatus
+      spanByStatus,
     };
   }
 
@@ -608,7 +601,7 @@ export class SLOTracingService extends EventEmitter {
 
   private exportJaegerFormat(spans: TraceSpan[]): string {
     // Simplified Jaeger format export
-    const jaegerSpans = spans.map(span => ({
+    const jaegerSpans = spans.map((span) => ({
       traceID: span.traceId,
       spanID: span.spanId,
       parentSpanID: span.parentSpanId,
@@ -618,37 +611,45 @@ export class SLOTracingService extends EventEmitter {
       tags: Object.entries(span.tags).map(([key, value]) => ({
         key,
         value: String(value),
-        type: typeof value === 'boolean' ? 'bool' : 'string'
+        type: typeof value === 'boolean' ? 'bool' : 'string',
       })),
-      logs: span.logs.map(log => ({
+      logs: span.logs.map((log) => ({
         timestamp: log.timestamp * 1000,
         fields: [
           { key: 'level', value: log.level },
           { key: 'message', value: log.message },
-          ...(log.fields ? Object.entries(log.fields).map(([k, v]) => ({ key: k, value: String(v) })) : [])
-        ]
+          ...(log.fields
+            ? Object.entries(log.fields).map(([k, v]) => ({ key: k, value: String(v) }))
+            : []),
+        ],
       })),
-      status: { code: span.status === 'ok' ? 0 : 1 }
+      status: { code: span.status === 'ok' ? 0 : 1 },
     }));
 
-    return JSON.stringify({
-      data: [{
-        traceID: spans[0]?.traceId || '',
-        spans: jaegerSpans,
-        processID: 'p1',
-        processes: {
-          p1: {
-            serviceName: this.config.serviceName,
-            tags: [{ key: 'hostname', value: 'cortex-mcp' }]
-          }
-        }
-      }]
-    }, null, 2);
+    return JSON.stringify(
+      {
+        data: [
+          {
+            traceID: spans[0]?.traceId || '',
+            spans: jaegerSpans,
+            processID: 'p1',
+            processes: {
+              p1: {
+                serviceName: this.config.serviceName,
+                tags: [{ key: 'hostname', value: 'cortex-mcp' }],
+              },
+            },
+          },
+        ],
+      },
+      null,
+      2
+    );
   }
 
   private exportZipkinFormat(spans: TraceSpan[]): string {
     // Simplified Zipkin format export
-    const zipkinSpans = spans.map(span => ({
+    const zipkinSpans = spans.map((span) => ({
       traceId: span.traceId,
       id: span.spanId,
       parentId: span.parentSpanId,
@@ -657,13 +658,13 @@ export class SLOTracingService extends EventEmitter {
       duration: span.duration || 0,
       localEndpoint: {
         serviceName: this.config.serviceName,
-        ipv4: '127.0.0.1'
+        ipv4: '127.0.0.1',
       },
       tags: span.tags,
-      annotations: span.logs.map(log => ({
+      annotations: span.logs.map((log) => ({
         timestamp: log.timestamp * 1000,
-        value: `${log.level}: ${log.message}`
-      }))
+        value: `${log.level}: ${log.message}`,
+      })),
     }));
 
     return JSON.stringify(zipkinSpans, null, 2);
@@ -671,9 +672,12 @@ export class SLOTracingService extends EventEmitter {
 
   private startRetentionCleanup(): void {
     // Run cleanup every hour
-    this.retentionTimer = setInterval(() => {
-      this.cleanup();
-    }, 60 * 60 * 1000);
+    this.retentionTimer = setInterval(
+      () => {
+        this.cleanup();
+      },
+      60 * 60 * 1000
+    );
   }
 
   /**

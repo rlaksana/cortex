@@ -1,6 +1,4 @@
-// @ts-nocheck
 // COMPREHENSIVE EMERGENCY ROLLBACK: Final systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Rate Limit Middleware for Cortex MCP
@@ -14,8 +12,9 @@
  */
 
 import { logger } from '@/utils/logger.js';
+import { safeGetProperty } from '@/utils/property-access-guards.js';
 
-import { type RateLimitResult,rateLimitService } from './rate-limiter.js';
+import { type RateLimitResult, rateLimitService } from './rate-limiter.js';
 import { OperationType } from '../monitoring/operation-types.js';
 import type { AuthContext } from '../types/auth-types.js';
 
@@ -92,7 +91,7 @@ export class RateLimitMiddleware {
    * Create middleware function for Express-style usage
    */
   createMiddleware() {
-    return async (req: unknown, res: unknown, next: unknown): Promise<void> => {
+    return async (req: any, res: any, next: any): Promise<void> => {
       try {
         const authContext = req.auth as AuthContext;
         const result = await this.checkRateLimit(authContext, req);
@@ -234,7 +233,7 @@ export class RateLimitMiddleware {
       this.options.bypassConditions;
 
     // Bypass internal operations
-    if (internalOperations && request?.internal) {
+    if (internalOperations && safeGetProperty(request, 'internal', false)) {
       return true;
     }
 

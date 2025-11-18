@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Health Aggregation Service
  *
@@ -1334,4 +1329,4 @@ export class HealthAggregationService extends EventEmitter {
 export { HealthAggregationService as default };
 
 // Re-export required enums for isolatedModules compliance
-export { AlertSeverity, HealthTrend,SLAStatus } from '../types/unified-health-interfaces.js';
+export { AlertSeverity, HealthTrend, SLAStatus } from '../types/unified-health-interfaces.js';

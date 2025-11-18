@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Production Health Checker
  *
@@ -108,7 +103,8 @@ export class ProductionHealthChecker {
   // Import logger lazily to avoid circular dependencies
   private get logger() {
     return {
-      info: (message: string, data?: unknown) => console.log(`[health-checker] ${message}`, data || ''),
+      info: (message: string, data?: unknown) =>
+        console.log(`[health-checker] ${message}`, data || ''),
       warn: (message: string, data?: unknown) =>
         console.warn(`[health-checker] ${message}`, data || ''),
       error: (message: string, data?: unknown) =>

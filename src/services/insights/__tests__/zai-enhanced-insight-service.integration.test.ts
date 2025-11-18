@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * ZAI Enhanced Insight Service Integration Tests
  *
@@ -14,10 +9,10 @@
  * @since 2025
  */
 
-import { afterEach,beforeEach, describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import type { InsightGenerationRequest } from '../../../types/insight-interfaces.js';
-import { ZAIEnhancedInsightService } from '../zai-enhanced-insight-service.js';
+import type { InsightGenerationRequest } from '../../../types/insight-interfaces';
+import { ZAIEnhancedInsightService } from '../zai-enhanced-insight-service';
 
 describe('ZAI Enhanced Insight Service - Integration Tests', () => {
   let service: ZAIEnhancedInsightService;

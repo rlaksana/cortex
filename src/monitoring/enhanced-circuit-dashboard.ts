@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Enhanced monitoring type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Enhanced Circuit Breaker Dashboard with SLO Overlays
@@ -17,22 +15,20 @@ import { EventEmitter } from 'events';
 import { type Request, type Response } from 'express';
 
 import { logger } from '@/utils/logger.js';
+import { isCircuitBreakerData } from '../types/database-types-enhanced.js';
 
 import {
   type CircuitBreakerHealthStatus,
-  circuitBreakerMonitor} from './circuit-breaker-monitor.js';
-import {
-  type RetryBudgetMetrics,
-  retryBudgetMonitor} from './retry-budget-monitor.js';
-import {
-  type GrafanaDashboardData,
-  retryMetricsExporter} from './retry-metrics-exporter.js';
+  circuitBreakerMonitor,
+} from './circuit-breaker-monitor.js';
+import { type RetryBudgetMetrics, retryBudgetMonitor } from './retry-budget-monitor.js';
+import { type GrafanaDashboardData, retryMetricsExporter } from './retry-metrics-exporter.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 type Risk = 'low' | 'medium' | 'high' | 'critical';
 const toRisk = (v: unknown): Risk => {
   const k = String(v || '').toLowerCase();
-  return (k === 'critical' || k === 'high' || k === 'medium' || k === 'low' ? (k as Risk) : 'low');
+  return k === 'critical' || k === 'high' || k === 'medium' || k === 'low' ? (k as Risk) : 'low';
 };
 
 /**
@@ -207,15 +203,18 @@ export class EnhancedCircuitDashboard extends EventEmitter {
   private subscribers: Map<string, Response> = new Map();
 
   // Alert management
-  private activeAlerts: Map<string, {
-    id: string;
-    serviceName: string;
-    type: string;
-    severity: 'info' | 'warning' | 'critical';
-    message: string;
-    timestamp: Date;
-    acknowledged: boolean;
-  }> = new Map();
+  private activeAlerts: Map<
+    string,
+    {
+      id: string;
+      serviceName: string;
+      type: string;
+      severity: 'info' | 'warning' | 'critical';
+      message: string;
+      timestamp: Date;
+      acknowledged: boolean;
+    }
+  > = new Map();
 
   constructor(config?: Partial<EnhancedCircuitDashboardConfig>) {
     super();
@@ -362,10 +361,10 @@ export class EnhancedCircuitDashboard extends EventEmitter {
   getHistoricalData(serviceName: string, metric: string, hours: number = 24): ChartDataPoint[] {
     const key = `${serviceName}:${metric}`;
     const data = this.historicalData.get(key) || [];
-    const cutoff = Date.now() - (hours * 60 * 60 * 1000);
+    const cutoff = Date.now() - hours * 60 * 60 * 1000;
 
     return data
-      .filter(point => point.timestamp.getTime() >= cutoff)
+      .filter((point) => point.timestamp.getTime() >= cutoff)
       .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
   }
 
@@ -418,8 +417,9 @@ export class EnhancedCircuitDashboard extends EventEmitter {
     timestamp: Date;
     acknowledged: boolean;
   }> {
-    return Array.from(this.activeAlerts.values())
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    return Array.from(this.activeAlerts.values()).sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+    );
   }
 
   /**
@@ -451,7 +451,7 @@ export class EnhancedCircuitDashboard extends EventEmitter {
     response.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
       'Access-Control-Allow-Origin': '*',
     });
 
@@ -561,12 +561,15 @@ export class EnhancedCircuitDashboard extends EventEmitter {
 
     // Calculate overall statistics
     const totalServices = Math.max(circuitBreakerMetrics.size, retryBudgetMetrics.size);
-    const healthyServices = Array.from(circuitBreakerMetrics.values())
-      .filter(cb => cb.healthStatus === HealthStatus.HEALTHY).length;
-    const degradedServices = Array.from(circuitBreakerMetrics.values())
-      .filter(cb => cb.healthStatus === HealthStatus.DEGRADED).length;
-    const unhealthyServices = Array.from(circuitBreakerMetrics.values())
-      .filter(cb => cb.healthStatus === HealthStatus.UNHEALTHY).length;
+    const healthyServices = Array.from(circuitBreakerMetrics.values()).filter(
+      (cb) => cb.healthStatus === HealthStatus.HEALTHY
+    ).length;
+    const degradedServices = Array.from(circuitBreakerMetrics.values()).filter(
+      (cb) => cb.healthStatus === HealthStatus.DEGRADED
+    ).length;
+    const unhealthyServices = Array.from(circuitBreakerMetrics.values()).filter(
+      (cb) => cb.healthStatus === HealthStatus.UNHEALTHY
+    ).length;
 
     let overallHealth = HealthStatus.HEALTHY;
     if (unhealthyServices > 0) {
@@ -590,13 +593,15 @@ export class EnhancedCircuitDashboard extends EventEmitter {
         healthImpact: { ifDown: 0, cascadeRisk: 0 },
       };
 
-      const slo = retryBudget ? this.calculateSLOMetrics(serviceName, retryBudget) : {
-        compliance: true,
-        availability: 100,
-        latency: 0,
-        errorRate: 0,
-        trend: 'stable' as const,
-      };
+      const slo = retryBudget
+        ? this.calculateSLOMetrics(serviceName, retryBudget)
+        : {
+            compliance: true,
+            availability: 100,
+            latency: 0,
+            errorRate: 0,
+            trend: 'stable' as const,
+          };
 
       const alerts = this.generateServiceAlerts(serviceName, circuitBreaker, retryBudget);
       const predictions = this.generatePredictions(serviceName, circuitBreaker, retryBudget);
@@ -682,16 +687,20 @@ export class EnhancedCircuitDashboard extends EventEmitter {
   /**
    * Calculate SLO metrics for a service
    */
-  private calculateSLOMetrics(serviceName: string, metrics: RetryBudgetMetrics): DashboardSnapshot['services'][0]['slo'] {
+  private calculateSLOMetrics(
+    serviceName: string,
+    metrics: RetryBudgetMetrics
+  ): DashboardSnapshot['services'][0]['slo'] {
     const targets = this.config.slo.targets;
 
     const availability = metrics.slo.successRateVariance || 100;
     const latency = metrics.performance.p95ResponseTime;
     const errorRate = metrics.current.retryRatePercent;
 
-    const compliance = availability >= targets.availability &&
-                      latency <= targets.latency &&
-                      errorRate <= targets.errorRate;
+    const compliance =
+      availability >= targets.availability &&
+      latency <= targets.latency &&
+      errorRate <= targets.errorRate;
 
     const trend = this.calculateSLOTrend(serviceName);
 
@@ -826,11 +835,14 @@ export class EnhancedCircuitDashboard extends EventEmitter {
   /**
    * Calculate overall SLO compliance rate
    */
-  private calculateOverallSLOCompliance(retryBudgetMetrics: Map<string, RetryBudgetMetrics>): number {
+  private calculateOverallSLOCompliance(
+    retryBudgetMetrics: Map<string, RetryBudgetMetrics>
+  ): number {
     if (retryBudgetMetrics.size === 0) return 100;
 
-    const compliantServices = Array.from(retryBudgetMetrics.values())
-      .filter(metrics => metrics.slo.overallCompliance).length;
+    const compliantServices = Array.from(retryBudgetMetrics.values()).filter(
+      (metrics) => metrics.slo.overallCompliance
+    ).length;
 
     return (compliantServices / retryBudgetMetrics.size) * 100;
   }
@@ -924,7 +936,10 @@ export class EnhancedCircuitDashboard extends EventEmitter {
   /**
    * Calculate error budget
    */
-  private calculateErrorBudget(metrics: RetryBudgetMetrics, targets: unknown): SLOOverlayData['errorBudget'] {
+  private calculateErrorBudget(
+    metrics: RetryBudgetMetrics,
+    targets: EnhancedCircuitDashboardConfig['slo']['targets']
+  ): SLOOverlayData['errorBudget'] {
     const totalBudget = 100 - targets.availability;
     const consumed = Math.max(0, 100 - metrics.slo.successRateVariance);
     const remaining = Math.max(0, totalBudget - consumed);
@@ -936,10 +951,14 @@ export class EnhancedCircuitDashboard extends EventEmitter {
   /**
    * Calculate SLO predictions
    */
-  private calculateSLOPredictions(metrics: RetryBudgetMetrics, sloTargets: unknown): SLOOverlayData['predictions'] {
-    const willMeetSLO = sloTargets.availability.compliant &&
-                       sloTargets.latency.compliant &&
-                       sloTargets.errorRate.compliant;
+  private calculateSLOPredictions(
+    metrics: RetryBudgetMetrics,
+    sloTargets: SLOOverlayData['sloTargets']
+  ): SLOOverlayData['predictions'] {
+    const willMeetSLO =
+      sloTargets.availability.compliant &&
+      sloTargets.latency.compliant &&
+      sloTargets.errorRate.compliant;
 
     const projectedCompliance = willMeetSLO ? 95 : 85; // Simplified projection
 
@@ -973,8 +992,10 @@ export class EnhancedCircuitDashboard extends EventEmitter {
     for (const [serviceName, existingDep] of this.serviceDependencies) {
       if (existingDep.dependsOn.includes(dependency.serviceName)) {
         // Update cascade risk
-        existingDep.healthImpact.cascadeRisk = Math.min(1,
-          existingDep.healthImpact.cascadeRisk + 0.1);
+        existingDep.healthImpact.cascadeRisk = Math.min(
+          1,
+          existingDep.healthImpact.cascadeRisk + 0.1
+        );
       }
     }
   }
@@ -986,7 +1007,13 @@ export class EnhancedCircuitDashboard extends EventEmitter {
     return {
       serviceName,
       timestamp: new Date(),
-      performance: { averageResponseTime: 0, p95ResponseTime: 0, p99ResponseTime: 0, throughput: 0, errorRate: 0 },
+      performance: {
+        averageResponseTime: 0,
+        p95ResponseTime: 0,
+        p99ResponseTime: 0,
+        throughput: 0,
+        errorRate: 0,
+      },
       current: {
         usedRetriesMinute: 0,
         usedRetriesHour: 0,
@@ -1045,18 +1072,20 @@ export class EnhancedCircuitDashboard extends EventEmitter {
     const rows = [headers.join(',')];
 
     for (const service of snapshot.services) {
-      rows.push([
-        snapshot.timestamp.toISOString(),
-        service.name,
-        service.circuitBreaker.healthStatus,
-        service.circuitBreaker.state,
-        service.retryBudget.current.budgetUtilizationPercent.toFixed(2),
-        service.retryBudget.current.retryRatePercent.toFixed(2),
-        service.slo.compliance ? '1' : '0',
-        service.slo.availability.toFixed(2),
-        service.slo.latency.toFixed(0),
-        service.slo.errorRate.toFixed(2),
-      ].join(','));
+      rows.push(
+        [
+          snapshot.timestamp.toISOString(),
+          service.name,
+          service.circuitBreaker.healthStatus,
+          service.circuitBreaker.state,
+          service.retryBudget.current.budgetUtilizationPercent.toFixed(2),
+          service.retryBudget.current.retryRatePercent.toFixed(2),
+          service.slo.compliance ? '1' : '0',
+          service.slo.availability.toFixed(2),
+          service.slo.latency.toFixed(0),
+          service.slo.errorRate.toFixed(2),
+        ].join(',')
+      );
     }
 
     return rows.join('\n');
@@ -1068,26 +1097,32 @@ export class EnhancedCircuitDashboard extends EventEmitter {
   private setupEventListeners(): void {
     // Listen to circuit breaker events
     circuitBreakerMonitor.on('alert', (alert: unknown) => {
+      const alertData = isCircuitBreakerData(alert) ? alert : { serviceName: 'unknown' };
+      const alertInfo = alert as any;
+
       this.createOrUpdateAlert({
         id: `cb_${Date.now()}_${Math.random()}`,
-        serviceName: alert.serviceName,
-        type: alert.type,
-        severity: alert.severity,
-        message: alert.message,
-        timestamp: alert.timestamp,
+        serviceName: alertData.serviceName,
+        type: alertInfo.type || 'unknown',
+        severity: alertInfo.severity || 'medium',
+        message: alertInfo.message || 'Circuit breaker alert',
+        timestamp: alertInfo.timestamp || new Date().toISOString(),
         acknowledged: false,
       });
     });
 
     // Listen to retry budget events
     retryBudgetMonitor.on('alert', (alert: unknown) => {
+      const alertData = isCircuitBreakerData(alert) ? alert : { serviceName: 'unknown' };
+      const alertInfo = alert as any;
+
       this.createOrUpdateAlert({
         id: `rb_${Date.now()}_${Math.random()}`,
-        serviceName: alert.serviceName,
-        type: alert.type,
-        severity: alert.severity,
-        message: alert.message,
-        timestamp: alert.timestamp,
+        serviceName: alertData.serviceName,
+        type: alertInfo.type || 'unknown',
+        severity: alertInfo.severity || 'medium',
+        message: alertInfo.message || 'Retry budget alert',
+        timestamp: alertInfo.timestamp || new Date().toISOString(),
         acknowledged: false,
       });
     });

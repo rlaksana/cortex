@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Qdrant RPO/RTO Management and Documentation System
  *
@@ -18,11 +14,9 @@
  * @since 2025
  */
 
-
 import { logger } from '@/utils/logger.js';
 
-import type {
-  BackupConfiguration} from './qdrant-backup-config.js';
+import type { BackupConfiguration } from './qdrant-backup-config.js';
 
 /**
  * RPO (Recovery Point Objective) definition
@@ -386,11 +380,14 @@ export class RPORTOManager {
       // Save measurements
       await this.saveMeasurementHistory();
 
-      logger.info({
-        rpoIds,
-        measurementsCount: measurements.length,
-        compliantCount: measurements.filter(m => m.compliant).length,
-      }, 'RPO measurements completed');
+      logger.info(
+        {
+          rpoIds,
+          measurementsCount: measurements.length,
+          compliantCount: measurements.filter((m) => m.compliant).length,
+        },
+        'RPO measurements completed'
+      );
 
       return measurements;
     } catch (error) {
@@ -430,13 +427,16 @@ export class RPORTOManager {
       // Save measurements
       await this.saveMeasurementHistory();
 
-      logger.info({
-        rtoId,
-        incidentId,
-        actualMinutes: measurement.actualMinutes,
-        targetMinutes: measurement.targetMinutes,
-        compliant: measurement.compliant,
-      }, 'RTO measurement completed');
+      logger.info(
+        {
+          rtoId,
+          incidentId,
+          actualMinutes: measurement.actualMinutes,
+          targetMinutes: measurement.targetMinutes,
+          compliant: measurement.compliant,
+        },
+        'RTO measurement completed'
+      );
 
       return measurement;
     } catch (error) {
@@ -507,16 +507,22 @@ export class RPORTOManager {
       this.businessImpactAnalyses.set(analysisId, analysis);
       await this.saveBusinessImpactAnalysis(analysis);
 
-      logger.info({
-        analysisId,
-        scenario,
-        durationMinutes,
-        totalFinancialImpact: analysis.businessImpacts.financial.totalImpact,
-      }, 'Business impact analysis completed');
+      logger.info(
+        {
+          analysisId,
+          scenario,
+          durationMinutes,
+          totalFinancialImpact: analysis.businessImpacts.financial.totalImpact,
+        },
+        'Business impact analysis completed'
+      );
 
       return analysis;
     } catch (error) {
-      logger.error({ error, scenario, durationMinutes }, 'Failed to perform business impact analysis');
+      logger.error(
+        { error, scenario, durationMinutes },
+        'Failed to perform business impact analysis'
+      );
       throw error;
     }
   }
@@ -534,9 +540,12 @@ export class RPORTOManager {
         endDate: (endDate || new Date()).toISOString(),
       };
 
-      logger.info({
-        reportingPeriod,
-      }, 'Generating RPO/RTO compliance report');
+      logger.info(
+        {
+          reportingPeriod,
+        },
+        'Generating RPO/RTO compliance report'
+      );
 
       // Filter measurements within reporting period
       const periodRPOMeasurements = this.filterMeasurementsByPeriod(
@@ -552,10 +561,7 @@ export class RPORTOManager {
       );
 
       // Calculate summary statistics
-      const summary = this.calculateComplianceSummary(
-        periodRPOMeasurements,
-        periodRTOMeasurements
-      );
+      const summary = this.calculateComplianceSummary(periodRPOMeasurements, periodRTOMeasurements);
 
       // Analyze RPO compliance
       const rpoAnalysis = await this.analyzeRPOCompliance(periodRPOMeasurements);
@@ -596,12 +602,15 @@ export class RPORTOManager {
       // Save report
       await this.saveComplianceReport(report);
 
-      logger.info({
-        reportGeneratedAt: report.generatedAt,
-        overallCompliance: summary.overallCompliance,
-        rpoComplianceRate: summary.rpoComplianceRate,
-        rtoComplianceRate: summary.rtoComplianceRate,
-      }, 'RPO/RTO compliance report generated');
+      logger.info(
+        {
+          reportGeneratedAt: report.generatedAt,
+          overallCompliance: summary.overallCompliance,
+          rpoComplianceRate: summary.rpoComplianceRate,
+          rtoComplianceRate: summary.rtoComplianceRate,
+        },
+        'RPO/RTO compliance report generated'
+      );
 
       return report;
     } catch (error) {
@@ -730,7 +739,11 @@ export class RPORTOManager {
         businessImpact: {
           criticality: 'critical',
           impactDescription: 'Loss of semantic search capabilities and recent knowledge items',
-          affectedFunctions: ['semantic-search', 'knowledge-storage', 'retrieval-augmented-generation'],
+          affectedFunctions: [
+            'semantic-search',
+            'knowledge-storage',
+            'retrieval-augmented-generation',
+          ],
           financialImpactPerMinute: 1000,
           customerImpact: 'severe',
         },
@@ -766,8 +779,14 @@ export class RPORTOManager {
         maxAcceptableDowntime: `${this.config.targets.rtoMinutes} minutes of service unavailability`,
         businessImpact: {
           criticality: 'critical',
-          impactDescription: 'Complete loss of vector database services affecting all AI operations',
-          affectedServices: ['semantic-search', 'knowledge-management', 'ai-assistants', 'content-analysis'],
+          impactDescription:
+            'Complete loss of vector database services affecting all AI operations',
+          affectedServices: [
+            'semantic-search',
+            'knowledge-management',
+            'ai-assistants',
+            'content-analysis',
+          ],
           financialImpactPerMinute: 2000,
           customerImpact: 'severe',
           slaImpact: true,
@@ -875,7 +894,8 @@ export class RPORTOManager {
         name: 'Qdrant Vector Database Service SLA',
         version: '1.0',
         effectiveDate: new Date().toISOString(),
-        serviceDescription: 'Vector database service providing semantic search and knowledge storage capabilities',
+        serviceDescription:
+          'Vector database service providing semantic search and knowledge storage capabilities',
         serviceHours: {
           type: '24x7',
           timezone: 'UTC',
@@ -977,7 +997,7 @@ export class RPORTOManager {
       compliant: actual <= rto.targetMinutes,
       varianceMinutes: Math.abs(actual - rto.targetMinutes),
       variancePercentage: Math.abs((actual - rto.targetMinutes) / rto.targetMinutes) * 100,
-      phases: rto.measurement.phases.map(phase => ({
+      phases: rto.measurement.phases.map((phase) => ({
         name: phase.name,
         actualMinutes: Math.random() * phase.estimatedMinutes, // Placeholder
         targetMinutes: phase.estimatedMinutes,
@@ -989,7 +1009,10 @@ export class RPORTOManager {
     };
   }
 
-  private calculateFinancialImpact(durationMinutes: number, type: 'direct' | 'indirect' | 'opportunity'): number {
+  private calculateFinancialImpact(
+    durationMinutes: number,
+    type: 'direct' | 'indirect' | 'opportunity'
+  ): number {
     // Implementation would calculate financial impact based on business parameters
     const baseRatePerMinute = 100; // Placeholder
     const multiplier = type === 'direct' ? 1 : type === 'indirect' ? 0.5 : 0.3;
@@ -1011,7 +1034,10 @@ export class RPORTOManager {
     return false; // Placeholder
   }
 
-  private assessCustomerServiceImpact(scenario: string, durationMinutes: number): 'none' | 'reduced' | 'severely-reduced' | 'unavailable' {
+  private assessCustomerServiceImpact(
+    scenario: string,
+    durationMinutes: number
+  ): 'none' | 'reduced' | 'severely-reduced' | 'unavailable' {
     // Implementation would assess customer service impact
     if (durationMinutes < 5) return 'reduced';
     if (durationMinutes < 30) return 'severely-reduced';
@@ -1033,17 +1059,26 @@ export class RPORTOManager {
     return 0;
   }
 
-  private assessCustomerTrustImpact(scenario: string, durationMinutes: number): 'none' | 'minor' | 'moderate' | 'severe' {
+  private assessCustomerTrustImpact(
+    scenario: string,
+    durationMinutes: number
+  ): 'none' | 'minor' | 'moderate' | 'severe' {
     // Implementation would assess customer trust impact
     return durationMinutes > 60 ? 'severe' : durationMinutes > 15 ? 'moderate' : 'minor';
   }
 
-  private assessBrandDamage(scenario: string, durationMinutes: number): 'none' | 'minor' | 'moderate' | 'severe' {
+  private assessBrandDamage(
+    scenario: string,
+    durationMinutes: number
+  ): 'none' | 'minor' | 'moderate' | 'severe' {
     // Implementation would assess brand damage
     return 'none';
   }
 
-  private assessMediaAttention(scenario: string, durationMinutes: number): 'none' | 'local' | 'regional' | 'national' | 'international' {
+  private assessMediaAttention(
+    scenario: string,
+    durationMinutes: number
+  ): 'none' | 'local' | 'regional' | 'national' | 'international' {
     // Implementation would assess media attention
     return 'none';
   }
@@ -1083,23 +1118,29 @@ export class RPORTOManager {
   private async checkRPOAlerts(measurement: RPOMeasurement): Promise<void> {
     // Implementation would check RPO alerts and send notifications
     if (!measurement.compliant) {
-      logger.warn({
-        rpoId: measurement.rpoId,
-        actualMinutes: measurement.actualMinutes,
-        targetMinutes: measurement.targetMinutes,
-      }, 'RPO compliance violation detected');
+      logger.warn(
+        {
+          rpoId: measurement.rpoId,
+          actualMinutes: measurement.actualMinutes,
+          targetMinutes: measurement.targetMinutes,
+        },
+        'RPO compliance violation detected'
+      );
     }
   }
 
   private async checkRTOAlerts(measurement: RTOMeasurement): Promise<void> {
     // Implementation would check RTO alerts and send notifications
     if (!measurement.compliant) {
-      logger.warn({
-        rtoId: measurement.rtoId,
-        incidentId: measurement.incidentId,
-        actualMinutes: measurement.actualMinutes,
-        targetMinutes: measurement.targetMinutes,
-      }, 'RTO compliance violation detected');
+      logger.warn(
+        {
+          rtoId: measurement.rtoId,
+          incidentId: measurement.incidentId,
+          actualMinutes: measurement.actualMinutes,
+          targetMinutes: measurement.targetMinutes,
+        },
+        'RTO compliance violation detected'
+      );
     }
   }
 
@@ -1111,7 +1152,7 @@ export class RPORTOManager {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    return measurements.filter(measurement => {
+    return measurements.filter((measurement) => {
       const timestamp = new Date(measurement.timestamp);
       return timestamp >= start && timestamp <= end;
     });
@@ -1122,23 +1163,36 @@ export class RPORTOManager {
     rtoMeasurements: RTOMeasurement[]
   ): RPORTOComplianceReport['summary'] {
     const totalMeasurements = rpoMeasurements.length + rtoMeasurements.length;
-    const compliantMeasurements = rpoMeasurements.filter(m => m.compliant).length +
-                                rtoMeasurements.filter(m => m.compliant).length;
+    const compliantMeasurements =
+      rpoMeasurements.filter((m) => m.compliant).length +
+      rtoMeasurements.filter((m) => m.compliant).length;
 
-    const rpoComplianceRate = rpoMeasurements.length > 0 ?
-      (rpoMeasurements.filter(m => m.compliant).length / rpoMeasurements.length) * 100 : 0;
+    const rpoComplianceRate =
+      rpoMeasurements.length > 0
+        ? (rpoMeasurements.filter((m) => m.compliant).length / rpoMeasurements.length) * 100
+        : 0;
 
-    const rtoComplianceRate = rtoMeasurements.length > 0 ?
-      (rtoMeasurements.filter(m => m.compliant).length / rtoMeasurements.length) * 100 : 0;
+    const rtoComplianceRate =
+      rtoMeasurements.length > 0
+        ? (rtoMeasurements.filter((m) => m.compliant).length / rtoMeasurements.length) * 100
+        : 0;
 
-    const averageRPOVariance = rpoMeasurements.length > 0 ?
-      rpoMeasurements.reduce((sum, m) => sum + m.varianceMinutes, 0) / rpoMeasurements.length : 0;
+    const averageRPOVariance =
+      rpoMeasurements.length > 0
+        ? rpoMeasurements.reduce((sum, m) => sum + m.varianceMinutes, 0) / rpoMeasurements.length
+        : 0;
 
-    const averageRTOVariance = rtoMeasurements.length > 0 ?
-      rtoMeasurements.reduce((sum, m) => sum + m.varianceMinutes, 0) / rtoMeasurements.length : 0;
+    const averageRTOVariance =
+      rtoMeasurements.length > 0
+        ? rtoMeasurements.reduce((sum, m) => sum + m.varianceMinutes, 0) / rtoMeasurements.length
+        : 0;
 
-    const overallCompliance = compliantMeasurements === totalMeasurements ? 'compliant' :
-                            compliantMeasurements / totalMeasurements >= 0.95 ? 'warning' : 'non-compliant';
+    const overallCompliance =
+      compliantMeasurements === totalMeasurements
+        ? 'compliant'
+        : compliantMeasurements / totalMeasurements >= 0.95
+          ? 'warning'
+          : 'non-compliant';
 
     return {
       overallCompliance,
@@ -1151,17 +1205,24 @@ export class RPORTOManager {
     };
   }
 
-  private async analyzeRPOCompliance(measurements: RPOMeasurement[]): Promise<RPORTOComplianceReport['rpoAnalysis']> {
+  private async analyzeRPOCompliance(
+    measurements: RPOMeasurement[]
+  ): Promise<RPORTOComplianceReport['rpoAnalysis']> {
     // Implementation would analyze RPO compliance trends
     return [];
   }
 
-  private async analyzeRTOCompliance(measurements: RTOMeasurement[]): Promise<RPORTOComplianceReport['rtoAnalysis']> {
+  private async analyzeRTOCompliance(
+    measurements: RTOMeasurement[]
+  ): Promise<RPORTOComplianceReport['rtoAnalysis']> {
     // Implementation would analyze RTO compliance trends
     return [];
   }
 
-  private async analyzeSLACompliance(reportingPeriod: { startDate: string; endDate: string }): Promise<RPORTOComplianceReport['slaCompliance']> {
+  private async analyzeSLACompliance(reportingPeriod: {
+    startDate: string;
+    endDate: string;
+  }): Promise<RPORTOComplianceReport['slaCompliance']> {
     // Implementation would analyze SLA compliance
     return [];
   }
@@ -1257,12 +1318,14 @@ export class RPORTOManager {
     };
   }
 
-  private async getActiveAlerts(): Promise<Array<{
-    type: 'rpo' | 'rto';
-    severity: 'info' | 'warning' | 'critical';
-    message: string;
-    timestamp: string;
-  }>> {
+  private async getActiveAlerts(): Promise<
+    Array<{
+      type: 'rpo' | 'rto';
+      severity: 'info' | 'warning' | 'critical';
+      message: string;
+      timestamp: string;
+    }>
+  > {
     // Implementation would get active alerts
     return [];
   }

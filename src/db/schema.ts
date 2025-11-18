@@ -9,9 +9,7 @@
  * - Semantic search capabilities
  */
 
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Unknown type propagation through schema definitions
-// TODO: Fix type safety in schema definitions before removing @ts-nocheck
 
 import { QdrantClient } from '@qdrant/js-client-rest';
 
@@ -212,15 +210,19 @@ class QdrantSchemaManager {
   async getCollectionStats(collectionName: string): Promise<unknown> {
     try {
       const info = await this.getCollectionInfo(collectionName);
+      const infoObj = info as Record<string, unknown>;
+      const result = infoObj.result as Record<string, unknown> | undefined;
+
       return {
         name: collectionName,
-        vectorCount: info.result.vectors_count,
-        indexedVectorsCount: info.result.indexed_vectors_count,
-        pointsCount: info.result.points_count,
-        segmentsCount: info.result.segments_count,
-        diskDataSize: info.result.config?.optimizer_config?.deleted_threshold,
-        status: info.result.status,
-        optimizerStatus: info.result.optimizer_status,
+        vectorCount: result?.vectors_count as number | undefined,
+        indexedVectorsCount: result?.indexed_vectors_count as number | undefined,
+        pointsCount: result?.points_count as number | undefined,
+        segmentsCount: result?.segments_count as number | undefined,
+        diskDataSize: ((result?.config as Record<string, unknown>)?.optimizer_config as Record<string, unknown>)
+          ?.deleted_threshold as number | undefined,
+        status: result?.status as string | undefined,
+        optimizerStatus: result?.optimizer_status as string | undefined,
       };
     } catch (error) {
       logger.error({ error, collectionName }, 'Failed to get collection stats');

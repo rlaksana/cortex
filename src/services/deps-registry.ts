@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Dependency Registry & Health Monitoring System
  *
@@ -36,7 +32,7 @@ import type {
   RegistrationResult,
   UnregistrationResult,
 } from './deps-registry.types.js';
-import { DependencyErrorCode,DependencyResultFactory } from './deps-registry.types.js';
+import { DependencyErrorCode, DependencyResultFactory } from './deps-registry.types.js';
 
 /**
  * Dependency status levels with severity

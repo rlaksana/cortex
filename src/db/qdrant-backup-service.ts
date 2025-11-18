@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Qdrant Backup and Disaster Recovery Service
  *
@@ -22,14 +18,9 @@ import { join } from 'path';
 import { createHash } from 'crypto';
 
 import { type QdrantClient } from '@qdrant/js-client-rest';
-import {
-  schedule,
-  type ScheduledTask
-} from 'node-cron';
+import { schedule, type ScheduledTask } from 'node-cron';
 
 import { logger } from '@/utils/logger.js';
-
-
 
 /**
  * Recurrence rule for scheduling backups using cron expressions
@@ -238,10 +229,12 @@ export class QdrantBackupService {
   /**
    * Create a full backup of all collections
    */
-  async createFullBackup(options: {
-    description?: string;
-    priority?: 'low' | 'normal' | 'high';
-  } = {}): Promise<BackupMetadata> {
+  async createFullBackup(
+    options: {
+      description?: string;
+      priority?: 'low' | 'normal' | 'high';
+    } = {}
+  ): Promise<BackupMetadata> {
     const backupId = this.generateBackupId('full');
     const startTime = Date.now();
 
@@ -259,7 +252,7 @@ export class QdrantBackupService {
         size: 0,
         checksum: '',
         pointInTime: new Date().toISOString(),
-        collections: collections.collections.map(c => c.name),
+        collections: collections.collections.map((c) => c.name),
         vectorCounts: {},
         configHash: this.generateConfigHash(),
         encryptionEnabled: this.config.storage.encryptionEnabled,
@@ -289,27 +282,34 @@ export class QdrantBackupService {
       this.backupRegistry.set(backupId, metadata);
 
       const duration = Date.now() - startTime;
-      logger.info({
-        backupId,
-        duration,
-        size: totalSize,
-        collections: collections.collections.length,
-      }, 'Full backup created successfully');
+      logger.info(
+        {
+          backupId,
+          duration,
+          size: totalSize,
+          collections: collections.collections.length,
+        },
+        'Full backup created successfully'
+      );
 
       return metadata;
     } catch (error) {
       logger.error({ backupId, error }, 'Failed to create full backup');
-      throw new Error(`Full backup failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Full backup failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Create an incremental backup based on the last full backup
    */
-  async createIncrementalBackup(options: {
-    baseBackupId?: string;
-    description?: string;
-  } = {}): Promise<BackupMetadata> {
+  async createIncrementalBackup(
+    options: {
+      baseBackupId?: string;
+      description?: string;
+    } = {}
+  ): Promise<BackupMetadata> {
     const backupId = this.generateBackupId('incremental');
     const startTime = Date.now();
 
@@ -369,18 +369,23 @@ export class QdrantBackupService {
       this.backupRegistry.set(backupId, metadata);
 
       const duration = Date.now() - startTime;
-      logger.info({
-        backupId,
-        baseBackupId,
-        duration,
-        size: totalSize,
-        changedCollections: Object.keys(changes).length,
-      }, 'Incremental backup created successfully');
+      logger.info(
+        {
+          backupId,
+          baseBackupId,
+          duration,
+          size: totalSize,
+          changedCollections: Object.keys(changes).length,
+        },
+        'Incremental backup created successfully'
+      );
 
       return metadata;
     } catch (error) {
       logger.error({ backupId, error }, 'Failed to create incremental backup');
-      throw new Error(`Incremental backup failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Incremental backup failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -445,31 +450,32 @@ export class QdrantBackupService {
 
         // Validate data integrity
         const validationStartTime = Date.now();
-        const integrityResult = await this.validateRestoreIntegrity(
-          testCollectionName,
-          backup
-        );
+        const integrityResult = await this.validateRestoreIntegrity(testCollectionName, backup);
 
         result.dataIntegrityValid = integrityResult.valid;
         result.consistencyChecks = integrityResult.checks;
         result.performanceMetrics.validationTime = Date.now() - validationStartTime;
 
         // Calculate throughput
-        const totalItems = Object.values(backup.vectorCounts).reduce((sum, count) => sum + count, 0);
-        result.performanceMetrics.throughput = totalItems / (result.performanceMetrics.restoreTime / 1000);
+        const totalItems = Object.values(backup.vectorCounts).reduce(
+          (sum, count) => sum + count,
+          0
+        );
+        result.performanceMetrics.throughput =
+          totalItems / (result.performanceMetrics.restoreTime / 1000);
 
         // Check RPO/RTO compliance
         result.rpoCompliance = this.checkRPOCompliance(backup);
         result.rtoCompliance = this.checkRTOCompliance(result.performanceMetrics.restoreTime);
 
-        result.success = result.dataIntegrityValid &&
-                        result.consistencyChecks.failed === 0 &&
-                        result.rpoCompliance &&
-                        result.rtoCompliance;
+        result.success =
+          result.dataIntegrityValid &&
+          result.consistencyChecks.failed === 0 &&
+          result.rpoCompliance &&
+          result.rtoCompliance;
 
         // Generate recommendations
         result.recommendations = this.generateRestoreRecommendations(result);
-
       } finally {
         // Cleanup test collection
         await this.cleanupTestCollection(testCollectionName);
@@ -481,14 +487,17 @@ export class QdrantBackupService {
       this.restoreTestResults.set(testId, result);
       await this.saveRestoreTestResult(result);
 
-      logger.info({
-        testId,
-        backupId: targetBackupId,
-        success: result.success,
-        duration: result.duration,
-        rpoCompliant: result.rpoCompliance,
-        rtoCompliant: result.rtoCompliance,
-      }, 'Restore test completed');
+      logger.info(
+        {
+          testId,
+          backupId: targetBackupId,
+          success: result.success,
+          duration: result.duration,
+          rpoCompliant: result.rpoCompliance,
+          rtoCompliant: result.rtoCompliance,
+        },
+        'Restore test completed'
+      );
 
       return result;
     } catch (error) {
@@ -592,12 +601,15 @@ export class QdrantBackupService {
       await this.saveConsistencyValidationResult(result);
 
       const duration = Date.now() - startTime;
-      logger.info({
-        validationId,
-        valid: result.valid,
-        score: result.overallScore,
-        duration,
-      }, 'Consistency validation completed');
+      logger.info(
+        {
+          validationId,
+          valid: result.valid,
+          score: result.overallScore,
+          duration,
+        },
+        'Consistency validation completed'
+      );
 
       return result;
     } catch (error) {
@@ -647,11 +659,13 @@ export class QdrantBackupService {
   /**
    * Execute complete disaster recovery procedure
    */
-  async executeDisasterRecovery(options: {
-    targetTime?: string;
-    backupId?: string;
-    skipValidation?: boolean;
-  } = {}): Promise<{
+  async executeDisasterRecovery(
+    options: {
+      targetTime?: string;
+      backupId?: string;
+      skipValidation?: boolean;
+    } = {}
+  ): Promise<{
     success: boolean;
     recoveryPoint: string;
     duration: number;
@@ -706,26 +720,31 @@ export class QdrantBackupService {
           }
         } else {
           result.dataValidated = true;
-          result.recommendations.push('Data validation was skipped - manual validation recommended');
+          result.recommendations.push(
+            'Data validation was skipped - manual validation recommended'
+          );
         }
 
         result.success = true;
 
-        logger.info({
-          recoveryId,
-          backupId,
-          recoveryPoint: result.recoveryPoint,
-          success: result.success,
-        }, 'Disaster recovery completed successfully');
-
+        logger.info(
+          {
+            recoveryId,
+            backupId,
+            recoveryPoint: result.recoveryPoint,
+            success: result.success,
+          },
+          'Disaster recovery completed successfully'
+        );
       } catch (error) {
-        result.errors.push(`Recovery failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        result.errors.push(
+          `Recovery failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
         logger.error({ recoveryId, error }, 'Disaster recovery failed');
       }
 
       result.duration = Date.now() - startTime;
       return result;
-
     } catch (error) {
       logger.error({ recoveryId, error }, 'Disaster recovery procedure failed');
       return {
@@ -758,17 +777,23 @@ export class QdrantBackupService {
       const startTime = Date.now();
 
       while (this.activeBackups.size > 0 && Date.now() - startTime < timeout) {
-        logger.info({
-          activeBackups: this.activeBackups.size
-        }, 'Waiting for active backups to complete...');
+        logger.info(
+          {
+            activeBackups: this.activeBackups.size,
+          },
+          'Waiting for active backups to complete...'
+        );
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
       if (this.activeBackups.size > 0) {
-        logger.warn({
-          activeBackups: this.activeBackups.size
-        }, 'Some backups did not complete before shutdown');
+        logger.warn(
+          {
+            activeBackups: this.activeBackups.size,
+          },
+          'Some backups did not complete before shutdown'
+        );
       }
 
       // Save registry
@@ -794,7 +819,7 @@ export class QdrantBackupService {
   private async startScheduledJobs(): Promise<void> {
     // Schedule full backups
     const fullBackupJob = schedule(this.config.schedule.fullBackup, async () => {
-      await this.createFullBackup().catch(error => {
+      await this.createFullBackup().catch((error) => {
         logger.error({ error }, 'Scheduled full backup failed');
       });
     });
@@ -802,7 +827,7 @@ export class QdrantBackupService {
 
     // Schedule incremental backups
     const incrementalBackupJob = schedule(this.config.schedule.incrementalBackup, async () => {
-      await this.createIncrementalBackup().catch(error => {
+      await this.createIncrementalBackup().catch((error) => {
         logger.error({ error }, 'Scheduled incremental backup failed');
       });
     });
@@ -810,7 +835,7 @@ export class QdrantBackupService {
 
     // Schedule restore tests
     const restoreTestJob = schedule(this.config.schedule.restoreTest, async () => {
-      await this.performRestoreTest().catch(error => {
+      await this.performRestoreTest().catch((error) => {
         logger.error({ error }, 'Scheduled restore test failed');
       });
     });
@@ -818,7 +843,7 @@ export class QdrantBackupService {
 
     // Schedule consistency checks
     const consistencyCheckJob = schedule(this.config.schedule.consistencyCheck, async () => {
-      await this.performConsistencyValidation().catch(error => {
+      await this.performConsistencyValidation().catch((error) => {
         logger.error({ error }, 'Scheduled consistency check failed');
       });
     });
@@ -846,7 +871,10 @@ export class QdrantBackupService {
     return createHash('sha256').update(configStr).digest('hex');
   }
 
-  private async backupCollection(collectionName: string, backupId: string): Promise<{
+  private async backupCollection(
+    collectionName: string,
+    backupId: string
+  ): Promise<{
     vectorCount: number;
     size: number;
   }> {
@@ -917,7 +945,10 @@ export class QdrantBackupService {
     // Implementation would restore from a full backup
   }
 
-  private async restoreIncrementalBackup(backupId: string, targetCollection: string): Promise<void> {
+  private async restoreIncrementalBackup(
+    backupId: string,
+    targetCollection: string
+  ): Promise<void> {
     // Implementation would restore from an incremental backup
   }
 
@@ -1056,7 +1087,9 @@ export class QdrantBackupService {
     return recommendations;
   }
 
-  private async saveConsistencyValidationResult(result: ConsistencyValidationResult): Promise<void> {
+  private async saveConsistencyValidationResult(
+    result: ConsistencyValidationResult
+  ): Promise<void> {
     // Implementation would save consistency validation result
   }
 
@@ -1130,8 +1163,9 @@ export class QdrantBackupService {
   }> {
     const backupsHealthy = this.backupRegistry.size > 0;
     const storageHealthy = true; // Would check actual storage health
-    const restoreCapabilityValid = this.restoreTestResults.size > 0 &&
-      Array.from(this.restoreTestResults.values()).some(test => test.success);
+    const restoreCapabilityValid =
+      this.restoreTestResults.size > 0 &&
+      Array.from(this.restoreTestResults.values()).some((test) => test.success);
 
     let overallStatus: 'healthy' | 'degraded' | 'critical' = 'healthy';
 

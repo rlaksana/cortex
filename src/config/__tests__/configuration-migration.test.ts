@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Configuration Migration System Tests
  *
@@ -9,13 +5,13 @@
  * ensuring proper handling of legacy and standard configuration properties.
  */
 
-import { beforeEach,describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
-  _HealthCheckConfigBuilder,
-  _HttpClientBuilder,
-  _validateHealthCheckConfig,
-  _validateHttpClientConfig,
+  HealthCheckConfigBuilder,
+  HttpClientConfigBuilder,
+  validateHealthCheckConfig,
+  validateHttpClientConfig,
   healthCheckConfig,
   httpClientConfig,
   isStandardHealthCheckConfig,
@@ -26,14 +22,16 @@ import {
   migrateHttpClientConfig,
   type StandardHealthCheckConfig,
   type StandardHttpClientConfig,
-} from '../configuration-migration.js';
+} from '../configuration-migration';
 import {
-  type _ValidationResult,
   ConfigurationValidator,
   isValidConfiguration,
   validateConfigurationPermissive,
   validateConfigurationStrict,
-} from '../configuration-validator.js';
+} from '../configuration-validator';
+
+// Import ValidationResult directly from types/config
+import { type ValidationResult as ConfigValidationResult } from '../../types/config';
 
 describe('Configuration Migration', () => {
   describe('Health Check Configuration Migration', () => {

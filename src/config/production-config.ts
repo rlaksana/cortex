@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Production Configuration Manager
  *
@@ -29,7 +25,8 @@ import {
   validateAndConvertMonitoringConfig,
   validateAndConvertPerformanceConfig,
   validateAndConvertSecurityConfig,
-  validateAndConvertShutdownConfig} from '../utils/configuration-type-guards.js';
+  validateAndConvertShutdownConfig,
+} from '../utils/configuration-type-guards.js';
 import { type SimpleLogger } from '../utils/logger-wrapper.js';
 
 export interface ProductionConfig {
@@ -147,7 +144,9 @@ export class ProductionConfigManager {
       },
       logging: {
         level: this.getEnvString('LOG_LEVEL', 'info'),
-        format: (this.getEnvString('LOG_FORMAT', 'json') === 'text' ? 'text' : 'json') as 'json' | 'text',
+        format: (this.getEnvString('LOG_FORMAT', 'json') === 'text' ? 'text' : 'json') as
+          | 'json'
+          | 'text',
         structured: this.getEnvBoolean('LOG_STRUCTURED', false),
         includeTimestamp: this.getEnvBoolean('LOG_TIMESTAMP', true),
         includeRequestId: this.getEnvBoolean('LOG_REQUEST_ID', true),
@@ -194,7 +193,9 @@ export class ProductionConfigManager {
 
     const parsed = Number(value);
     if (isNaN(parsed) || !isFinite(parsed)) {
-      this.logger.warn(`Invalid number value for environment variable ${key}: "${value}". Using default: ${defaultValue}`);
+      this.logger.warn(
+        `Invalid number value for environment variable ${key}: "${value}". Using default: ${defaultValue}`
+      );
       return defaultValue;
     }
 
@@ -225,7 +226,7 @@ export class ProductionConfigManager {
     // Warn for unclear values and return default
     this.logger.warn(
       `Invalid boolean value for environment variable ${key}: "${value}". ` +
-      `Expected 'true'/'false', '1'/'0', 'yes'/'no', 'on'/'off', or 'enabled'/'disabled'. Using default: ${defaultValue}`
+        `Expected 'true'/'false', '1'/'0', 'yes'/'no', 'on'/'off', or 'enabled'/'disabled'. Using default: ${defaultValue}`
     );
     return defaultValue;
   }
@@ -274,7 +275,7 @@ export class ProductionConfigManager {
     }
 
     // Validate each CORS origin format
-    const invalidCorsOrigins = this.config.security.corsOrigin.filter(origin => {
+    const invalidCorsOrigins = this.config.security.corsOrigin.filter((origin) => {
       if (origin === '*') return false; // Wildcard is handled separately
       if (!origin.startsWith('http://') && !origin.startsWith('https://')) return true;
       try {
@@ -295,8 +296,9 @@ export class ProductionConfigManager {
     }
 
     // Validate IP address formats in allowedIPs
-    const invalidIPs = this.config.health.allowedIPs.filter(ip => {
-      const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    const invalidIPs = this.config.health.allowedIPs.filter((ip) => {
+      const ipv4Regex =
+        /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
       const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
       return !ipv4Regex.test(ip) && !ipv6Regex.test(ip);
     });
@@ -321,7 +323,9 @@ export class ProductionConfigManager {
     // Validate logging
     const validLogLevels = ['error', 'warn', 'info', 'debug'];
     if (!validLogLevels.includes(this.config.logging.level)) {
-      errors.push(`Invalid log level: ${this.config.logging.level}. Valid values: ${validLogLevels.join(', ')}`);
+      errors.push(
+        `Invalid log level: ${this.config.logging.level}. Valid values: ${validLogLevels.join(', ')}`
+      );
     }
 
     // Validate performance settings
@@ -334,7 +338,9 @@ export class ProductionConfigManager {
     }
 
     if (this.config.performance.maxOldSpaceSize > 32768) {
-      warnings.push('Max old space size is very large (>32GB), ensure sufficient memory is available');
+      warnings.push(
+        'Max old space size is very large (>32GB), ensure sufficient memory is available'
+      );
     }
 
     // Validate monitoring intervals
@@ -347,7 +353,10 @@ export class ProductionConfigManager {
     }
 
     // Validate Node.js options format
-    if (this.config.performance.nodeOptions && !this.isValidNodeOptions(this.config.performance.nodeOptions)) {
+    if (
+      this.config.performance.nodeOptions &&
+      !this.isValidNodeOptions(this.config.performance.nodeOptions)
+    ) {
       warnings.push('Node.js options format may be invalid');
     }
 
@@ -604,7 +613,10 @@ export class ProductionConfigManager {
           source[key] !== null &&
           !Array.isArray(source[key])
         ) {
-          result[key] = this.deepMergeDict(source[key] as Dict<JSONValue>, (result[key] as Dict<JSONValue>) || {}) as unknown as JSONValue;
+          result[key] = this.deepMergeDict(
+            source[key] as Dict<JSONValue>,
+            (result[key] as Dict<JSONValue>) || {}
+          ) as unknown as JSONValue;
         } else {
           result[key] = source[key] as JSONValue;
         }

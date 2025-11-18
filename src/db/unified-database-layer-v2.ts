@@ -19,18 +19,13 @@
  * @since 2025
  */
 
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-import { logger } from '@/utils/logger.js';
-
 import { QdrantAdapter } from './adapters/qdrant-adapter.js';
 import type {
   DeleteOptions,
   IVectorAdapter,
   SearchOptions,
   StoreOptions,
+  VectorConfig,
 } from './interfaces/vector-adapter.interface.js';
 import type {
   KnowledgeItem,
@@ -40,7 +35,10 @@ import type {
   StoreError,
   StoreResult,
 } from '../types/core-interfaces.js';
+import { unwrapDatabaseResult } from '../utils/database-result-unwrapper.js';
+import { logger } from '../utils/logger.js';
 import { createFindObservability } from '../utils/observability-helper.js';
+import { asPointIdArray } from '../utils/type-conversion.js';
 
 /**
  * Configuration for the Qdrant-only database layer
@@ -70,18 +68,33 @@ export class QdrantOnlyDatabaseLayer {
 
   constructor(config: QdrantDatabaseConfig) {
     this.config = config;
-    const qdrantConfig: unknown = {
+
+    // Parse URL to get host and port for VectorConfig compatibility
+    const url = new URL(config.qdrant.url);
+
+    const qdrantConfig: VectorConfig = {
+      // Required DatabaseConfig properties
       type: 'qdrant',
+      host: url.hostname,
+      port: parseInt(url.port) || 6333,
+      database: 'cortex', // Default database name
+
+      // VectorConfig properties
       url: config.qdrant.url,
       collectionName: config.qdrant.collectionName,
-      // timeout: config.qdrant.timeout, // Removed - not in VectorConfig
-      // batchSize: config.qdrant.batchSize || 100, // Removed - not in VectorConfig
       maxRetries: config.qdrant.maxRetries || 3,
-    };
+      timeout: config.qdrant.timeout,
+      vectorSize: 1536, // Default embedding size
+      maxConnections: 10, // Default connection pool size
 
-    if (config.qdrant.apiKey) {
-      qdrantConfig.apiKey = config.qdrant.apiKey;
-    }
+      // Required VectorConfig properties
+      size: 1536,
+      embeddingModel: 'text-embedding-3-small',
+      batchSize: 10,
+
+      // Include API key if present
+      ...(config.qdrant.apiKey && { apiKey: config.qdrant.apiKey }),
+    };
 
     this.adapter = new QdrantAdapter(qdrantConfig);
 
@@ -112,7 +125,11 @@ export class QdrantOnlyDatabaseLayer {
     }
 
     try {
-      await this.adapter.store(items, options);
+      const storeResult = await this.adapter.store(items, options);
+      const unwrappedResult = unwrapDatabaseResult(storeResult, {
+        operation: 'store',
+        itemCount: items.length,
+      });
       logger.debug(`Stored ${items.length} items in Qdrant`);
 
       // Convert MemoryStoreResponse to StoreResult
@@ -140,7 +157,8 @@ export class QdrantOnlyDatabaseLayer {
     }
 
     try {
-      const items = await this.adapter.findById(ids);
+      const itemsResult = await this.adapter.findById(asPointIdArray(ids));
+      const items = unwrapDatabaseResult(itemsResult, { operation: 'findById' });
 
       // Convert KnowledgeItem[] to MemoryFindResponse with proper SearchResult structure
       const searchResults = items.map((item) => ({
@@ -191,7 +209,8 @@ export class QdrantOnlyDatabaseLayer {
     }
 
     try {
-      const result = await this.adapter.search(query, options);
+      const searchResult = await this.adapter.search(query, options);
+      const result = unwrapDatabaseResult(searchResult, { operation: 'search', query });
       logger.debug(`Semantic search returned ${result.items?.length || 0} results`);
       return result;
     } catch (error) {
@@ -212,9 +231,10 @@ export class QdrantOnlyDatabaseLayer {
     }
 
     try {
-      const result = await this.adapter.delete(ids, options);
-      logger.debug(`Deleted ${result.deleted} items from Qdrant`);
-      return result;
+      const deleteResult = await this.adapter.delete(asPointIdArray(ids), options);
+      const unwrappedResult = unwrapDatabaseResult(deleteResult, { operation: 'delete', ids });
+      logger.debug(`Deleted ${unwrappedResult.deletedCount} items from Qdrant`);
+      return { deleted: unwrappedResult.deletedCount, errors: [...unwrappedResult.errors] };
     } catch (error) {
       logger.error('Failed to delete items', error);
       throw error;
@@ -255,7 +275,8 @@ export class QdrantOnlyDatabaseLayer {
     }
 
     try {
-      return await this.adapter.getStatistics(scope);
+      const statsResult = await this.adapter.getStatistics(scope);
+      return unwrapDatabaseResult(statsResult, { operation: 'getStatistics', scope });
     } catch (error) {
       logger.error('Failed to get statistics', error);
       throw error;
@@ -303,7 +324,12 @@ export class QdrantOnlyDatabaseLayer {
     }
 
     try {
-      return await this.adapter.bulkDelete(filter);
+      const bulkDeleteResult = await this.adapter.bulkDelete(filter);
+      const unwrappedResult = unwrapDatabaseResult(bulkDeleteResult, {
+        operation: 'bulkDelete',
+        filter,
+      });
+      return { deleted: unwrappedResult.deletedCount };
     } catch (error) {
       logger.error('Failed to bulk delete items', error);
       throw error;
@@ -315,7 +341,7 @@ export class QdrantOnlyDatabaseLayer {
   /**
    * Create a record in the specified collection (compatibility method)
    */
-  async create(collection: string, data: unknown): Promise<unknown> {
+  async create(collection: string, data: Record<string, unknown>): Promise<unknown> {
     if (!this.isHealthy) {
       await this.initialize();
     }
@@ -323,7 +349,7 @@ export class QdrantOnlyDatabaseLayer {
     try {
       // For audit events, store them as knowledge items
       const knowledgeItem: KnowledgeItem = {
-        id: data.id || (await this.generateUUID()),
+        id: (data.id as string) || (await this.generateUUID()),
         kind: collection === 'event_audit' ? 'observation' : 'entity',
         content: JSON.stringify(data),
         data, // Add required data property
@@ -349,7 +375,7 @@ export class QdrantOnlyDatabaseLayer {
   /**
    * Find records in a collection (compatibility method)
    */
-  async find(collection: string, filter?: unknown, options?: unknown): Promise<unknown[]> {
+  async find(collection: string, filter?: Record<string, unknown>, options?: Record<string, unknown>): Promise<unknown[]> {
     if (!this.isHealthy) {
       await this.initialize();
     }
@@ -362,14 +388,14 @@ export class QdrantOnlyDatabaseLayer {
       };
 
       const searchOptions: SearchOptions = {
-        limit: options?.take || 100,
+        limit: (options?.take as number) || 100,
         score_threshold: 0.1,
       };
 
       const result = await this.search(searchQuery, searchOptions);
 
       // Transform results back to expected format
-      return (result.results || result.items || []).map((item: unknown) => {
+      return (result.results || result.items || []).map((item: any) => {
         const metadata = item.metadata || {};
         return {
           id: item.id,
@@ -411,7 +437,10 @@ export class QdrantOnlyDatabaseLayer {
       logger.debug('Finding expired items using vector adapter', { options });
 
       // Delegate to the adapter's efficient findExpiredItems method
-      return await this.adapter.findExpiredItems(options);
+      const result = await this.adapter.findExpiredItems(options);
+      const unwrappedResult = unwrapDatabaseResult(result, { operation: 'findExpired', options });
+      // Check if the result is already an array or has items property
+      return Array.isArray(unwrappedResult) ? unwrappedResult : (unwrappedResult as any).items || [];
     } catch (error) {
       logger.error('Failed to find expired items', error);
       throw error;
@@ -471,7 +500,7 @@ export function createQdrantOnlyDatabase(config: QdrantDatabaseConfig): QdrantOn
 
 // Create a wrapper class that matches the expected interface for tests
 export class UnifiedDatabaseLayer extends QdrantOnlyDatabaseLayer {
-  constructor(config?: unknown) {
+  constructor(config?: QdrantDatabaseConfig) {
     if (!config) {
       // Provide default config for backward compatibility with tests
       config = {
@@ -506,7 +535,7 @@ export class UnifiedDatabaseLayer extends QdrantOnlyDatabaseLayer {
   }
 
   // Add bulkDelete method for auto-purge service compatibility
-  async bulkDelete(filter: {
+  override async bulkDelete(filter: {
     kind?: string;
     scope?: unknown;
     before?: string;
@@ -516,7 +545,12 @@ export class UnifiedDatabaseLayer extends QdrantOnlyDatabaseLayer {
     }
 
     try {
-      return await this.adapter.bulkDelete(filter);
+      const bulkDeleteResult = await this.adapter.bulkDelete(filter);
+      const unwrappedResult = unwrapDatabaseResult(bulkDeleteResult, {
+        operation: 'bulkDelete',
+        filter,
+      });
+      return { deleted: unwrappedResult.deletedCount };
     } catch (error) {
       logger.error('Failed to bulk delete items', error);
       throw error;

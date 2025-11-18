@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Authentication and authorization type definitions for Cortex MCP
  * Implements JWT-based authentication with RBAC and scope-based authorization

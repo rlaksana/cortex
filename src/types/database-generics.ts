@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Enhanced Database Generic Types
  *
@@ -67,7 +63,11 @@ export interface MetadataCarrier {
 // Database Entity Base Types
 // ============================================================================
 
-export interface DatabaseEntity extends Identifiable, Timestamped, Scopable, Record<string, unknown> {}
+export interface DatabaseEntity
+  extends Identifiable,
+    Timestamped,
+    Scopable,
+    Record<string, unknown> {}
 
 export interface KnowledgeEntity extends DatabaseEntity {
   readonly kind: string;
@@ -94,17 +94,9 @@ export type DatabaseOperation<TInput, TOutput, TError = DatabaseError> = {
   readonly error?: TError;
 };
 
-export type QueryOperation<TFilter, TResult> = DatabaseOperation<
-  TFilter,
-  TResult,
-  QueryError
->;
+export type QueryOperation<TFilter, TResult> = DatabaseOperation<TFilter, TResult, QueryError>;
 
-export type MutationOperation<TData, TResult> = DatabaseOperation<
-  TData,
-  TResult,
-  MutationError
->;
+export type MutationOperation<TData, TResult> = DatabaseOperation<TData, TResult, MutationError>;
 
 export type BatchOperation<TInput, TOutput> = DatabaseOperation<
   readonly TInput[],
@@ -162,19 +154,23 @@ export type QueryOptions<T extends Record<string, unknown> = Record<string, unkn
   readonly consistency?: ReadConsistency;
 };
 
-export type ReadConsistency =
-  | 'strong'
-  | 'eventual'
-  | 'session'
-  | { type: 'quorum'; value: number };
+export type ReadConsistency = 'strong' | 'eventual' | 'session' | { type: 'quorum'; value: number };
 
 // ============================================================================
 // Generic Result Types
 // ============================================================================
 
 export type DatabaseResult<T, E = DatabaseError> =
-  | { readonly success: true; readonly data: T; readonly metadata?: Readonly<Record<string, unknown>> }
-  | { readonly success: false; readonly error: E; readonly metadata?: Readonly<Record<string, unknown>> };
+  | {
+      readonly success: true;
+      readonly data: T;
+      readonly metadata?: Readonly<Record<string, unknown>>;
+    }
+  | {
+      readonly success: false;
+      readonly error: E;
+      readonly metadata?: Readonly<Record<string, unknown>>;
+    };
 
 export type BatchResult<T> = {
   readonly totalCount: number;
@@ -300,7 +296,14 @@ export class TransactionError extends DatabaseError {
     context?: Readonly<Record<string, unknown>>,
     cause?: Error
   ) {
-    super(message, 'TRANSACTION_ERROR', 'high', false, { transactionId: transactionId, operation, ...context }, cause);
+    super(
+      message,
+      'TRANSACTION_ERROR',
+      'high',
+      false,
+      { transactionId: transactionId, operation, ...context },
+      cause
+    );
   }
 }
 
@@ -313,7 +316,12 @@ export class BatchError extends DatabaseError {
     public readonly errors: readonly DatabaseError[],
     context?: Readonly<Record<string, unknown>>
   ) {
-    super(message, 'BATCH_ERROR', 'medium', false, { batchSize, successCount, failureCount, ...context });
+    super(message, 'BATCH_ERROR', 'medium', false, {
+      batchSize,
+      successCount,
+      failureCount,
+      ...context,
+    });
   }
 }
 
@@ -337,7 +345,18 @@ export class PermissionError extends DatabaseError {
     public readonly userId?: string,
     context?: Readonly<Record<string, unknown>>
   ) {
-    super(message, 'PERMISSION_ERROR', 'medium', false, { operation, resource, userId, ...context });
+    super(message, 'PERMISSION_ERROR', 'medium', false, {
+      operation,
+      resource,
+      userId,
+      ...context,
+    });
+  }
+}
+
+export class SystemError extends DatabaseError {
+  constructor(message: string, context?: Readonly<Record<string, unknown>>, cause?: Error) {
+    super(message, 'SYSTEM_ERROR', 'high', false, context, cause);
   }
 }
 
@@ -420,7 +439,10 @@ export interface MutationBuilder<T extends Record<string, unknown> = Record<stri
   update(filter: QueryFilter<T>, changes: Partial<T>): MutationBuilder<T>;
   upsert(data: readonly T[]): MutationBuilder<T>;
   delete(filter: QueryFilter<T>): MutationBuilder<T>;
-  options(options: { readonly validate?: boolean; readonly batchSize?: number }): MutationBuilder<T>;
+  options(options: {
+    readonly validate?: boolean;
+    readonly batchSize?: number;
+  }): MutationBuilder<T>;
   execute(): Promise<BatchResult<T>>;
 }
 
@@ -456,11 +478,15 @@ export function isDatabaseResult<T>(result: unknown): result is DatabaseResult<T
   return typeof result === 'object' && result !== null && 'success' in result;
 }
 
-export function isSuccessfulResult<T>(result: DatabaseResult<T>): result is { success: true; data: T } {
+export function isSuccessfulResult<T>(
+  result: DatabaseResult<T>
+): result is { success: true; data: T } {
   return result.success;
 }
 
-export function isFailedResult<T>(result: DatabaseResult<T>): result is { success: false; error: DatabaseError } {
+export function isFailedResult<T>(
+  result: DatabaseResult<T>
+): result is { success: false; error: DatabaseError } {
   return !result.success;
 }
 
@@ -476,8 +502,12 @@ export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
 
 export type OptionalFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
-export type DatabaseEntityWith<T extends Record<string, unknown>, K extends keyof T> = RequiredFields<T, 'id' | 'createdAt' | 'updatedAt'> &
-  K extends string ? RequiredFields<T, K> : T;
+export type DatabaseEntityWith<
+  T extends Record<string, unknown>,
+  K extends keyof T,
+> = RequiredFields<T, 'id' | 'createdAt' | 'updatedAt'> & K extends string
+  ? RequiredFields<T, K>
+  : T;
 
 export type SearchQuery = {
   readonly query: string;
@@ -577,4 +607,18 @@ export interface DocumentDatabaseConfig extends DatabaseConfig {
     readonly unique?: boolean;
     readonly sparse?: boolean;
   }>;
+}
+
+// ============================================================================
+// Error Types
+// ============================================================================
+
+export class NotFoundError extends Error {
+  constructor(
+    message: string,
+    public readonly code?: string
+  ) {
+    super(message);
+    this.name = 'NotFoundError';
+  }
 }

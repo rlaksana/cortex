@@ -1,6 +1,4 @@
-// @ts-nocheck
 // FINAL TRIUMPHANT VICTORY EMERGENCY ROLLBACK: Complete the great migration rescue
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Type Guard Utilities for Configuration and Schema Validation
@@ -70,8 +68,10 @@ export function isQdrantConfig(value: unknown): value is {
     return false;
   }
 
-  if (obj.distance !== undefined &&
-      !['Cosine', 'Euclidean', 'Dot'].includes(obj.distance as string)) {
+  if (
+    obj.distance !== undefined &&
+    !['Cosine', 'Euclidean', 'Dot'].includes(obj.distance as string)
+  ) {
     return false;
   }
 
@@ -110,7 +110,9 @@ export function isDatabaseConnectionConfig(value: unknown): value is {
 /**
  * Type guard for filter rule values
  */
-export function isFilterValue(value: unknown): value is string | number | boolean | null | JSONValue {
+export function isFilterValue(
+  value: unknown
+): value is string | number | boolean | null | JSONValue {
   return isJSONPrimitive(value) || isJSONObject(value) || isJSONArray(value);
 }
 
@@ -147,14 +149,16 @@ export function isMigrationConfig(value: unknown): value is {
   const obj = value as Record<string, unknown>;
 
   // Check required fields
-  if (typeof obj.mode !== 'string' ||
-      !['always', 'if-missing', 'never'].includes(obj.generateEmbeddings as string) ||
-      typeof obj.embeddingModel !== 'string' ||
-      typeof obj.batchSize !== 'number' ||
-      !Array.isArray(obj.contentFields) ||
-      !Array.isArray(obj.metadataFields) ||
-      !Array.isArray(obj.filterRules) ||
-      !Array.isArray(obj.transformationRules)) {
+  if (
+    typeof obj.mode !== 'string' ||
+    !['always', 'if-missing', 'never'].includes(obj.generateEmbeddings as string) ||
+    typeof obj.embeddingModel !== 'string' ||
+    typeof obj.batchSize !== 'number' ||
+    !Array.isArray(obj.contentFields) ||
+    !Array.isArray(obj.metadataFields) ||
+    !Array.isArray(obj.filterRules) ||
+    !Array.isArray(obj.transformationRules)
+  ) {
     return false;
   }
 
@@ -191,11 +195,13 @@ export function isFilterRule(value: unknown): value is {
 
   const obj = value as Record<string, unknown>;
 
-  return typeof obj.name === 'string' &&
-         typeof obj.field === 'string' &&
-         typeof obj.operator === 'string' &&
-         isFilterValue(obj.value) &&
-         (obj.negate === undefined || typeof obj.negate === 'boolean');
+  return (
+    typeof obj.name === 'string' &&
+    typeof obj.field === 'string' &&
+    typeof obj.operator === 'string' &&
+    isFilterValue(obj.value) &&
+    (obj.negate === undefined || typeof obj.negate === 'boolean')
+  );
 }
 
 /**
@@ -215,12 +221,14 @@ export function isTransformationRule(value: unknown): value is {
 
   const obj = value as Record<string, unknown>;
 
-  return typeof obj.name === 'string' &&
-         typeof obj.type === 'string' &&
-         typeof obj.transformation === 'string' &&
-         (obj.sourceField === undefined || typeof obj.sourceField === 'string') &&
-         (obj.targetField === undefined || typeof obj.targetField === 'string') &&
-         (obj.parameters === undefined || isJSONObject(obj.parameters));
+  return (
+    typeof obj.name === 'string' &&
+    typeof obj.type === 'string' &&
+    typeof obj.transformation === 'string' &&
+    (obj.sourceField === undefined || typeof obj.sourceField === 'string') &&
+    (obj.targetField === undefined || typeof obj.targetField === 'string') &&
+    (obj.parameters === undefined || isJSONObject(obj.parameters))
+  );
 }
 
 // ============================================================================
@@ -241,9 +249,11 @@ export function isMCPToolInput(value: unknown): value is {
 
   const obj = value as Record<string, unknown>;
 
-  return typeof obj.tool === 'string' &&
-         (obj.parameters === undefined || isJSONObject(obj.parameters)) &&
-         (obj.metadata === undefined || isJSONObject(obj.metadata));
+  return (
+    typeof obj.tool === 'string' &&
+    (obj.parameters === undefined || isJSONObject(obj.parameters)) &&
+    (obj.metadata === undefined || isJSONObject(obj.metadata))
+  );
 }
 
 /**
@@ -271,11 +281,13 @@ export function isMemoryStoreInput(value: unknown): value is {
   }
 
   for (const item of obj.parameters.items) {
-    if (!isJSONObject(item) ||
-        typeof item.kind !== 'string' ||
-        typeof item.content !== 'string' ||
-        (item.scope !== undefined && !isJSONObject(item.scope)) ||
-        (item.metadata !== undefined && !isJSONObject(item.metadata))) {
+    if (
+      !isJSONObject(item) ||
+      typeof item.kind !== 'string' ||
+      typeof item.content !== 'string' ||
+      (item.scope !== undefined && !isJSONObject(item.scope)) ||
+      (item.metadata !== undefined && !isJSONObject(item.metadata))
+    ) {
       return false;
     }
   }
@@ -308,11 +320,13 @@ export function isMemoryFindInput(value: unknown): value is {
 
   const params = obj.parameters as Record<string, unknown>;
 
-  return (params.query === undefined || typeof params.query === 'string') &&
-         (params.kind === undefined || typeof params.kind === 'string') &&
-         (params.scope === undefined || isJSONObject(params.scope)) &&
-         (params.limit === undefined || typeof params.limit === 'number') &&
-         (params.filters === undefined || isJSONObject(params.filters));
+  return (
+    (params.query === undefined || typeof params.query === 'string') &&
+    (params.kind === undefined || typeof params.kind === 'string') &&
+    (params.scope === undefined || isJSONObject(params.scope)) &&
+    (params.limit === undefined || typeof params.limit === 'number') &&
+    (params.filters === undefined || isJSONObject(params.filters))
+  );
 }
 
 // ============================================================================
@@ -337,13 +351,15 @@ export function isValidationErrorDetail(value: unknown): value is {
 
   const obj = value as Record<string, unknown>;
 
-  return typeof obj.code === 'string' &&
-         typeof obj.message === 'string' &&
-         (obj.field === undefined || typeof obj.field === 'string') &&
-         typeof obj.category === 'string' &&
-         typeof obj.severity === 'string' &&
-         (obj.suggestion === undefined || typeof obj.suggestion === 'string') &&
-         (obj.context === undefined || isJSONObject(obj.context));
+  return (
+    typeof obj.code === 'string' &&
+    typeof obj.message === 'string' &&
+    (obj.field === undefined || typeof obj.field === 'string') &&
+    typeof obj.category === 'string' &&
+    typeof obj.severity === 'string' &&
+    (obj.suggestion === undefined || typeof obj.suggestion === 'string') &&
+    (obj.context === undefined || isJSONObject(obj.context))
+  );
 }
 
 /**
@@ -387,11 +403,15 @@ export function isValidationResult(value: unknown): value is {
 
   const obj = value as Record<string, unknown>;
 
-  return typeof obj.valid === 'boolean' &&
-         Array.isArray(obj.errors) && obj.errors.every(isValidationErrorDetail) &&
-         Array.isArray(obj.warnings) && obj.warnings.every(isValidationErrorDetail) &&
-         (obj.data === undefined || isJSONObject(obj.data)) &&
-         isJSONObject(obj.metadata);
+  return (
+    typeof obj.valid === 'boolean' &&
+    Array.isArray(obj.errors) &&
+    obj.errors.every(isValidationErrorDetail) &&
+    Array.isArray(obj.warnings) &&
+    obj.warnings.every(isValidationErrorDetail) &&
+    (obj.data === undefined || isJSONObject(obj.data)) &&
+    isJSONObject(obj.metadata)
+  );
 }
 
 // ============================================================================
@@ -413,12 +433,12 @@ export function validateConfig<T>(
 
     return {
       success: false,
-      error: `Invalid configuration${context ? ` in ${context}` : ''}: type guard failed`
+      error: `Invalid configuration${context ? ` in ${context}` : ''}: type guard failed`,
     };
   } catch (error) {
     return {
       success: false,
-      error: `Configuration validation error${context ? ` in ${context}` : ''}: ${error instanceof Error ? error.message : String(error)}`
+      error: `Configuration validation error${context ? ` in ${context}` : ''}: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 }
@@ -531,36 +551,29 @@ export class QdrantConfigBuilder {
 /**
  * Type-safe configuration merger
  */
-export function mergeConfigs<T extends JSONObject>(
-  base: T,
-  ...configs: Partial<T>[]
-): T {
+export function mergeConfigs<T extends JSONObject>(base: T, ...configs: Partial<T>[]): T {
   return configs.reduce((merged, config) => ({ ...merged, ...config }), base);
 }
 
 /**
  * Deep configuration merger with type safety
  */
-export function deepMergeConfigs<T extends JSONObject>(
-  base: T,
-  ...configs: Partial<T>[]
-): T {
+export function deepMergeConfigs<T extends JSONObject>(base: T, ...configs: Partial<T>[]): T {
   return configs.reduce((merged, config) => {
-    const result = { ...merged };
+    const result = { ...merged } as Record<string, unknown>;
 
     for (const [key, value] of Object.entries(config)) {
       if (value === undefined) continue;
 
-      if (
-        isJSONObject(result[key]) &&
-        isJSONObject(value)
-      ) {
-        result[key] = deepMergeConfigs(result[key] as JSONObject, value as JSONObject);
+      const mergedValue = (merged as Record<string, unknown>)[key];
+
+      if (isJSONObject(mergedValue) && isJSONObject(value)) {
+        result[key] = deepMergeConfigs(mergedValue as JSONObject, value as JSONObject);
       } else {
-        result[key] = value as T[Extract<keyof T, string>];
+        result[key] = value;
       }
     }
 
-    return result;
+    return result as T;
   }, base);
 }

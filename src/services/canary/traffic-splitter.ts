@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Traffic Splitter Service
  *
@@ -379,7 +374,7 @@ export class TrafficSplitterService extends EventEmitter {
    * Get enabled traffic routing rules
    */
   getEnabledRules(): TrafficRule[] {
-    return this.getAllRules().filter(rule => rule.enabled);
+    return this.getAllRules().filter((rule) => rule.enabled);
   }
 
   // ============================================================================
@@ -443,8 +438,8 @@ export class TrafficSplitterService extends EventEmitter {
       }
 
       const matchedConditions = rule.conditions
-        .filter(condition => this.evaluateCondition(condition, context))
-        .map(condition => `${condition.type}:${condition.field}`);
+        .filter((condition) => this.evaluateCondition(condition, context))
+        .map((condition) => `${condition.type}:${condition.field}`);
 
       const decision: RoutingDecision = {
         target,
@@ -482,7 +477,6 @@ export class TrafficSplitterService extends EventEmitter {
       this.emit('requestRouted', context, decision);
 
       return decision;
-
     } catch (error) {
       logger.error('Error routing request', {
         requestId: context.id,
@@ -499,9 +493,11 @@ export class TrafficSplitterService extends EventEmitter {
    */
   private findMatchingRules(context: RequestContext): TrafficRule[] {
     return this.getEnabledRules()
-      .filter(rule => rule.conditions.length === 0 || rule.conditions.some(condition =>
-        this.evaluateCondition(condition, context)
-      ))
+      .filter(
+        (rule) =>
+          rule.conditions.length === 0 ||
+          rule.conditions.some((condition) => this.evaluateCondition(condition, context))
+      )
       .sort((a, b) => b.priority - a.priority); // Higher priority first
   }
 
@@ -544,19 +540,19 @@ export class TrafficSplitterService extends EventEmitter {
 
     switch (condition.operator) {
       case 'equals':
-        return conditionValue.some(cv =>
+        return conditionValue.some((cv) =>
           caseSensitive ? value === cv : value.toLowerCase() === cv.toLowerCase()
         );
       case 'not_equals':
-        return !conditionValue.some(cv =>
+        return !conditionValue.some((cv) =>
           caseSensitive ? value === cv : value.toLowerCase() === cv.toLowerCase()
         );
       case 'contains':
-        return conditionValue.some(cv =>
+        return conditionValue.some((cv) =>
           caseSensitive ? value.includes(cv) : value.toLowerCase().includes(cv.toLowerCase())
         );
       case 'not_contains':
-        return !conditionValue.some(cv =>
+        return !conditionValue.some((cv) =>
           caseSensitive ? value.includes(cv) : value.toLowerCase().includes(cv.toLowerCase())
         );
       case 'regex':
@@ -578,8 +574,11 @@ export class TrafficSplitterService extends EventEmitter {
   /**
    * Select target based on routing strategy
    */
-  private async selectTarget(rule: TrafficRule, context: RequestContext): Promise<ServiceTarget | null> {
-    const healthyTargets = rule.targets.filter(target => this.isTargetHealthy(target));
+  private async selectTarget(
+    rule: TrafficRule,
+    context: RequestContext
+  ): Promise<ServiceTarget | null> {
+    const healthyTargets = rule.targets.filter((target) => this.isTargetHealthy(target));
     if (healthyTargets.length === 0) {
       return null;
     }
@@ -609,7 +608,11 @@ export class TrafficSplitterService extends EventEmitter {
   /**
    * Select target by percentage-based routing
    */
-  private selectByPercentage(targets: ServiceTarget[], rule: TrafficRule, context: RequestContext): ServiceTarget {
+  private selectByPercentage(
+    targets: ServiceTarget[],
+    rule: TrafficRule,
+    context: RequestContext
+  ): ServiceTarget {
     // Use hash for consistent percentage-based routing
     const hash = this.hashString(`${context.clientIP}:${context.path}:${context.id}`);
     const percentage = (hash % 100) + 1;
@@ -689,7 +692,11 @@ export class TrafficSplitterService extends EventEmitter {
   /**
    * Select target by header value
    */
-  private selectByHeader(targets: ServiceTarget[], rule: TrafficRule, context: RequestContext): ServiceTarget {
+  private selectByHeader(
+    targets: ServiceTarget[],
+    rule: TrafficRule,
+    context: RequestContext
+  ): ServiceTarget {
     // This would need to be configured based on specific header logic
     // For now, fall back to percentage-based routing
     return this.selectByPercentage(targets, rule, context);
@@ -698,7 +705,11 @@ export class TrafficSplitterService extends EventEmitter {
   /**
    * Select target by cookie value
    */
-  private selectByCookie(targets: ServiceTarget[], rule: TrafficRule, context: RequestContext): ServiceTarget {
+  private selectByCookie(
+    targets: ServiceTarget[],
+    rule: TrafficRule,
+    context: RequestContext
+  ): ServiceTarget {
     // This would need to be configured based on specific cookie logic
     // For now, fall back to percentage-based routing
     return this.selectByPercentage(targets, rule, context);
@@ -761,7 +772,7 @@ export class TrafficSplitterService extends EventEmitter {
     // Find target associated with this session
     const targetId = this.getTargetForSession(sessionKey, rule.id);
     if (targetId) {
-      return rule.targets.find(target => target.id === targetId) || null;
+      return rule.targets.find((target) => target.id === targetId) || null;
     }
 
     return null;
@@ -771,7 +782,7 @@ export class TrafficSplitterService extends EventEmitter {
    * Select fallback target
    */
   private selectFallbackTarget(rule: TrafficRule): ServiceTarget | null {
-    const healthyFallbackTargets = rule.failover.fallbackTargets.filter(target =>
+    const healthyFallbackTargets = rule.failover.fallbackTargets.filter((target) =>
       this.isTargetHealthy(target)
     );
 
@@ -839,7 +850,6 @@ export class TrafficSplitterService extends EventEmitter {
 
           this.emit('targetHealthChanged', target, isHealthy);
         }
-
       } catch (error) {
         logger.error('Error performing health check', {
           ruleId,
@@ -856,14 +866,16 @@ export class TrafficSplitterService extends EventEmitter {
   /**
    * Check health of a specific target
    */
-  private async checkTargetHealth(target: ServiceTarget, config: HealthCheckConfig): Promise<boolean> {
+  private async checkTargetHealth(
+    target: ServiceTarget,
+    config: HealthCheckConfig
+  ): Promise<boolean> {
     try {
       // In a real implementation, this would make an HTTP request to the health check endpoint
       // For now, we'll simulate the health check
 
       const response = await this.makeHealthCheckRequest(target, config);
       return config.expectedStatuses.includes(response.status);
-
     } catch (error) {
       return false;
     }
@@ -878,7 +890,7 @@ export class TrafficSplitterService extends EventEmitter {
   ): Promise<{ status: number; responseTime: number }> {
     // Simulate health check request
     // In a real implementation, this would use fetch or another HTTP client
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
+    await new Promise((resolve) => setTimeout(resolve, Math.random() * 100));
 
     return {
       status: Math.random() > 0.1 ? 200 : 503,
@@ -918,7 +930,7 @@ export class TrafficSplitterService extends EventEmitter {
     }
 
     const key = rateLimiter.keyExtractor
-      ? context[rateLimiter.keyExtractor as keyof RequestContext] as string
+      ? (context[rateLimiter.keyExtractor as keyof RequestContext] as string)
       : context.clientIP;
 
     return rateLimiter.isAllowed(key);
@@ -956,7 +968,7 @@ export class TrafficSplitterService extends EventEmitter {
 
     // Keep only last 24 hours of metrics
     const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    this.metricsHistory = this.metricsHistory.filter(m => m.timestamp > cutoffTime);
+    this.metricsHistory = this.metricsHistory.filter((m) => m.timestamp > cutoffTime);
 
     // Record metrics to metrics service
     metricsService.recordGauge('traffic_splitter_total_requests', metrics.totalRequests);
@@ -969,7 +981,11 @@ export class TrafficSplitterService extends EventEmitter {
   /**
    * Record routing metrics
    */
-  private recordRoutingMetrics(rule: TrafficRule, target: ServiceTarget, context: RequestContext): void {
+  private recordRoutingMetrics(
+    rule: TrafficRule,
+    target: ServiceTarget,
+    context: RequestContext
+  ): void {
     const state = this.loadBalancerStates.get(rule.id);
     if (state) {
       state.requestCounts[target.id] = (state.requestCounts[target.id] || 0) + 1;
@@ -1016,7 +1032,7 @@ export class TrafficSplitterService extends EventEmitter {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash);
@@ -1063,8 +1079,10 @@ export class TrafficSplitterService extends EventEmitter {
     for (const [ruleId, state] of this.loadBalancerStates.entries()) {
       const rule = this.rules.get(ruleId);
       if (rule) {
-        requestsByRule[rule.name] = Object.values(state.requestCounts)
-          .reduce((sum, count) => sum + count, 0);
+        requestsByRule[rule.name] = Object.values(state.requestCounts).reduce(
+          (sum, count) => sum + count,
+          0
+        );
       }
     }
     return requestsByRule;
@@ -1124,13 +1142,13 @@ export class TrafficSplitterService extends EventEmitter {
     metricsHistorySize: number;
   } {
     const rules = this.getAllRules();
-    const targets = rules.flatMap(rule => rule.targets);
+    const targets = rules.flatMap((rule) => rule.targets);
 
     return {
       totalRules: rules.length,
-      enabledRules: rules.filter(rule => rule.enabled).length,
+      enabledRules: rules.filter((rule) => rule.enabled).length,
       totalTargets: targets.length,
-      healthyTargets: targets.filter(target => target.healthy).length,
+      healthyTargets: targets.filter((target) => target.healthy).length,
       activeConnections: this.getActiveConnections(),
       metricsHistorySize: this.metricsHistory.length,
     };
@@ -1203,7 +1221,7 @@ class RateLimiter {
     return true;
   }
 
-  keyExtractor?: unknown
+  keyExtractor?: unknown;
 }
 
 // Export singleton instance

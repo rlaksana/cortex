@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * MCP Response Envelope Builder
  *
@@ -21,7 +17,8 @@ import {
   type MemoryStoreResult,
   type RateLimitErrorDetails,
   type SystemStatusResult,
-  type ValidationErrorDetails} from '../types/mcp-response-data.types';
+  type ValidationErrorDetails,
+} from '../types/mcp-response-data.types';
 import {
   type ErrorEnvelope,
   isErrorEnvelope,
@@ -29,8 +26,16 @@ import {
   type PaginatedEnvelope,
   type ResponseEnvelope,
   type StreamingEnvelope,
-  type SuccessEnvelope} from '../types/response-envelope.types';
-import { createResponseMeta, type SearchStrategy, type UnifiedResponseMeta } from '../types/unified-response.interface';
+  type SuccessEnvelope,
+} from '../types/response-envelope.types';
+import {
+  createResponseMeta,
+  type SearchStrategy,
+  type UnifiedResponseMeta,
+} from '../types/unified-response.interface';
+
+// Re-export SuccessEnvelope and ErrorEnvelope for external use
+export type { ErrorEnvelope, SuccessEnvelope } from '../types/response-envelope.types';
 
 /**
  * Response envelope builder context
@@ -78,7 +83,7 @@ export enum ErrorCode {
   // Business logic errors
   PROCESSING_FAILED = 'PROCESSING_FAILED',
   STORAGE_LIMIT_EXCEEDED = 'STORAGE_LIMIT_EXCEEDED',
-  INVALID_OPERATION = 'INVALID_OPERATION'
+  INVALID_OPERATION = 'INVALID_OPERATION',
 }
 
 /**
@@ -92,7 +97,7 @@ export class ResponseEnvelopeBuilder {
       operationType,
       startTime: startTime || Date.now(),
       requestId: uuidv4(),
-      apiVersion
+      apiVersion,
     };
   }
 
@@ -123,7 +128,7 @@ export class ResponseEnvelopeBuilder {
       operation_id: this.context.operationId,
       api_version: this.context.apiVersion,
       ...(message && { message }),
-      ...(rateLimit && { rate_limit: rateLimit })
+      ...(rateLimit && { rate_limit: rateLimit }),
     };
   }
 
@@ -156,8 +161,8 @@ export class ResponseEnvelopeBuilder {
           error_id: errorId,
           error_code: code,
           error_type: errorType,
-          operation_type: this.context.operationType
-        }
+          operation_type: this.context.operationType,
+        },
       }),
       timestamp: new Date().toISOString(),
       request_id: this.context.requestId,
@@ -170,9 +175,9 @@ export class ResponseEnvelopeBuilder {
         ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
         ...(details && { details }),
         retryable,
-        ...(retryAfterMs && { retry_after_ms: retryAfterMs })
+        ...(retryAfterMs && { retry_after_ms: retryAfterMs }),
       },
-      error_id: errorId
+      error_id: errorId,
     };
   }
 
@@ -195,7 +200,7 @@ export class ResponseEnvelopeBuilder {
       operation_id: this.context.operationId,
       api_version: this.context.apiVersion,
       pagination,
-      ...(summary && { summary })
+      ...(summary && { summary }),
     };
   }
 
@@ -223,9 +228,9 @@ export class ResponseEnvelopeBuilder {
         stream_id: streamId,
         chunk_number: chunkNumber,
         status,
-        is_final: status === 'completed'
+        is_final: status === 'completed',
       },
-      ...(streamMetadata && { stream_metadata: streamMetadata })
+      ...(streamMetadata && { stream_metadata: streamMetadata }),
     };
   }
 
@@ -255,8 +260,8 @@ export class ResponseEnvelopeBuilder {
           items_processed: result.summary.total_attempted,
           items_stored: result.summary.total_stored,
           items_failed: result.summary.total_failed,
-          success_rate: result.summary.success_rate
-        }
+          success_rate: result.summary.success_rate,
+        },
       }),
       `Successfully stored ${result.summary.total_stored} of ${result.summary.total_attempted} items`
     );
@@ -290,8 +295,8 @@ export class ResponseEnvelopeBuilder {
           items_returned: result.items.length,
           confidence: result.confidence,
           expansion_type: result.expansion?.type,
-          expansion_items_added: result.expansion?.items_added
-        }
+          expansion_items_added: result.expansion?.items_added,
+        },
       }),
       `Found ${result.total} results for query: "${result.query}"`
     );
@@ -320,8 +325,8 @@ export class ResponseEnvelopeBuilder {
           system_status: result.status,
           component_count: Object.keys(result.components).length,
           api_version: result.version.api_version,
-          server_version: result.version.server_version
-        }
+          server_version: result.version.server_version,
+        },
       }),
       `System status: ${result.status.toUpperCase()}`
     );
@@ -380,10 +385,7 @@ export class ResponseEnvelopeBuilder {
   /**
    * Create a generic server error response
    */
-  createServerError(
-    error: Error,
-    message?: string
-  ): ErrorEnvelope<{ original_error: string }> {
+  createServerError(error: Error, message?: string): ErrorEnvelope<{ original_error: string }> {
     return this.createErrorEnvelope(
       ErrorCode.INTERNAL_SERVER_ERROR,
       message || error.message,

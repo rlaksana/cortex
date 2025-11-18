@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Contradiction Detector Interface
  * MVP for detecting potential contradictions in stored knowledge
@@ -313,7 +309,12 @@ export interface ContradictionTestSuite {
 }
 
 // Contradiction strategy type for string literals
-export type ContradictionStrategyType = 'semantic' | 'temporal' | 'logical' | 'factual' | 'procedural';
+export type ContradictionStrategyType =
+  | 'semantic'
+  | 'temporal'
+  | 'logical'
+  | 'factual'
+  | 'procedural';
 
 // Additional exports for compatibility
 export interface ContradictionStrategy {

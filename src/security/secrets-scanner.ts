@@ -1,6 +1,4 @@
-// @ts-nocheck
 // FINAL TRIUMPHANT VICTORY EMERGENCY ROLLBACK: Complete the great migration rescue
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Secrets Scanner - P0-CRITICAL Implementation
@@ -15,7 +13,7 @@
  */
 
 import { readdirSync, readFileSync, statSync } from 'fs';
-import { extname,join, relative } from 'path';
+import { extname, join, relative } from 'path';
 
 import { logger } from '../utils/logger.js';
 
@@ -73,7 +71,7 @@ export class SecretsScanner {
       pattern: /sk-[A-Za-z0-9]{48}/g,
       severity: 'critical',
       examples: ['sk-1234567890abcdef1234567890abcdef12345678'],
-      remediation: 'Remove the API key and use environment variable OPENAI_API_KEY'
+      remediation: 'Remove the API key and use environment variable OPENAI_API_KEY',
     },
 
     // Qdrant API Keys
@@ -83,17 +81,18 @@ export class SecretsScanner {
       pattern: /(?:qdrant[-_]?key|api[-_]?key)\s*[:=]\s*['\"]?([a-zA-Z0-9_-]{20,})['\"]?/gi,
       severity: 'critical',
       examples: ['qdrant_api_key = "your-secret-key"', 'API_KEY: "abcdef123456"'],
-      remediation: 'Remove the API key and use environment variable QDRANT_API_KEY'
+      remediation: 'Remove the API key and use environment variable QDRANT_API_KEY',
     },
 
     // JWT Secrets
     {
       name: 'JWT Secret',
       description: 'JWT secret or private key detected',
-      pattern: /(?:jwt[-_]?secret|private[-_]?key|secret[-_]?key)\s*[:=]\s*['\"]([A-Za-z0-9+/]{32,}={0,2})['\"]/gi,
+      pattern:
+        /(?:jwt[-_]?secret|private[-_]?key|secret[-_]?key)\s*[:=]\s*['\"]([A-Za-z0-9+/]{32,}={0,2})['\"]/gi,
       severity: 'critical',
       examples: ['JWT_SECRET = "your-secret-key"', 'private_key: "1234567890abcdef"'],
-      remediation: 'Use environment variable JWT_SECRET or secure key management system'
+      remediation: 'Use environment variable JWT_SECRET or secure key management system',
     },
 
     // Generic API Keys
@@ -103,7 +102,7 @@ export class SecretsScanner {
       pattern: /(?:api[-_]?key|apikey|secret[-_]?key)\s*[:=]\s*['\"]([A-Za-z0-9_-]{16,})['\"]/gi,
       severity: 'high',
       examples: ['api_key = "abcdef123456"', 'SECRET_KEY: "secret123"'],
-      remediation: 'Replace with environment variable or secure key management'
+      remediation: 'Replace with environment variable or secure key management',
     },
 
     // Database URLs with credentials
@@ -113,17 +112,18 @@ export class SecretsScanner {
       pattern: /(?:postgres|mysql|mongodb|mssql):\/\/[^:]+:[^@]+@[^\/]+/gi,
       severity: 'critical',
       examples: ['postgres://user:password@localhost:5432/db'],
-      remediation: 'Use environment variables for database credentials'
+      remediation: 'Use environment variables for database credentials',
     },
 
     // URLs with API keys in query parameters
     {
       name: 'URL with API Key Parameter',
       description: 'URL containing API key in query parameters',
-      pattern: /https?:\/\/[^?]+\?(?:[^&]*&)*(?:api[-_]?key|apikey|token|access[-_]?token)=[^&\s]+/gi,
+      pattern:
+        /https?:\/\/[^?]+\?(?:[^&]*&)*(?:api[-_]?key|apikey|token|access[-_]?token)=[^&\s]+/gi,
       severity: 'high',
       examples: ['https://api.example.com/data?api_key=secret123'],
-      remediation: 'Move API key to request headers or environment variables'
+      remediation: 'Move API key to request headers or environment variables',
     },
 
     // AWS Access Keys
@@ -133,7 +133,7 @@ export class SecretsScanner {
       pattern: /AKIA[0-9A-Z]{16}/g,
       severity: 'critical',
       examples: ['AKIA1234567890ABCDEF'],
-      remediation: 'Use AWS IAM roles or environment variables'
+      remediation: 'Use AWS IAM roles or environment variables',
     },
 
     // Google API Keys
@@ -143,7 +143,7 @@ export class SecretsScanner {
       pattern: /AIza[0-9A-Za-z_-]{35}/g,
       severity: 'critical',
       examples: ['AIza1234567890abcdef1234567890abcdef'],
-      remediation: 'Use environment variable GOOGLE_API_KEY'
+      remediation: 'Use environment variable GOOGLE_API_KEY',
     },
 
     // GitHub Tokens
@@ -153,7 +153,7 @@ export class SecretsScanner {
       pattern: /ghp_[A-Za-z0-9]{36}/g,
       severity: 'critical',
       examples: ['ghp_1234567890abcdef1234567890abcdef123456'],
-      remediation: 'Use GitHub Actions secrets or environment variables'
+      remediation: 'Use GitHub Actions secrets or environment variables',
     },
 
     // SSH Private Keys
@@ -163,7 +163,7 @@ export class SecretsScanner {
       pattern: /-----BEGIN\s+(RSA|DSA|EC|OPENSSH)\s+PRIVATE\s+KEY-----/g,
       severity: 'critical',
       examples: ['-----BEGIN RSA PRIVATE KEY-----'],
-      remediation: 'Remove private keys from codebase and use secure key management'
+      remediation: 'Remove private keys from codebase and use secure key management',
     },
 
     // Certificate/Private Key patterns
@@ -173,7 +173,7 @@ export class SecretsScanner {
       pattern: /-----BEGIN\s+(CERTIFICATE|PRIVATE\s+KEY)-----/g,
       severity: 'critical',
       examples: ['-----BEGIN CERTIFICATE-----', '-----BEGIN PRIVATE KEY-----'],
-      remediation: 'Remove certificates/keys from codebase and use secure key management'
+      remediation: 'Remove certificates/keys from codebase and use secure key management',
     },
 
     // Passwords in configuration
@@ -183,7 +183,7 @@ export class SecretsScanner {
       pattern: /(?:password|passwd|pwd)\s*[:=]\s*['\"]([^'\"\s]{6,})['\"]/gi,
       severity: 'high',
       examples: ['password = "secret123"', 'pwd: "mypassword"'],
-      remediation: 'Use environment variables or secure key management'
+      remediation: 'Use environment variables or secure key management',
     },
 
     // Email and potentially sensitive data
@@ -193,7 +193,7 @@ export class SecretsScanner {
       pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
       severity: 'low',
       examples: ['user@example.com'],
-      remediation: 'Consider if email address is necessary in this context'
+      remediation: 'Consider if email address is necessary in this context',
     },
 
     // Potential base64 encoded secrets
@@ -203,8 +203,8 @@ export class SecretsScanner {
       pattern: /['\"]([A-Za-z0-9+/]{32,}={0,2})['\"]\s*(?:#.*)?$/gm,
       severity: 'medium',
       examples: ['"YWJjZGVmZ2hpams="'],
-      remediation: 'Verify if this is legitimate base64 data or encoded secret'
-    }
+      remediation: 'Verify if this is legitimate base64 data or encoded secret',
+    },
   ];
 
   private static readonly EXCLUDED_PATTERNS = [
@@ -225,12 +225,33 @@ export class SecretsScanner {
   ];
 
   private static readonly EXCLUDED_EXTENSIONS = [
-    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.ico', // Images
-    '.pdf', '.doc', '.docx', '.xls', '.xlsx', // Documents
-    '.zip', '.tar', '.gz', '.rar', // Archives
-    '.mp3', '.mp4', '.avi', '.mov', // Media files
-    '.ttf', '.woff', '.woff2', '.eot', // Fonts
-    '.map', '.min.js', '.min.css', // Minified files
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.gif',
+    '.bmp',
+    '.svg',
+    '.ico', // Images
+    '.pdf',
+    '.doc',
+    '.docx',
+    '.xls',
+    '.xlsx', // Documents
+    '.zip',
+    '.tar',
+    '.gz',
+    '.rar', // Archives
+    '.mp3',
+    '.mp4',
+    '.avi',
+    '.mov', // Media files
+    '.ttf',
+    '.woff',
+    '.woff2',
+    '.eot', // Fonts
+    '.map',
+    '.min.js',
+    '.min.css', // Minified files
   ];
 
   /**
@@ -248,7 +269,7 @@ export class SecretsScanner {
     const {
       ignorePaths = ['node_modules', '.git', 'dist', 'coverage', 'logs'],
       maxFileSize = 1024 * 1024, // 1MB
-      includeBinary = false
+      includeBinary = false,
     } = options;
 
     const findings: SecretFinding[] = [];
@@ -289,7 +310,6 @@ export class SecretsScanner {
           scannedFiles++;
           const fileFindings = await this.scanFile(filePath);
           findings.push(...fileFindings);
-
         } catch (error) {
           const relativePath = relative(rootPath, filePath);
           const errorMsg = `Error scanning ${relativePath}: ${error instanceof Error ? error.message : 'Unknown error'}`;
@@ -297,16 +317,20 @@ export class SecretsScanner {
           logger.warn(errorMsg);
         }
       }
-
     } catch (error) {
-      errors.push(`Directory scan error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(
+        `Directory scan error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
 
     // Count severity levels
-    const summary = findings.reduce((acc,  finding) => {
-      acc[finding.pattern.severity]++;
-      return acc;
-    }, { critical: 0, high: 0, medium: 0, low: 0 });
+    const summary = findings.reduce(
+      (acc, finding) => {
+        acc[finding.pattern.severity]++;
+        return acc;
+      },
+      { critical: 0, high: 0, medium: 0, low: 0 }
+    );
 
     const duration = Date.now() - startTime;
 
@@ -316,10 +340,12 @@ export class SecretsScanner {
       findings,
       summary,
       errors,
-      duration
+      duration,
     };
 
-    logger.info(`Scan completed: ${scannedFiles}/${totalFiles} files, ${String(findings?.length ?? 0)} findings in ${duration}ms`);
+    logger.info(
+      `Scan completed: ${scannedFiles}/${totalFiles} files, ${String(findings?.length ?? 0)} findings in ${duration}ms`
+    );
 
     return _results;
   }
@@ -355,7 +381,7 @@ export class SecretsScanner {
               match: match[0],
               pattern,
               context: this.getContext(lines, lineIndex),
-              confidence: this.calculateConfidence(match[0], pattern)
+              confidence: this.calculateConfidence(match[0], pattern),
             };
 
             findings.push(finding);
@@ -373,7 +399,7 @@ export class SecretsScanner {
   /**
    * Get all files in directory recursively
    */
-  private static getAllFiles(dirPath: string,  ignorePaths: string[]): string[] {
+  private static getAllFiles(dirPath: string, ignorePaths: string[]): string[] {
     const files: string[] = [];
 
     const traverse = (currentPath: string) => {
@@ -406,13 +432,17 @@ export class SecretsScanner {
    * Check if a match is a false positive
    */
   private static isFalsePositive(match: string): boolean {
-    return this.EXCLUDED_PATTERNS.some(pattern => pattern.test(match));
+    return this.EXCLUDED_PATTERNS.some((pattern) => pattern.test(match));
   }
 
   /**
    * Get context around a finding
    */
-  private static getContext(lines: string[],  lineIndex: number,  contextLines: number = 2): string[] {
+  private static getContext(
+    lines: string[],
+    lineIndex: number,
+    contextLines: number = 2
+  ): string[] {
     const start = Math.max(0, lineIndex - contextLines);
     const end = Math.min(lines.length - 1, lineIndex + contextLines);
 
@@ -422,7 +452,7 @@ export class SecretsScanner {
   /**
    * Calculate confidence score for a finding
    */
-  private static calculateConfidence(match: string,  pattern: SecretPattern): number {
+  private static calculateConfidence(match: string, pattern: SecretPattern): number {
     let confidence = 0.5; // Base confidence
 
     // Increase confidence for longer matches
@@ -482,47 +512,62 @@ export class SecretsScanner {
     ];
 
     // Group findings by file
-    const findingsByFile = results.findings.reduce<Record<string, SecretFinding[]>>((acc, finding) => {
-      if (!acc[finding.file]) {
-        acc[finding.file] = [];
-      }
-      acc[finding.file].push(finding);
-      return acc;
-    }, {});
+    const findingsByFile = results.findings.reduce<Record<string, SecretFinding[]>>(
+      (acc, finding) => {
+        if (!acc[finding.file]) {
+          acc[finding.file] = [];
+        }
+        acc[finding.file].push(finding);
+        return acc;
+      },
+      {}
+    );
 
     // Sort files by severity
-    const sortedFiles = Object.entries(findingsByFile).sort(([,  a],  [,  b]) => {
-      const aMaxSeverity = Math.max(...a.map((f: unknown) => this.getSeverityScore(f.pattern.severity)));
-      const bMaxSeverity = Math.max(...b.map((f: unknown) => this.getSeverityScore(f.pattern.severity)));
+    const sortedFiles = Object.entries(findingsByFile).sort(([, a], [, b]) => {
+      const aMaxSeverity = Math.max(
+        ...a.map((f: unknown) => this.getSeverityScore(f.pattern.severity))
+      );
+      const bMaxSeverity = Math.max(
+        ...b.map((f: unknown) => this.getSeverityScore(f.pattern.severity))
+      );
       return bMaxSeverity - aMaxSeverity;
     });
 
     if (sortedFiles.length > 0) {
       report.push('## Findings by File');
 
-      for (const [file,  fileFindings] of sortedFiles) {
+      for (const [file, fileFindings] of sortedFiles) {
         report.push(`### ${file}`);
 
         // Sort findings by severity
         const b = fileFindings;
-        fileFindings.sort((a: unknown,  _b) =>
-          this.getSeverityScore(fileFindings[0].pattern.severity) - this.getSeverityScore(a.pattern.severity)
+        fileFindings.sort(
+          (a: unknown, _b) =>
+            this.getSeverityScore(fileFindings[0].pattern.severity) -
+            this.getSeverityScore(a.pattern.severity)
         );
 
         for (const finding of fileFindings) {
           report.push('');
-          report.push(`**Line ${finding.line}:** ${finding.pattern.name} (${finding.pattern.severity})`);
-          report.push(`\`${finding.match}\` (confidence: ${String((finding.confidence * 100).toFixed(1))}%)`);
+          report.push(
+            `**Line ${finding.line}:** ${finding.pattern.name} (${finding.pattern.severity})`
+          );
+          report.push(
+            `\`${finding.match}\` (confidence: ${String((finding.confidence * 100).toFixed(1))}%)`
+          );
           report.push(`**Remediation:** ${finding.pattern.remediation}`);
 
           if (finding.context.length > 1) {
             report.push('**Context:**');
             report.push('```');
-            report.push(...finding.context.map((line: unknown,  _idx: unknown) => {
-              const lineNum = finding.line - finding.context.length + 1 + _idx;
-              const marker = _idx === Math.floor(finding.context.length / 2) ? '>>> ' : '    ';
-              return `${String(marker)}${String(lineNum)}: ${String(line)}`;
-            }));
+            report.push(
+              ...finding.context.map((line: unknown, _idx: unknown) => {
+                const lineNum = finding.line - finding.context.length + 1 + _idx;
+                const marker = _idx === Math.floor(finding.context.length / 2) ? '>>> ' : '    ';
+                return `${String(marker)}${String(lineNum)}: ${String(line)}`;
+              })
+            );
             report.push('```');
           }
         }
@@ -532,7 +577,7 @@ export class SecretsScanner {
 
     if (results.errors.length > 0) {
       report.push('## Errors');
-      results.errors.forEach(error => report.push(`- ${error}`));
+      results.errors.forEach((error) => report.push(`- ${error}`));
       report.push('');
     }
 
@@ -561,10 +606,14 @@ export class SecretsScanner {
    */
   static exitWithResults(results: ScanResults): void {
     if (results.summary.critical > 0 || results.summary.high > 0) {
-      logger.error(`Scan failed: ${results.summary.critical} critical and ${results.summary.high} high severity findings`);
+      logger.error(
+        `Scan failed: ${results.summary.critical} critical and ${results.summary.high} high severity findings`
+      );
       process.exit(1);
     } else if (results.summary.medium > 0) {
-      logger.warn(`Scan completed with warnings: ${results.summary.medium} medium severity findings`);
+      logger.warn(
+        `Scan completed with warnings: ${results.summary.medium} medium severity findings`
+      );
       process.exit(0);
     } else {
       logger.info(`Scan passed: No critical or high severity secrets found`);

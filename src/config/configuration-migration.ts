@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Configuration Migration System
  *
@@ -18,8 +14,7 @@
 
 import { z } from 'zod';
 
-import type {
-  LegacyConfig} from '../types/config.js';
+import type { LegacyConfig } from '../types/config.js';
 
 // ============================================================================
 // Migration Schemas and Interfaces

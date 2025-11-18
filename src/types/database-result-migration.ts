@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * DatabaseResult Type Migration Utilities
  *
@@ -13,7 +9,12 @@
  * @since 2025
  */
 
-import type { DatabaseError,DatabaseResult as OptimalDatabaseResult } from './database-generics.js';
+import type { Result } from './base-types.js';
+import {
+  type DatabaseError,
+  type DatabaseResult as OptimalDatabaseResult,
+  ValidationError,
+} from './database-generics.js';
 
 // ============================================================================
 // Legacy Type Definitions (for backward compatibility)
@@ -47,8 +48,8 @@ export function migrateLegacyResult<T>(
     metadata: {
       rowCount: legacy.rowCount,
       command: legacy.command,
-      migratedFrom: 'legacy-sql-result'
-    }
+      migratedFrom: 'legacy-sql-result',
+    },
   };
 }
 
@@ -65,16 +66,16 @@ export function migrateEnhancedResult<T>(
       success: true,
       data: enhanced.data,
       metadata: {
-        migratedFrom: 'enhanced-result'
-      }
+        migratedFrom: 'enhanced-result',
+      },
     };
   } else {
     return {
       success: false,
       error: enhanced.error,
       metadata: {
-        migratedFrom: 'enhanced-result'
-      }
+        migratedFrom: 'enhanced-result',
+      },
     };
   }
 }
@@ -83,22 +84,26 @@ export function migrateEnhancedResult<T>(
  * Type guard to check if a result uses the legacy format
  */
 export function isLegacyResult<T>(result: unknown): result is DatabaseResultLegacy<T> {
-  return typeof result === 'object'
-    && result !== null
-    && 'rows' in result
-    && 'rowCount' in result
-    && 'command' in result;
+  return (
+    typeof result === 'object' &&
+    result !== null &&
+    'rows' in result &&
+    'rowCount' in result &&
+    'command' in result
+  );
 }
 
 /**
  * Type guard to check if a result uses the enhanced format
  */
 export function isEnhancedResult<T>(result: unknown): result is DatabaseResultEnhanced<T> {
-  return typeof result === 'object'
-    && result !== null
-    && 'success' in result
-    && ('data' in result || 'error' in result)
-    && !('readonly' in result); // Distinguish from optimal format
+  return (
+    typeof result === 'object' &&
+    result !== null &&
+    'success' in result &&
+    ('data' in result || 'error' in result) &&
+    !('readonly' in result)
+  ); // Distinguish from optimal format
 }
 
 /**
@@ -107,20 +112,25 @@ export function isEnhancedResult<T>(result: unknown): result is DatabaseResultEn
 export function migrateToOptimal<T>(result: unknown): OptimalDatabaseResult<T> {
   // Check if already optimal (discriminant union with readonly properties)
   if (typeof result === 'object' && result !== null && 'success' in result) {
-    const candidate = result as { success: boolean; data?: T; error?: DatabaseError; metadata?: Record<string, unknown> };
+    const candidate = result as {
+      success: boolean;
+      data?: T;
+      error?: DatabaseError;
+      metadata?: Record<string, unknown>;
+    };
 
     // Simple check for optimal format (success property + proper structure)
     if (candidate.success && 'data' in candidate) {
       return {
         success: true,
         data: candidate.data as T,
-        metadata: candidate.metadata
+        metadata: candidate.metadata,
       };
     } else if (!candidate.success && 'error' in candidate) {
       return {
         success: false,
         error: candidate.error as DatabaseError,
-        metadata: candidate.metadata
+        metadata: candidate.metadata,
       };
     }
   }
@@ -138,13 +148,13 @@ export function migrateToOptimal<T>(result: unknown): OptimalDatabaseResult<T> {
   // Fallback: create error result for unknown formats
   return {
     success: false,
-    error: new DatabaseError(
+    error: new ValidationError(
       'Unknown DatabaseResult format during migration',
-      'MIGRATION_ERROR',
-      'medium',
-      false,
+      'result',
+      result,
+      'invalid_database_result_format',
       { receivedType: typeof result, hasData: 'data' in (result as object) }
-    )
+    ),
   };
 }
 

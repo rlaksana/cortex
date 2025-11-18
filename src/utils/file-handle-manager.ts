@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * File Handle Manager Utility
  *
@@ -21,7 +17,7 @@
  * @since 2025
  */
 
-import { constants,promises as fs } from 'fs';
+import { constants, promises as fs } from 'fs';
 type BufferEncoding =
   | 'ascii'
   | 'utf8'
@@ -38,7 +34,7 @@ import { EventEmitter } from 'node:events';
 import { setImmediate } from 'node:timers';
 import { resolve } from 'path';
 
-import { logger } from '@/utils/logger.js';
+import { logger } from './logger.js';
 
 import { generateCorrelationId } from './correlation-id.js';
 
@@ -120,10 +116,11 @@ export interface FileOperationOptions {
  * Custom error for file handle manager operations
  */
 export class FileHandleManagerError extends Error {
+  public override readonly message: string;
   public readonly code: string;
   public readonly path: string | undefined;
   public readonly operation: string | undefined;
-  public readonly cause: Error | undefined;
+  public override readonly cause: Error | undefined;
 
   constructor(
     message: string,

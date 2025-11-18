@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * 8-LOG SYSTEM Service - Session Persistence
  *
@@ -15,6 +11,28 @@
 
 // Import required modules
 import { logger } from '@/utils/logger.js';
+import {
+  hasPropertySimple,
+  safePropertyAccess,
+  isString,
+  isBoolean,
+  isObject,
+  isArray,
+  requirePropertyAccess,
+  isUnknown,
+  isDatabaseCriteria,
+  isIncidentResponse,
+  isReleaseResponse,
+  isRiskResponse,
+  isAssumptionResponse
+} from '../../utils/type-guards.js';
+import type {
+  DatabaseResponse,
+  IncidentResponse,
+  ReleaseResponse,
+  RiskResponse,
+  AssumptionResponse
+} from '../../types/database.js';
 
 // ============================================================================
 // INCIDENT LOG OPERATIONS
@@ -34,77 +52,94 @@ export interface IncidentData {
   incident_commander?: string;
 }
 
-export async function storeIncident(
-  data: IncidentData,
-  scope: Record<string, unknown> = {}
-): Promise<string> {
+export async function storeIncident(data: unknown, scope: unknown = {}): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
+  // Safely extract required properties using type guards
+  const title = requirePropertyAccess(data, 'title', isString);
+  const severity = requirePropertyAccess(data, 'severity', isString);
+  const impact = requirePropertyAccess(data, 'impact', isString);
+  const resolutionStatus = requirePropertyAccess(data, 'resolution_status', isString);
+
+  // Extract optional properties safely
+  const timeline = safePropertyAccess(data, 'timeline', isArray, []);
+  const rootCauseAnalysis = safePropertyAccess(data, 'root_cause_analysis', isString, undefined);
+  const affectedServices = safePropertyAccess(data, 'affected_services', isArray, []);
+  const businessImpact = safePropertyAccess(data, 'business_impact', isString, undefined);
+  const recoveryActions = safePropertyAccess(data, 'recovery_actions', isArray, []);
+  const followUpRequired = safePropertyAccess(data, 'follow_up_required', isBoolean, false);
+  const incidentCommander = safePropertyAccess(data, 'incident_commander', isString);
+
   const result = await db.create('incidentLog', {
-    title: data.title,
-    severity: data.severity,
-    impact: data.impact,
-    resolution_status: data.resolution_status,
+    title,
+    severity,
+    impact,
+    resolution_status: resolutionStatus,
     tags: {
-      ...scope,
-      timeline: data.timeline ?? [],
-      root_cause_analysis: data.root_cause_analysis,
-      affected_services: data.affected_services ?? [],
-      business_impact: data.business_impact,
-      recovery_actions: data.recovery_actions ?? [],
-      follow_up_required: data.follow_up_required ?? false,
-      incident_commander: data.incident_commander,
+      ...(scope && typeof scope === 'object' ? scope : {}),
+      timeline,
+      root_cause_analysis: rootCauseAnalysis,
+      affected_services: affectedServices,
+      business_impact: businessImpact,
+      recovery_actions: recoveryActions,
+      follow_up_required: followUpRequired,
+      incident_commander: incidentCommander,
     },
   });
 
-  logger.info({ incidentId: result.id, severity: data.severity }, 'Incident stored successfully');
+  logger.info({ incidentId: result.id, severity }, 'Incident stored successfully');
   return result.id;
 }
 
-export async function updateIncident(id: string, data: Partial<IncidentData>): Promise<void> {
+export async function updateIncident(id: string, data: unknown): Promise<void> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Invalid incident data provided');
+  }
+
+  const dataObj = data as Record<string, unknown>;
   const updateData: Record<string, unknown> = {};
 
-  if (data.title !== undefined) {
-    updateData.title = data.title;
+  if (hasPropertySimple(dataObj, 'title') && isString(dataObj.title)) {
+    updateData.title = dataObj.title;
   }
-  if (data.severity !== undefined) {
-    updateData.severity = data.severity;
+  if (hasPropertySimple(dataObj, 'severity') && isString(dataObj.severity)) {
+    updateData.severity = dataObj.severity;
   }
-  if (data.impact !== undefined) {
-    updateData.impact = data.impact;
+  if (hasPropertySimple(dataObj, 'impact') && isString(dataObj.impact)) {
+    updateData.impact = dataObj.impact;
   }
-  if (data.resolution_status !== undefined) {
-    updateData.resolution_status = data.resolution_status;
+  if (hasPropertySimple(dataObj, 'resolution_status') && isString(dataObj.resolution_status)) {
+    updateData.resolution_status = dataObj.resolution_status;
   }
 
   // Note: Other fields are stored in tags due to schema limitations
   const tagUpdates: Record<string, unknown> = {};
-  if (data.timeline !== undefined) {
-    tagUpdates.timeline = data.timeline;
+  if (hasPropertySimple(dataObj, 'timeline')) {
+    tagUpdates.timeline = dataObj.timeline;
   }
-  if (data.root_cause_analysis !== undefined) {
-    tagUpdates.root_cause_analysis = data.root_cause_analysis;
+  if (hasPropertySimple(dataObj, 'root_cause_analysis') && isString(dataObj.root_cause_analysis)) {
+    tagUpdates.root_cause_analysis = dataObj.root_cause_analysis;
   }
-  if (data.affected_services !== undefined) {
-    tagUpdates.affected_services = data.affected_services;
+  if (hasPropertySimple(dataObj, 'affected_services') && isArray(dataObj.affected_services, isString)) {
+    tagUpdates.affected_services = dataObj.affected_services;
   }
-  if (data.business_impact !== undefined) {
-    tagUpdates.business_impact = data.business_impact;
+  if (hasPropertySimple(dataObj, 'business_impact') && isString(dataObj.business_impact)) {
+    tagUpdates.business_impact = dataObj.business_impact;
   }
-  if (data.recovery_actions !== undefined) {
-    tagUpdates.recovery_actions = data.recovery_actions;
+  if (hasPropertySimple(dataObj, 'recovery_actions') && isArray(dataObj.recovery_actions, isString)) {
+    tagUpdates.recovery_actions = dataObj.recovery_actions;
   }
-  if (data.follow_up_required !== undefined) {
-    tagUpdates.follow_up_required = data.follow_up_required;
+  if (hasPropertySimple(dataObj, 'follow_up_required') && isBoolean(dataObj.follow_up_required)) {
+    tagUpdates.follow_up_required = dataObj.follow_up_required;
   }
-  if (data.incident_commander !== undefined) {
-    tagUpdates.incident_commander = data.incident_commander;
+  if (hasPropertySimple(dataObj, 'incident_commander') && isString(dataObj.incident_commander)) {
+    tagUpdates.incident_commander = dataObj.incident_commander;
   }
 
   if (Object.keys(updateData).length === 0 && Object.keys(tagUpdates).length === 0) {
@@ -124,71 +159,53 @@ export async function updateIncident(id: string, data: Partial<IncidentData>): P
   );
 }
 
-export async function findIncidents(criteria: {
-  severity?: string;
-  status?: string;
-  limit?: number;
-  offset?: number;
-}): Promise<
-  Array<{
-    id: string;
-    title: string;
-    severity: string;
-    impact: string;
-    resolution_status: string;
-    created_at: Date;
-    updated_at: Date;
-  }>
-> {
+export async function findIncidents(criteria: unknown): Promise<unknown> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
   const whereClause: Record<string, unknown> = {};
 
-  if (criteria.severity) {
-    whereClause.severity = criteria.severity;
-  }
-  if (criteria.status) {
-    whereClause.resolution_status = criteria.status;
+  if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
+    const criteriaObj = criteria as Record<string, unknown>;
+    if (hasPropertySimple(criteriaObj, 'severity') && isString(criteriaObj.severity)) {
+      whereClause.severity = criteriaObj.severity;
+    }
+    if (hasPropertySimple(criteriaObj, 'status') && isString(criteriaObj.status)) {
+      whereClause.resolution_status = criteriaObj.status;
+    }
   }
 
-  const result = await db.find('incidentLog', {
+  const findOptions: Record<string, unknown> = {
     where: whereClause,
     orderBy: { created_at: 'desc' },
-    take: criteria.limit,
-    skip: criteria.offset,
-    select: {
-      id: true,
-      title: true,
-      severity: true,
-      impact: true,
-      resolution_status: true,
-      created_at: true,
-      updated_at: true,
-    },
-  });
+  };
 
-  return result.map(
-    (incident: {
-      id: string;
-      title: string;
-      description: string;
-      severity: string;
-      status: string;
-      created_at: Date;
-      updated_at: Date;
-      tags: Record<string, unknown>;
-    }) => ({
-      id: incident.id,
-      title: incident.title,
-      severity: incident.severity,
-      impact: (incident.tags as unknown)?.impact || '',
-      resolution_status: (incident.tags as unknown)?.resolution_status || 'open',
-      created_at: incident.created_at,
-      updated_at: incident.updated_at,
-    })
-  );
+  if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
+    const criteriaObj = criteria as Record<string, unknown>;
+    if (hasPropertySimple(criteriaObj, 'limit') && typeof criteriaObj.limit === 'number') {
+      findOptions.take = criteriaObj.limit;
+    }
+    if (hasPropertySimple(criteriaObj, 'offset') && typeof criteriaObj.offset === 'number') {
+      findOptions.skip = criteriaObj.offset;
+    }
+  }
+
+  const result = await db.find('incidentLog', findOptions);
+
+  if (!Array.isArray(result)) {
+    return [];
+  }
+
+  return result.filter(isIncidentResponse).map((incident) => ({
+    id: incident.id,
+    title: incident.title,
+    severity: incident.severity,
+    impact: incident.impact || '',
+    resolution_status: incident.resolution_status || 'open',
+    created_at: incident.created_at,
+    updated_at: incident.updated_at,
+  }));
 }
 
 // ============================================================================
@@ -211,59 +228,77 @@ export interface ReleaseData {
   post_release_actions?: string[];
 }
 
-export async function storeRelease(
-  data: ReleaseData,
-  scope: Record<string, unknown> = {}
-): Promise<string> {
+export async function storeRelease(data: unknown, scope: unknown = {}): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const result = await db.create('releaseLog', {
-    data: {
-      version: data.version,
-      release_type: data.release_type,
-      scope: data.scope,
-      status: data.status,
-      tags: {
-        ...scope,
-        release_date: data.release_date,
-        ticket_references: data.ticket_references ?? [],
-        included_changes: data.included_changes ?? [],
-        deployment_strategy: data.deployment_strategy,
-        rollback_plan: data.rollback_plan,
-        testing_status: data.testing_status,
-        approvers: data.approvers ?? [],
-        release_notes: data.release_notes,
-        post_release_actions: data.post_release_actions ?? [],
-      },
-    },
-  });
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Invalid release data provided');
+  }
 
-  logger.info({ releaseId: result.id, version: data.version }, 'Release stored successfully');
+  const dataObj = data as Record<string, unknown>;
+  const scopeObj = (scope && typeof scope === 'object' && !Array.isArray(scope)) ? scope as Record<string, unknown> : {};
+
+  const createData: Record<string, unknown> = {};
+
+  if (hasPropertySimple(dataObj, 'version') && isString(dataObj.version)) {
+    createData.version = dataObj.version;
+  }
+  if (hasPropertySimple(dataObj, 'release_type') && isString(dataObj.release_type)) {
+    createData.release_type = dataObj.release_type;
+  }
+  if (hasPropertySimple(dataObj, 'scope') && isString(dataObj.scope)) {
+    createData.scope = dataObj.scope;
+  }
+  if (hasPropertySimple(dataObj, 'status') && isString(dataObj.status)) {
+    createData.status = dataObj.status;
+  }
+
+  createData.tags = {
+    ...scopeObj,
+    release_date: hasPropertySimple(dataObj, 'release_date') ? dataObj.release_date : undefined,
+    ticket_references: hasPropertySimple(dataObj, 'ticket_references') && isArray(dataObj.ticket_references, isString) ? dataObj.ticket_references : [],
+    included_changes: hasPropertySimple(dataObj, 'included_changes') && isArray(dataObj.included_changes, isString) ? dataObj.included_changes : [],
+    deployment_strategy: hasPropertySimple(dataObj, 'deployment_strategy') ? dataObj.deployment_strategy : undefined,
+    rollback_plan: hasPropertySimple(dataObj, 'rollback_plan') ? dataObj.rollback_plan : undefined,
+    testing_status: hasPropertySimple(dataObj, 'testing_status') ? dataObj.testing_status : undefined,
+    approvers: hasPropertySimple(dataObj, 'approvers') && isArray(dataObj.approvers, isString) ? dataObj.approvers : [],
+    release_notes: hasPropertySimple(dataObj, 'release_notes') ? dataObj.release_notes : undefined,
+    post_release_actions: hasPropertySimple(dataObj, 'post_release_actions') && isArray(dataObj.post_release_actions, isString) ? dataObj.post_release_actions : [],
+  };
+
+  const result = await db.create('releaseLog', createData);
+
+  logger.info({ releaseId: result.id, version: String(createData.version || 'unknown') }, 'Release stored successfully');
   return result.id;
 }
 
-export async function updateRelease(id: string, data: Partial<ReleaseData>): Promise<void> {
+export async function updateRelease(id: string, data: unknown): Promise<void> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Invalid release data provided');
+  }
+
+  const dataObj = data as Record<string, unknown>;
   const updateData: Record<string, unknown> = {};
   const tagUpdates: Record<string, unknown> = {};
 
   // Handle direct fields (those that exist in the schema)
-  if (data.version !== undefined) {
-    updateData.version = data.version;
+  if (hasPropertySimple(dataObj, 'version') && isString(dataObj.version)) {
+    updateData.version = dataObj.version;
   }
-  if (data.release_type !== undefined) {
-    updateData.release_type = data.release_type;
+  if (hasPropertySimple(dataObj, 'release_type') && isString(dataObj.release_type)) {
+    updateData.release_type = dataObj.release_type;
   }
-  if (data.scope !== undefined) {
-    updateData.scope = data.scope;
+  if (hasPropertySimple(dataObj, 'scope') && isString(dataObj.scope)) {
+    updateData.scope = dataObj.scope;
   }
-  if (data.status !== undefined) {
-    updateData.status = data.status;
+  if (hasPropertySimple(dataObj, 'status') && isString(dataObj.status)) {
+    updateData.status = dataObj.status;
   }
 
   // Handle fields stored in tags JSON
@@ -280,8 +315,8 @@ export async function updateRelease(id: string, data: Partial<ReleaseData>): Pro
   ] as const;
 
   for (const field of tagFields) {
-    if (data[field] !== undefined) {
-      tagUpdates[field] = data[field];
+    if (hasPropertySimple(dataObj, field)) {
+      tagUpdates[field] = dataObj[field];
     }
   }
 
@@ -302,79 +337,62 @@ export async function updateRelease(id: string, data: Partial<ReleaseData>): Pro
   );
 }
 
-export async function findReleases(criteria: {
-  version?: string;
-  status?: string;
-  limit?: number;
-  offset?: number;
-}): Promise<
-  Array<{
-    id: string;
-    version: string;
-    release_type: string;
-    scope: string;
-    release_date: Date;
-    status: string;
-    created_at: Date;
-    updated_at: Date;
-  }>
-> {
+export async function findReleases(criteria: unknown): Promise<unknown> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
   const whereClause: Record<string, unknown> = {};
 
-  if (criteria.version) {
-    whereClause.version = {
-      contains: criteria.version,
-      mode: 'insensitive',
-    };
-  }
-  if (criteria.status) {
-    whereClause.status = criteria.status;
+  if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
+    const criteriaObj = criteria as Record<string, unknown>;
+    if (hasPropertySimple(criteriaObj, 'version') && isString(criteriaObj.version)) {
+      whereClause.version = {
+        contains: criteriaObj.version,
+        mode: 'insensitive',
+      };
+    }
+    if (hasPropertySimple(criteriaObj, 'status') && isString(criteriaObj.status)) {
+      whereClause.status = criteriaObj.status;
+    }
   }
 
-  const result = await db.find('releaseLog', {
+  const findOptions: Record<string, unknown> = {
     where: whereClause,
     orderBy: { created_at: 'desc' },
-    take: criteria.limit,
-    skip: criteria.offset,
-    select: {
-      id: true,
-      version: true,
-      release_type: true,
-      scope: true,
-      status: true,
-      created_at: true,
-      updated_at: true,
-      tags: true,
-    },
-  });
+  };
 
-  return result.map(
-    (release: {
-      id: string;
-      version: string;
-      release_type: string;
-      scope: string;
-      status: string;
-      created_at: Date;
-      updated_at: Date;
-      tags: Record<string, unknown>;
-    }) => ({
+  if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
+    const criteriaObj = criteria as Record<string, unknown>;
+    if (hasPropertySimple(criteriaObj, 'limit') && typeof criteriaObj.limit === 'number') {
+      findOptions.take = criteriaObj.limit;
+    }
+    if (hasPropertySimple(criteriaObj, 'offset') && typeof criteriaObj.offset === 'number') {
+      findOptions.skip = criteriaObj.offset;
+    }
+  }
+
+  const result = await db.find('releaseLog', findOptions);
+
+  if (!Array.isArray(result)) {
+    return [];
+  }
+
+  return result.filter(isReleaseResponse).map((release) => {
+    const tags = release.tags as Record<string, unknown> || {};
+    return {
       id: release.id,
       version: release.version,
-      release_type: release.release_type,
-      scope: release.scope,
-      release_date: (release.tags as unknown)?.release_date
-        ? new Date((release.tags as unknown).release_date)
+      release_type: release.release_type || '',
+      scope: release.scope || '',
+      release_date: (tags.release_date && typeof tags.release_date === 'string')
+        ? new Date(tags.release_date)
         : release.created_at,
-      status: release.status,
+      status: release.status || '',
       created_at: release.created_at,
       updated_at: release.updated_at,
-    })
-  );
+    };
+  });
 }
 
 // ============================================================================
@@ -397,62 +415,82 @@ export interface RiskData {
   contingency_plans?: string;
 }
 
-export async function storeRisk(
-  data: RiskData,
-  scope: Record<string, unknown> = {}
-): Promise<string> {
+export async function storeRisk(data: unknown, scope: unknown = {}): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const result = await db.create('riskLog', {
-    data: {
-      title: data.title,
-      category: data.category,
-      risk_level: data.risk_level,
-      impact_description: data.impact_description,
-      status: data.status,
-      tags: {
-        ...scope,
-        probability: data.probability,
-        trigger_events: data.trigger_events ?? [],
-        mitigation_strategies: data.mitigation_strategies ?? [],
-        owner: data.owner ?? null,
-        review_date: data.review_date ?? null,
-        related_decisions: data.related_decisions ?? [],
-        monitoring_indicators: data.monitoring_indicators ?? [],
-        contingency_plans: data.contingency_plans ?? null,
-      },
-    },
-  });
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Invalid risk data provided');
+  }
 
-  logger.info({ riskId: result.id, level: data.risk_level }, 'Risk stored successfully');
+  const dataObj = data as Record<string, unknown>;
+  const scopeObj = (scope && typeof scope === 'object' && !Array.isArray(scope)) ? scope as Record<string, unknown> : {};
+
+  const createData: Record<string, unknown> = {};
+
+  if (hasPropertySimple(dataObj, 'title') && isString(dataObj.title)) {
+    createData.title = dataObj.title;
+  }
+  if (hasPropertySimple(dataObj, 'category') && isString(dataObj.category)) {
+    createData.category = dataObj.category;
+  }
+  if (hasPropertySimple(dataObj, 'risk_level') && isString(dataObj.risk_level)) {
+    createData.risk_level = dataObj.risk_level;
+  }
+  if (hasPropertySimple(dataObj, 'impact_description') && isString(dataObj.impact_description)) {
+    createData.impact_description = dataObj.impact_description;
+  }
+  if (hasPropertySimple(dataObj, 'status') && isString(dataObj.status)) {
+    createData.status = dataObj.status;
+  }
+
+  createData.tags = {
+    ...scopeObj,
+    probability: hasPropertySimple(dataObj, 'probability') ? dataObj.probability : undefined,
+    trigger_events: hasPropertySimple(dataObj, 'trigger_events') && isArray(dataObj.trigger_events, isString) ? dataObj.trigger_events : [],
+    mitigation_strategies: hasPropertySimple(dataObj, 'mitigation_strategies') && isArray(dataObj.mitigation_strategies, isString) ? dataObj.mitigation_strategies : [],
+    owner: hasPropertySimple(dataObj, 'owner') ? dataObj.owner : null,
+    review_date: hasPropertySimple(dataObj, 'review_date') ? dataObj.review_date : null,
+    related_decisions: hasPropertySimple(dataObj, 'related_decisions') && isArray(dataObj.related_decisions, isString) ? dataObj.related_decisions : [],
+    monitoring_indicators: hasPropertySimple(dataObj, 'monitoring_indicators') && isArray(dataObj.monitoring_indicators, isString) ? dataObj.monitoring_indicators : [],
+    contingency_plans: hasPropertySimple(dataObj, 'contingency_plans') ? dataObj.contingency_plans : null,
+  };
+
+  const result = await db.create('riskLog', createData);
+
+  logger.info({ riskId: result.id, level: String(createData.risk_level || 'unknown') }, 'Risk stored successfully');
   return result.id;
 }
 
-export async function updateRisk(id: string, data: Partial<RiskData>): Promise<void> {
+export async function updateRisk(id: string, data: unknown): Promise<void> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Invalid risk data provided');
+  }
+
+  const dataObj = data as Record<string, unknown>;
   const updateData: Record<string, unknown> = {};
   const tagUpdates: Record<string, unknown> = {};
 
   // Handle direct fields (those that exist in the schema)
-  if (data.title !== undefined) {
-    updateData.title = data.title;
+  if (hasPropertySimple(dataObj, 'title') && isString(dataObj.title)) {
+    updateData.title = dataObj.title;
   }
-  if (data.category !== undefined) {
-    updateData.category = data.category;
+  if (hasPropertySimple(dataObj, 'category') && isString(dataObj.category)) {
+    updateData.category = dataObj.category;
   }
-  if (data.risk_level !== undefined) {
-    updateData.risk_level = data.risk_level;
+  if (hasPropertySimple(dataObj, 'risk_level') && isString(dataObj.risk_level)) {
+    updateData.risk_level = dataObj.risk_level;
   }
-  if (data.impact_description !== undefined) {
-    updateData.impact_description = data.impact_description;
+  if (hasPropertySimple(dataObj, 'impact_description') && isString(dataObj.impact_description)) {
+    updateData.impact_description = dataObj.impact_description;
   }
-  if (data.status !== undefined) {
-    updateData.status = data.status;
+  if (hasPropertySimple(dataObj, 'status') && isString(dataObj.status)) {
+    updateData.status = dataObj.status;
   }
 
   // Handle fields stored in tags JSON
@@ -468,8 +506,8 @@ export async function updateRisk(id: string, data: Partial<RiskData>): Promise<v
   ] as const;
 
   for (const field of tagFields) {
-    if (data[field] !== undefined) {
-      tagUpdates[field] = data[field];
+    if (hasPropertySimple(dataObj, field)) {
+      tagUpdates[field] = dataObj[field];
     }
   }
 
@@ -487,67 +525,60 @@ export async function updateRisk(id: string, data: Partial<RiskData>): Promise<v
   logger.info({ riskId: id, updates: Object.keys(updateData).length }, 'Risk updated successfully');
 }
 
-export async function findRisks(criteria: {
-  category?: string;
-  level?: string;
-  status?: string;
-  limit?: number;
-  offset?: number;
-}): Promise<
-  Array<{
-    id: string;
-    title: string;
-    category: string;
-    risk_level: string;
-    probability: string;
-    status: string;
-    created_at: Date;
-    updated_at: Date;
-  }>
-> {
+export async function findRisks(criteria: unknown): Promise<unknown> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
   const whereClause: Record<string, unknown> = {};
 
-  if (criteria.category) {
-    whereClause.category = criteria.category;
-  }
-  if (criteria.level) {
-    whereClause.risk_level = criteria.level;
-  }
-  if (criteria.status) {
-    whereClause.status = criteria.status;
+  if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
+    const criteriaObj = criteria as Record<string, unknown>;
+    if (hasPropertySimple(criteriaObj, 'category') && isString(criteriaObj.category)) {
+      whereClause.category = criteriaObj.category;
+    }
+    if (hasPropertySimple(criteriaObj, 'level') && isString(criteriaObj.level)) {
+      whereClause.risk_level = criteriaObj.level;
+    }
+    if (hasPropertySimple(criteriaObj, 'status') && isString(criteriaObj.status)) {
+      whereClause.status = criteriaObj.status;
+    }
   }
 
-  const result = await db.find('riskLog', {
+  const findOptions: Record<string, unknown> = {
     where: whereClause,
     orderBy: { updated_at: 'desc' },
-    take: criteria.limit,
-    skip: criteria.offset,
-    select: {
-      id: true,
-      title: true,
-      category: true,
-      risk_level: true,
-      status: true,
-      created_at: true,
-      updated_at: true,
-      tags: true,
-    },
-  });
+  };
 
-  return result.map((risk) => ({
-    id: risk.id,
-    title: risk.title,
-    category: risk.category,
-    risk_level: risk.risk_level,
-    probability: (risk.tags as unknown)?.probability || 'unknown',
-    status: risk.status,
-    created_at: risk.created_at,
-    updated_at: risk.updated_at,
-  }));
+  if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
+    const criteriaObj = criteria as Record<string, unknown>;
+    if (hasPropertySimple(criteriaObj, 'limit') && typeof criteriaObj.limit === 'number') {
+      findOptions.take = criteriaObj.limit;
+    }
+    if (hasPropertySimple(criteriaObj, 'offset') && typeof criteriaObj.offset === 'number') {
+      findOptions.skip = criteriaObj.offset;
+    }
+  }
+
+  const result = await db.find('riskLog', findOptions);
+
+  if (!Array.isArray(result)) {
+    return [];
+  }
+
+  return result.filter(isRiskResponse).map((risk) => {
+    const tags = risk.tags as Record<string, unknown> || {};
+    return {
+      id: risk.id,
+      title: risk.title,
+      category: risk.category,
+      risk_level: risk.risk_level || '',
+      probability: (tags.probability && isString(tags.probability)) ? tags.probability : 'unknown',
+      status: risk.status || '',
+      created_at: risk.created_at,
+      updated_at: risk.updated_at,
+    };
+  });
 }
 
 // ============================================================================
@@ -569,48 +600,63 @@ export interface AssumptionData {
   review_frequency?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'as_needed';
 }
 
-export async function storeAssumption(
-  data: AssumptionData,
-  scope: Record<string, unknown> = {}
-): Promise<string> {
+export async function storeAssumption(data: unknown, scope: unknown = {}): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const result = await db.create('assumptionLog', {
-    data: {
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      validation_status: data.validation_status,
-      impact_if_invalid: data.impact_if_invalid,
-      tags: {
-        ...scope,
-        validation_criteria: data.validation_criteria ?? [],
-        validation_date: data.validation_date ?? null,
-        owner: data.owner ?? null,
-        related_assumptions: data.related_assumptions ?? [],
-        dependencies: data.dependencies ?? [],
-        monitoring_approach: data.monitoring_approach ?? null,
-        review_frequency: data.review_frequency ?? null,
-      },
-    },
-  });
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Invalid assumption data provided');
+  }
+
+  const dataObj = data as Record<string, unknown>;
+  const scopeObj = (scope && typeof scope === 'object' && !Array.isArray(scope)) ? scope as Record<string, unknown> : {};
+
+  const createData: Record<string, unknown> = {};
+
+  if (hasPropertySimple(dataObj, 'title') && isString(dataObj.title)) {
+    createData.title = dataObj.title;
+  }
+  if (hasPropertySimple(dataObj, 'description') && isString(dataObj.description)) {
+    createData.description = dataObj.description;
+  }
+  if (hasPropertySimple(dataObj, 'category') && isString(dataObj.category)) {
+    createData.category = dataObj.category;
+  }
+  if (hasPropertySimple(dataObj, 'validation_status') && isString(dataObj.validation_status)) {
+    createData.validation_status = dataObj.validation_status;
+  }
+  if (hasPropertySimple(dataObj, 'impact_if_invalid') && isString(dataObj.impact_if_invalid)) {
+    createData.impact_if_invalid = dataObj.impact_if_invalid;
+  }
+
+  createData.tags = {
+    ...scopeObj,
+    validation_criteria: hasPropertySimple(dataObj, 'validation_criteria') && isArray(dataObj.validation_criteria, isString) ? dataObj.validation_criteria : [],
+    validation_date: hasPropertySimple(dataObj, 'validation_date') ? dataObj.validation_date : null,
+    owner: hasPropertySimple(dataObj, 'owner') ? dataObj.owner : null,
+    related_assumptions: hasPropertySimple(dataObj, 'related_assumptions') && isArray(dataObj.related_assumptions, isString) ? dataObj.related_assumptions : [],
+    dependencies: hasPropertySimple(dataObj, 'dependencies') && isArray(dataObj.dependencies, isString) ? dataObj.dependencies : [],
+    monitoring_approach: hasPropertySimple(dataObj, 'monitoring_approach') ? dataObj.monitoring_approach : null,
+    review_frequency: hasPropertySimple(dataObj, 'review_frequency') ? dataObj.review_frequency : null,
+  };
+
+  const result = await db.create('assumptionLog', createData);
 
   logger.info(
-    { assumptionId: result.id, status: data.validation_status },
+    { assumptionId: result.id, status: String(createData.validation_status || 'unknown') },
     'Assumption stored successfully'
   );
   return result.id;
 }
 
-export async function updateAssumption(id: string, data: Partial<AssumptionData>): Promise<void> {
+export async function updateAssumption(id: string, data: unknown): Promise<void> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
-  const db = new UnifiedDatabaseLayer();
-  await db.initialize();
+  const db = new (UnifiedDatabaseLayer as unknown)();
+  await (db as unknown).initialize();
 
-  const updateData: Record<string, unknown> = {};
-  const tagUpdates: Record<string, unknown> = {};
+  const updateData: unknown = {};
+  const tagUpdates: unknown = {};
 
   // Handle direct fields (those that exist in the schema)
   if (data.title !== undefined) {
@@ -663,27 +709,12 @@ export async function updateAssumption(id: string, data: Partial<AssumptionData>
   );
 }
 
-export async function findAssumptions(criteria: {
-  category?: string;
-  status?: string;
-  limit?: number;
-  offset?: number;
-}): Promise<
-  Array<{
-    id: string;
-    title: string;
-    description: string;
-    category: string;
-    validation_status: string;
-    created_at: Date;
-    updated_at: Date;
-  }>
-> {
+export async function findAssumptions(criteria: unknown): Promise<unknown> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
-  const db = new UnifiedDatabaseLayer();
-  await db.initialize();
+  const db = new (UnifiedDatabaseLayer as unknown)();
+  await (db as unknown).initialize();
 
-  const whereClause: Record<string, unknown> = {};
+  const whereClause: unknown = {};
 
   if (criteria.category) {
     whereClause.category = criteria.category;
@@ -692,7 +723,7 @@ export async function findAssumptions(criteria: {
     whereClause.validation_status = criteria.status;
   }
 
-  const result = await db.find('assumptionLog', {
+  const result = await (db as unknown).find('assumptionLog', {
     where: whereClause,
     orderBy: { updated_at: 'desc' },
     take: criteria.limit,
@@ -708,7 +739,7 @@ export async function findAssumptions(criteria: {
     },
   });
 
-  return result.map((assumption) => ({
+  return result.map((assumption: unknown) => ({
     id: assumption.id,
     title: assumption.title,
     description: assumption.description,
@@ -733,31 +764,17 @@ export interface SessionLogEntry {
   tags: Record<string, unknown>;
 }
 
-export async function getSessionLogDashboard(
-  criteria: {
-    type?: string;
-    limit?: number;
-    offset?: number;
-  } = {}
-): Promise<SessionLogEntry[]> {
+export async function getSessionLogDashboard(criteria: unknown = {}): Promise<unknown> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
-  const db = new UnifiedDatabaseLayer();
-  await db.initialize();
+  const db = new (UnifiedDatabaseLayer as unknown)();
+  await (db as unknown).initialize();
 
   // Since we can't easily replicate the UNION ALL with Qdrant queries,
   // we'll return empty results for now
   void criteria; // Mark as used
 
   // For now, return empty results since $queryRawUnsafe is not supported
-  const result: Array<{
-    log_type: string;
-    id: string;
-    title: string;
-    status: string;
-    created_at: Date;
-    updated_at: Date;
-    tags: Record<string, unknown>;
-  }> = [];
+  const result: unknown[] = [];
 
   return result.map((row: unknown) => ({
     type: row.log_type as 'incident' | 'release' | 'risk' | 'assumption',

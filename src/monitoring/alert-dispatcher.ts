@@ -1,6 +1,4 @@
-﻿// @ts-nocheck
 // EMERGENCY ROLLBACK: Monitoring system type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Alert Dispatcher for MCP Cortex
@@ -15,7 +13,11 @@ export interface DispatchOptions {
 }
 
 // Helper type to avoid inline arrow signature parsing issues in TS 5.9
-type NotificationHandler = (message: string, config: unknown, opts?: DispatchOptions) => Promise<void>;
+type NotificationHandler = (
+  message: string,
+  config: unknown,
+  opts?: DispatchOptions
+) => Promise<void>;
 
 /**
  * Alert dispatcher: routes a message+payload to type+config.
@@ -40,37 +42,63 @@ export class AlertDispatcher {
     if (handler) {
       await handler(message, config, opts);
     } else {
-      throw new Error("Unsupported notification type: " + notificationType);
+      throw new Error('Unsupported notification type: ' + notificationType);
     }
   }
 
-  private async sendEmail(message: string, config: unknown, _opts?: DispatchOptions): Promise<void> {
+  private async sendEmail(
+    message: string,
+    config: unknown,
+    _opts?: DispatchOptions
+  ): Promise<void> {
     const cfg = config as unknown;
-    void message; void cfg; // stub
+    void message;
+    void cfg; // stub
   }
 
-  private async sendSlack(message: string, config: unknown, _opts?: DispatchOptions): Promise<void> {
+  private async sendSlack(
+    message: string,
+    config: unknown,
+    _opts?: DispatchOptions
+  ): Promise<void> {
     const cfg = config as unknown;
-    void message; void cfg; // stub
+    void message;
+    void cfg; // stub
   }
 
-  private async sendPagerDuty(message: string, config: unknown, _opts?: DispatchOptions): Promise<void> {
+  private async sendPagerDuty(
+    message: string,
+    config: unknown,
+    _opts?: DispatchOptions
+  ): Promise<void> {
     const cfg = config as unknown;
-    void message; void cfg; // stub
+    void message;
+    void cfg; // stub
   }
 
-  private async sendWebhook(message: string, config: unknown, _opts?: DispatchOptions): Promise<void> {
+  private async sendWebhook(
+    message: string,
+    config: unknown,
+    _opts?: DispatchOptions
+  ): Promise<void> {
     const cfg = config as unknown;
-    void message; void cfg; // stub
+    void message;
+    void cfg; // stub
   }
 
   private async sendSNS(message: string, config: unknown, _opts?: DispatchOptions): Promise<void> {
     const cfg = config as unknown;
-    void message; void cfg; // stub
+    void message;
+    void cfg; // stub
   }
 
-  private async sendTeams(message: string, config: unknown, _opts?: DispatchOptions): Promise<void> {
+  private async sendTeams(
+    message: string,
+    config: unknown,
+    _opts?: DispatchOptions
+  ): Promise<void> {
     const cfg = config as unknown;
-    void message; void cfg; // stub
+    void message;
+    void cfg; // stub
   }
 }

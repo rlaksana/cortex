@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Temporal Contradiction Detection Strategy
  *
@@ -598,10 +593,7 @@ export class TemporalContradictionStrategy {
 
       return JSON.parse(response.choices[0].message.content) as TemporalAnalysisResult;
     } catch (error) {
-      logger.error(
-        { error, item1Id: item1.id, item2Id: item2.id },
-        'ZAI temporal analysis failed'
-      );
+      logger.error({ error, item1Id: item1.id, item2Id: item2.id }, 'ZAI temporal analysis failed');
       throw error;
     }
   }
@@ -965,4 +957,3 @@ Provide detailed temporal analysis focusing on timeline consistency and sequence
  * Export singleton instance
  */
 export const temporalContradictionStrategy = new TemporalContradictionStrategy();
-

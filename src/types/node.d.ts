@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 // Type declarations for Node.js built-in modules with proper ESM support
 declare module 'crypto' {
   export * from 'crypto';

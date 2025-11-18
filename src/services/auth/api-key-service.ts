@@ -1,11 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * API Key Management Service for Cortex MCP
  * Handles creation, validation, and management of API keys for MCP clients
@@ -17,7 +9,13 @@ import { logger } from '@/utils/logger.js';
 
 import { type AuthService } from './auth-service.js';
 // import { AuditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
-import { type ApiKey, type AuthContext,type AuthScope, type SecurityAuditLog, type User } from '../../types/auth-types.js';
+import {
+  type ApiKey,
+  type AuthContext,
+  type AuthScope,
+  type SecurityAuditLog,
+  type User,
+} from '../../types/auth-types.js';
 
 export interface CreateApiKeyRequest {
   name: string;

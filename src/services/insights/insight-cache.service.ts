@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Insight Cache Service
  *
@@ -192,7 +188,7 @@ export class InsightCacheService {
       // Generate semantic hash
       const semanticHash = this.config.enableSemanticHashing
         ? this.generateSemanticHash(insights, metadata)
-        : this.generateSimpleHash(insights.map(i => JSON.stringify(i)));
+        : this.generateSimpleHash(insights.map((i) => JSON.stringify(i)));
 
       const entry: CacheEntry = {
         id: this.generateEntryId(),
@@ -425,7 +421,11 @@ export class InsightCacheService {
         confidence: metadata.confidence,
       };
 
-      return this.generateSimpleHash([JSON.stringify(hashData), metadata.itemIds.join(','), metadata.strategies.join(',')]);
+      return this.generateSimpleHash([
+        JSON.stringify(hashData),
+        metadata.itemIds.join(','),
+        metadata.strategies.join(','),
+      ]);
     } catch (error) {
       logger.error({ error }, 'Semantic hash generation failed');
       return this.generateSimpleHash([Date.now().toString()]);
@@ -479,16 +479,19 @@ export class InsightCacheService {
   private async compressInsights(insights: InsightTypeUnion[]): Promise<InsightTypeUnion[]> {
     try {
       // Simple compression: remove redundant fields and optimize structure
-      return insights.map((insight): InsightTypeUnion => ({
-        ...insight,
-        // Keep essential fields, remove verbose metadata for caching
-        metadata: {
-          generated_at: (insight as unknown).metadata?.['generated_at'] || new Date().toISOString(),
-          generated_by: (insight as unknown).metadata?.['generated_by'] || 'system',
-          processing_time_ms: (insight as unknown).metadata?.['processing_time_ms'] || 0,
-          data_sources: (insight as unknown).metadata?.['data_sources'] || [],
-        },
-      }));
+      return insights.map(
+        (insight): InsightTypeUnion => ({
+          ...insight,
+          // Keep essential fields, remove verbose metadata for caching
+          metadata: {
+            generated_at:
+              (insight as unknown).metadata?.['generated_at'] || new Date().toISOString(),
+            generated_by: (insight as unknown).metadata?.['generated_by'] || 'system',
+            processing_time_ms: (insight as unknown).metadata?.['processing_time_ms'] || 0,
+            data_sources: (insight as unknown).metadata?.['data_sources'] || [],
+          },
+        })
+      );
     } catch (error) {
       logger.error({ error }, 'Insight compression failed');
       return insights;

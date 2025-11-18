@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Idempotent Store Service
  *
@@ -211,7 +207,8 @@ export class IdempotentStoreService {
       if (searchResults.results.length > 0) {
         // Return the most recent match
         const sortedResults = searchResults.results.sort(
-          (a: unknown, b: unknown) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          (a: unknown, b: unknown) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
 
         return this.searchResultToKnowledgeItem(sortedResults[0]);
@@ -307,36 +304,36 @@ export class IdempotentStoreService {
     const data = item.data;
     switch (item.kind) {
       case 'section':
-        parts.push(data.title || '');
-        parts.push(data.content || '');
-        parts.push(data.heading || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.content || ''));
+        parts.push(String(data.heading || ''));
         break;
       case 'decision':
-        parts.push(data.title || '');
-        parts.push(data.rationale || '');
-        parts.push(data.component || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.rationale || ''));
+        parts.push(String(data.component || ''));
         break;
       case 'issue':
-        parts.push(data.title || '');
-        parts.push(data.description || '');
-        parts.push(data.status || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.description || ''));
+        parts.push(String(data.status || ''));
         break;
       case 'todo':
-        parts.push(data.title || '');
-        parts.push(data.description || '');
-        parts.push(data.status || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.description || ''));
+        parts.push(String(data.status || ''));
         break;
       case 'runbook':
-        parts.push(data.title || '');
-        parts.push(data.description || '');
+        parts.push(String(data.title || ''));
+        parts.push(String(data.description || ''));
         if (Array.isArray(data.steps)) {
           parts.push(data.steps.join(''));
         }
         break;
       default:
         // Generic extraction
-        parts.push(data.title || data.name || '');
-        parts.push(data.description || data.content || '');
+        parts.push(String(data.title || data.name || ''));
+        parts.push(String(data.description || data.content || ''));
         if (typeof data === 'string') {
           parts.push(data);
         } else {

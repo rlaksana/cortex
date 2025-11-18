@@ -1,0 +1,410 @@
+# =============================================================================
+# CORTEX MEMORY MCP - STAGING DEPLOYMENT MANIFEST
+# =============================================================================
+# Production-like staging environment for testing before production deployment
+#
+# Purpose: Validate application behavior in production-like conditions
+# Environment: Staging (between development and production)
+# Monitoring: Full monitoring stack enabled
+# Security: Production security configurations applied
+#
+# Usage:
+#   docker-compose -f docker-compose.staging.yml up -d
+#   docker-compose -f docker-compose.staging.yml down
+#   docker-compose -f docker-compose.staging.yml ps
+#
+# Environment: Copy .env.staging to .env and configure staging-specific values
+# =============================================================================
+
+version: '3.8'
+
+networks:
+  cortex-staging:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.22.0.0/16
+
+  monitoring-staging:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.23.0.0/16
+
+volumes:
+  qdrant-staging-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/cortex-staging/data/qdrant
+
+  prometheus-staging-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/cortex-staging/data/prometheus
+
+  grafana-staging-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/cortex-staging/data/grafana
+
+  cortex-staging-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/cortex-staging/logs
+
+  backups-staging:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/cortex-staging/backups
+
+services:
+  # Qdrant Vector Database - Staging Configuration
+  qdrant-staging:
+    image: qdrant/qdrant:v1.7.4
+    container_name: cortex-qdrant-staging
+    restart: unless-stopped
+    ports:
+      - '16333:6333'  # HTTP API (different port for staging)
+      - '16334:6334'  # gRPC API
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__LOG_LEVEL=INFO
+      - QDRANT__SERVICE__MAX_REQUEST_SIZE_MB=32
+      - QDRANT__STORAGE__PERFORMANCE__SEARCH_RATE_LIMIT_DISABLED=false
+      - QDRANT__STORAGE__PERFORMANCE__MAX_SEARCH_THREADS=2
+    volumes:
+      - qdrant-staging-data:/qdrant/storage
+      - ./docker/qdrant/staging-config:/qdrant/config:ro
+    networks:
+      - cortex-staging
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 3G
+        reservations:
+          cpus: '0.75'
+          memory: 1.5G
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:6333/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '3'
+    labels:
+      - "com.cortex.environment=staging"
+      - "com.cortex.service=qdrant"
+
+  # Cortex Memory MCP Service - Staging Instance
+  cortex-mcp-staging:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: runtime
+      args:
+        - BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+        - VERSION=2.0.1-staging
+        - VCS_REF=${GIT_COMMIT:-unknown}
+    container_name: cortex-mcp-staging
+    restart: unless-stopped
+    ports:
+      - '13000:3000'  # Health check endpoint
+      - '19090:9090'  # Metrics endpoint
+    environment:
+      - NODE_ENV=staging
+      - LOG_LEVEL=debug
+      - DEBUG_MODE=true
+      - QDRANT_HOST=qdrant-staging
+      - QDRANT_PORT=6333
+      - MCP_SERVER_NAME=cortex-mcp-staging
+      - INSTANCE_ID=staging-01
+      - ENABLE_METRICS=true
+      - METRICS_PORT=9090
+      - HEALTH_CHECK_PORT=3000
+      - RATE_LIMIT_WINDOW_MS=600000
+      - RATE_LIMIT_MAX_REQUESTS=750
+      - MEMORY_MAX_ITEMS=75000
+      - EMBEDDING_MODEL=text-embedding-ada-002
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - MCP_API_KEY=${MCP_API_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    volumes:
+      - cortex-staging-logs:/app/logs
+      - backups-staging:/app/backups
+      - ./docker/cortex/staging-config:/app/config:ro
+    networks:
+      - cortex-staging
+      - monitoring-staging
+    depends_on:
+      qdrant-staging:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 6G
+        reservations:
+          cpus: '0.75'
+          memory: 3G
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '5'
+    labels:
+      - "com.cortex.environment=staging"
+      - "com.cortex.service=cortex-mcp"
+
+  # Prometheus Metrics Collection - Staging
+  prometheus-staging:
+    image: prom/prometheus:v2.47.2
+    container_name: cortex-prometheus-staging
+    restart: unless-stopped
+    ports:
+      - '19091:9090'
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--storage.tsdb.retention.size=10GB'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--web.external-url=http://localhost:19091'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+    volumes:
+      - ./docker/prometheus/staging:/etc/prometheus:ro
+      - prometheus-staging-data:/prometheus
+    networks:
+      - monitoring-staging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    healthcheck:
+      test:
+        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:9090/-/healthy']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '25m'
+        max-file: '2'
+    labels:
+      - "com.cortex.environment=staging"
+      - "com.cortex.service=prometheus"
+
+  # Grafana Dashboard - Staging
+  grafana-staging:
+    image: grafana/grafana:10.2.0
+    container_name: cortex-grafana-staging
+    restart: unless-stopped
+    ports:
+      - '13001:3000'
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-staging-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_AUTH_DISABLE_LOGIN_FORM=false
+      - GF_SECURITY_ALLOW_EMBEDDING=false
+      - GF_SECURITY_COOKIE_SECURE=false  # Staging can use HTTP
+      - GF_SECURITY_COOKIE_SAMESITE=strict
+      - GF_SERVER_DOMAIN=${GRAFANA_DOMAIN:-staging.localhost}
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://staging.localhost:13001/}
+      - GF_SMTP_ENABLED=${SMTP_ENABLED:-false}
+      - GF_SMTP_HOST=${SMTP_HOST}
+      - GF_SMTP_USER=${SMTP_USER}
+      - GF_SMTP_PASSWORD=${SMTP_PASSWORD}
+      - GF_SMTP_FROM_ADDRESS=${SMTP_FROM}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel,grafana-clock-panel
+    volumes:
+      - grafana-staging-data:/var/lib/grafana
+      - ./docker/grafana/staging/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/staging/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - monitoring-staging
+    depends_on:
+      prometheus-staging:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
+        reservations:
+          cpus: '0.125'
+          memory: 256M
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '25m'
+        max-file: '2'
+    labels:
+      - "com.cortex.environment=staging"
+      - "com.cortex.service=grafana"
+
+  # Node Exporter for System Metrics - Staging
+  node-exporter-staging:
+    image: prom/node-exporter:v1.6.1
+    container_name: cortex-node-exporter-staging
+    restart: unless-stopped
+    ports:
+      - '19100:9100'
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.diskstats.ignored-devices=^(ram|loop|fd|(h|s|v)d[a-z]|nvme\\d+n\\d+p)\\d+$$'
+      - '--collector.netclass.ignored-devices=^(veth.*|br-.*|docker.*)$$'
+      - '--no-collector.ipvs'
+    volumes:
+      - '/:/host:ro,rslave'
+    networks:
+      - monitoring-staging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
+    healthcheck:
+      test:
+        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:9100/metrics']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '1'
+    labels:
+      - "com.cortex.environment=staging"
+      - "com.cortex.service=node-exporter"
+
+  # Nginx Reverse Proxy - Staging
+  nginx-staging:
+    image: nginx:1.25-alpine
+    container_name: cortex-nginx-staging
+    restart: unless-stopped
+    ports:
+      - '8000:80'
+      - '8443:443'
+    volumes:
+      - ./docker/nginx/staging/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/staging/conf.d:/etc/nginx/conf.d:ro
+      - ./docker/nginx/staging/ssl:/etc/nginx/ssl:ro
+      - ./docker/nginx/staging/logs:/var/log/nginx
+    networks:
+      - cortex-staging
+      - monitoring-staging
+    depends_on:
+      - cortex-mcp-staging
+      - grafana-staging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.125'
+          memory: 128M
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '25m'
+        max-file: '2'
+    labels:
+      - "com.cortex.environment=staging"
+      - "com.cortex.service=nginx"
+
+  # Automated Backup Service - Staging
+  backup-service-staging:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backup
+    container_name: cortex-backup-staging
+    restart: unless-stopped
+    environment:
+      - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 4 * * *}  # 4 AM UTC
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
+      - QDRANT_HOST=qdrant-staging
+      - QDRANT_PORT=6333
+      - S3_BUCKET=${STAGING_S3_BACKUP_BUCKET}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+    volumes:
+      - backups-staging:/app/backups
+      - ./docker/backup/staging/config:/app/config:ro
+    networks:
+      - cortex-staging
+    depends_on:
+      qdrant-staging:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
+        reservations:
+          cpus: '0.125'
+          memory: 256M
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '25m'
+        max-file: '2'
+    labels:
+      - "com.cortex.environment=staging"
+      - "com.cortex.service=backup"

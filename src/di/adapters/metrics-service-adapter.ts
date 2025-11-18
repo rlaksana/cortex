@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: DI container interface compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Metrics Service Adapter
@@ -15,6 +13,7 @@
 
 import { metricsService } from '../../monitoring/metrics-service.js';
 import type { IMetricsService } from '../service-interfaces.js';
+import type { OperationType } from '../../monitoring/operation-types.js';
 
 /**
  * Adapter for Metrics service
@@ -29,7 +28,7 @@ export class MetricsServiceAdapter implements IMetricsService {
     // Simplified implementation that maps to the underlying service
     // Using recordOperation with minimal metadata to avoid type conflicts
     this.service.recordOperation(
-      'memory_store' as unknown, // Default operation type
+      'memory_store' as OperationType, // Default operation type
       0, // No latency for increment
       true, // Assume success
       {
@@ -43,7 +42,7 @@ export class MetricsServiceAdapter implements IMetricsService {
    */
   gauge(name: string, value: number, tags?: Record<string, string>): void {
     this.service.recordOperation(
-      'memory_store' as unknown, // Default operation type
+      'memory_store' as OperationType, // Default operation type
       0, // No latency for gauge
       true, // Assume success
       {
@@ -57,7 +56,7 @@ export class MetricsServiceAdapter implements IMetricsService {
    */
   histogram(name: string, value: number, tags?: Record<string, string>): void {
     this.service.recordOperation(
-      'memory_store' as unknown, // Default operation type
+      'memory_store' as OperationType, // Default operation type
       value, // Use value as latency for histogram
       true, // Assume success
       {
@@ -71,7 +70,7 @@ export class MetricsServiceAdapter implements IMetricsService {
    */
   timing(name: string, duration: number, tags?: Record<string, string>): void {
     this.service.recordOperation(
-      'memory_store' as unknown, // Default operation type
+      'memory_store' as OperationType, // Default operation type
       duration, // Timing as latency
       true, // Assume success
       {}

@@ -1,11 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * API Service - Comprehensive API management for Cortex Memory system
  * Provides RESTful API, GraphQL, authentication, rate limiting, and monitoring capabilities
@@ -260,7 +252,10 @@ export class ApiService {
   /**
    * Validate API request
    */
-  async validateRequest(request: ApiRequest, endpoint: ApiEndpoint): Promise<{
+  async validateRequest(
+    request: ApiRequest,
+    endpoint: ApiEndpoint
+  ): Promise<{
     valid: boolean;
     errors: string[];
   }> {
@@ -324,12 +319,7 @@ export class ApiService {
     return { valid: false, error: 'Invalid authentication credentials' };
   }
 
-  private updateMetrics(
-    path: string,
-    method: string,
-    statusCode: number,
-    duration: number
-  ): void {
+  private updateMetrics(path: string, method: string, statusCode: number, duration: number): void {
     // Create individual metric entry
     const metric: ApiMetrics = {
       endpoint: path,
@@ -357,7 +347,8 @@ export class ApiService {
 
     // Update average response time
     this.aggregatedMetrics.averageResponseTime =
-      (this.aggregatedMetrics.averageResponseTime * (this.aggregatedMetrics.totalRequests - 1) + duration) /
+      (this.aggregatedMetrics.averageResponseTime * (this.aggregatedMetrics.totalRequests - 1) +
+        duration) /
       this.aggregatedMetrics.totalRequests;
 
     // Update endpoint metrics
@@ -378,8 +369,7 @@ export class ApiService {
 
     if (statusCode >= 400) {
       endpointMetric.errorRate =
-        ((endpointMetric.errorRate * (endpointMetric.requests - 1)) + 1) /
-        endpointMetric.requests;
+        (endpointMetric.errorRate * (endpointMetric.requests - 1) + 1) / endpointMetric.requests;
     }
 
     // Update status codes
@@ -393,14 +383,11 @@ export class ApiService {
 export const apiService = new ApiService();
 
 // Export convenience functions
-export const registerApiEndpoint = (endpoint: ApiEndpoint) =>
-  apiService.registerEndpoint(endpoint);
+export const registerApiEndpoint = (endpoint: ApiEndpoint) => apiService.registerEndpoint(endpoint);
 
-export const registerApiVersion = (version: ApiVersion) =>
-  apiService.registerVersion(version);
+export const registerApiVersion = (version: ApiVersion) => apiService.registerVersion(version);
 
-export const handleApiRequest = (request: ApiRequest) =>
-  apiService.handleRequest(request);
+export const handleApiRequest = (request: ApiRequest) => apiService.handleRequest(request);
 
 export const getApiMetrics = () => apiService.getMetrics();
 

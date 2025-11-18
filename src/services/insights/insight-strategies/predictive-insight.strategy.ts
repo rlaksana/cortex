@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Predictive Insight Strategy
  *
@@ -316,7 +312,9 @@ export class PredictiveInsightStrategy {
         (item) =>
           item.kind === 'runbook' ||
           item.kind === 'todo' ||
-          (item.data && (item.data as unknown).tags && (item.data as unknown).tags.includes('process'))
+          (item.data &&
+            (item.data as unknown).tags &&
+            (item.data as unknown).tags.includes('process'))
       );
 
       if (processItems.length < 3) {
@@ -725,7 +723,10 @@ Return only the JSON response, no additional text.
   /**
    * Extract collaboration data from items
    */
-  private extractCollaborationData(items: KnowledgeItem[]): { items: KnowledgeItem[]; patterns: unknown[] } {
+  private extractCollaborationData(items: KnowledgeItem[]): {
+    items: KnowledgeItem[];
+    patterns: unknown[];
+  } {
     const collaborationItems = items.filter((item) => {
       // Look for collaboration indicators
       const content = this.extractKeyContent(item).toLowerCase();
@@ -790,13 +791,18 @@ Return only the JSON response, no additional text.
   /**
    * Predict collaboration trends
    */
-  private predictCollaborationTrends(collaborationData: { items: KnowledgeItem[]; patterns: unknown[] }): unknown[] {
+  private predictCollaborationTrends(collaborationData: {
+    items: KnowledgeItem[];
+    patterns: unknown[];
+  }): unknown[] {
     const predictions = [];
 
     if (collaborationData.patterns.length > 0) {
       const avgIntensity =
-        collaborationData.patterns.reduce((sum: number, pattern: unknown) => sum + pattern.intensity, 0) /
-        collaborationData.patterns.length;
+        collaborationData.patterns.reduce(
+          (sum: number, pattern: unknown) => sum + pattern.intensity,
+          0
+        ) / collaborationData.patterns.length;
 
       predictions.push({
         prediction: `Collaboration intensity will ${avgIntensity > 3 ? 'increase' : 'moderate'} across teams`,
@@ -871,9 +877,15 @@ Return only the JSON response, no additional text.
       category: 'recommendation',
       recommendation_data: {
         action_type: 'preparatory_action',
-        priority: this.mapImpactToPriorityLevel(analysis.impact_assessment) as 'low' | 'medium' | 'high' | 'critical',
+        priority: this.mapImpactToPriorityLevel(analysis.impact_assessment) as
+          | 'low'
+          | 'medium'
+          | 'high'
+          | 'critical',
         effort_estimate: primaryRecommendation.effort_estimate,
-        impact_assessment: (analysis.impact_assessment === 'critical' ? 'high' : analysis.impact_assessment) as 'low' | 'medium' | 'high' | undefined,
+        impact_assessment: (analysis.impact_assessment === 'critical'
+          ? 'high'
+          : analysis.impact_assessment) as 'low' | 'medium' | 'high' | undefined,
         dependencies: primaryRecommendation.dependencies,
         success_probability: analysis.confidence,
       },

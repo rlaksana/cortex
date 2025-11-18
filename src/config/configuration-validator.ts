@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Configuration Validation System
  *
@@ -22,7 +18,8 @@ import {
 import type {
   ValidationError,
   ValidationResult,
-  ValidationWarning} from '../types/config.js';
+  ValidationWarning,
+} from '../types/core-interfaces.js';
 import type { Dict, JSONValue } from '../types/index.js';
 
 // ============================================================================
@@ -35,10 +32,17 @@ export interface ExtendedValidationResult extends ValidationResult {
 
 export interface ExtendedValidationError extends ValidationError {
   constraint?: string;
+  /** Field path where the error occurred (alias for field) */
+  path?: string;
+  /** The invalid value that caused the error (extending base value property) */
+  value?: unknown;
 }
 
 export interface ExtendedValidationWarning extends ValidationWarning {
-  suggestion?: string;
+  /** Field path where the warning occurred (alias for field) */
+  path?: string;
+  /** The value that triggered the warning (extending base value property) */
+  value?: unknown;
 }
 
 export interface ValidationMetadata {
@@ -99,6 +103,7 @@ export class ConfigurationValidator {
             path: prop,
             value: configObj[prop],
             constraint: 'Use standard property names with Ms suffix',
+            timestamp: new Date().toISOString(),
           });
         } else {
           warnings.push({
@@ -107,6 +112,7 @@ export class ConfigurationValidator {
             path: prop,
             value: configObj[prop],
             suggestion: `Use '${prop}Ms' instead of '${prop}'`,
+            timestamp: new Date().toISOString(),
           });
         }
       }
@@ -126,6 +132,7 @@ export class ConfigurationValidator {
             path: legacyProp,
             value: configObj[legacyProp],
             suggestion: `Update configuration to use '${prop}' directly`,
+            timestamp: new Date().toISOString(),
           });
         } else {
           errors.push({
@@ -133,6 +140,7 @@ export class ConfigurationValidator {
             message: `Required property '${prop}' is missing.`,
             path: prop,
             constraint: 'Property is required',
+            timestamp: new Date().toISOString(),
           });
         }
       }
@@ -155,13 +163,15 @@ export class ConfigurationValidator {
             code: 'SCHEMA_VALIDATION_ERROR',
             message: error,
             constraint: 'Zod schema validation',
+            timestamp: new Date().toISOString(),
           });
         });
       }
     }
 
     return {
-      valid: errors.length === 0 && (!this.options.strict || warnings.length === 0),
+      isValid: errors.length === 0 && (!this.options.strict || warnings.length === 0),
+      valid: errors.length === 0 && (!this.options.strict || warnings.length === 0), // Backward compatibility
       errors,
       warnings,
       metadata: {
@@ -197,6 +207,7 @@ export class ConfigurationValidator {
             path: prop,
             value: configObj[prop],
             constraint: 'Use standard property names with Ms suffix',
+            timestamp: new Date().toISOString(),
           });
         } else {
           warnings.push({
@@ -205,6 +216,7 @@ export class ConfigurationValidator {
             path: prop,
             value: configObj[prop],
             suggestion: `Use '${prop}Ms' instead of '${prop}'`,
+            timestamp: new Date().toISOString(),
           });
         }
       }
@@ -224,6 +236,7 @@ export class ConfigurationValidator {
             path: legacyProp,
             value: configObj[legacyProp],
             suggestion: `Update configuration to use '${prop}' directly`,
+            timestamp: new Date().toISOString(),
           });
         } else {
           errors.push({
@@ -231,6 +244,7 @@ export class ConfigurationValidator {
             message: `Required property '${prop}' is missing.`,
             path: prop,
             constraint: 'Property is required',
+            timestamp: new Date().toISOString(),
           });
         }
       }
@@ -253,13 +267,15 @@ export class ConfigurationValidator {
             code: 'SCHEMA_VALIDATION_ERROR',
             message: error,
             constraint: 'Zod schema validation',
+            timestamp: new Date().toISOString(),
           });
         });
       }
     }
 
     return {
-      valid: errors.length === 0 && (!this.options.strict || warnings.length === 0),
+      isValid: errors.length === 0 && (!this.options.strict || warnings.length === 0),
+      valid: errors.length === 0 && (!this.options.strict || warnings.length === 0), // Backward compatibility
       errors,
       warnings,
       metadata: {
@@ -289,7 +305,8 @@ export class ConfigurationValidator {
         type = 'http-client';
       } else {
         return {
-          valid: false,
+          isValid: false,
+          valid: false, // Backward compatibility
           errors: [
             {
               code: 'UNKNOWN_CONFIGURATION_TYPE',
@@ -297,6 +314,7 @@ export class ConfigurationValidator {
               path: undefined,
               value: undefined,
               constraint: 'Type must be "health-check" or "http-client"',
+              timestamp: new Date().toISOString(),
             } as ExtendedValidationError,
           ],
           warnings: [],
@@ -311,7 +329,8 @@ export class ConfigurationValidator {
         return this.validateHttpClientConfig(config);
       default:
         return {
-          valid: false,
+          isValid: false,
+          valid: false, // Backward compatibility
           errors: [
             {
               code: 'UNSUPPORTED_CONFIGURATION_TYPE',
@@ -319,6 +338,7 @@ export class ConfigurationValidator {
               path: undefined,
               value: undefined,
               constraint: 'Supported types: "health-check", "http-client"',
+              timestamp: new Date().toISOString(),
             } as ExtendedValidationError,
           ],
           warnings: [],
@@ -329,13 +349,18 @@ export class ConfigurationValidator {
   /**
    * Validate multiple configuration objects
    */
-  validateMultipleConfigurations(configs: Array<{ config: unknown; type?: string; name?: string }>): {
+  validateMultipleConfigurations(
+    configs: Array<{ config: unknown; type?: string; name?: string }>
+  ): {
     [name: string]: ExtendedValidationResult;
   } {
     const results: { [name: string]: ExtendedValidationResult } = {};
 
     for (const { config, type, name = 'unnamed' } of configs) {
-      results[name] = this.validateConfiguration(config, type as 'health-check' | 'http-client' | 'auto');
+      results[name] = this.validateConfiguration(
+        config,
+        type as 'health-check' | 'http-client' | 'auto'
+      );
     }
 
     return results;
@@ -353,13 +378,18 @@ export class ConfigurationValidator {
     // Validate timeout properties are numbers
     const timeoutProps = ['timeout', 'timeoutMs'];
     for (const prop of timeoutProps) {
-      if (prop in config && typeof config[prop] === 'number' ? 'number' : typeof config[prop] !== 'number') {
+      if (
+        prop in config && typeof config[prop] === 'number'
+          ? 'number'
+          : typeof config[prop] !== 'number'
+      ) {
         errors.push({
           code: 'INVALID_TYPE',
           message: `Property '${prop}' must be a number, got ${typeof config[prop] === 'number' ? 'number' : typeof config[prop]}.`,
           path: prop,
           value: config[prop],
           constraint: 'Must be a number',
+          timestamp: new Date().toISOString(),
         });
       }
     }
@@ -367,13 +397,18 @@ export class ConfigurationValidator {
     // Validate retry properties are numbers
     const retryProps = ['retries', 'retryAttempts', 'retryDelay', 'retryDelayMs'];
     for (const prop of retryProps) {
-      if (prop in config && typeof config[prop] === 'number' ? 'number' : typeof config[prop] !== 'number') {
+      if (
+        prop in config && typeof config[prop] === 'number'
+          ? 'number'
+          : typeof config[prop] !== 'number'
+      ) {
         errors.push({
           code: 'INVALID_TYPE',
           message: `Property '${prop}' must be a number, got ${typeof config[prop] === 'number' ? 'number' : typeof config[prop]}.`,
           path: prop,
           value: config[prop],
           constraint: 'Must be a number',
+          timestamp: new Date().toISOString(),
         });
       }
     }
@@ -386,6 +421,7 @@ export class ConfigurationValidator {
         path: 'headers',
         value: config.headers,
         constraint: 'Must be an object',
+        timestamp: new Date().toISOString(),
       });
     }
   }
@@ -407,6 +443,7 @@ export class ConfigurationValidator {
             path: prop,
             value: value,
             constraint: 'Must be >= 0',
+            timestamp: new Date().toISOString(),
           });
         } else if (value > 300000) {
           warnings.push({
@@ -415,6 +452,7 @@ export class ConfigurationValidator {
             path: prop,
             value: value,
             suggestion: 'Consider using a timeout of 30 seconds or less',
+            timestamp: new Date().toISOString(),
           });
         }
       }
@@ -432,6 +470,7 @@ export class ConfigurationValidator {
             path: prop,
             value: value,
             constraint: 'Must be >= 0',
+            timestamp: new Date().toISOString(),
           });
         } else if (value > 10) {
           warnings.push({
@@ -440,6 +479,7 @@ export class ConfigurationValidator {
             path: prop,
             value: value,
             suggestion: 'Consider using 3-5 retries or less',
+            timestamp: new Date().toISOString(),
           });
         }
       }
@@ -457,6 +497,7 @@ export class ConfigurationValidator {
             path: prop,
             value: value,
             constraint: 'Must be >= 0',
+            timestamp: new Date().toISOString(),
           });
         } else if (value > 60000) {
           warnings.push({
@@ -465,6 +506,7 @@ export class ConfigurationValidator {
             path: prop,
             value: value,
             suggestion: 'Consider using a retry delay of 10 seconds or less',
+            timestamp: new Date().toISOString(),
           });
         }
       }

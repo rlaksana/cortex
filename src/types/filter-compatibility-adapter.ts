@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Filter Compatibility Adapter
  *
@@ -13,8 +9,14 @@
  * @since 2025
  */
 
-import type { LogicalOperators,QueryFilter } from './database-generics.js';
-import type { DateRangeFilter,FilterCondition, QueryFilters, ScopeFilter, VectorFilter } from './database-types-enhanced.js';
+import type { LogicalOperators, QueryFilter } from './database-generics.js';
+import type {
+  DateRangeFilter,
+  FilterCondition,
+  QueryFilters,
+  ScopeFilter,
+  VectorFilter,
+} from './database-types-enhanced.js';
 
 // ============================================================================
 // Unified Filter Interface
@@ -103,9 +105,24 @@ export class FilterAdapter {
     if (!filter || typeof filter !== 'object') return false;
 
     const f = filter as Record<string, unknown>;
-    const mongoOperators = ['$eq', '$ne', '$gt', '$gte', '$lt', '$lte', '$in', '$nin', '$exists', '$regex', '$like', '$and', '$or', '$not'];
+    const mongoOperators = [
+      '$eq',
+      '$ne',
+      '$gt',
+      '$gte',
+      '$lt',
+      '$lte',
+      '$in',
+      '$nin',
+      '$exists',
+      '$regex',
+      '$like',
+      '$and',
+      '$or',
+      '$not',
+    ];
 
-    return mongoOperators.some(op => op in f);
+    return mongoOperators.some((op) => op in f);
   }
 
   private static isLegacyFilter(filter: unknown): boolean {
@@ -114,7 +131,7 @@ export class FilterAdapter {
     const f = filter as Record<string, unknown>;
     const legacyProperties = ['kinds', 'scope', 'tags', 'metadata', 'dateRange', 'custom'];
 
-    return legacyProperties.some(prop => prop in f);
+    return legacyProperties.some((prop) => prop in f);
   }
 
   private static isVectorFilter(filter: unknown): boolean {
@@ -123,7 +140,7 @@ export class FilterAdapter {
     const f = filter as Record<string, unknown>;
     const vectorProperties = ['must', 'must_not', 'should'];
 
-    return vectorProperties.some(prop => prop in f);
+    return vectorProperties.some((prop) => prop in f);
   }
 
   // ============================================================================
@@ -167,26 +184,26 @@ export class FilterAdapter {
       }
     }
 
-    // Assemble the legacy filter using type assertions to bypass readonly
-    const legacy: QueryFilters = {} as QueryFilters;
+    // Assemble the legacy filter safely without unknown casting
+    const legacy: Partial<QueryFilters> = {};
 
     if (Object.keys(custom).length > 0) {
-      (legacy as unknown).custom = custom;
+      legacy.custom = custom;
     }
     if (Object.keys(scope).length > 0) {
-      (legacy as unknown).scope = scope as ScopeFilter;
+      legacy.scope = scope as ScopeFilter;
     }
     if (Object.keys(dateRange).length > 0) {
-      (legacy as unknown).dateRange = dateRange as DateRangeFilter;
+      legacy.dateRange = dateRange as DateRangeFilter;
     }
     if (Object.keys(tags).length > 0) {
-      (legacy as unknown).tags = tags;
+      legacy.tags = tags;
     }
     if (Object.keys(metadata).length > 0) {
-      (legacy as unknown).metadata = metadata;
+      legacy.metadata = metadata;
     }
 
-    return legacy;
+    return legacy as QueryFilters;
   }
 
   private static mongoDBToVector(filter: QueryFilter): VectorFilter {
@@ -199,12 +216,12 @@ export class FilterAdapter {
       if (key === '$and') {
         // Convert $and to must conditions
         const andConditions = (value as QueryFilter[]) || [];
-        const convertedMust = andConditions.flatMap(cond => this.mongoDBConditionToVector(cond));
+        const convertedMust = andConditions.flatMap((cond) => this.mongoDBConditionToVector(cond));
         mustConditions.push(...convertedMust);
       } else if (key === '$or') {
         // Convert $or to should conditions
         const orConditions = (value as QueryFilter[]) || [];
-        const convertedShould = orConditions.flatMap(cond => this.mongoDBConditionToVector(cond));
+        const convertedShould = orConditions.flatMap((cond) => this.mongoDBConditionToVector(cond));
         shouldConditions.push(...convertedShould);
       } else if (key === '$not') {
         // Convert $not to must_not conditions
@@ -244,7 +261,7 @@ export class FilterAdapter {
         // Handle regex matches
         conditions.push({
           key,
-          match: (value as { $regex: RegExp }).$regex.source
+          match: (value as { $regex: RegExp }).$regex.source,
         } as FilterCondition);
       } else if (typeof value === 'object' && value !== null && '$in' in value) {
         // Handle $in operator
@@ -252,14 +269,14 @@ export class FilterAdapter {
         if (inValue.length === 1) {
           conditions.push({
             key,
-            match: inValue[0] as string | number | boolean
+            match: inValue[0] as string | number | boolean,
           } as FilterCondition);
         } else {
           // For multiple values, create multiple conditions or handle as range
           for (const val of inValue) {
             conditions.push({
               key,
-              match: val as string | number | boolean
+              match: val as string | number | boolean,
             } as FilterCondition);
           }
         }
@@ -280,14 +297,14 @@ export class FilterAdapter {
           // Fallback to direct match
           conditions.push({
             key,
-            match: value as unknown as string | number | boolean
+            match: value as unknown as string | number | boolean,
           } as FilterCondition);
         }
       } else {
         // Direct equality match
         conditions.push({
           key,
-          match: value as string | number | boolean
+          match: value as string | number | boolean,
         } as FilterCondition);
       }
     }
@@ -334,14 +351,16 @@ export class FilterAdapter {
 
     // Convert must conditions (AND logic)
     if (filter.must && filter.must.length > 0) {
-      const conditions = filter.must.map(condition => this.vectorConditionToMongoDB(condition));
+      const conditions = filter.must.map((condition) => this.vectorConditionToMongoDB(condition));
       mongodbParts.push(...conditions);
     }
 
     // Convert must_not conditions
     let mustNotPart: QueryFilter | undefined;
     if (filter.must_not && filter.must_not.length > 0) {
-      const notConditions = filter.must_not.map(condition => this.vectorConditionToMongoDB(condition));
+      const notConditions = filter.must_not.map((condition) =>
+        this.vectorConditionToMongoDB(condition)
+      );
       if (notConditions.length === 1) {
         mustNotPart = notConditions[0];
       } else {
@@ -352,7 +371,9 @@ export class FilterAdapter {
     // Convert should conditions (OR logic)
     let shouldPart: QueryFilter | undefined;
     if (filter.should && filter.should.length > 0) {
-      const shouldConditions = filter.should.map(condition => this.vectorConditionToMongoDB(condition));
+      const shouldConditions = filter.should.map((condition) =>
+        this.vectorConditionToMongoDB(condition)
+      );
       if (shouldConditions.length === 1) {
         shouldPart = shouldConditions[0];
       } else {
@@ -427,34 +448,48 @@ export class FilterAdapter {
     return key === 'tags' || key === 'tag';
   }
 
-  private static convertFieldToScope(key: string, value: unknown, scope: Partial<ScopeFilter>): void {
+  private static convertFieldToScope(
+    key: string,
+    value: unknown,
+    scope: Partial<ScopeFilter>
+  ): void {
     (scope as Record<string, unknown>)[key] = value;
   }
 
-  private static convertFieldToDateRange(key: string, value: unknown, dateRange: Partial<DateRangeFilter>): void {
+  private static convertFieldToDateRange(
+    key: string,
+    value: unknown,
+    dateRange: Partial<DateRangeFilter>
+  ): void {
     if (typeof value === 'object' && value !== null) {
       const v = value as Record<string, unknown>;
       if ('$gt' in v || '$gte' in v) {
         (dateRange as unknown).from = v.$gt || v.$gte;
-        (dateRange as unknown).field = (dateRange as unknown).field || key as 'created_at' | 'updated_at' | 'timestamp';
+        (dateRange as unknown).field =
+          (dateRange as unknown).field || (key as 'created_at' | 'updated_at' | 'timestamp');
       }
       if ('$lt' in v || '$lte' in v) {
         (dateRange as unknown).to = v.$lt || v.$lte;
-        (dateRange as unknown).field = (dateRange as unknown).field || key as 'created_at' | 'updated_at' | 'timestamp';
+        (dateRange as unknown).field =
+          (dateRange as unknown).field || (key as 'created_at' | 'updated_at' | 'timestamp');
       }
     }
   }
 
-  private static convertFieldToDateRangeMutable(key: string, value: unknown, dateRange: Record<string, unknown>): void {
+  private static convertFieldToDateRangeMutable(
+    key: string,
+    value: unknown,
+    dateRange: Record<string, unknown>
+  ): void {
     if (typeof value === 'object' && value !== null) {
       const v = value as Record<string, unknown>;
       if ('$gt' in v || '$gte' in v) {
         dateRange.from = v.$gt || v.$gte;
-        dateRange.field = dateRange.field || key as 'created_at' | 'updated_at' | 'timestamp';
+        dateRange.field = dateRange.field || (key as 'created_at' | 'updated_at' | 'timestamp');
       }
       if ('$lt' in v || '$lte' in v) {
         dateRange.to = v.$lt || v.$lte;
-        dateRange.field = dateRange.field || key as 'created_at' | 'updated_at' | 'timestamp';
+        dateRange.field = dateRange.field || (key as 'created_at' | 'updated_at' | 'timestamp');
       }
     }
   }
@@ -505,7 +540,9 @@ export class FilterAdapter {
 /**
  * Convenience function to convert any filter to MongoDB QueryFilter
  */
-export function toQueryFilter<T = Record<string, unknown>>(filter: UnifiedFilter<T>): QueryFilter<T> {
+export function toQueryFilter<T = Record<string, unknown>>(
+  filter: UnifiedFilter<T>
+): QueryFilter<T> {
   return FilterAdapter.toQueryFilter(filter);
 }
 

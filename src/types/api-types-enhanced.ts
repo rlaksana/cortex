@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Enhanced API Types for Cortex MCP System
  *
@@ -22,7 +18,7 @@ import type {
   QueryParams,
   Result,
   Transformer,
-  Validator
+  Validator,
 } from './base-types.js';
 
 // ============================================================================
@@ -32,10 +28,31 @@ import type {
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
 
 export type HttpStatus =
-  | 200 | 201 | 202 | 204 | 206
-  | 301 | 302 | 303 | 304 | 307 | 308
-  | 400 | 401 | 403 | 404 | 405 | 408 | 409 | 422 | 429
-  | 500 | 501 | 502 | 503 | 504;
+  | 200
+  | 201
+  | 202
+  | 204
+  | 206
+  | 301
+  | 302
+  | 303
+  | 304
+  | 307
+  | 308
+  | 400
+  | 401
+  | 403
+  | 404
+  | 405
+  | 408
+  | 409
+  | 422
+  | 429
+  | 500
+  | 501
+  | 502
+  | 503
+  | 504;
 
 // ============================================================================
 // API Request/Response Types
@@ -338,7 +355,11 @@ export interface GraphQLField {
   readonly name: string;
   readonly type: GraphQLFieldType;
   readonly args?: readonly GraphQLArgument[];
-  readonly resolve?: (parent: JSONValue, args: Dict<JSONValue>, context: OperationContext) => JSONValue;
+  readonly resolve?: (
+    parent: JSONValue,
+    args: Dict<JSONValue>,
+    context: OperationContext
+  ) => JSONValue;
 }
 
 export interface GraphQLArgument {
@@ -391,9 +412,21 @@ export interface RequestConfig<T = JSONValue> {
 
 export interface HttpClient {
   get<T = JSONValue>(url: string, options?: RequestOptions): Promise<ApiResponse<T>>;
-  post<T = JSONValue>(url: string, data?: JSONValue, options?: RequestOptions): Promise<ApiResponse<T>>;
-  put<T = JSONValue>(url: string, data?: JSONValue, options?: RequestOptions): Promise<ApiResponse<T>>;
-  patch<T = JSONValue>(url: string, data?: JSONValue, options?: RequestOptions): Promise<ApiResponse<T>>;
+  post<T = JSONValue>(
+    url: string,
+    data?: JSONValue,
+    options?: RequestOptions
+  ): Promise<ApiResponse<T>>;
+  put<T = JSONValue>(
+    url: string,
+    data?: JSONValue,
+    options?: RequestOptions
+  ): Promise<ApiResponse<T>>;
+  patch<T = JSONValue>(
+    url: string,
+    data?: JSONValue,
+    options?: RequestOptions
+  ): Promise<ApiResponse<T>>;
   delete<T = JSONValue>(url: string, options?: RequestOptions): Promise<ApiResponse<T>>;
   request<T = JSONValue>(config: RequestConfig): Promise<ApiResponse<T>>;
 }

@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTE FINAL EMERGENCY ROLLBACK: Last remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Slow Query Logger for Cortex MCP
@@ -44,6 +42,13 @@ enum OperationType {
   KILL_SWITCH_TRIGGERED = 'kill_switch_triggered',
   KILL_SWITCH_DEACTIVATED = 'kill_switch_deactivated',
   KILL_SWITCH_RECOVERED = 'kill_switch_recovered',
+  DATABASE_QUERY = 'database_query',
+  VECTOR_SEARCH = 'vector_search',
+  EMBEDDING_GENERATION = 'embedding_generation',
+  AUTH_VALIDATION = 'auth_validation',
+  CACHE_GET = 'cache_get',
+  CACHE_SET = 'cache_set',
+  CACHE_DELETE = 'cache_delete',
 }
 import type {
   RequestContext,
@@ -51,8 +56,8 @@ import type {
   SlowQueryContext,
   SlowQueryEntry,
   SlowQuerySystemState,
-  SlowQueryTrend} from '../types/monitoring-types.js';
-
+  SlowQueryTrend,
+} from '../types/monitoring-types.js';
 
 /**
  * Slow query configuration
@@ -90,6 +95,8 @@ interface SlowQueryConfig {
  * Slow query detection and analysis service
  */
 export class SlowQueryLogger extends EventEmitter {
+  private static instance: SlowQueryLogger | null = null;
+
   private config: SlowQueryConfig;
   private slowQueries: SlowQueryEntry[] = [];
   private queryCounts: Map<string, number> = new Map();
@@ -138,10 +145,10 @@ export class SlowQueryLogger extends EventEmitter {
    * Get singleton instance
    */
   public static getInstance(config?: Partial<SlowQueryConfig>): SlowQueryLogger {
-    if (!(SlowQueryLogger as unknown).instance) {
-      (SlowQueryLogger as unknown).instance = new SlowQueryLogger(config);
+    if (!SlowQueryLogger.instance) {
+      SlowQueryLogger.instance = new SlowQueryLogger(config);
     }
-    return (SlowQueryLogger as unknown).instance;
+    return SlowQueryLogger.instance;
   }
 
   /**
@@ -313,12 +320,20 @@ export class SlowQueryLogger extends EventEmitter {
     }, 0);
 
     // Analyze by operation
-    const operationStats: Record<OperationType, {
+    const operationStats: Record<
+      OperationType,
+      {
+        count: number;
+        avg_latency_ms: number;
+        max_latency_ms: number;
+        rate: number;
+      }
+    > = {} as Record<OperationType, {
       count: number;
       avg_latency_ms: number;
       max_latency_ms: number;
       rate: number;
-    }> = {};
+    }>;
     const bottleneckCounts = new Map<string, { count: number; operations: Set<OperationType> }>();
 
     Object.values(OperationType).forEach((operation) => {

@@ -1,18 +1,18 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
+// PHASE 2.2A RECOVERY: Security utility synchronization complete
+// Recovery Date: 2025-11-14T18:30:00+07:00 (Asia/Jakarta)
+// Recovery Method: Sequential file-by-file approach with quality gates
+// Dependencies: Crypto modules, bcryptjs, logger, and authentication types
 
 /**
  * Security utilities for Cortex MCP
  * Provides password hashing, token validation, session management, and security helpers
  */
 
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 
-import { logger } from '@/utils/logger.js';
-
+import { logger } from './logger.js';
 import { AuthScope, UserRole } from '../types/auth-types.js';
 
 export interface SecurityConfig {
@@ -386,7 +386,7 @@ export class SecurityUtils {
     let cleanedCount = 0;
 
     // Clean up old login attempts
-    for (const [identifier, attempts] of this.loginAttempts) {
+    for (const [identifier, attempts] of Array.from(this.loginAttempts.entries())) {
       const windowStart = now - this.config.login_attempt_window_ms;
       const recentAttempts = attempts.filter((attempt) => attempt.timestamp > windowStart);
 
@@ -399,7 +399,7 @@ export class SecurityUtils {
     }
 
     // Clean up expired account locks
-    for (const [identifier, lockInfo] of this.lockedAccounts) {
+    for (const [identifier, lockInfo] of Array.from(this.lockedAccounts.entries())) {
       if (now > lockInfo.until) {
         this.lockedAccounts.delete(identifier);
         cleanedCount++;
@@ -407,7 +407,7 @@ export class SecurityUtils {
     }
 
     // Clean up expired rate limit records
-    for (const [identifier, record] of this.rateLimitMap) {
+    for (const [identifier, record] of Array.from(this.rateLimitMap.entries())) {
       if (now > record.resetTime) {
         this.rateLimitMap.delete(identifier);
         cleanedCount++;
@@ -430,7 +430,7 @@ export class SecurityUtils {
     const oneHourAgo = now - 60 * 60 * 1000;
 
     let failedLoginsLastHour = 0;
-    for (const attempts of this.loginAttempts.values()) {
+    for (const attempts of Array.from(this.loginAttempts.values())) {
       const recentFailures = attempts.filter(
         (attempt) => !attempt.success && attempt.timestamp > oneHourAgo
       );

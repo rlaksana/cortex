@@ -1,9 +1,5 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import type { ScopeFilter,TodoData } from '../../types/knowledge-data.js';
+import type { ScopeFilter, TodoData } from '../../types/knowledge-data.js';
 
 export async function storeTodo(data: TodoData, scope: ScopeFilter): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');

@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * P4-1: Performance Trending and Time-Series Data Collection
  *
@@ -23,7 +18,7 @@
 
 import { logger } from '@/utils/logger.js';
 
-import { type SystemMetrics,systemMetricsService } from './system-metrics.js';
+import { type SystemMetrics, systemMetricsService } from './system-metrics.js';
 
 // === Type Definitions ===
 

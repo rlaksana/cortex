@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * P6-T6.2: Expiry Worker Service
  *
@@ -24,7 +20,10 @@ import { systemMetricsService } from './metrics/system-metrics.js';
 import { createTTLManagementService } from './ttl/index.js';
 import type { TTLBulkOperationOptions } from './ttl/ttl-management-service.js';
 import { Environment } from '../config/environment.js';
-import { type QdrantDatabaseConfig,QdrantOnlyDatabaseLayer } from '../db/unified-database-layer-v2.js';
+import {
+  type QdrantDatabaseConfig,
+  QdrantOnlyDatabaseLayer,
+} from '../db/unified-database-layer-v2.js';
 import type { KnowledgeItem, SearchQuery } from '../types/core-interfaces.js';
 import { isExpired } from '../utils/expiry-utils.js';
 

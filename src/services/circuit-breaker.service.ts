@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Circuit Breaker Service
  *
@@ -22,11 +17,9 @@
  * @since 2025
  */
 
-
-
 import { EventEmitter } from 'events';
 
-import { logger } from '@/utils/logger.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Circuit Breaker Configuration
@@ -96,7 +89,13 @@ export interface CircuitBreakerState {
  */
 export interface CircuitBreakerAnnotation {
   timestamp: number;
-  type: 'state_change' | 'failure' | 'recovery' | 'performance' | 'slo_violation' | 'manual_intervention';
+  type:
+    | 'state_change'
+    | 'failure'
+    | 'recovery'
+    | 'performance'
+    | 'slo_violation'
+    | 'manual_intervention';
   message: string;
   details: Record<string, unknown>;
   severity: 'info' | 'warning' | 'error' | 'critical';
@@ -140,7 +139,6 @@ export interface CircuitBreakerStats {
   /** Recommended actions */
   recommendations: string[];
 }
-
 
 /**
  * Enhanced Circuit Breaker with Logging and Annotations
@@ -286,8 +284,10 @@ export class CircuitBreaker extends EventEmitter {
     }
 
     // Check response time SLO
-    if (this.config.performanceThresholds &&
-        this.state.averageResponseTime > this.config.performanceThresholds.maxResponseTimeMs) {
+    if (
+      this.config.performanceThresholds &&
+      this.state.averageResponseTime > this.config.performanceThresholds.maxResponseTimeMs
+    ) {
       sloViolations.push('response_time');
     }
 
@@ -474,9 +474,13 @@ export class CircuitBreaker extends EventEmitter {
       recentAnnotations: [],
       // Predictive metrics
       riskOfFailure: failureRate,
-      predictedTimeToRecovery: this.state.state === 'open' ? this.config.recoveryTimeoutMs - (now - this.state.openedAt) : null,
+      predictedTimeToRecovery:
+        this.state.state === 'open'
+          ? this.config.recoveryTimeoutMs - (now - this.state.openedAt)
+          : null,
       // Recommended actions
-      recommendations: this.state.state === 'open' ? ['Wait for timeout', 'Check dependency health'] : []
+      recommendations:
+        this.state.state === 'open' ? ['Wait for timeout', 'Check dependency health'] : [],
     };
   }
 

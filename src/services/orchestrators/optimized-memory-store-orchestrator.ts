@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Optimized Memory Store Orchestrator
  *
@@ -16,7 +12,7 @@
 import { logger } from '@/utils/logger.js';
 
 import { MemoryStoreOrchestrator } from './memory-store-orchestrator.js';
-import type {MemoryStoreResponse } from '../../types/core-interfaces.js';
+import type { MemoryStoreResponse, KnowledgeItem } from '../../types/core-interfaces.js';
 import { memoryManager } from '../memory/memory-manager-service.js';
 
 /**
@@ -40,6 +36,43 @@ interface OperationStats {
 }
 
 /**
+ * Pooled item result interface
+ */
+interface PooledItemResult {
+  input_index: number;
+  status: 'stored' | 'updated' | 'skipped_dedupe' | 'error';
+  kind?: string;
+  id?: string;
+  error?: string;
+  created_at?: string;
+}
+
+/**
+ * Pooled batch summary interface
+ */
+interface PooledBatchSummary {
+  total: number;
+  stored: number;
+  updated?: number;
+  skipped_dedupe: number;
+  business_rule_blocked: number;
+  validation_error: number;
+}
+
+/**
+ * Pooled context interface
+ */
+interface PooledAutonomousContext {
+  action_performed: 'created' | 'updated' | 'deleted' | 'batch' | 'skipped';
+  similar_items_checked: number;
+  duplicates_found: number;
+  contradictions_detected: boolean;
+  recommendation: string;
+  reasoning: string;
+  user_message_suggestion: string;
+}
+
+/**
  * Optimized Memory Store Orchestrator
  *
  * Extends the base orchestrator with memory optimization features
@@ -53,9 +86,9 @@ export class OptimizedMemoryStoreOrchestrator extends MemoryStoreOrchestrator {
   private emergencyCleanupThreshold = 0.95; // 95%
 
   // Memory pools for object reuse
-  private itemResultPool: unknown[] = [];
-  private batchSummaryPool: unknown[] = [];
-  private contextPool: unknown[] = [];
+  private itemResultPool: PooledItemResult[] = [];
+  private batchSummaryPool: PooledBatchSummary[] = [];
+  private contextPool: PooledAutonomousContext[] = [];
 
   constructor(poolConfig: Partial<MemoryPoolConfig> = {}) {
     super();
@@ -131,7 +164,8 @@ export class OptimizedMemoryStoreOrchestrator extends MemoryStoreOrchestrator {
     });
 
     // Trigger preventive cleanup if operation is memory intensive
-    if (this.currentOperationMemory > 50 * 1024 * 1024) { // 50MB
+    if (this.currentOperationMemory > 50 * 1024 * 1024) {
+      // 50MB
       this.performOperationCleanup();
     }
   }
@@ -170,7 +204,7 @@ export class OptimizedMemoryStoreOrchestrator extends MemoryStoreOrchestrator {
   /**
    * Optimized storeItems with memory management
    */
-  async storeItems(items: unknown[]): Promise<MemoryStoreResponse> {
+  async storeItems(items: KnowledgeItem[]): Promise<MemoryStoreResponse> {
     const operationStartMemory = memoryManager.getCurrentMemoryStats().heapUsed;
     this.operationStats.totalOperations++;
 
@@ -233,11 +267,12 @@ export class OptimizedMemoryStoreOrchestrator extends MemoryStoreOrchestrator {
         storedItems: allStored.length,
         errors: allErrors.length,
         finalMemoryMB: Math.round(memoryManager.getCurrentMemoryStats().heapUsed / 1024 / 1024),
-        memoryDeltaMB: Math.round((memoryManager.getCurrentMemoryStats().heapUsed - operationStartMemory) / 1024 / 1024),
+        memoryDeltaMB: Math.round(
+          (memoryManager.getCurrentMemoryStats().heapUsed - operationStartMemory) / 1024 / 1024
+        ),
       });
 
       return response;
-
     } catch (error) {
       logger.error('Optimized store operation failed', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -307,8 +342,8 @@ export class OptimizedMemoryStoreOrchestrator extends MemoryStoreOrchestrator {
   /**
    * Process batch with memory management
    */
-  private async processBatchWithMemoryManagement(items: unknown[]): Promise<{
-    items: unknown[];
+  private async processBatchWithMemoryManagement(items: KnowledgeItem[]): Promise<{
+    items: PooledItemResult[];
     stored: unknown[];
     errors: unknown[];
   }> {
@@ -327,7 +362,6 @@ export class OptimizedMemoryStoreOrchestrator extends MemoryStoreOrchestrator {
         stored: result.stored,
         errors: result.errors,
       };
-
     } catch (error) {
       logger.error('Batch processing failed', {
         batchSize: items.length,
@@ -376,7 +410,9 @@ export class OptimizedMemoryStoreOrchestrator extends MemoryStoreOrchestrator {
     }
 
     if (this.batchSummaryPool.length > this.memoryPoolConfig.batchSummaryPoolSize * trimFactor) {
-      this.batchSummaryPool.splice(Math.floor(this.memoryPoolConfig.batchSummaryPoolSize * trimFactor));
+      this.batchSummaryPool.splice(
+        Math.floor(this.memoryPoolConfig.batchSummaryPoolSize * trimFactor)
+      );
     }
 
     if (this.contextPool.length > this.memoryPoolConfig.contextPoolSize * trimFactor) {
@@ -388,9 +424,8 @@ export class OptimizedMemoryStoreOrchestrator extends MemoryStoreOrchestrator {
    * Clear all memory pools
    */
   private clearMemoryPools(): void {
-    const totalCleared = this.itemResultPool.length +
-                       this.batchSummaryPool.length +
-                       this.contextPool.length;
+    const totalCleared =
+      this.itemResultPool.length + this.batchSummaryPool.length + this.contextPool.length;
 
     this.itemResultPool.length = 0;
     this.batchSummaryPool.length = 0;
@@ -403,17 +438,17 @@ export class OptimizedMemoryStoreOrchestrator extends MemoryStoreOrchestrator {
    * Create optimized response using pooled objects
    */
   private createOptimizedResponse(
-    items: unknown[],
+    items: PooledItemResult[],
     stored: unknown[],
     errors: unknown[]
   ): MemoryStoreResponse {
     // Use pooled objects or create new ones if pool is empty
     const summary = this.getPooledBatchSummary() || {
       total: items.length,
-      stored: items.filter(r => r.status === 'stored').length,
-      skipped_dedupe: items.filter(r => r.status === 'skipped_dedupe').length,
-      business_rule_blocked: items.filter(r => r.status === 'business_rule_blocked').length,
-      validation_error: items.filter(r => r.status === 'validation_error').length,
+      stored: items.filter((r) => r.status === 'stored').length,
+      skipped_dedupe: items.filter((r) => r.status === 'skipped_dedupe').length,
+      business_rule_blocked: items.filter((r) => r.status === 'business_rule_blocked').length,
+      validation_error: items.filter((r) => r.status === 'validation_error').length,
     };
 
     const context = this.getPooledContext() || {
@@ -463,14 +498,14 @@ export class OptimizedMemoryStoreOrchestrator extends MemoryStoreOrchestrator {
   /**
    * Get pooled batch summary object
    */
-  private getPooledBatchSummary(): unknown {
+  private getPooledBatchSummary(): PooledBatchSummary | undefined {
     return this.batchSummaryPool.pop();
   }
 
   /**
    * Return batch summary to pool
    */
-  private returnToBatchSummaryPool(summary: unknown): void {
+  private returnToBatchSummaryPool(summary: PooledBatchSummary): void {
     if (this.batchSummaryPool.length < this.memoryPoolConfig.batchSummaryPoolSize) {
       // Reset object
       summary.total = 0;
@@ -486,14 +521,14 @@ export class OptimizedMemoryStoreOrchestrator extends MemoryStoreOrchestrator {
   /**
    * Get pooled context object
    */
-  private getPooledContext(): unknown {
+  private getPooledContext(): PooledAutonomousContext | undefined {
     return this.contextPool.pop();
   }
 
   /**
    * Return context to pool
    */
-  private returnToContextPool(context: unknown): void {
+  private returnToContextPool(context: PooledAutonomousContext): void {
     if (this.contextPool.length < this.memoryPoolConfig.contextPoolSize) {
       // Reset object
       context.action_performed = 'batch';
@@ -518,11 +553,12 @@ export class OptimizedMemoryStoreOrchestrator extends MemoryStoreOrchestrator {
     this.operationStats.averageMemoryUsage =
       (this.operationStats.averageMemoryUsage + Math.abs(memoryDelta)) / 2;
 
-    this.operationStats.peakMemoryUsage =
-      Math.max(this.operationStats.peakMemoryUsage, Math.abs(memoryDelta));
+    this.operationStats.peakMemoryUsage = Math.max(
+      this.operationStats.peakMemoryUsage,
+      Math.abs(memoryDelta)
+    );
   }
 
-  
   /**
    * Get operation statistics
    */

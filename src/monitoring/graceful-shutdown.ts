@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Graceful Shutdown Manager
  *
@@ -44,7 +39,12 @@ export interface ShutdownState {
 
 export class GracefulShutdownManager extends EventEmitter {
   private config: ShutdownConfig;
-  private logger: { info: (...a:any[])=>void; warn:(...a:any[])=>void; error:(...a:any[])=>void; debug?: (...a:any[])=>void };
+  private logger: {
+    info: (...a: any[]) => void;
+    warn: (...a: any[]) => void;
+    error: (...a: any[]) => void;
+    debug?: (...a: any[]) => void;
+  };
   private state: ShutdownState;
   private shutdownTimer: NodeJS.Timeout | null = null;
   private forceTimer: NodeJS.Timeout | null = null;

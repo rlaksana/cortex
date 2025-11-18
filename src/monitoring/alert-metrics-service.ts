@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Monitoring system type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Alert Metrics and Dashboard Integration Service for MCP Cortex
@@ -24,6 +22,7 @@ import { EventEmitter } from 'events';
 import { logger } from '@/utils/logger.js';
 
 import { type AlertAction, AlertSeverity } from './alert-management-service.js';
+import { safeGetProperty, hasProperty, hasStringProperty, hasNumberProperty, hasObjectProperty, hasArrayProperty } from '@/utils/property-access-guards.js';
 
 // ============================================================================
 // Alert Metrics Interfaces
@@ -628,11 +627,14 @@ export class AlertMetricsService extends EventEmitter {
         metricsArray.splice(0, metricsArray.length - 1000);
       }
 
-      logger.debug({
-        key,
-        total: metrics.total,
-        active: metrics.active,
-      }, 'Alert metrics recorded');
+      logger.debug(
+        {
+          key,
+          total: metrics.total,
+          active: metrics.active,
+        },
+        'Alert metrics recorded'
+      );
 
       this.emit('metrics_recorded', metrics);
     } catch (error) {
@@ -714,11 +716,14 @@ export class AlertMetricsService extends EventEmitter {
       this.validateDashboard(dashboard);
       this.dashboards.set(dashboard.id, dashboard);
 
-      logger.info({
-        dashboardId: dashboard.id,
-        name: dashboard.name,
-        panelCount: dashboard.panels.length,
-      }, 'Dashboard upserted');
+      logger.info(
+        {
+          dashboardId: dashboard.id,
+          name: dashboard.name,
+          panelCount: dashboard.panels.length,
+        },
+        'Dashboard upserted'
+      );
 
       this.emit('dashboard_updated', dashboard);
     } catch (error) {
@@ -744,7 +749,10 @@ export class AlertMetricsService extends EventEmitter {
   /**
    * Render dashboard data
    */
-  async renderDashboard(dashboardId: string, variables: Record<string, unknown> = {}): Promise<RenderedDashboard> {
+  async renderDashboard(
+    dashboardId: string,
+    variables: Record<string, unknown> = {}
+  ): Promise<RenderedDashboard> {
     try {
       const dashboard = this.dashboards.get(dashboardId);
       if (!dashboard) {
@@ -787,10 +795,13 @@ export class AlertMetricsService extends EventEmitter {
       this.validateCustomMetric(metric);
       this.customMetrics.set(metric.name, metric);
 
-      logger.info({
-        metricName: metric.name,
-        type: metric.type,
-      }, 'Custom metric defined');
+      logger.info(
+        {
+          metricName: metric.name,
+          type: metric.type,
+        },
+        'Custom metric defined'
+      );
 
       this.emit('custom_metric_defined', metric);
     } catch (error) {
@@ -818,11 +829,14 @@ export class AlertMetricsService extends EventEmitter {
       };
 
       // Store metric value (simplified - would use proper time series database)
-      logger.debug({
-        metricName: name,
-        value,
-        labels,
-      }, 'Custom metric recorded');
+      logger.debug(
+        {
+          metricName: name,
+          value,
+          labels,
+        },
+        'Custom metric recorded'
+      );
 
       this.emit('custom_metric_recorded', metricValue);
     } catch (error) {
@@ -840,11 +854,14 @@ export class AlertMetricsService extends EventEmitter {
   ): CustomMetricValue[] {
     try {
       // Placeholder implementation - would query time series database
-      logger.debug({
-        metricName: name,
-        timeRange,
-        labels,
-      }, 'Getting custom metric values');
+      logger.debug(
+        {
+          metricName: name,
+          timeRange,
+          labels,
+        },
+        'Getting custom metric values'
+      );
 
       return [];
     } catch (error) {
@@ -863,15 +880,27 @@ export class AlertMetricsService extends EventEmitter {
   subscribeToMetrics(subscription: MetricsSubscription): string {
     try {
       const subscriptionId = this.generateSubscriptionId();
-      this.subscriptions.set(subscriptionId, subscription);
 
-      logger.info({
-        subscriptionId,
-        metrics: subscription.metrics,
-        interval: subscription.interval,
-      }, 'Metrics subscription created');
+      // Validate subscription properties before storing
+      const validatedSubscription: MetricsSubscription = {
+        metrics: hasArrayProperty(subscription, 'metrics') ? subscription.metrics : [],
+        interval: hasNumberProperty(subscription, 'interval') ? subscription.interval : 30000,
+        callback: typeof subscription.callback === 'function' ? subscription.callback : () => {},
+        filters: hasObjectProperty(subscription, 'filters') ? subscription.filters : {},
+      };
 
-      this.emit('metrics_subscription_created', { subscriptionId, subscription });
+      this.subscriptions.set(subscriptionId, validatedSubscription);
+
+      logger.info(
+        {
+          subscriptionId,
+          metrics: validatedSubscription.metrics,
+          interval: validatedSubscription.interval,
+        },
+        'Metrics subscription created'
+      );
+
+      this.emit('metrics_subscription_created', { subscriptionId, subscription: validatedSubscription });
 
       return subscriptionId;
     } catch (error) {
@@ -929,9 +958,7 @@ export class AlertMetricsService extends EventEmitter {
               query: {
                 type: 'alert_count',
                 source: 'alerts',
-                filters: [
-                  { field: 'status', operator: 'eq', value: 'firing' },
-                ],
+                filters: [{ field: 'status', operator: 'eq', value: 'firing' }],
               },
               aggregation: 'count',
               format: { type: 'number' },
@@ -1041,9 +1068,7 @@ export class AlertMetricsService extends EventEmitter {
               query: {
                 type: 'resolution_time',
                 source: 'alerts',
-                filters: [
-                  { field: 'acknowledged', operator: 'eq', value: true },
-                ],
+                filters: [{ field: 'acknowledged', operator: 'eq', value: true }],
               },
               aggregation: 'avg',
               format: { type: 'duration', unit: 's' },
@@ -1053,9 +1078,7 @@ export class AlertMetricsService extends EventEmitter {
               query: {
                 type: 'resolution_time',
                 source: 'alerts',
-                filters: [
-                  { field: 'resolved', operator: 'eq', value: true },
-                ],
+                filters: [{ field: 'resolved', operator: 'eq', value: true }],
               },
               aggregation: 'avg',
               format: { type: 'duration', unit: 's' },
@@ -1273,7 +1296,7 @@ export class AlertMetricsService extends EventEmitter {
       },
     ];
 
-    customMetrics.forEach(metric => {
+    customMetrics.forEach((metric) => {
       this.customMetrics.set(metric.name, metric);
     });
   }
@@ -1388,7 +1411,9 @@ export class AlertMetricsService extends EventEmitter {
     const resolved: Record<string, unknown> = {};
 
     for (const variable of variables) {
-      resolved[variable.name] = providedValues[variable.name] || variable.defaultValue;
+      const varName = safeGetProperty(variable, 'name', '');
+      const defaultValue = safeGetProperty(variable, 'defaultValue', undefined);
+      resolved[varName] = safeGetProperty(providedValues, varName, defaultValue);
     }
 
     return resolved;
@@ -1398,8 +1423,8 @@ export class AlertMetricsService extends EventEmitter {
     defaultTimeRange: TimeRange,
     variables: Record<string, unknown>
   ): TimeRange {
-    const from = variables.time_from || defaultTimeRange.from;
-    const to = variables.time_to || defaultTimeRange.to;
+    const from = safeGetProperty(variables, 'time_from', defaultTimeRange.from) as string;
+    const to = safeGetProperty(variables, 'time_to', defaultTimeRange.to) as string;
 
     return { from, to, zone: defaultTimeRange.zone };
   }
@@ -1478,7 +1503,7 @@ export class AlertMetricsService extends EventEmitter {
     if (totalCount === 0) return 100;
 
     const criticalRatio = criticalCount / totalCount;
-    return Math.max(0, 100 - (criticalRatio * 50));
+    return Math.max(0, 100 - criticalRatio * 50);
   }
 
   private getOnCallStatus(): OnCallStatus {
@@ -1494,18 +1519,25 @@ export class AlertMetricsService extends EventEmitter {
   private calculateAlertThroughput(metrics: AlertMetrics[]): number {
     if (metrics.length < 2) return 0;
 
-    const timeSpan = (metrics[metrics.length - 1].timestamp.getTime() - metrics[0].timestamp.getTime()) / 1000;
+    const timeSpan =
+      (metrics[metrics.length - 1].timestamp.getTime() - metrics[0].timestamp.getTime()) / 1000;
     const totalAlerts = metrics.reduce((sum, m) => sum + m.total, 0);
 
     return timeSpan > 0 ? totalAlerts / timeSpan : 0;
   }
 
   private calculateAverageNotificationLatency(metrics: AlertMetrics[]): number {
-    return metrics.reduce((sum, m) => sum + m.notificationMetrics.averageDeliveryTime, 0) / metrics.length || 0;
+    return (
+      metrics.reduce((sum, m) => sum + m.notificationMetrics.averageDeliveryTime, 0) /
+        metrics.length || 0
+    );
   }
 
   private calculateAverageEscalationLatency(metrics: AlertMetrics[]): number {
-    return metrics.reduce((sum, m) => sum + m.escalationMetrics.averageEscalationTime, 0) / metrics.length || 0;
+    return (
+      metrics.reduce((sum, m) => sum + m.escalationMetrics.averageEscalationTime, 0) /
+        metrics.length || 0
+    );
   }
 
   private getCurrentSystemLoad(): SystemLoadMetrics {
@@ -1541,10 +1573,18 @@ export class AlertMetricsService extends EventEmitter {
 
   private calculateVolumeTrend(metrics: AlertMetrics[]): VolumeTrend {
     return {
-      hourly: Array(24).fill(0).map(() => Math.random() * 50),
-      daily: Array(7).fill(0).map(() => Math.random() * 500),
-      weekly: Array(4).fill(0).map(() => Math.random() * 2000),
-      monthly: Array(12).fill(0).map(() => Math.random() * 5000),
+      hourly: Array(24)
+        .fill(0)
+        .map(() => Math.random() * 50),
+      daily: Array(7)
+        .fill(0)
+        .map(() => Math.random() * 500),
+      weekly: Array(4)
+        .fill(0)
+        .map(() => Math.random() * 2000),
+      monthly: Array(12)
+        .fill(0)
+        .map(() => Math.random() * 5000),
       growthRate: 5.2,
       seasonality: [],
     };
@@ -1555,8 +1595,8 @@ export class AlertMetricsService extends EventEmitter {
       bySeverity: {} as Record<AlertSeverity, TimeSeries>,
       byComponent: {},
       overall: {
-        timestamps: metrics.map(m => m.timestamp),
-        values: metrics.map(m => m.resolutionTime.average),
+        timestamps: metrics.map((m) => m.timestamp),
+        values: metrics.map((m) => m.resolutionTime.average),
         trend: 'stable',
         slope: 0.1,
         correlation: 0.8,
@@ -1574,29 +1614,29 @@ export class AlertMetricsService extends EventEmitter {
   private calculatePerformanceTrend(metrics: AlertMetrics[]): PerformanceTrend {
     return {
       notificationLatency: {
-        timestamps: metrics.map(m => m.timestamp),
-        values: metrics.map(m => m.notificationMetrics.averageDeliveryTime),
+        timestamps: metrics.map((m) => m.timestamp),
+        values: metrics.map((m) => m.notificationMetrics.averageDeliveryTime),
         trend: 'decreasing',
         slope: -0.5,
         correlation: 0.7,
       },
       escalationLatency: {
-        timestamps: metrics.map(m => m.timestamp),
-        values: metrics.map(m => m.escalationMetrics.averageEscalationTime),
+        timestamps: metrics.map((m) => m.timestamp),
+        values: metrics.map((m) => m.escalationMetrics.averageEscalationTime),
         trend: 'stable',
         slope: 0.1,
         correlation: 0.6,
       },
       systemResponseTime: {
-        timestamps: metrics.map(m => m.timestamp),
-        values: metrics.map(m => m.responseTime.average),
+        timestamps: metrics.map((m) => m.timestamp),
+        values: metrics.map((m) => m.responseTime.average),
         trend: 'decreasing',
         slope: -0.3,
         correlation: 0.8,
       },
       throughput: {
-        timestamps: metrics.map(m => m.timestamp),
-        values: metrics.map(m => this.calculateAlertThroughput([m])),
+        timestamps: metrics.map((m) => m.timestamp),
+        values: metrics.map((m) => this.calculateAlertThroughput([m])),
         trend: 'stable',
         slope: 0.05,
         correlation: 0.5,
@@ -1721,19 +1761,39 @@ export class AlertMetricsService extends EventEmitter {
 
     return {
       timestamp: new Date(),
-      total: this.aggregateValue(metrics.map(m => m.total), aggregation),
-      active: this.aggregateValue(metrics.map(m => m.active), aggregation),
-      resolved: this.aggregateValue(metrics.map(m => m.resolved), aggregation),
-      acknowledged: this.aggregateValue(metrics.map(m => m.acknowledged), aggregation),
-      suppressed: this.aggregateValue(metrics.map(m => m.suppressed), aggregation),
+      total: this.aggregateValue(
+        metrics.map((m) => m.total),
+        aggregation
+      ),
+      active: this.aggregateValue(
+        metrics.map((m) => m.active),
+        aggregation
+      ),
+      resolved: this.aggregateValue(
+        metrics.map((m) => m.resolved),
+        aggregation
+      ),
+      acknowledged: this.aggregateValue(
+        metrics.map((m) => m.acknowledged),
+        aggregation
+      ),
+      suppressed: this.aggregateValue(
+        metrics.map((m) => m.suppressed),
+        aggregation
+      ),
       bySeverity: latestMetrics.bySeverity,
       byStatus: latestMetrics.byStatus,
       byRule: latestMetrics.byRule,
       byComponent: latestMetrics.byComponent,
       bySource: latestMetrics.bySource,
-      notificationsSent: latestMetrics.notificationsSent ?? latestMetrics.notificationMetrics?.sent ?? 0,
-      notificationSuccessRate: latestMetrics.notificationSuccessRate ?? latestMetrics.notificationMetrics?.successRate ?? 0,
-      averageResponseTime: latestMetrics.averageResponseTime ?? latestMetrics.responseTime?.average ?? 0,
+      notificationsSent:
+        latestMetrics.notificationsSent ?? latestMetrics.notificationMetrics?.sent ?? 0,
+      notificationSuccessRate:
+        latestMetrics.notificationSuccessRate ??
+        latestMetrics.notificationMetrics?.successRate ??
+        0,
+      averageResponseTime:
+        latestMetrics.averageResponseTime ?? latestMetrics.responseTime?.average ?? 0,
       responseTime: latestMetrics.responseTime,
       resolutionTime: latestMetrics.resolutionTime,
       notificationMetrics: latestMetrics.notificationMetrics,
@@ -2138,6 +2198,3 @@ export const alertMetricsService = new AlertMetricsService({
   maxDataPoints: 10000,
   compressionEnabled: true,
 });
-// @ts-ignore
-
-

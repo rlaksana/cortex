@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * API Service Type Definitions
  *
@@ -141,11 +137,11 @@ export interface ApiMetrics {
   totalRequests?: number;
   averageResponseTime?: number;
 
-  successfulRequests?: unknown
+  successfulRequests?: unknown;
 
-  failedRequests?: unknown
+  failedRequests?: unknown;
 
-  endpointMetrics?: unknown
+  endpointMetrics?: unknown;
 }
 
 export interface ServiceEndpoint {

@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Phase 3 Search Strategies Test Suite
  *
@@ -14,18 +9,18 @@
  * - Enhanced response metadata
  */
 
-import { afterEach,beforeEach, describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { type CoreFindParams,coreMemoryFind } from '../core-memory-find.js';
-import { getSearchStrategies,memoryFind, memoryFindWithStrategy } from '../memory-find.js';
+import { type CoreFindParams, coreMemoryFind } from '../core-memory-find';
+import { getSearchStrategies, memoryFind, memoryFindWithStrategy } from '../memory-find';
 
 // Mock the logger to avoid noise in tests
-jest.mock('../../utils/logger.js', () => ({
+vi.mock('../../utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
@@ -104,7 +99,7 @@ describe('Phase 3 Search Strategies', () => {
   describe('Vector Backend Degradation', () => {
     it('should handle vector backend unavailability in deep mode', async () => {
       // Mock vector backend as unavailable
-      jest.spyOn(Math, 'random').mockReturnValue(0.05); // Below 0.1 threshold
+      vi.spyOn(Math, 'random').mockReturnValue(0.05); // Below 0.1 threshold
 
       const params: CoreFindParams = {
         query: 'test query',
@@ -117,12 +112,12 @@ describe('Phase 3 Search Strategies', () => {
       expect(result.observability?.degraded).toBe(true);
       expect(result.autonomous_context?.user_message_suggestion).toContain('degraded');
 
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
 
     it('should use vector backend when available in auto mode', async () => {
       // Mock vector backend as available
-      jest.spyOn(Math, 'random').mockReturnValue(0.9); // Above 0.1 threshold
+      vi.spyOn(Math, 'random').mockReturnValue(0.9); // Above 0.1 threshold
 
       const params: CoreFindParams = {
         query: 'test query',
@@ -134,7 +129,7 @@ describe('Phase 3 Search Strategies', () => {
       expect(result.observability?.vector_used).toBe(true);
       expect(result.observability?.degraded).toBe(false);
 
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
   });
 

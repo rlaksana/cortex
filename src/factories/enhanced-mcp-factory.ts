@@ -1,17 +1,17 @@
-// @ts-nocheck
-// COMPREHENSIVE EMERGENCY ROLLBACK: Final systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
-
 /**
  * Enhanced MCP Server Factory with proper type safety
  * Eliminates 'any' usage and provides typed service creation patterns
  */
 
-import { ErrorCode, McpError,McpServer } from '@modelcontextprotocol/sdk/server/index.js';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
-import type {
-  ConnectionTestResult,
+import {
+  isMcpServerWithTools,
+  safeExtractErrorDetails
+} from '../utils/type-safe-access.js';
+
+import {
   createFactoryId,
   createServiceId,
   DependencyResolutionError,
@@ -20,7 +20,30 @@ import type {
   ServiceRegistrationError,
   TypedDIContainer,
   TypedFactory,
-  ValidationResult} from './factory-types';
+  ValidationResult,
+  ConnectionTestResult,
+} from './factory-types';
+
+// Error codes enum since ErrorCode is not available in the SDK
+export enum ErrorCode {
+  InvalidParams = -32602,
+  InternalError = -32603,
+  ParseError = -32700,
+  InvalidRequest = -32600,
+  MethodNotFound = -32601,
+}
+
+// Simple error class since McpError is not available in the SDK
+export class McpError extends Error {
+  constructor(
+    public readonly code: ErrorCode,
+    message: string,
+    public readonly data?: unknown
+  ) {
+    super(message);
+    this.name = 'McpError';
+  }
+}
 
 // Enhanced configuration interfaces
 export interface EnhancedServerConfig {
@@ -40,7 +63,7 @@ export interface EnhancedLoggerConfig {
   readonly silent: boolean;
   readonly prefix?: string;
   readonly structured: boolean;
-  readonly metadata?: ReadonlyRecord<string, unknown>;
+  readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
 export interface ServerFeatures {
@@ -173,11 +196,11 @@ export interface FeatureStatus {
 }
 
 export interface PerformanceMetrics {
-  readonly requestCount: number;
-  readonly errorCount: number;
-  readonly averageLatency: number;
-  readonly peakMemoryUsage: number;
-  readonly activeConnections: number;
+  requestCount: number;
+  errorCount: number;
+  averageLatency: number;
+  peakMemoryUsage: number;
+  activeConnections: number;
 }
 
 export interface SecurityStatus {
@@ -206,7 +229,11 @@ export const MCP_FACTORY_ID: FactoryId<EnhancedMcpServerFactory> =
 export interface TypedEntryPointLogger {
   info(message: string, metadata?: Readonly<Record<string, unknown>>): void;
   warn(message: string, metadata?: Readonly<Record<string, unknown>>): void;
-  error(message: string, error?: Error | unknown, metadata?: Readonly<Record<string, unknown>>): void;
+  error(
+    message: string,
+    error?: Error | unknown,
+    metadata?: Readonly<Record<string, unknown>>
+  ): void;
   debug(message: string, metadata?: Readonly<Record<string, unknown>>): void;
   restoreConsole(): void;
 }
@@ -214,7 +241,9 @@ export interface TypedEntryPointLogger {
 // Enhanced database adapter interface
 export interface TypedDatabaseAdapter {
   store(item: TypedStoredItem): Promise<void>;
-  find(query: MemoryFindSchema): Promise<{ results: ReadonlyArray<TypedStoredItem>; total_count: number }>;
+  find(
+    query: MemoryFindSchema
+  ): Promise<{ results: ReadonlyArray<TypedStoredItem>; total_count: number }>;
   healthCheck(): Promise<boolean>;
   getStats(): Promise<{ totalItems: number; collectionExists: boolean; latency?: number }>;
   cleanup(): Promise<{ itemsRemoved: number }>;
@@ -222,12 +251,14 @@ export interface TypedDatabaseAdapter {
 }
 
 // Main enhanced factory implementation
-export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerFactory, EnhancedServerConfig> {
+export class EnhancedMcpServerFactory
+  implements TypedFactory<EnhancedMcpServerFactory, EnhancedServerConfig>
+{
   public readonly id = MCP_FACTORY_ID;
 
   private logger: TypedEntryPointLogger;
   private config: EnhancedServerConfig;
-  private server: McpServer;
+  private server: Server;
   private databaseAdapter?: TypedDatabaseAdapter;
   private container?: TypedDIContainer;
   private isShuttingDown = false;
@@ -237,7 +268,7 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
     this.config = config;
     this.validateConfig(config);
     this.logger = this.createLogger(config.logger);
-    this.server = new McpServer({
+    this.server = new Server({
       name: config.name,
       version: config.version,
     });
@@ -269,17 +300,25 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
     } else {
       const validLevels = ['error', 'warn', 'info', 'debug'] as const;
       if (!validLevels.includes(config.logger.level)) {
-        errors.push(`Invalid log level: ${config.logger.level}. Must be one of: ${validLevels.join(', ')}`);
+        errors.push(
+          `Invalid log level: ${config.logger.level}. Must be one of: ${validLevels.join(', ')}`
+        );
       }
     }
 
     // Validate performance config
     if (config.performance) {
-      if (config.performance.connectionTimeout < 1000 || config.performance.connectionTimeout > 300000) {
+      if (
+        config.performance.connectionTimeout < 1000 ||
+        config.performance.connectionTimeout > 300000
+      ) {
         errors.push('Connection timeout must be between 1000ms and 300000ms');
       }
 
-      if (config.performance.maxConcurrentRequests < 1 || config.performance.maxConcurrentRequests > 1000) {
+      if (
+        config.performance.maxConcurrentRequests < 1 ||
+        config.performance.maxConcurrentRequests > 1000
+      ) {
         errors.push('Max concurrent requests must be between 1 and 1000');
       }
     }
@@ -292,7 +331,7 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
     return {
       valid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 
@@ -354,8 +393,8 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
 
     try {
       // Resolve required services
-      this.logger = this.container.resolve(LOGGER_SERVICE);
-      this.databaseAdapter = this.container.resolve(DATABASE_SERVICE);
+      this.logger = this.container.resolve(LOGGER_SERVICE) as TypedEntryPointLogger;
+      this.databaseAdapter = this.container.resolve(DATABASE_SERVICE) as TypedDatabaseAdapter;
     } catch (error) {
       throw new DependencyResolutionError(
         `Failed to resolve required services: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -374,53 +413,59 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
       // Database adapter will be resolved from container or created here
       if (!this.databaseAdapter && this.container) {
         try {
-          this.databaseAdapter = this.container.resolve(DATABASE_SERVICE);
+          this.databaseAdapter = this.container.resolve(DATABASE_SERVICE) as TypedDatabaseAdapter;
         } catch {
           // Database service not registered, will use in-memory fallback
           this.logger.warn('Database service not found in container, using in-memory fallback');
         }
       }
     } catch (error) {
-      this.logger.warn('Failed to initialize database adapter, using in-memory fallback:', error);
+      this.logger.warn('Failed to initialize database adapter, using in-memory fallback:', error as Record<string, unknown>);
     }
   }
 
   private async registerTypedTools(): Promise<void> {
+    // Check if server supports tool registration
+    if (!isMcpServerWithTools(this.server)) {
+      console.warn('Server does not support tool registration');
+      return;
+    }
+
     // Register memory_store tool with typed schema
-    this.server.registerTool(
+    (this.server as any).registerTool(
       'memory_store',
       {
         title: 'Memory Store',
         description: 'Store knowledge items in Cortex memory with type safety and validation.',
         inputSchema: this.getMemoryStoreSchema(),
       },
-      async (args: MemoryStoreSchema, _extra) => {
+      async (args: MemoryStoreSchema) => {
         return this.handleMemoryStore(args);
       }
     );
 
     // Register memory_find tool with typed schema
-    this.server.registerTool(
+    (this.server as any).registerTool(
       'memory_find',
       {
         title: 'Memory Find',
         description: 'Search Cortex memory with typed queries and filters.',
         inputSchema: this.getMemoryFindSchema(),
       },
-      async (args: MemoryFindSchema, _extra) => {
+      async (args: MemoryFindSchema) => {
         return this.handleMemoryFind(args);
       }
     );
 
     // Register system_status tool with typed schema
-    this.server.registerTool(
+    (this.server as any).registerTool(
       'system_status',
       {
         title: 'System Status',
         description: 'System monitoring with enhanced metrics and security status.',
         inputSchema: this.getSystemStatusSchema(),
       },
-      async (args: SystemStatusSchema, _extra) => {
+      async (args: SystemStatusSchema) => {
         return this.handleSystemStatus(args);
       }
     );
@@ -439,28 +484,41 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
               kind: {
                 type: 'string',
                 enum: [
-                  'entity', 'relation', 'observation', 'section', 'runbook',
-                  'change', 'issue', 'decision', 'todo', 'release_note',
-                  'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
-                ]
+                  'entity',
+                  'relation',
+                  'observation',
+                  'section',
+                  'runbook',
+                  'change',
+                  'issue',
+                  'decision',
+                  'todo',
+                  'release_note',
+                  'ddl',
+                  'pr_context',
+                  'incident',
+                  'release',
+                  'risk',
+                  'assumption',
+                ],
               },
               data: {
                 type: 'object',
-                description: 'The typed knowledge data'
+                description: 'The typed knowledge data',
               },
               scope: {
                 type: 'object',
                 properties: {
                   project: { type: 'string' },
                   branch: { type: 'string' },
-                  org: { type: 'string' }
-                }
-              }
+                  org: { type: 'string' },
+                },
+              },
             },
-            required: ['kind', 'data']
-          }
-        }
-      }
+            required: ['kind', 'data'],
+          },
+        },
+      },
     };
   }
 
@@ -475,17 +533,17 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
           properties: {
             project: { type: 'string' },
             branch: { type: 'string' },
-            org: { type: 'string' }
-          }
+            org: { type: 'string' },
+          },
         },
         types: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Knowledge types to filter'
+          description: 'Knowledge types to filter',
         },
-        limit: { type: 'number', default: 10, description: 'Maximum results' }
+        limit: { type: 'number', default: 10, description: 'Maximum results' },
       },
-      required: ['query']
+      required: ['query'],
     };
   }
 
@@ -496,13 +554,15 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
         operation: {
           type: 'string',
           enum: ['cleanup', 'health', 'stats', 'validate'],
-          description: 'System operation to perform'
-        }
-      }
+          description: 'System operation to perform',
+        },
+      },
     };
   }
 
-  private async handleMemoryStore(args: MemoryStoreSchema): Promise<{ content: Array<{ type: string; text: string }> }> {
+  private async handleMemoryStore(
+    args: MemoryStoreSchema
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
     const startTime = Date.now();
     this.performanceMetrics.requestCount++;
 
@@ -518,20 +578,26 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
       this.updatePerformanceMetrics(latency);
 
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            success: true,
-            itemsStored: result.stored,
-            errors: result.errors,
-            metadata: {
-              timestamp: new Date().toISOString(),
-              storage: this.databaseAdapter ? 'typed-database' : 'typed-memory',
-              latency,
-              validation: this.config.security.validateInputs
-            }
-          }, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: true,
+                itemsStored: result.stored,
+                errors: result.errors,
+                metadata: {
+                  timestamp: new Date().toISOString(),
+                  storage: this.databaseAdapter ? 'typed-database' : 'typed-memory',
+                  latency,
+                  validation: this.config.security.validateInputs,
+                },
+              },
+              null,
+              2
+            ),
+          },
+        ],
       };
     } catch (error) {
       this.performanceMetrics.errorCount++;
@@ -544,7 +610,9 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
     }
   }
 
-  private async handleMemoryFind(args: MemoryFindSchema): Promise<{ content: Array<{ type: string; text: string }> }> {
+  private async handleMemoryFind(
+    args: MemoryFindSchema
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
     const startTime = Date.now();
     this.performanceMetrics.requestCount++;
 
@@ -552,7 +620,7 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
       this.logger.info('Memory find tool called', {
         query: args.query?.substring(0, 100) + '...',
         types: args.types,
-        limit: args.limit
+        limit: args.limit,
       });
 
       if (this.config.security.validateInputs) {
@@ -564,24 +632,30 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
       this.updatePerformanceMetrics(latency);
 
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            success: true,
-            results: result.results,
-            totalFound: result.total_count,
-            metadata: {
-              timestamp: new Date().toISOString(),
-              storage: this.databaseAdapter ? 'typed-database' : 'typed-memory',
-              latency,
-              filters: {
-                types: args.types,
-                scope: args.scope,
-                limit: args.limit
-              }
-            }
-          }, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: true,
+                results: result.results,
+                totalFound: result.total_count,
+                metadata: {
+                  timestamp: new Date().toISOString(),
+                  storage: this.databaseAdapter ? 'typed-database' : 'typed-memory',
+                  latency,
+                  filters: {
+                    types: args.types,
+                    scope: args.scope,
+                    limit: args.limit,
+                  },
+                },
+              },
+              null,
+              2
+            ),
+          },
+        ],
       };
     } catch (error) {
       this.performanceMetrics.errorCount++;
@@ -594,16 +668,20 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
     }
   }
 
-  private async handleSystemStatus(args: SystemStatusSchema): Promise<{ content: Array<{ type: string; text: string }> }> {
+  private async handleSystemStatus(
+    args: SystemStatusSchema
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
       this.logger.info('System status tool called', { operation: args.operation });
       const status = await this.getEnhancedSystemStatus(args.operation);
 
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify(status, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(status, null, 2),
+          },
+        ],
       };
     } catch (error) {
       this.logger.error('System status tool failed:', error);
@@ -630,9 +708,22 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
       }
 
       const validKinds: ReadonlyArray<StoredItemKind> = [
-        'entity', 'relation', 'observation', 'section', 'runbook',
-        'change', 'issue', 'decision', 'todo', 'release_note',
-        'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+        'entity',
+        'relation',
+        'observation',
+        'section',
+        'runbook',
+        'change',
+        'issue',
+        'decision',
+        'todo',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'incident',
+        'release',
+        'risk',
+        'assumption',
       ];
 
       if (!validKinds.includes(item.kind)) {
@@ -655,22 +746,26 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
     }
   }
 
-  private async storeTypedItems(items: ReadonlyArray<TypedMemoryStoreItem>): Promise<{ stored: number; errors: ReadonlyArray<string> }> {
+  private async storeTypedItems(
+    items: ReadonlyArray<TypedMemoryStoreItem>
+  ): Promise<{ stored: number; errors: ReadonlyArray<string> }> {
     // Implementation would use the database adapter if available
     // For now, return a mock implementation
     return { stored: items.length, errors: [] };
   }
 
-  private async findTypedItems(args: MemoryFindSchema): Promise<{ results: ReadonlyArray<TypedStoredItem>; total_count: number }> {
+  private async findTypedItems(
+    args: MemoryFindSchema
+  ): Promise<{ results: ReadonlyArray<TypedStoredItem>; total_count: number }> {
     // Implementation would use the database adapter if available
     // For now, return a mock implementation
     return { results: [], total_count: 0 };
   }
 
   private async getEnhancedSystemStatus(operation?: string): Promise<EnhancedHealthStatus> {
-    const dbStats = this.databaseAdapter ?
-      await this.databaseAdapter.getStats() :
-      { totalItems: 0, collectionExists: false };
+    const dbStats = this.databaseAdapter
+      ? await this.databaseAdapter.getStats()
+      : { totalItems: 0, collectionExists: false };
 
     return {
       success: true,
@@ -680,7 +775,7 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
         version: this.config.version,
         uptime: process.uptime(),
         memory: process.memoryUsage(),
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
       },
       database: {
         type: this.databaseAdapter ? 'typed-database' : 'typed-memory',
@@ -689,23 +784,23 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
         collectionExists: dbStats.collectionExists,
         totalItems: dbStats.totalItems,
         storage: this.databaseAdapter ? 'typed database (persistent)' : 'typed memory (ephemeral)',
-        latency: dbStats.latency
+        latency: dbStats.latency,
       },
       features: {
         storage: {
           qdrant: !!this.databaseAdapter,
-          memory: true
+          memory: true,
         },
         search: {
           semantic: this.config.features.semanticSearch,
           vector: this.config.features.vectorStorage,
-          text: true
+          text: true,
         },
         monitoring: {
           health: this.config.features.healthMonitoring,
           metrics: this.config.features.metrics,
-          logging: true
-        }
+          logging: true,
+        },
       },
       performance: this.performanceMetrics,
       security: {
@@ -713,9 +808,9 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
         outputSanitization: this.config.security.sanitizeOutputs,
         corsEnabled: this.config.security.enableCORS || false,
         rateLimitActive: this.config.features.rateLimiting,
-        lastSecurityCheck: new Date().toISOString()
+        lastSecurityCheck: new Date().toISOString(),
       },
-      operation
+      operation,
     };
   }
 
@@ -728,7 +823,11 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
       warn: (message: string, metadata?: Readonly<Record<string, unknown>>) => {
         console.warn(`[WARN] ${config.prefix || ''} ${message}`, metadata || '');
       },
-      error: (message: string, error?: Error | unknown, metadata?: Readonly<Record<string, unknown>>) => {
+      error: (
+        message: string,
+        error?: Error | unknown,
+        metadata?: Readonly<Record<string, unknown>>
+      ) => {
         console.error(`[ERROR] ${config.prefix || ''} ${message}`, error, metadata || '');
       },
       debug: (message: string, metadata?: Readonly<Record<string, unknown>>) => {
@@ -738,7 +837,7 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
       },
       restoreConsole: () => {
         // Implementation would restore console if modified
-      }
+      },
     };
   }
 
@@ -748,7 +847,7 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
       errorCount: 0,
       averageLatency: 0,
       peakMemoryUsage: 0,
-      activeConnections: 0
+      activeConnections: 0,
     };
   }
 
@@ -785,7 +884,7 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
       shutdown('uncaughtException');
     });
     process.on('unhandledRejection', (reason, promise) => {
-      this.logger.error('Unhandled rejection at:', promise, 'reason:', reason);
+      this.logger.error(`Unhandled rejection at: ${promise}, reason: ${reason}`);
       shutdown('unhandledRejection');
     });
   }
@@ -801,7 +900,7 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
     }
   }
 
-  getServer(): McpServer {
+  getServer(): Server {
     return this.server;
   }
 
@@ -847,14 +946,14 @@ export class EnhancedMcpServerFactory implements TypedFactory<EnhancedMcpServerF
         metadata: {
           server: this.config.name,
           version: this.config.version,
-          features: this.config.features
-        }
+          features: this.config.features,
+        },
       };
     } catch (error) {
       return {
         connected: false,
         healthy: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }

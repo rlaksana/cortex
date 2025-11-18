@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Comprehensive Load Testing Framework for MCP-Cortex
  *
@@ -709,7 +705,12 @@ export class LoadTestFramework extends EventEmitter {
     const selectedOp = this.selectOperationByWeight(operations);
     const mixedStep: LoadTestStep = {
       ...step,
-      type: selectedOp.type as 'memory_store' | 'memory_find' | 'zai_completion' | 'zai_streaming' | 'mixed',
+      type: selectedOp.type as
+        | 'memory_store'
+        | 'memory_find'
+        | 'zai_completion'
+        | 'zai_streaming'
+        | 'mixed',
     };
 
     await this.executeStep(mixedStep);
@@ -763,14 +764,8 @@ export class LoadTestFramework extends EventEmitter {
     const cpuCurrent = (cpuUsage.user + cpuUsage.system) / 1000000; // seconds
 
     // Update peak values
-    this.resourceMetrics.memory.peak = Math.max(
-      this.resourceMetrics.memory.peak,
-      memoryCurrent
-    );
-    this.resourceMetrics.cpu.peak = Math.max(
-      this.resourceMetrics.cpu.peak,
-      cpuCurrent
-    );
+    this.resourceMetrics.memory.peak = Math.max(this.resourceMetrics.memory.peak, memoryCurrent);
+    this.resourceMetrics.cpu.peak = Math.max(this.resourceMetrics.cpu.peak, cpuCurrent);
   }
 
   /**

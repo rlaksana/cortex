@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * P3-2: Comprehensive Cleanup Worker Service
  *
@@ -14,9 +10,7 @@
 
 import { logger } from '@/utils/logger.js';
 
-import {
-  runExpiryWorker,
-} from './expiry-worker.js';
+import { runExpiryWorker } from './expiry-worker.js';
 import { memoryFind } from './memory-find.js';
 import { memoryStore } from './memory-store.js';
 import { systemMetricsService } from './metrics/system-metrics.js';

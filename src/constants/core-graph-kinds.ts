@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Core Graph Extension Knowledge Types
  *
@@ -13,8 +9,7 @@
  * @version 1.0.0
  */
 
-
-import { EntitySchema, ObservationSchema,RelationSchema } from '../schemas/knowledge-types.js';
+import { EntitySchema, ObservationSchema, RelationSchema } from '../schemas/knowledge-types.js';
 /**
  * Knowledge type categories for logical grouping
  */

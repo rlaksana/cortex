@@ -1,15 +1,17 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    // Development-specific features
+    // Production-ready configuration with gradual migration
     "downlevelIteration": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "noUnusedLocals": false, // Temporarily disabled for gradual migration
+    "noUnusedParameters": false, // Temporarily disabled for gradual migration
     "noEmit": false,
-    "declaration": false,
-    "declarationMap": false,
+    "declaration": true,
+    "declarationMap": true,
     "sourceMap": true,
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
   },
   "include": [
     "src/**/*.ts",
@@ -17,9 +19,6 @@
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "src/test/**",
-    "**/*.test.ts",
-    "**/*.spec.ts"
+    "dist"
   ]
 }

@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Pattern Recognition Strategy
  *
@@ -225,9 +221,9 @@ export class PatternRecognitionStrategy {
       for (const pattern of timePatterns) {
         const analysis: PatternAnalysis = {
           pattern_type: 'temporal',
-          pattern_name: `Temporal Pattern: ${pattern.name}`,
-          description: pattern.description,
-          confidence: pattern.confidence,
+          pattern_name: `Temporal Pattern: ${(pattern as unknown).name}`,
+          description: (pattern as unknown).description,
+          confidence: (pattern as unknown).confidence,
           frequency: pattern.items.length,
           items: pattern.items.map((item: KnowledgeItem) => ({
             item_id: item.id || '',
@@ -297,10 +293,7 @@ export class PatternRecognitionStrategy {
       const data = item.data as unknown;
       return (
         item.data &&
-        (data.content ||
-          data.title ||
-          data.description ||
-          Object.keys(item.data).length > 0)
+        (data.content || data.title || data.description || Object.keys(item.data).length > 0)
       );
     });
   }
@@ -391,7 +384,10 @@ Return only the JSON response, no additional text.
   /**
    * Parse semantic pattern response
    */
-  private parseSemanticPatternResponse(response: ZAIChatResponse, items: KnowledgeItem[]): PatternAnalysis[] {
+  private parseSemanticPatternResponse(
+    response: ZAIChatResponse,
+    items: KnowledgeItem[]
+  ): PatternAnalysis[] {
     try {
       const content = response.choices?.[0]?.message?.content;
       if (!content) {
@@ -403,8 +399,8 @@ Return only the JSON response, no additional text.
 
       return patterns.map((pattern: unknown) => ({
         pattern_type: 'semantic' as const,
-        pattern_name: pattern.name,
-        description: pattern.description,
+        pattern_name: (pattern as unknown).name,
+        description: (pattern as unknown).description,
         confidence: pattern.confidence || 0.5,
         frequency: pattern.item_indices?.length || 0,
         items: (pattern.item_indices || []).map((index: number) => {
@@ -433,7 +429,10 @@ Return only the JSON response, no additional text.
   /**
    * Parse behavioral pattern response
    */
-  private parseBehavioralPatternResponse(response: ZAIChatResponse, items: KnowledgeItem[]): PatternAnalysis[] {
+  private parseBehavioralPatternResponse(
+    response: ZAIChatResponse,
+    items: KnowledgeItem[]
+  ): PatternAnalysis[] {
     try {
       const content = response.choices?.[0]?.message?.content;
       if (!content) {
@@ -445,8 +444,8 @@ Return only the JSON response, no additional text.
 
       return patterns.map((pattern: unknown) => ({
         pattern_type: 'behavioral' as const,
-        pattern_name: pattern.name,
-        description: pattern.description,
+        pattern_name: (pattern as unknown).name,
+        description: (pattern as unknown).description,
         confidence: pattern.confidence || 0.5,
         frequency: pattern.item_indices?.length || 0,
         items: (pattern.item_indices || []).map((index: number) => {
@@ -493,7 +492,7 @@ Return only the JSON response, no additional text.
    * Get item structure signature
    */
   private getItemStructure(item: KnowledgeItem): string {
-    const data = item.data as unknown || {};
+    const data = (item.data as unknown) || {};
     const dataKeys = Object.keys(data).sort();
     const hasContent = !!(data.content || data.title || data.description);
     const hasMetadata = !!(data.metadata || data.tags || data.categories);

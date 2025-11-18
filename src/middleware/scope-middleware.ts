@@ -1,6 +1,4 @@
-// @ts-nocheck
 // COMPREHENSIVE EMERGENCY ROLLBACK: Final systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Scope Enforcement Middleware
@@ -274,12 +272,15 @@ export class ScopeMiddleware {
     resource: string,
     action: 'read' | 'write' | 'delete' | 'manage'
   ): Promise<AuthenticatedRequest & { data: T }> {
-    return this.validateScope(authToken, resource, action, data).then((authContext) => ({
-      auth: authContext,
-      timestamp: Date.now(),
-      data,
-      idempotency_key: data.idempotency_key || this.generateIdempotencyKey(),
-    }));
+    return this.validateScope(authToken, resource, action, data).then((authContext) => {
+      const dataObj = data as Record<string, unknown>;
+      return {
+        auth: authContext,
+        timestamp: Date.now(),
+        data,
+        idempotency_key: (dataObj.idempotency_key as string) || this.generateIdempotencyKey(),
+      } as AuthenticatedRequest & { data: T };
+    });
   }
 
   /**

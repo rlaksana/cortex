@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * AI Metrics Service - Comprehensive Monitoring for AI Operations
  *
@@ -24,18 +19,16 @@ import { logger } from '@/utils/logger.js';
 
 // Local boundary helpers (timestamps/severity)
 const asEpoch = (v: unknown): number => Number(v ?? Date.now());
-const asDate  = (v: unknown): Date   => new Date(asEpoch(v));
+const asDate = (v: unknown): Date => new Date(asEpoch(v));
 type ExternalSeverity = string;
-type InternalSeverity = 'warning'|'critical'|'info';
+type InternalSeverity = 'warning' | 'critical' | 'info';
 const _toSeverity = (s: ExternalSeverity): InternalSeverity => {
   const k = String(s || '').toLowerCase();
   if (k === 'critical' || k === 'crit') return 'critical';
-  if (k === 'warn' || k === 'warning')  return 'warning';
+  if (k === 'warn' || k === 'warning') return 'warning';
   return 'info';
 };
-import type {
-  AIMetricsSnapshot,
-} from '../types/zai-interfaces.js';
+import type { AIMetricsSnapshot } from '../types/zai-interfaces.js';
 
 /**
  * AI Metrics Configuration
@@ -176,10 +169,34 @@ export class AIMetricsService {
       timestamp: new Date(Date.now()),
       services: {
         zai: { status: 'healthy', lastCheck: new Date(), uptime: 0, errorRate: 0, responseTime: 0 },
-        orchestrator: { status: 'healthy', lastCheck: new Date(), uptime: 0, errorRate: 0, responseTime: 0 },
-        backgroundProcessor: { status: 'healthy', lastCheck: new Date(), uptime: 0, errorRate: 0, responseTime: 0 },
-        insightService: { status: 'healthy', lastCheck: new Date(), uptime: 0, errorRate: 0, responseTime: 0 },
-        contradictionDetector: { status: 'healthy', lastCheck: new Date(), uptime: 0, errorRate: 0, responseTime: 0 },
+        orchestrator: {
+          status: 'healthy',
+          lastCheck: new Date(),
+          uptime: 0,
+          errorRate: 0,
+          responseTime: 0,
+        },
+        backgroundProcessor: {
+          status: 'healthy',
+          lastCheck: new Date(),
+          uptime: 0,
+          errorRate: 0,
+          responseTime: 0,
+        },
+        insightService: {
+          status: 'healthy',
+          lastCheck: new Date(),
+          uptime: 0,
+          errorRate: 0,
+          responseTime: 0,
+        },
+        contradictionDetector: {
+          status: 'healthy',
+          lastCheck: new Date(),
+          uptime: 0,
+          errorRate: 0,
+          responseTime: 0,
+        },
       },
       dependencies: {},
       overall: { uptime: 0, errorRate: 0, responseTime: 0, lastCheck: new Date() },
@@ -447,7 +464,8 @@ export class AIMetricsService {
     }
 
     if (metrics.confidence) {
-      contradiction.averageConfidence = ((contradiction.averageConfidence || 0) + metrics.confidence) / 2;
+      contradiction.averageConfidence =
+        ((contradiction.averageConfidence || 0) + metrics.confidence) / 2;
     }
 
     const strategy = metrics.strategy as keyof typeof contradiction.strategies;
@@ -534,50 +552,40 @@ export class AIMetricsService {
     let prometheus = '';
 
     // Operation metrics
-    prometheus += `# HELP ai_operations_total Total number of AI operations\const asEpoch = (v: unknown): number => Number(v ?? Date.now());
-const asDate  = (v: unknown): Date   => new Date(asEpoch(v));
-
-type ExternalSeverity = string;
-type InternalSeverity = 'warning'|'critical'|'info';
-const _toSeverity = (s: ExternalSeverity): InternalSeverity => {
-  const k = String(s || '').toLowerCase();
-  if (k === 'critical' || k === 'crit') return 'critical';
-  if (k === 'warn' || k === 'warning')  return 'warning';
-  return 'info';
-};\nn`;
+    prometheus += `# HELP ai_operations_total Total number of AI operations\n`;
     prometheus += `# TYPE ai_operations_total counter\n`;
-    prometheus += `ai_operations_total ${(metrics.operations?.total ?? 0)} ${timestamp}\n\n`;
+    prometheus += `ai_operations_total ${metrics.operations?.total ?? 0} ${timestamp}\n\n`;
 
     prometheus += `# HELP ai_operations_successful Number of successful AI operations\n`;
     prometheus += `# TYPE ai_operations_successful counter\n`;
-    prometheus += `ai_operations_successful ${(metrics.operations?.successful ?? 0)} ${timestamp}\n\n`;
+    prometheus += `ai_operations_successful ${metrics.operations?.successful ?? 0} ${timestamp}\n\n`;
 
     prometheus += `# HELP ai_operations_failed Number of failed AI operations\n`;
     prometheus += `# TYPE ai_operations_failed counter\n`;
-    prometheus += `ai_operations_failed ${(metrics.operations?.failed ?? 0)} ${timestamp}\n\n`;
+    prometheus += `ai_operations_failed ${metrics.operations?.failed ?? 0} ${timestamp}\n\n`;
 
     prometheus += `# HELP ai_operation_latency_seconds AI operation latency in seconds\n`;
     prometheus += `# TYPE ai_operation_latency_seconds histogram\n`;
     prometheus += `ai_operation_latency_seconds_sum ${(metrics.operations?.averageLatency ?? 0) / 1000} ${timestamp}\n`;
-    prometheus += `ai_operation_latency_seconds_count ${(metrics.operations?.total ?? 0)} ${timestamp}\n\n`;
+    prometheus += `ai_operation_latency_seconds_count ${metrics.operations?.total ?? 0} ${timestamp}\n\n`;
 
     // Insight metrics
     prometheus += `# HELP ai_insights_generated Total number of insights generated\n`;
     prometheus += `# TYPE ai_insights_generated counter\n`;
-    prometheus += `ai_insights_generated ${(metrics.insights?.generated ?? 0)} ${timestamp}\n\n`;
+    prometheus += `ai_insights_generated ${metrics.insights?.generated ?? 0} ${timestamp}\n\n`;
 
     prometheus += `# HELP ai_insight_accuracy Insight accuracy score\n`;
     prometheus += `# TYPE ai_insight_accuracy gauge\n`;
-    prometheus += `ai_insight_accuracy ${(metrics.insights?.accuracy ?? 0)} ${timestamp}\n\n`;
+    prometheus += `ai_insight_accuracy ${metrics.insights?.accuracy ?? 0} ${timestamp}\n\n`;
 
     // Contradiction detection metrics
     prometheus += `# HELP ai_contradictions_detected Total number of contradictions detected\n`;
     prometheus += `# TYPE ai_contradictions_detected counter\n`;
-    prometheus += `ai_contradictions_detected ${(metrics.contradiction?.detected ?? 0)} ${timestamp}\n\n`;
+    prometheus += `ai_contradictions_detected ${metrics.contradiction?.detected ?? 0} ${timestamp}\n\n`;
 
     prometheus += `# HELP ai_contradiction_accuracy Contradiction detection accuracy\n`;
     prometheus += `# TYPE ai_contradiction_accuracy gauge\n`;
-    prometheus += `ai_contradiction_accuracy ${(metrics.contradiction?.accuracy ?? 0)} ${timestamp}\n\n`;
+    prometheus += `ai_contradiction_accuracy ${metrics.contradiction?.accuracy ?? 0} ${timestamp}\n\n`;
 
     // Resource metrics
     prometheus += `# HELP ai_memory_usage_percentage AI service memory usage percentage\n`;
@@ -591,11 +599,11 @@ const _toSeverity = (s: ExternalSeverity): InternalSeverity => {
     // Quality metrics
     prometheus += `# HELP ai_quality_overall Overall AI service quality score\n`;
     prometheus += `# TYPE ai_quality_overall gauge\n`;
-    prometheus += `ai_quality_overall ${(metrics.quality?.overall ?? 0)} ${timestamp}\n\n`;
+    prometheus += `ai_quality_overall ${metrics.quality?.overall ?? 0} ${timestamp}\n\n`;
 
     prometheus += `# HELP ai_availability AI service availability percentage\n`;
     prometheus += `# TYPE ai_availability gauge\n`;
-    prometheus += `ai_availability ${(metrics.quality?.availability ?? 0)} ${timestamp}\n\n`;
+    prometheus += `ai_availability ${metrics.quality?.availability ?? 0} ${timestamp}\n\n`;
 
     return prometheus;
   }
@@ -628,7 +636,8 @@ const _toSeverity = (s: ExternalSeverity): InternalSeverity => {
 
     // Success rate alert
     const totalOps = metrics.operations?.total ?? metrics.operations?.totalOperations ?? 0;
-    const successOps = metrics.operations?.successful ?? metrics.operations?.successfulOperations ?? 0;
+    const successOps =
+      metrics.operations?.successful ?? metrics.operations?.successfulOperations ?? 0;
     const successRate = totalOps > 0 ? successOps / totalOps : 0;
     if (successRate < this.config.alertThresholds.minSuccessRate) {
       alerts.push({
@@ -801,9 +810,10 @@ const _toSeverity = (s: ExternalSeverity): InternalSeverity => {
 
     const insightScore = metrics.insights?.accuracy ?? 0;
     const contradictionScore = metrics.contradiction?.accuracy ?? 0;
-    const totalOps = (metrics.operations?.total ?? metrics.operations?.totalOperations) ?? 0;
-    const successOps = (metrics.operations?.successful ?? metrics.operations?.successfulOperations) ?? 0;
-    const failOps = (metrics.operations?.failed ?? metrics.operations?.failedOperations) ?? 0;
+    const totalOps = metrics.operations?.total ?? metrics.operations?.totalOperations ?? 0;
+    const successOps =
+      metrics.operations?.successful ?? metrics.operations?.successfulOperations ?? 0;
+    const failOps = metrics.operations?.failed ?? metrics.operations?.failedOperations ?? 0;
     const performanceScore = totalOps > 0 ? successOps / totalOps : 1;
 
     q.overall =
@@ -829,7 +839,9 @@ const _toSeverity = (s: ExternalSeverity): InternalSeverity => {
         falsePositiveRate: 0, // Not tracked yet
         falseNegativeRate: 0, // Not tracked yet
         averageConfidence:
-          ((metrics.insights?.averageConfidence ?? 0) + (metrics.contradiction?.averageConfidence ?? 0)) / 2,
+          ((metrics.insights?.averageConfidence ?? 0) +
+            (metrics.contradiction?.averageConfidence ?? 0)) /
+          2,
         qualityScore: q.overall,
       };
 

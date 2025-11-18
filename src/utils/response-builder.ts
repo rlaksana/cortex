@@ -1,10 +1,6 @@
-// @ts-nocheck
 // ABSOLUTELY FINAL EMERGENCY ROLLBACK: Complete ALL systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Interface compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Response Builder Utility
@@ -122,7 +118,7 @@ export class ResponseBuilder {
         execution_time_ms: duration,
         confidence_score: metrics.confidenceScore || 0,
         additional: {
-          ...additionalContext,
+          ...(additionalContext as Record<string, unknown>),
           request_id: this.context.requestId,
           operation_id: this.context.operationId,
           items_processed: data.total,
@@ -144,8 +140,8 @@ export class ResponseBuilder {
     const metrics: ResponseMetrics = {
       executionTime: duration,
       itemCount: data.items.length,
-      vectorUsed: data.observability?.vector_used || false,
-      degraded: data.observability?.degraded || false,
+      vectorUsed: Boolean((data.observability as Record<string, unknown>)?.vector_used),
+      degraded: Boolean((data.observability as Record<string, unknown>)?.degraded),
       confidenceScore: data.confidence,
     };
 
@@ -181,20 +177,20 @@ export class ResponseBuilder {
         },
       },
       meta: createResponseMeta({
-        strategy: data.strategy as unknown,
+        strategy: data.strategy as string,
         vector_used: Boolean(metrics.vectorUsed),
         degraded: Boolean(metrics.degraded),
         source: 'cortex_memory',
         execution_time_ms: duration,
         confidence_score: metrics.confidenceScore || 0,
         additional: {
-          ...additionalContext,
+          ...(additionalContext as Record<string, unknown>),
           request_id: this.context.requestId,
           operation_id: this.context.operationId,
           search_id: data.searchId,
           query: data.query,
           results_found: data.total,
-          mode: additionalContext?.mode || 'auto',
+          mode: (additionalContext as Record<string, unknown>)?.mode || 'auto',
         },
       }),
     };
@@ -238,7 +234,7 @@ export class ResponseBuilder {
         execution_time_ms: duration,
         confidence_score: 0.0,
         additional: {
-          ...additionalContext,
+          ...(additionalContext as Record<string, unknown>),
           request_id: this.context.requestId,
           operation_id: this.context.operationId,
           error_type: error.constructor.name,
@@ -270,7 +266,7 @@ export class ResponseBuilder {
         execution_time_ms: duration,
         confidence_score: 1.0,
         additional: {
-          ...additionalContext,
+          ...(additionalContext as Record<string, unknown>),
           request_id: this.context.requestId,
           operation_id: this.context.operationId,
           health_check_time: Date.now(),
@@ -336,8 +332,8 @@ export function createMemoryStoreResponse(
   additionalContext?: unknown
 ): UnifiedToolResponse {
   const builder = new ResponseBuilder('memory_store', startTime);
-  if (additionalContext?.operationId) {
-    builder.setOperationId(additionalContext.operationId);
+  if ((additionalContext as Record<string, unknown>)?.operationId) {
+    builder.setOperationId(String((additionalContext as Record<string, unknown>).operationId));
   }
   return builder.createMemoryStoreResponse(data, additionalContext);
 }
@@ -351,8 +347,8 @@ export function createMemoryFindResponse(
   additionalContext?: unknown
 ): UnifiedToolResponse {
   const builder = new ResponseBuilder('memory_find', startTime);
-  if (additionalContext?.operationId) {
-    builder.setOperationId(additionalContext.operationId);
+  if ((additionalContext as Record<string, unknown>)?.operationId) {
+    builder.setOperationId(String((additionalContext as Record<string, unknown>).operationId));
   }
   return builder.createMemoryFindResponse(data, additionalContext);
 }
@@ -367,8 +363,8 @@ export function createErrorResponse(
   additionalContext?: unknown
 ): UnifiedToolResponse {
   const builder = new ResponseBuilder(operationType, startTime);
-  if (additionalContext?.operationId) {
-    builder.setOperationId(additionalContext.operationId);
+  if ((additionalContext as Record<string, unknown>)?.operationId) {
+    builder.setOperationId(String((additionalContext as Record<string, unknown>).operationId));
   }
   return builder.createErrorResponse(error, additionalContext);
 }

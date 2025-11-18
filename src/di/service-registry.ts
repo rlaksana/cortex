@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: DI container interface compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
-
 /**
  * Service Registry Configuration
  *
@@ -44,9 +40,15 @@ import type {
   IMetricsService,
   IPerformanceMonitor,
   IValidationService,
+  CacheStats,
 } from './service-interfaces.js';
 import { ServiceTokens } from './service-interfaces.js';
 import { ConfigService } from './services/config-service.js';
+import {
+  isConfigService,
+  isDisposable,
+  isDIContainerConfig
+} from '../utils/type-safe-access.js';
 import { LoggerService } from './services/logger-service.js';
 import { DatabaseManager } from '../db/database-manager.js';
 import { AuthService } from '../services/auth/auth-service.js';
@@ -58,6 +60,7 @@ import { MemoryFindOrchestrator } from '../services/orchestrators/memory-find-or
 // Import existing implementations to be wrapped
 import { MemoryStoreOrchestrator } from '../services/orchestrators/memory-store-orchestrator.js';
 import { performanceMonitor } from '../utils/performance-monitor.js';
+import { EventBus } from './event-bus.js';
 
 /**
  * Service registry for configuring dependency injection
@@ -120,10 +123,52 @@ export class ServiceRegistry {
   private registerConfigService(): void {
     this.container.registerFactory<IConfigService>(
       ServiceTokens.CONFIG_SERVICE,
-      (container) => {
+      (container): IConfigService => {
         // Create a temporary logger for config service initialization
-        const tempLogger = console;
-        return new ConfigService(tempLogger as unknown);
+        const tempLogger: ILoggerService = {
+          debug: (message: string, ...args: unknown[]) => console.debug(message, ...args),
+          info: (message: string, ...args: unknown[]) => console.info(message, ...args),
+          warn: (message: string, ...args: unknown[]) => console.warn(message, ...args),
+          error: (message: string, error?: Error | unknown, ...args: unknown[]) => {
+            if (error instanceof Error) {
+              console.error(message, error, ...args);
+            } else {
+              console.error(message, error, ...args);
+            }
+          },
+          child: (context: Record<string, unknown>) => tempLogger,
+          withContext: (context: Record<string, unknown>) => tempLogger,
+          setLevel: (level: 'debug' | 'info' | 'warn' | 'error') => {},
+          getLevel: () => 'info',
+          isLevelEnabled: (level: string) => true
+        };
+        const configService = new ConfigService(tempLogger);
+
+        // Create adapter to fulfill IConfigService interface using type-safe access
+        if (isConfigService(configService)) {
+          return {
+            get: <T>(key: string, defaultValue?: T) => configService.get(key, defaultValue),
+            has: (key: string) => configService.has(key),
+            reload: () => configService.reload(),
+            getSection: <T extends Record<string, unknown>>(section: string) =>
+              configService.getSection(section) as T,
+            getAll: () => configService.getAll(),
+            set: (key: string, value: unknown) => configService.set(key, value),
+            validate: (key: string, validator: (value: unknown) => boolean) =>
+              configService.validate(key, validator)
+          } as IConfigService;
+        } else {
+          // Fallback implementation for ConfigService without required methods
+          return {
+            get: <T>(key: string, defaultValue?: T) => defaultValue as T,
+            has: (key: string) => false,
+            reload: () => Promise.resolve(),
+            getSection: <T extends Record<string, unknown>>(section: string) => ({} as T),
+            getAll: () => ({} as Record<string, unknown>),
+            set: (key: string, value: unknown) => {},
+            validate: (key: string, validator: (value: unknown) => boolean) => true
+          } as unknown as IConfigService;
+        }
       },
       ServiceLifetime.SINGLETON
     );
@@ -157,10 +202,12 @@ export class ServiceRegistry {
   private registerEventService(): void {
     this.container.registerFactory<IEventService>(
       ServiceTokens.EVENT_SERVICE,
-      (container) => {
-        return new EventEmitter();
+      (container): IEventService => {
+        const logger = container.resolve<ILoggerService>(ServiceTokens.LOGGER_SERVICE);
+        return new EventBus(logger);
       },
-      ServiceLifetime.SINGLETON
+      ServiceLifetime.SINGLETON,
+      [ServiceTokens.LOGGER_SERVICE]
     );
   }
 
@@ -177,7 +224,7 @@ export class ServiceRegistry {
         const databaseManager = new DatabaseManager({
           qdrant: {
             url: config.get('QDRANT_URL', 'http://localhost:6333'),
-            apiKey: config.get('QDRANT_API_KEY'),
+            apiKey: config.get('QDRANT_API_KEY') as string | undefined,
             timeout: config.get('QDRANT_TIMEOUT', 30000),
           },
           enableVectorOperations: config.get('ENABLE_VECTOR_OPERATIONS', true),
@@ -226,7 +273,7 @@ export class ServiceRegistry {
     // Memory Store Orchestrator
     this.container.registerFactory<IMemoryStoreOrchestrator>(
       ServiceTokens.MEMORY_STORE_ORCHESTRATOR,
-      () => {
+      (): IMemoryStoreOrchestrator => {
         // Create MemoryStoreOrchestrator and wrap with adapter to implement IMemoryStoreOrchestrator interface
         const memoryStoreOrchestrator = new MemoryStoreOrchestrator();
         return new MemoryStoreOrchestratorAdapter(memoryStoreOrchestrator);
@@ -237,7 +284,7 @@ export class ServiceRegistry {
     // Memory Find Orchestrator
     this.container.registerFactory<IMemoryFindOrchestrator>(
       ServiceTokens.MEMORY_FIND_ORCHESTRATOR,
-      () => {
+      (): IMemoryFindOrchestrator => {
         const memoryFindOrchestrator = new MemoryFindOrchestrator();
         return new MemoryFindOrchestratorAdapter(memoryFindOrchestrator);
       },
@@ -252,13 +299,13 @@ export class ServiceRegistry {
     // Auth Service
     this.container.registerFactory<IAuthService>(
       ServiceTokens.AUTH_SERVICE,
-      (container) => {
+      (container): IAuthService => {
         const logger = container.resolve<ILoggerService>(ServiceTokens.LOGGER_SERVICE);
         const config = container.resolve<IConfigService>(ServiceTokens.CONFIG_SERVICE);
 
         const authService = new AuthService({
-          jwt_secret: config.get('JWT_SECRET', 'default-secret-key-for-development-only'),
-          jwt_refresh_secret: config.get('JWT_REFRESH_SECRET', 'default-refresh-secret'),
+          jwt_secret: config.get('JWT_SECRET', 'default-secret-key-for-development-only') as string,
+          jwt_refresh_secret: config.get('JWT_REFRESH_SECRET', 'default-refresh-secret') as string,
           jwt_expires_in: config.get('JWT_EXPIRES_IN', '1h'),
           jwt_refresh_expires_in: config.get('JWT_REFRESH_EXPIRES_IN', '24h'),
           bcrypt_rounds: config.get('BCRYPT_ROUNDS', 12),
@@ -266,7 +313,7 @@ export class ServiceRegistry {
           session_timeout_hours: config.get('SESSION_TIMEOUT_HOURS', 24),
           max_sessions_per_user: config.get('MAX_SESSIONS_PER_USER', 5),
           rate_limit_enabled: config.get('RATE_LIMIT_ENABLED', true),
-          token_blacklist_backup_path: config.get('TOKEN_BLACKLIST_BACKUP_PATH'),
+          token_blacklist_backup_path: config.get('TOKEN_BLACKLIST_BACKUP_PATH') as string | undefined,
         });
 
         return new AuthServiceAdapter(authService);
@@ -278,7 +325,7 @@ export class ServiceRegistry {
     // Validation Service
     this.container.registerFactory<IValidationService>(
       ServiceTokens.VALIDATION_SERVICE,
-      (container) => {
+      (container): IValidationService => {
         const logger = container.resolve<ILoggerService>(ServiceTokens.LOGGER_SERVICE);
         // TODO: Replace with actual validation service implementation
         return {
@@ -286,7 +333,7 @@ export class ServiceRegistry {
           validateAsync: async (data: unknown, schema: string) => data,
           addSchema: (name: string, schema: unknown) => {},
           removeSchema: (name: string) => {},
-        };
+        } as IValidationService;
       },
       ServiceLifetime.SINGLETON,
       [ServiceTokens.LOGGER_SERVICE]
@@ -311,7 +358,7 @@ export class ServiceRegistry {
         const config = container.resolve<IConfigService>(ServiceTokens.CONFIG_SERVICE);
 
         const embeddingService = new EmbeddingService({
-          apiKey: config.get('OPENAI_API_KEY'),
+          apiKey: config.get('OPENAI_API_KEY') as string | undefined,
           model: config.get('EMBEDDING_MODEL', 'text-embedding-3-small'),
           maxRetries: config.get('EMBEDDING_MAX_RETRIES', 3),
           timeout: config.get('EMBEDDING_TIMEOUT', 30000),
@@ -326,7 +373,7 @@ export class ServiceRegistry {
     // Audit Service
     this.container.registerInstance<IAuditService>(
       ServiceTokens.AUDIT_SERVICE,
-      new AuditServiceAdapter()
+      new AuditServiceAdapter() as IAuditService
     );
   }
 
@@ -349,32 +396,41 @@ export class ServiceRegistry {
     // Cache Service (simple in-memory implementation)
     this.container.registerFactory<ICacheService>(
       ServiceTokens.CACHE_SERVICE,
-      (container) => {
+      (container): ICacheService => {
         const logger = container.resolve<ILoggerService>(ServiceTokens.LOGGER_SERVICE);
 
-        // Simple in-memory cache implementation
+        // Simple in-memory cache implementation with stats tracking
         const cache = new Map<string, { value: unknown; expiry: number }>();
+        let hitCount = 0;
+        let missCount = 0;
 
         return {
-          get: async (key: string) => {
+          get: async <T>(key: string): Promise<T | null> => {
             const item = cache.get(key);
-            if (!item) return null;
-            if (Date.now() > item.expiry) {
-              cache.delete(key);
+            if (!item) {
+              missCount++;
               return null;
             }
-            return item.value;
+            if (Date.now() > item.expiry) {
+              cache.delete(key);
+              missCount++;
+              return null;
+            }
+            hitCount++;
+            return item.value as T;
           },
-          set: async (key: string, value: unknown, ttl = 300000) => {
+          set: async (key: string, value: unknown, ttl = 300000): Promise<void> => {
             cache.set(key, { value, expiry: Date.now() + ttl });
           },
-          delete: async (key: string) => {
-            cache.delete(key);
+          delete: async (key: string): Promise<boolean> => {
+            return cache.delete(key);
           },
-          clear: async () => {
+          clear: async (): Promise<void> => {
             cache.clear();
+            hitCount = 0;
+            missCount = 0;
           },
-          has: async (key: string) => {
+          has: async (key: string): Promise<boolean> => {
             const item = cache.get(key);
             if (!item) return false;
             if (Date.now() > item.expiry) {
@@ -383,7 +439,61 @@ export class ServiceRegistry {
             }
             return true;
           },
-        };
+          getMultiple: async <T>(keys: string[]): Promise<Map<string, T | null>> => {
+            const results = new Map<string, T | null>();
+            for (const key of keys) {
+              const item = cache.get(key);
+              if (!item) {
+                results.set(key, null);
+                continue;
+              }
+              if (Date.now() > item.expiry) {
+                cache.delete(key);
+                results.set(key, null);
+                continue;
+              }
+              results.set(key, item.value as T);
+            }
+            return results;
+          },
+          setMultiple: async (entries: Map<string, unknown>, ttl = 300000): Promise<void> => {
+            for (const [key, value] of entries) {
+              cache.set(key, { value, expiry: Date.now() + ttl });
+            }
+          },
+          deleteMultiple: async (keys: string[]): Promise<number> => {
+            let deleted = 0;
+            for (const key of keys) {
+              if (cache.delete(key)) {
+                deleted++;
+              }
+            }
+            return deleted;
+          },
+          increment: async (key: string, amount = 1): Promise<number> => {
+            const item = cache.get(key);
+            let current = 0;
+
+            if (item && Date.now() <= item.expiry) {
+              current = typeof item.value === 'number' ? item.value : 0;
+            }
+
+            const newValue = current + amount;
+            cache.set(key, { value: newValue, expiry: Date.now() + 300000 });
+            return newValue;
+          },
+          getStats: async (): Promise<CacheStats> => {
+            const total = hitCount + missCount;
+            return {
+              hitCount,
+              missCount,
+              hitRate: total > 0 ? hitCount / total : 0,
+              itemCount: cache.size,
+              memoryUsage: 0, // Could be calculated more precisely if needed
+              evictionCount: 0, // Not tracked in this simple implementation
+            };
+          },
+        } as ICacheService;
       },
       ServiceLifetime.SINGLETON,
       [ServiceTokens.LOGGER_SERVICE]
@@ -397,9 +507,9 @@ export class ServiceRegistry {
     // Mock implementations for testing
     this.container.registerFactory<IConfigService>(
       ServiceTokens.CONFIG_SERVICE,
-      (container) => {
+      (container): IConfigService => {
         return {
-          get: <T>(key: string, defaultValue?: T): T => {
+          get: (key: string, defaultValue?: unknown): unknown => {
             const testConfig = {
               QDRANT_URL: 'http://localhost:6333',
               QDRANT_COLLECTION_NAME: 'test-cortex-memory',
@@ -407,7 +517,7 @@ export class ServiceRegistry {
               NODE_ENV: 'test',
             };
             const value = testConfig[key as keyof typeof testConfig];
-            return (value !== undefined ? value : defaultValue) as T;
+            return value !== undefined ? value : defaultValue;
           },
           has: (key: string) => {
             const testConfig = {
@@ -419,7 +529,11 @@ export class ServiceRegistry {
             return testConfig[key as keyof typeof testConfig] !== undefined;
           },
           reload: async () => {},
-        };
+          getSection: <T extends Record<string, unknown>>(section: string): T => ({} as T),
+          getAll: (): Record<string, unknown> => ({}),
+          set: (key: string, value: unknown) => {},
+          validate: (key: string, validator: (value: unknown) => boolean): boolean => true,
+        } as IConfigService;
       },
       ServiceLifetime.SINGLETON
     );

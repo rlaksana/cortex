@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTE FINAL EMERGENCY ROLLBACK: Last remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Retry Metrics Exporter
@@ -21,10 +19,9 @@ import { logger } from '@/utils/logger.js';
 
 import {
   type CircuitBreakerHealthStatus,
-  circuitBreakerMonitor} from './circuit-breaker-monitor.js';
-import {
-  type RetryBudgetMetrics,
-  retryBudgetMonitor} from './retry-budget-monitor.js';
+  circuitBreakerMonitor,
+} from './circuit-breaker-monitor.js';
+import { type RetryBudgetMetrics, retryBudgetMonitor } from './retry-budget-monitor.js';
 
 /**
  * Export format types
@@ -251,8 +248,8 @@ export class RetryMetricsExporter extends EventEmitter {
     logger.info(
       {
         intervalSeconds: this.config.export.intervalSeconds,
-        destinations: Object.keys(this.config.destinations).filter(key =>
-          this.config.destinations[key as keyof typeof this.config.destinations].enabled
+        destinations: Object.keys(this.config.destinations).filter(
+          (key) => this.config.destinations[key as keyof typeof this.config.destinations].enabled
         ),
       },
       'Metrics exporter started'
@@ -434,11 +431,7 @@ export class RetryMetricsExporter extends EventEmitter {
    * Export to all configured destinations
    */
   async exportToAllDestinations(): Promise<void> {
-    const formats = [
-      ExportFormat.PROMETHEUS,
-      ExportFormat.GRAFANA,
-      ExportFormat.JSON,
-    ];
+    const formats = [ExportFormat.PROMETHEUS, ExportFormat.GRAFANA, ExportFormat.JSON];
 
     for (const format of formats) {
       try {
@@ -590,8 +583,11 @@ export class RetryMetricsExporter extends EventEmitter {
       summary: {
         totalServices: retryBudgetMetrics.size,
         totalCircuits: circuitBreakerMetrics.size,
-        averageUtilization: Array.from(retryBudgetMetrics.values())
-          .reduce((sum, m) => sum + m.current.budgetUtilizationPercent, 0) / Math.max(retryBudgetMetrics.size, 1),
+        averageUtilization:
+          Array.from(retryBudgetMetrics.values()).reduce(
+            (sum, m) => sum + m.current.budgetUtilizationPercent,
+            0
+          ) / Math.max(retryBudgetMetrics.size, 1),
       },
     };
   }
@@ -622,19 +618,21 @@ export class RetryMetricsExporter extends EventEmitter {
     for (const [serviceName, retryMetrics] of retryBudgetMetrics) {
       const circuitMetrics = circuitBreakerMetrics.get(serviceName);
 
-      rows.push([
-        new Date().toISOString(),
-        serviceName,
-        retryMetrics.current.budgetUtilizationPercent.toFixed(2),
-        retryMetrics.current.retryRatePercent.toFixed(2),
-        retryMetrics.current.budgetRemainingMinute.toString(),
-        retryMetrics.current.budgetRemainingHour.toString(),
-        retryMetrics.slo.overallCompliance ? '1' : '0',
-        retryMetrics.predictions.riskLevel,
-        circuitMetrics?.state || 'unknown',
-        circuitMetrics?.metrics.failureRate.toFixed(2) || '0',
-        circuitMetrics?.metrics.successRate.toFixed(2) || '0',
-      ].join(','));
+      rows.push(
+        [
+          new Date().toISOString(),
+          serviceName,
+          retryMetrics.current.budgetUtilizationPercent.toFixed(2),
+          retryMetrics.current.retryRatePercent.toFixed(2),
+          retryMetrics.current.budgetRemainingMinute.toString(),
+          retryMetrics.current.budgetRemainingHour.toString(),
+          retryMetrics.slo.overallCompliance ? '1' : '0',
+          retryMetrics.predictions.riskLevel,
+          circuitMetrics?.state || 'unknown',
+          circuitMetrics?.metrics.failureRate.toFixed(2) || '0',
+          circuitMetrics?.metrics.successRate.toFixed(2) || '0',
+        ].join(',')
+      );
     }
 
     return rows.join('\n');
@@ -729,13 +727,13 @@ export class RetryMetricsExporter extends EventEmitter {
       let content: string;
       switch (format) {
         case ExportFormat.PROMETHEUS:
-          content = metrics.data;
+          content = this.validateAndConvertToString(metrics.data, 'prometheus');
           break;
         case ExportFormat.JSON:
           content = JSON.stringify(metrics.data, null, 2);
           break;
         case ExportFormat.CSV:
-          content = metrics.data;
+          content = this.validateAndConvertToString(metrics.data, 'csv');
           break;
         default:
           content = JSON.stringify(metrics.data);
@@ -770,9 +768,15 @@ export class RetryMetricsExporter extends EventEmitter {
         timeout: this.config.destinations.webhook.timeoutMs,
       });
 
-      logger.debug({ url: this.config.destinations.webhook.url, format: metrics.format }, 'Metrics sent to webhook');
+      logger.debug(
+        { url: this.config.destinations.webhook.url, format: metrics.format },
+        'Metrics sent to webhook'
+      );
     } catch (error) {
-      logger.error({ url: this.config.destinations.webhook.url, error }, 'Failed to send metrics to webhook');
+      logger.error(
+        { url: this.config.destinations.webhook.url, error },
+        'Failed to send metrics to webhook'
+      );
       throw error;
     }
   }
@@ -806,7 +810,7 @@ export class RetryMetricsExporter extends EventEmitter {
 
     try {
       const batch = this.exportQueue.splice(0, this.config.export.batchSize);
-      const promises = batch.map(item => this.processExportItem(item));
+      const promises = batch.map((item) => this.processExportItem(item));
 
       await Promise.allSettled(promises);
     } finally {
@@ -841,11 +845,14 @@ export class RetryMetricsExporter extends EventEmitter {
           this.exportQueue.push(item);
         }, this.config.performance.retryDelayMs * item.attempts);
       } else {
-        logger.error({
-          destination: item.destination,
-          attempts: item.attempts,
-          error
-        }, 'Export failed after maximum retries');
+        logger.error(
+          {
+            destination: item.destination,
+            attempts: item.attempts,
+            error,
+          },
+          'Export failed after maximum retries'
+        );
         this.emit('export_failed', { item, error });
       }
     }
@@ -864,7 +871,7 @@ export class RetryMetricsExporter extends EventEmitter {
    */
   private async cleanupOldMetrics(): Promise<void> {
     // Clean up cache
-    const cutoff = Date.now() - (this.config.export.retentionDays * 24 * 60 * 60 * 1000);
+    const cutoff = Date.now() - this.config.export.retentionDays * 24 * 60 * 60 * 1000;
     for (const [key, cached] of this.metricsCache) {
       if (cached.timestamp < cutoff) {
         this.metricsCache.delete(key);
@@ -879,8 +886,8 @@ export class RetryMetricsExporter extends EventEmitter {
    */
   private generateFileName(format: ExportFormat): string {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const extension = format === ExportFormat.PROMETHEUS ? 'prom' :
-                     format === ExportFormat.CSV ? 'csv' : 'json';
+    const extension =
+      format === ExportFormat.PROMETHEUS ? 'prom' : format === ExportFormat.CSV ? 'csv' : 'json';
     return `retry-metrics-${timestamp}.${extension}`;
   }
 
@@ -889,7 +896,7 @@ export class RetryMetricsExporter extends EventEmitter {
    */
   private countMetrics(data: unknown): number {
     if (typeof data === 'string') {
-      return data.split('\n').filter(line => line && !line.startsWith('#')).length;
+      return data.split('\n').filter((line) => line && !line.startsWith('#')).length;
     }
     if (typeof data === 'object') {
       return Object.keys(data).length;
@@ -902,11 +909,16 @@ export class RetryMetricsExporter extends EventEmitter {
    */
   private riskLevelToNumber(riskLevel: string): number {
     switch (riskLevel) {
-      case 'low': return 0;
-      case 'medium': return 1;
-      case 'high': return 2;
-      case 'critical': return 3;
-      default: return 0;
+      case 'low':
+        return 0;
+      case 'medium':
+        return 1;
+      case 'high':
+        return 2;
+      case 'critical':
+        return 3;
+      default:
+        return 0;
     }
   }
 
@@ -915,11 +927,81 @@ export class RetryMetricsExporter extends EventEmitter {
    */
   private circuitStateToNumber(state: string): number {
     switch (state) {
-      case 'closed': return 0;
-      case 'open': return 1;
-      case 'half-open': return 2;
-      default: return 0;
+      case 'closed':
+        return 0;
+      case 'open':
+        return 1;
+      case 'half-open':
+        return 2;
+      default:
+        return 0;
     }
+  }
+
+  /**
+   * Validate and convert data to string with proper type checking
+   */
+  private validateAndConvertToString(data: unknown, context: string): string {
+    if (typeof data === 'string') {
+      return data;
+    }
+
+    if (data === null || data === undefined) {
+      logger.warn({ data, context }, 'Data is null or undefined, returning empty string');
+      return '';
+    }
+
+    if (context === 'prometheus' && typeof data === 'object') {
+      // For prometheus format, we expect an object with string values
+      try {
+        return JSON.stringify(data);
+      } catch (error) {
+        logger.error({ data, error, context }, 'Failed to serialize prometheus data');
+        return '';
+      }
+    }
+
+    if (context === 'csv' && typeof data === 'string') {
+      return data;
+    }
+
+    // For any other type, convert to JSON string
+    try {
+      return JSON.stringify(data);
+    } catch (error) {
+      logger.error({ data, error, context }, 'Failed to convert data to string');
+      return String(data);
+    }
+  }
+
+  /**
+   * Type guard for unknown data being object
+   */
+  private isRecord(data: unknown): data is Record<string, unknown> {
+    return typeof data === 'object' && data !== null && !Array.isArray(data);
+  }
+
+  /**
+   * Type guard for unknown data being array
+   */
+  private isArray(data: unknown): data is unknown[] {
+    return Array.isArray(data);
+  }
+
+  /**
+   * Safe property access with type checking
+   */
+  private safePropertyAccess<T>(obj: unknown, property: string, fallback: T): T {
+    if (!this.isRecord(obj)) {
+      return fallback;
+    }
+
+    if (property in obj) {
+      const value = obj[property];
+      return value as T;
+    }
+
+    return fallback;
   }
 }
 

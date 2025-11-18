@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Enhanced Observability Service
  *
@@ -13,10 +8,13 @@
  * @since 2025-11-07
  */
 
-
-import type { DashboardWidget, MetricsData, SocketServerLike, WidgetConfig } from '../types/slo-types.js';
+import type {
+  DashboardWidget,
+  MetricsData,
+  SocketServerLike,
+  WidgetConfig,
+} from '../types/slo-types.js';
 import { ObservabilityService } from '../types/slo-types.js';
-
 
 interface ConnectionConfig {
   maxRetries?: number;
@@ -39,14 +37,14 @@ export class EnhancedObservabilityService extends ObservabilityService {
       retryDelay: config.retryDelay ?? 1000,
       heartbeatInterval: config.heartbeatInterval ?? 30000,
       connectionTimeout: config.connectionTimeout ?? 5000,
-      ...config
+      ...config,
     };
   }
 
   /**
    * Initialize socket connection with retry logic
    */
-  async initSocket(server: SocketServerLike): Promise<void> {
+  override async initSocket(server: SocketServerLike): Promise<void> {
     if (this.isConnecting) {
       console.warn('Socket connection already in progress');
       return;
@@ -89,7 +87,9 @@ export class EnhancedObservabilityService extends ObservabilityService {
         console.warn(`Socket connection attempt ${this.connectionAttempts} failed:`, error);
 
         if (this.connectionAttempts >= this.connectionConfig.maxRetries!) {
-          throw new Error(`Failed to establish socket connection after ${this.connectionAttempts} attempts`);
+          throw new Error(
+            `Failed to establish socket connection after ${this.connectionAttempts} attempts`
+          );
         }
 
         // Exponential backoff
@@ -128,7 +128,7 @@ export class EnhancedObservabilityService extends ObservabilityService {
   /**
    * Override emitMetrics with enhanced error handling
    */
-  emitMetrics(data: MetricsData): void {
+  override emitMetrics(data: MetricsData): void {
     const io = this.socketServer?.io;
 
     if (!this.isConnected || !io) {
@@ -150,7 +150,7 @@ export class EnhancedObservabilityService extends ObservabilityService {
   /**
    * Override createWidget with enhanced validation
    */
-  createWidget(config: WidgetConfig = {}): DashboardWidget {
+  override createWidget(config: WidgetConfig = {}): DashboardWidget {
     // Validate configuration
     if (config.width !== undefined && (config.width <= 0 || config.width > 100)) {
       console.warn(`Invalid widget width: ${config.width}. Using default value.`);
@@ -178,7 +178,7 @@ export class EnhancedObservabilityService extends ObservabilityService {
       y,
       category,
       defaultPosition: { x: 0, y: 0 },
-      config: { ...config } // Copy config to avoid reference issues
+      config: { ...config }, // Copy config to avoid reference issues
     };
 
     this.emit('widget-created', widget);
@@ -279,7 +279,7 @@ export class EnhancedObservabilityService extends ObservabilityService {
       isConnected: this.isConnected,
       isConnecting: this.isConnecting,
       connectionAttempts: this.connectionAttempts,
-      serverStatus: this.socketServer?.status
+      serverStatus: this.socketServer?.status,
     };
   }
 
@@ -318,7 +318,7 @@ export class EnhancedObservabilityService extends ObservabilityService {
    * Utility sleep function
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

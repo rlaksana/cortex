@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Memory Manager Service
  *
@@ -35,11 +31,11 @@ export interface MemoryStats {
  * Memory alert configuration
  */
 export interface MemoryAlertConfig {
-  warningThreshold: number;    // Default: 80%
-  criticalThreshold: number;   // Default: 90%
-  emergencyThreshold: number;  // Default: 95%
-  checkInterval: number;       // Default: 30 seconds
-  trendWindow: number;         // Default: 5 minutes
+  warningThreshold: number; // Default: 80%
+  criticalThreshold: number; // Default: 90%
+  emergencyThreshold: number; // Default: 95%
+  checkInterval: number; // Default: 30 seconds
+  trendWindow: number; // Default: 5 minutes
 }
 
 /**
@@ -85,7 +81,7 @@ export class MemoryManagerService extends EventEmitter {
   } = {
     increasingCount: 0,
     decreasingCount: 0,
-    lastTrend: 'stable'
+    lastTrend: 'stable',
   };
 
   constructor(config: Partial<MemoryAlertConfig> = {}) {
@@ -95,8 +91,8 @@ export class MemoryManagerService extends EventEmitter {
       warningThreshold: config.warningThreshold || 80,
       criticalThreshold: config.criticalThreshold || 90,
       emergencyThreshold: config.emergencyThreshold || 95,
-      checkInterval: config.checkInterval || 30000,  // 30 seconds
-      trendWindow: config.trendWindow || 300000,     // 5 minutes
+      checkInterval: config.checkInterval || 30000, // 30 seconds
+      trendWindow: config.trendWindow || 300000, // 5 minutes
     };
 
     logger.info('Memory Manager Service initialized', this.alertConfig);
@@ -113,7 +109,7 @@ export class MemoryManagerService extends EventEmitter {
 
     logger.info('Memory monitoring started', {
       interval: this.alertConfig.checkInterval,
-      thresholds: this.alertConfig
+      thresholds: this.alertConfig,
     });
   }
 
@@ -126,7 +122,7 @@ export class MemoryManagerService extends EventEmitter {
 
     // Keep history within trend window
     const cutoffTime = Date.now() - this.alertConfig.trendWindow;
-    this.memoryHistory = this.memoryHistory.filter(s => s.timestamp > cutoffTime);
+    this.memoryHistory = this.memoryHistory.filter((s) => s.timestamp > cutoffTime);
 
     // Analyze trend
     this.analyzeMemoryTrend(stats);
@@ -139,7 +135,7 @@ export class MemoryManagerService extends EventEmitter {
       heapUsedMB: Math.round(stats.heapUsed / 1024 / 1024),
       heapTotalMB: Math.round(stats.heapTotal / 1024 / 1024),
       usagePercentage: stats.usagePercentage,
-      trend: stats.trend
+      trend: stats.trend,
     });
   }
 
@@ -157,7 +153,7 @@ export class MemoryManagerService extends EventEmitter {
       rss: usage.rss,
       usagePercentage,
       timestamp: Date.now(),
-      trend: this.trendAnalysis.lastTrend
+      trend: this.trendAnalysis.lastTrend,
     };
 
     return stats;
@@ -179,16 +175,19 @@ export class MemoryManagerService extends EventEmitter {
       return;
     }
 
-    const recentAvg = recentStats.reduce((sum, s) => sum + s.usagePercentage, 0) / recentStats.length;
+    const recentAvg =
+      recentStats.reduce((sum, s) => sum + s.usagePercentage, 0) / recentStats.length;
     const olderAvg = olderStats.reduce((sum, s) => sum + s.usagePercentage, 0) / olderStats.length;
 
     const difference = recentAvg - olderAvg;
 
-    if (difference > 2) { // More than 2% increase
+    if (difference > 2) {
+      // More than 2% increase
       currentStats.trend = 'increasing';
       this.trendAnalysis.increasingCount++;
       this.trendAnalysis.decreasingCount = 0;
-    } else if (difference < -2) { // More than 2% decrease
+    } else if (difference < -2) {
+      // More than 2% decrease
       currentStats.trend = 'decreasing';
       this.trendAnalysis.decreasingCount++;
       this.trendAnalysis.increasingCount = 0;
@@ -214,7 +213,7 @@ export class MemoryManagerService extends EventEmitter {
       logger.error('EMERGENCY: Memory usage critical', {
         usagePercentage,
         heapUsedMB: Math.round(stats.heapUsed / 1024 / 1024),
-        trend
+        trend,
       });
     } else if (usagePercentage >= this.alertConfig.criticalThreshold) {
       this.emit('memory-critical', stats);
@@ -223,7 +222,7 @@ export class MemoryManagerService extends EventEmitter {
       logger.warn('CRITICAL: Memory usage high', {
         usagePercentage,
         heapUsedMB: Math.round(stats.heapUsed / 1024 / 1024),
-        trend
+        trend,
       });
     } else if (usagePercentage >= this.alertConfig.warningThreshold) {
       this.emit('memory-warning', stats);
@@ -235,11 +234,14 @@ export class MemoryManagerService extends EventEmitter {
       logger.info('WARNING: Memory usage elevated', {
         usagePercentage,
         heapUsedMB: Math.round(stats.heapUsed / 1024 / 1024),
-        trend
+        trend,
       });
     } else if (usagePercentage < this.alertConfig.warningThreshold - 5) {
       // Memory has stabilized
-      if (this.trendAnalysis.lastTrend === 'decreasing' || this.trendAnalysis.decreasingCount >= 2) {
+      if (
+        this.trendAnalysis.lastTrend === 'decreasing' ||
+        this.trendAnalysis.decreasingCount >= 2
+      ) {
         this.emit('memory-stabilized', stats);
       }
     }
@@ -273,7 +275,7 @@ export class MemoryManagerService extends EventEmitter {
     logger.info('Preventive cleanup completed', {
       freedMemoryMB: Math.round(freedMemory / 1024 / 1024),
       duration,
-      currentUsageMB: Math.round(this.getCurrentMemoryStats().heapUsed / 1024 / 1024)
+      currentUsageMB: Math.round(this.getCurrentMemoryStats().heapUsed / 1024 / 1024),
     });
 
     this.isCleaningUp = false;
@@ -312,7 +314,7 @@ export class MemoryManagerService extends EventEmitter {
     logger.warn('Critical cleanup completed', {
       freedMemoryMB: Math.round(freedMemory / 1024 / 1024),
       duration,
-      currentUsageMB: Math.round(this.getCurrentMemoryStats().heapUsed / 1024 / 1024)
+      currentUsageMB: Math.round(this.getCurrentMemoryStats().heapUsed / 1024 / 1024),
     });
 
     this.isCleaningUp = false;
@@ -351,11 +353,10 @@ export class MemoryManagerService extends EventEmitter {
         if (currentStats.usagePercentage >= this.alertConfig.emergencyThreshold) {
           logger.error('Emergency cleanup insufficient - process restart recommended', {
             currentUsage: currentStats.usagePercentage,
-            threshold: this.alertConfig.emergencyThreshold
+            threshold: this.alertConfig.emergencyThreshold,
           });
         }
       }, 5000);
-
     } catch (error) {
       logger.error('Emergency cleanup failed', { error });
     }
@@ -368,7 +369,7 @@ export class MemoryManagerService extends EventEmitter {
     logger.error('Emergency cleanup completed', {
       freedMemoryMB: Math.round(freedMemory / 1024 / 1024),
       duration,
-      currentUsageMB: Math.round(this.getCurrentMemoryStats().heapUsed / 1024 / 1024)
+      currentUsageMB: Math.round(this.getCurrentMemoryStats().heapUsed / 1024 / 1024),
     });
 
     this.isCleaningUp = false;
@@ -445,7 +446,8 @@ export class MemoryManagerService extends EventEmitter {
    */
   private cleanupExpiredPools(): void {
     for (const [name, pool] of this.memoryPools.entries()) {
-      if (pool.length > 50) { // Trim large pools
+      if (pool.length > 50) {
+        // Trim large pools
         pool.splice(0, Math.floor(pool.length * 0.3));
       }
     }
@@ -474,11 +476,11 @@ export class MemoryManagerService extends EventEmitter {
       historyLength: this.memoryHistory.length,
       memoryPools: Array.from(this.memoryPools.entries()).map(([name, pool]) => ({
         name,
-        size: pool.length
+        size: pool.length,
       })),
       trendAnalysis: this.trendAnalysis,
       isCleaningUp: this.isCleaningUp,
-      lastCleanupTime: this.lastCleanupTime
+      lastCleanupTime: this.lastCleanupTime,
     };
   }
 

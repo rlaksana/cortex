@@ -1,18 +1,17 @@
-// @ts-nocheck
 // COMPREHENSIVE EMERGENCY ROLLBACK: Final systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Security Middleware for Cortex MCP
  * Provides comprehensive security hardening including rate limiting, input validation, and security headers
  */
 
-import { type NextFunction,type Request, type Response } from 'express';
+import { type NextFunction, type Request, type Response } from 'express';
 import { rateLimit as createRateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 import { z, type ZodSchema } from 'zod';
 
 import { logger } from '@/utils/logger.js';
+import { safeGetProperty, hasProperty, hasStringProperty, hasObjectProperty } from '@/utils/property-access-guards.js';
 
 export interface SecurityConfig {
   enableRateLimit?: boolean;
@@ -142,7 +141,7 @@ export class SecurityMiddleware {
           const errors: ValidationError[] = result.error.issues.map((issue) => ({
             field: issue.path.join('.'),
             message: issue.message,
-            value: (issue as unknown).received,
+            value: safeGetProperty(issue, 'received', undefined),
           }));
 
           logger.warn(
@@ -265,9 +264,9 @@ export class SecurityMiddleware {
         return value;
       };
 
-      req.body = sanitize(req.body);
-      req.query = sanitize(req.query);
-      req.params = sanitize(req.params);
+          req.body = sanitize(req.body) as any;
+      req.query = sanitize(req.query) as any;
+      req.params = sanitize(req.params) as any;
 
       next();
     };
@@ -292,9 +291,10 @@ export class SecurityMiddleware {
    */
   secureAPIKey() {
     return (req: Request, res: Response, next: NextFunction) => {
-      const apiKey = req.headers['x-api-key'] as string;
+      const apiKeyHeader = req.headers['x-api-key'];
+      const apiKey = Array.isArray(apiKeyHeader) ? apiKeyHeader[0] : apiKeyHeader;
 
-      if (!apiKey) {
+      if (!apiKey || typeof apiKey !== 'string') {
         return res.status(401).json({ error: 'API key required' });
       }
 
@@ -312,7 +312,7 @@ export class SecurityMiddleware {
       }
 
       // Add API key to request for downstream processing
-      (req as unknown).apiKey = apiKey;
+      (req as any).apiKey = apiKey;
       return next();
     };
   }

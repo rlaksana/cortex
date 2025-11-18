@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTE FINAL EMERGENCY ROLLBACK: Last remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Retry Budget Monitoring Integration
@@ -17,19 +15,44 @@ import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
 
-import {
-  circuitBreakerMonitor} from './circuit-breaker-monitor.js';
+import { circuitBreakerMonitor } from './circuit-breaker-monitor.js';
 import { comprehensiveRetryDashboard } from './comprehensive-retry-dashboard.js';
 import { enhancedCircuitDashboard } from './enhanced-circuit-dashboard.js';
 import {
   enhancedPerformanceCollector,
-  type SystemPerformanceMetrics
+  type SystemPerformanceMetrics,
 } from './enhanced-performance-collector.js';
 import { retryAlertSystem } from './retry-alert-system.js';
-import { type RetryBudgetConfig,retryBudgetMonitor } from './retry-budget-monitor.js';
+import { type RetryBudgetConfig, retryBudgetMonitor } from './retry-budget-monitor.js';
 import { retryMetricsExporter } from './retry-metrics-exporter.js';
 import { retryTrendAnalyzer } from './retry-trend-analyzer.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
+
+/**
+ * Type definitions for Express objects
+ */
+interface ExpressRequest {
+  query: Record<string, string | string[] | undefined>;
+  params: Record<string, string>;
+  url?: string;
+  method?: string;
+  headers?: Record<string, string>;
+}
+
+interface ExpressResponse {
+  json(data: unknown): ExpressResponse;
+  send(data: unknown): ExpressResponse;
+  status(code: number): ExpressResponse;
+  set(field: string, value: string): ExpressResponse;
+  header(field: string, value: string): ExpressResponse;
+}
+
+interface ExpressApp {
+  use(middleware: (req: ExpressRequest, res: ExpressResponse, next: ExpressNext) => void): void;
+  get(path: string, handler: (req: ExpressRequest, res: ExpressResponse) => void | Promise<void>): void;
+}
+
+type ExpressNext = (error?: unknown) => void;
 
 /**
  * Integration configuration
@@ -316,7 +339,10 @@ export class RetryMonitoringIntegration extends EventEmitter {
     this.registeredServices.set(registration.serviceName, registration);
 
     logger.info(
-      { serviceName: registration.serviceName, circuitBreakerName: registration.circuitBreakerName },
+      {
+        serviceName: registration.serviceName,
+        circuitBreakerName: registration.circuitBreakerName,
+      },
       'Service registered for retry monitoring'
     );
 
@@ -354,10 +380,12 @@ export class RetryMonitoringIntegration extends EventEmitter {
       circuitBreakerMonitor: {
         running: circuitBreakerMonitor['isRunning'] || false,
         totalCircuits: circuitBreakerMonitor.getAllHealthStatuses().size,
-        healthyCircuits: Array.from(circuitBreakerMonitor.getAllHealthStatuses().values())
-          .filter(cb => cb.healthStatus === HealthStatus.HEALTHY).length,
-        openCircuits: Array.from(circuitBreakerMonitor.getAllHealthStatuses().values())
-          .filter(cb => cb.isOpen).length,
+        healthyCircuits: Array.from(circuitBreakerMonitor.getAllHealthStatuses().values()).filter(
+          (cb) => cb.healthStatus === HealthStatus.HEALTHY
+        ).length,
+        openCircuits: Array.from(circuitBreakerMonitor.getAllHealthStatuses().values()).filter(
+          (cb) => cb.isOpen
+        ).length,
       },
       trendAnalyzer: {
         running: retryTrendAnalyzer['isRunning'] || false,
@@ -445,9 +473,12 @@ export class RetryMonitoringIntegration extends EventEmitter {
       recommendations.push('Review and address active alerts');
     }
 
-    const overallStatus = overallScore >= 90 ? HealthStatus.HEALTHY :
-                        overallScore >= 70 ? HealthStatus.DEGRADED :
-                        HealthStatus.UNHEALTHY;
+    const overallStatus =
+      overallScore >= 90
+        ? HealthStatus.HEALTHY
+        : overallScore >= 70
+          ? HealthStatus.DEGRADED
+          : HealthStatus.UNHEALTHY;
 
     // Service-specific health
     const services = [];
@@ -472,9 +503,12 @@ export class RetryMonitoringIntegration extends EventEmitter {
         warnings.push('Retry budget high');
       }
 
-      const serviceStatus = serviceScore >= 80 ? HealthStatus.HEALTHY :
-                          serviceScore >= 60 ? HealthStatus.DEGRADED :
-                          HealthStatus.UNHEALTHY;
+      const serviceStatus =
+        serviceScore >= 80
+          ? HealthStatus.HEALTHY
+          : serviceScore >= 60
+            ? HealthStatus.DEGRADED
+            : HealthStatus.UNHEALTHY;
 
       services.push({
         name: serviceName,
@@ -488,7 +522,12 @@ export class RetryMonitoringIntegration extends EventEmitter {
     // System metrics
     let performanceMetrics = null;
     try {
-      performanceMetrics = (enhancedPerformanceCollector as unknown).getCurrentMetrics();
+      if (typeof enhancedPerformanceCollector === 'object' && enhancedPerformanceCollector !== null) {
+        const collector = enhancedPerformanceCollector as unknown as Record<string, unknown>;
+        if (typeof collector.getCurrentMetrics === 'function') {
+          performanceMetrics = collector.getCurrentMetrics();
+        }
+      }
     } catch (error) {
       logger.warn({ error }, 'Failed to get performance metrics');
     }
@@ -520,13 +559,17 @@ export class RetryMonitoringIntegration extends EventEmitter {
         const retryMetrics = retryBudgetMonitor.getAllMetrics();
         const circuitMetrics = circuitBreakerMonitor.getAllHealthStatuses();
         const alerts = retryAlertSystem.getActiveAlerts();
-        return JSON.stringify({
-          timestamp: new Date().toISOString(),
-          retryBudgets: Object.fromEntries(retryMetrics),
-          circuitBreakers: Object.fromEntries(circuitMetrics),
-          alerts,
-          status: this.getMonitoringStatus(),
-        }, null, 2);
+        return JSON.stringify(
+          {
+            timestamp: new Date().toISOString(),
+            retryBudgets: Object.fromEntries(retryMetrics),
+            circuitBreakers: Object.fromEntries(circuitMetrics),
+            alerts,
+            status: this.getMonitoringStatus(),
+          },
+          null,
+          2
+        );
       case 'csv':
         // Generate comprehensive CSV export
         return this.generateUnifiedCSV();
@@ -604,11 +647,17 @@ export class RetryMonitoringIntegration extends EventEmitter {
   setupExpressRoutes(app: unknown): void {
     if (!this.config.api.enableUnifiedEndpoints) return;
 
+    // Type guard to ensure app has required Express methods
+    if (!this.isValidExpressApp(app)) {
+      logger.warn('Provided app object is not a valid Express app');
+      return;
+    }
+
     const basePath = this.config.api.basePath;
 
     // CORS middleware
     if (this.config.api.enableCors) {
-      app.use((req: unknown, res: unknown, next: unknown) => {
+      app.use((req: ExpressRequest, res: ExpressResponse, next: ExpressNext) => {
         res.header('Access-Control-Allow-Origin', '*');
         res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
         res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -617,12 +666,12 @@ export class RetryMonitoringIntegration extends EventEmitter {
     }
 
     // Status endpoint
-    app.get(`${basePath}/status`, (req: unknown, res: unknown) => {
+    app.get(`${basePath}/status`, (req: ExpressRequest, res: ExpressResponse) => {
       res.json(this.getMonitoringStatus());
     });
 
     // Health endpoint
-    app.get(`${basePath}/health`, async (req: unknown, res: unknown) => {
+    app.get(`${basePath}/health`, async (req: ExpressRequest, res: ExpressResponse) => {
       try {
         const health = await this.getHealthReport();
         res.json(health);
@@ -632,10 +681,11 @@ export class RetryMonitoringIntegration extends EventEmitter {
     });
 
     // Metrics endpoint
-    app.get(`${basePath}/metrics`, (req: unknown, res: unknown) => {
-      const format = req.query.format || 'json';
+    app.get(`${basePath}/metrics`, async (req: ExpressRequest, res: ExpressResponse) => {
+      const formatParam = this.safeGetQueryParam(req.query.format, 'json');
+      const format = formatParam === 'prometheus' || formatParam === 'csv' ? formatParam : 'json';
       try {
-        const metrics = this.exportUnifiedMetrics(format as unknown);
+        const metrics = await this.exportUnifiedMetrics(format);
 
         if (format === 'prometheus') {
           res.set('Content-Type', 'text/plain');
@@ -652,24 +702,25 @@ export class RetryMonitoringIntegration extends EventEmitter {
     });
 
     // Services endpoints
-    app.get(`${basePath}/services`, (req: unknown, res: unknown) => {
+    app.get(`${basePath}/services`, (req: ExpressRequest, res: ExpressResponse) => {
       const services = Array.from(this.registeredServices.values());
       res.json(services);
     });
 
-    app.get(`${basePath}/services/:serviceName`, (req: unknown, res: unknown) => {
+    app.get(`${basePath}/services/:serviceName`, (req: ExpressRequest, res: ExpressResponse) => {
       const serviceName = req.params.serviceName;
       const registration = this.registeredServices.get(serviceName);
 
       if (!registration) {
-        return res.status(404).json({ error: 'Service not found' });
+        res.status(404).json({ error: 'Service not found' });
+        return;
       }
 
       res.json(registration);
     });
 
     // Dashboard endpoints
-    app.get(`${basePath}/dashboard/:view`, async (req: unknown, res: unknown) => {
+    app.get(`${basePath}/dashboard/:view`, async (req: ExpressRequest, res: ExpressResponse) => {
       const view = req.params.view;
       const filters = req.query;
 
@@ -683,7 +734,12 @@ export class RetryMonitoringIntegration extends EventEmitter {
             data = await comprehensiveRetryDashboard.getDependencyMapData();
             break;
           case 'trends':
-            data = await comprehensiveRetryDashboard.getTrendsData(filters.serviceName, filters.metrics);
+            const serviceNameParam = filters.serviceName as string | string[] | undefined;
+            const metricsParam = filters.metrics as string | string[] | undefined;
+            const serviceName = this.safeGetQueryParam(serviceNameParam);
+            const metricsValue = this.safeGetQueryParam(metricsParam);
+            const metrics = metricsValue ? [metricsValue] : undefined;
+            data = await comprehensiveRetryDashboard.getTrendsData(serviceName, metrics);
             break;
           case 'alerts':
             data = await comprehensiveRetryDashboard.getAlertsData(filters);
@@ -695,7 +751,8 @@ export class RetryMonitoringIntegration extends EventEmitter {
             data = await comprehensiveRetryDashboard.getSLOData();
             break;
           default:
-            return res.status(400).json({ error: 'Invalid dashboard view' });
+            res.status(400).json({ error: 'Invalid dashboard view' });
+            return;
         }
 
         res.json(data);
@@ -705,12 +762,19 @@ export class RetryMonitoringIntegration extends EventEmitter {
     });
 
     // Server-sent events for real-time updates
-    app.get(`${basePath}/dashboard/:view/subscribe`, (req: unknown, res: unknown) => {
+    app.get(`${basePath}/dashboard/:view/subscribe`, (req: ExpressRequest, res: ExpressResponse) => {
       const view = req.params.view;
       const filters = req.query;
 
       try {
-        comprehensiveRetryDashboard.subscribeToUpdates(req, res, view as unknown, filters);
+        // Note: This method needs to be properly typed in the dashboard class
+        // For now, we'll cast the unknown types
+        if (typeof comprehensiveRetryDashboard === 'object' && comprehensiveRetryDashboard !== null) {
+          const dashboard = comprehensiveRetryDashboard as unknown as Record<string, unknown>;
+          if (typeof dashboard.subscribeToUpdates === 'function') {
+            dashboard.subscribeToUpdates(req as unknown, res as unknown, view, filters);
+          }
+        }
       } catch (error) {
         res.status(500).json({ error: 'Failed to subscribe to updates' });
       }
@@ -793,34 +857,34 @@ export class RetryMonitoringIntegration extends EventEmitter {
     }
 
     logger.info(
-      { discoveredServices: circuitBreakers.size, registeredServices: this.registeredServices.size },
+      {
+        discoveredServices: circuitBreakers.size,
+        registeredServices: this.registeredServices.size,
+      },
       'Service discovery completed'
     );
   }
 
   private setupHealthChecks(): void {
     // Set up periodic health checks
-    this.healthCheckInterval = setInterval(
-      async () => {
-        try {
-          const health = await this.getHealthReport();
+    this.healthCheckInterval = setInterval(async () => {
+      try {
+        const health = await this.getHealthReport();
 
-          // Emit health status for external monitoring
-          this.emit('health_check_completed', health);
+        // Emit health status for external monitoring
+        this.emit('health_check_completed', health);
 
-          // Log health issues
-          if (health.overall.issues.length > 0) {
-            logger.warn(
-              { issues: health.overall.issues, score: health.overall.score },
-              'Health check detected issues'
-            );
-          }
-        } catch (error) {
-          logger.error({ error }, 'Health check failed');
+        // Log health issues
+        if (health.overall.issues.length > 0) {
+          logger.warn(
+            { issues: health.overall.issues, score: health.overall.score },
+            'Health check detected issues'
+          );
         }
-      },
-      this.config.system.metricsCollectionIntervalMs
-    );
+      } catch (error) {
+        logger.error({ error }, 'Health check failed');
+      }
+    }, this.config.system.metricsCollectionIntervalMs);
   }
 
   private validateServiceRegistration(registration: ServiceRegistration): void {
@@ -866,20 +930,24 @@ export class RetryMonitoringIntegration extends EventEmitter {
     for (const [serviceName] of this.registeredServices) {
       const retryMetrics = retryBudgetMonitor.getMetrics(serviceName);
       const circuitMetrics = circuitBreakerMonitor.getHealthStatus(serviceName);
-      const alerts = retryAlertSystem.getActiveAlerts().filter(a => a.serviceName === serviceName);
+      const alerts = retryAlertSystem
+        .getActiveAlerts()
+        .filter((a) => a.serviceName === serviceName);
 
       if (retryMetrics && circuitMetrics) {
-        rows.push([
-          new Date().toISOString(),
-          serviceName,
-          circuitMetrics.state,
-          retryMetrics.current.budgetUtilizationPercent.toFixed(2),
-          retryMetrics.current.retryRatePercent.toFixed(2),
-          retryMetrics.slo.successRateVariance.toFixed(2),
-          retryMetrics.performance.p95ResponseTime.toFixed(0),
-          alerts.length.toString(),
-          '80', // Would calculate actual health score
-        ].join(','));
+        rows.push(
+          [
+            new Date().toISOString(),
+            serviceName,
+            circuitMetrics.state,
+            retryMetrics.current.budgetUtilizationPercent.toFixed(2),
+            retryMetrics.current.retryRatePercent.toFixed(2),
+            retryMetrics.slo.successRateVariance.toFixed(2),
+            retryMetrics.performance.p95ResponseTime.toFixed(0),
+            alerts.length.toString(),
+            '80', // Would calculate actual health score
+          ].join(',')
+        );
       }
     }
 
@@ -903,6 +971,85 @@ export class RetryMonitoringIntegration extends EventEmitter {
     retryTrendAnalyzer.on('anomaly_detected', (anomaly: unknown) => {
       this.emit('system_anomaly', anomaly);
     });
+  }
+
+  /**
+   * Type guard to validate Express app object
+   */
+  private isValidExpressApp(app: unknown): app is ExpressApp {
+    return (
+      typeof app === 'object' &&
+      app !== null &&
+      'use' in app &&
+      'get' in app &&
+      typeof (app as ExpressApp).use === 'function' &&
+      typeof (app as ExpressApp).get === 'function'
+    );
+  }
+
+  /**
+   * Type guard to validate Express request object
+   */
+  private isValidExpressRequest(req: unknown): req is ExpressRequest {
+    return (
+      typeof req === 'object' &&
+      req !== null &&
+      'query' in req &&
+      'params' in req
+    );
+  }
+
+  /**
+   * Type guard to validate Express response object
+   */
+  private isValidExpressResponse(res: unknown): res is ExpressResponse {
+    return (
+      typeof res === 'object' &&
+      res !== null &&
+      'json' in res &&
+      'send' in res &&
+      'status' in res &&
+      typeof (res as ExpressResponse).json === 'function' &&
+      typeof (res as ExpressResponse).send === 'function' &&
+      typeof (res as ExpressResponse).status === 'function'
+    );
+  }
+
+  /**
+   * Safely extract query parameter value
+   */
+  private safeGetQueryParam(
+    value: string | string[] | undefined,
+    defaultValue: string = ''
+  ): string {
+    if (Array.isArray(value)) {
+      return value[0] || defaultValue;
+    }
+    return value || defaultValue;
+  }
+
+  /**
+   * Safely access properties on unknown objects
+   */
+  private safeAccess<T>(obj: unknown, property: string, fallback: T): T {
+    if (typeof obj === 'object' && obj !== null && property in obj) {
+      return (obj as Record<string, unknown>)[property] as T;
+    }
+    return fallback;
+  }
+
+  /**
+   * Type guard for object type
+   */
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+
+  /**
+   * Type guard for array type
+   */
+  private isArray(value: unknown): value is unknown[] {
+    return Array.isArray(value);
   }
 }
 

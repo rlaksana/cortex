@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Qdrant Backup Retention Policy Manager
  *
@@ -17,10 +13,9 @@
  * @since 2025
  */
 
-
 import { logger } from '@/utils/logger.js';
 
-import type { BackupConfiguration,BackupMetadata } from './qdrant-backup-config.js';
+import type { BackupConfiguration, BackupMetadata } from './qdrant-backup-config.js';
 
 /**
  * Retention policy action types
@@ -174,10 +169,13 @@ export class BackupRetentionManager {
       // Sort by urgency (days until action)
       results.sort((a, b) => a.daysUntilAction - b.daysUntilAction);
 
-      logger.info({
-        totalBackups: backups.length,
-        actionsRequired: results.filter(r => r.action !== 'retain').length,
-      }, 'Retention policy evaluation completed');
+      logger.info(
+        {
+          totalBackups: backups.length,
+          actionsRequired: results.filter((r) => r.action !== 'retain').length,
+        },
+        'Retention policy evaluation completed'
+      );
 
       return results;
     } catch (error) {
@@ -210,11 +208,14 @@ export class BackupRetentionManager {
           continue; // No action needed
         }
 
-        logger.debug({
-          backupId: result.backupId,
-          action: result.action,
-          reason: result.reason,
-        }, 'Executing retention action');
+        logger.debug(
+          {
+            backupId: result.backupId,
+            action: result.action,
+            reason: result.reason,
+          },
+          'Executing retention action'
+        );
 
         let sizeReclaimed = 0;
 
@@ -242,29 +243,37 @@ export class BackupRetentionManager {
         summary.successful++;
         summary.spaceReclaimed += sizeReclaimed;
 
-        logger.debug({
-          backupId: result.backupId,
-          action: result.action,
-          sizeReclaimed,
-        }, 'Retention action completed successfully');
-
+        logger.debug(
+          {
+            backupId: result.backupId,
+            action: result.action,
+            sizeReclaimed,
+          },
+          'Retention action completed successfully'
+        );
       } catch (error) {
         summary.failed++;
         const errorMsg = `Failed to ${result.action} backup ${result.backupId}: ${error instanceof Error ? error.message : 'Unknown error'}`;
         summary.errors.push(errorMsg);
-        logger.error({ backupId: result.backupId, action: result.action, error }, 'Retention action failed');
+        logger.error(
+          { backupId: result.backupId, action: result.action, error },
+          'Retention action failed'
+        );
       }
     }
 
     // Save retention history
     await this.saveRetentionHistory();
 
-    logger.info({
-      successful: summary.successful,
-      failed: summary.failed,
-      spaceReclaimed: summary.spaceReclaimed,
-      errors: summary.errors.length,
-    }, 'Retention actions execution completed');
+    logger.info(
+      {
+        successful: summary.successful,
+        failed: summary.failed,
+        spaceReclaimed: summary.spaceReclaimed,
+        errors: summary.errors.length,
+      },
+      'Retention actions execution completed'
+    );
 
     return summary;
   }
@@ -388,11 +397,14 @@ export class BackupRetentionManager {
     const previousStage = this.retentionRegistry.get(backupId);
     this.retentionRegistry.set(backupId, stage);
 
-    logger.info({
-      backupId,
-      previousStage,
-      newStage: stage,
-    }, 'Backup lifecycle stage updated');
+    logger.info(
+      {
+        backupId,
+        previousStage,
+        newStage: stage,
+      },
+      'Backup lifecycle stage updated'
+    );
   }
 
   /**
@@ -403,11 +415,14 @@ export class BackupRetentionManager {
       throw new Error('Legal hold is not enabled in compliance configuration');
     }
 
-    logger.info({
-      backupCount: backupIds.length,
-      reason,
-      expiresAt,
-    }, 'Setting legal hold on backups');
+    logger.info(
+      {
+        backupCount: backupIds.length,
+        reason,
+        expiresAt,
+      },
+      'Setting legal hold on backups'
+    );
 
     // Implementation would update backup metadata with legal hold information
     for (const backupId of backupIds) {
@@ -420,9 +435,12 @@ export class BackupRetentionManager {
    * Release legal hold from backups
    */
   async releaseLegalHold(backupIds: string[]): Promise<void> {
-    logger.info({
-      backupCount: backupIds.length,
-    }, 'Releasing legal hold from backups');
+    logger.info(
+      {
+        backupCount: backupIds.length,
+      },
+      'Releasing legal hold from backups'
+    );
 
     for (const backupId of backupIds) {
       // Remove legal hold from backup
@@ -475,17 +493,24 @@ export class BackupRetentionManager {
       const now = new Date().toISOString();
 
       // Evaluate regulatory compliance
-      const regulations = this.config.retention.compliance.regulatoryRequirements.map(regulation => ({
-        name: regulation,
-        status: 'compliant' as 'compliant' | 'non-compliant',
-        requirements: [], // Would be populated based on specific regulations
-      }));
+      const regulations = this.config.retention.compliance.regulatoryRequirements.map(
+        (regulation) => ({
+          name: regulation,
+          status: 'compliant' as 'compliant' | 'non-compliant',
+          requirements: [], // Would be populated based on specific regulations
+        })
+      );
 
       const complianceStatus = this.determineOverallComplianceStatus(statistics, regulations);
 
       const recommendations = this.generateComplianceRecommendations(statistics, regulations);
 
-      const legalHolds: Array<{backupId: string; reason: string; placedAt: string; expiresAt?: string}> = []; // Would be populated from legal hold registry
+      const legalHolds: Array<{
+        backupId: string;
+        reason: string;
+        placedAt: string;
+        expiresAt?: string;
+      }> = []; // Would be populated from legal hold registry
 
       return {
         generatedAt: now,
@@ -503,7 +528,10 @@ export class BackupRetentionManager {
 
   // === Private Helper Methods ===
 
-  private async evaluateBackupRetention(backup: BackupMetadata, now: Date): Promise<RetentionPolicyResult> {
+  private async evaluateBackupRetention(
+    backup: BackupMetadata,
+    now: Date
+  ): Promise<RetentionPolicyResult> {
     const ageInDays = this.calculateAgeInDays(backup.timestamp.toISOString(), now);
     const lifecycle = this.retentionRegistry.get(backup.id) || 'active';
 
@@ -556,9 +584,10 @@ export class BackupRetentionManager {
         const oldestFull = await this.findOldestBackupByType('full');
         if (oldestFull?.id === backup.id) {
           action = lifecycle === 'archived' ? 'delete' : 'archive';
-          reason = lifecycle === 'archived' ?
-            'Exceeded full backup retention limit' :
-            'Exceeded active full backup limit';
+          reason =
+            lifecycle === 'archived'
+              ? 'Exceeded full backup retention limit'
+              : 'Exceeded active full backup limit';
           daysUntilAction = 0;
         }
       }
@@ -599,13 +628,17 @@ export class BackupRetentionManager {
 
   private async countBackupsByType(type: 'full' | 'incremental'): Promise<number> {
     const backups = await this.getAllBackups();
-    return backups.filter(backup => backup.type === type).length;
+    return backups.filter((backup) => backup.type === type).length;
   }
 
-  private async findOldestBackupByType(type: 'full' | 'incremental'): Promise<BackupMetadata | undefined> {
+  private async findOldestBackupByType(
+    type: 'full' | 'incremental'
+  ): Promise<BackupMetadata | undefined> {
     const backups = await this.getAllBackups();
-    const typeBackups = backups.filter(backup => backup.type === type);
-    return typeBackups.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())[0];
+    const typeBackups = backups.filter((backup) => backup.type === type);
+    return typeBackups.sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    )[0];
   }
 
   private isUnderLegalHold(backupId: string): boolean {
@@ -658,7 +691,8 @@ export class BackupRetentionManager {
     }
 
     // Bonus points for good archival ratio
-    const archiveRatio = metrics.totalBackups > 0 ? metrics.archivedBackups / metrics.totalBackups : 0;
+    const archiveRatio =
+      metrics.totalBackups > 0 ? metrics.archivedBackups / metrics.totalBackups : 0;
     if (archiveRatio > 0.3 && archiveRatio < 0.7) {
       score += 10;
     }
@@ -666,7 +700,10 @@ export class BackupRetentionManager {
     return Math.max(0, Math.min(100, score));
   }
 
-  private determineComplianceStatus(score: number, expiredCount: number): 'compliant' | 'warning' | 'violation' {
+  private determineComplianceStatus(
+    score: number,
+    expiredCount: number
+  ): 'compliant' | 'warning' | 'violation' {
     if (expiredCount > 0) return 'violation';
     if (score < 70) return 'warning';
     return 'compliant';
@@ -683,7 +720,9 @@ export class BackupRetentionManager {
     const recommendations: string[] = [];
 
     if (metrics.expiredBackups > 0) {
-      recommendations.push(`Remove ${metrics.expiredBackups} expired backups to reclaim ${this.formatBytes(metrics.reclaimableStorage)}`);
+      recommendations.push(
+        `Remove ${metrics.expiredBackups} expired backups to reclaim ${this.formatBytes(metrics.reclaimableStorage)}`
+      );
     }
 
     if (metrics.retentionScore < 70) {
@@ -694,7 +733,10 @@ export class BackupRetentionManager {
       recommendations.push('Consider archiving older backups to optimize storage');
     }
 
-    if (metrics.totalBackups > this.config.retention.fullBackups + this.config.retention.incrementalBackups) {
+    if (
+      metrics.totalBackups >
+      this.config.retention.fullBackups + this.config.retention.incrementalBackups
+    ) {
       recommendations.push('Backup count exceeds configured limits - consider cleanup');
     }
 
@@ -705,13 +747,17 @@ export class BackupRetentionManager {
     statistics: RetentionStatistics,
     regulations: Array<{ name: string; status: 'compliant' | 'non-compliant' }>
   ): 'compliant' | 'warning' | 'violation' {
-    if (statistics.complianceStatus === 'violation' ||
-        regulations.some(reg => reg.status === 'non-compliant')) {
+    if (
+      statistics.complianceStatus === 'violation' ||
+      regulations.some((reg) => reg.status === 'non-compliant')
+    ) {
       return 'violation';
     }
 
-    if (statistics.complianceStatus === 'warning' ||
-        regulations.some(reg => reg.status === 'non-compliant')) {
+    if (
+      statistics.complianceStatus === 'warning' ||
+      regulations.some((reg) => reg.status === 'non-compliant')
+    ) {
       return 'warning';
     }
 
@@ -728,9 +774,11 @@ export class BackupRetentionManager {
       recommendations.push('Address retention policy compliance issues');
     }
 
-    regulations.filter(reg => reg.status === 'non-compliant').forEach(reg => {
-      recommendations.push(`Review compliance with ${reg.name} requirements`);
-    });
+    regulations
+      .filter((reg) => reg.status === 'non-compliant')
+      .forEach((reg) => {
+        recommendations.push(`Review compliance with ${reg.name} requirements`);
+      });
 
     if (statistics.reclaimableStorage > 0) {
       recommendations.push('Execute retention actions to reclaim storage space');

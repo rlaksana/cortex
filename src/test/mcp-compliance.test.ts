@@ -1,12 +1,9 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /// <reference types="vitest" />
 /**
  * MCP 2025 Compliance Test Suite
  *
  * Test suite for verifying Claude Code, Gemini, and Codex compatibility
+ * Updated for MCP SDK v1.22.0 compatibility.
  */
 
 import {
@@ -14,7 +11,8 @@ import {
   errorToMCPResponse,
   MCPErrorCode,
   validateToolInput,
-} from '../utils/mcp-compliance.js';
+} from '../utils/mcp-compliance';
+import type { ContentBlock } from '@modelcontextprotocol/sdk/types.js';
 
 describe('MCP 2025 Compliance Tests', () => {
   describe('Error Codes', () => {
@@ -90,7 +88,7 @@ describe('MCP 2025 Compliance Tests', () => {
 
       expect(response.content).toHaveLength(1);
       expect(response.content[0].type).toBe('text');
-      expect(response.content[0].text).toBe('Test response');
+      expect((response.content[0] as ContentBlock & { type: 'text' }).text).toBe('Test response');
       expect(response.isError).toBe(false);
     });
 
@@ -99,7 +97,7 @@ describe('MCP 2025 Compliance Tests', () => {
 
       expect(response.content).toHaveLength(1);
       expect(response.content[0].type).toBe('text');
-      expect(response.content[0].text).toBe('Error message');
+      expect((response.content[0] as ContentBlock & { type: 'text' }).text).toBe('Error message');
       expect(response.isError).toBe(true);
     });
   });
@@ -112,7 +110,7 @@ describe('MCP 2025 Compliance Tests', () => {
       expect(response.jsonrpc).toBe('2.0');
       expect(response.id).toBe('test-id');
       expect(response.error.code).toBe(MCPErrorCode.INTERNAL_ERROR);
-      expect(response.error.message).toBe('Test error');
+      expect((response.error as unknown).message).toBe('Test error');
       expect(response.error.data).toBeDefined();
     });
 

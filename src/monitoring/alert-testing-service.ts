@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Monitoring system type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Alert Testing and Validation Service for MCP Cortex
@@ -22,9 +20,14 @@ import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
 
-import { AlertSeverity, type AlertTestResult,type AlertTestScenario } from './alert-management-service.js';
+import {
+  AlertSeverity,
+  type AlertTestResult,
+  type AlertTestScenario,
+} from './alert-management-service.js';
+import { safeGetProperty, hasNumberProperty } from '@/utils/property-access-guards.js';
 import { DependencyType } from '../services/deps-registry.js';
-import { HealthStatus,type SystemHealthResult } from '../types/unified-health-interfaces.js';
+import { HealthStatus, type SystemHealthResult } from '../types/unified-health-interfaces.js';
 
 // ============================================================================
 // Alert Testing Interfaces
@@ -499,11 +502,14 @@ export class AlertTestingService extends EventEmitter {
       this.validateTestSuite(suite);
       this.testSuites.set(suite.id, suite);
 
-      logger.info({
-        suiteId: suite.id,
-        name: suite.name,
-        category: suite.category,
-      }, 'Test suite upserted');
+      logger.info(
+        {
+          suiteId: suite.id,
+          name: suite.name,
+          category: suite.category,
+        },
+        'Test suite upserted'
+      );
 
       this.emit('test_suite_updated', suite);
     } catch (error) {
@@ -530,18 +536,19 @@ export class AlertTestingService extends EventEmitter {
    * Search test suites
    */
   searchTestSuites(criteria: TestSuiteSearchCriteria): AlertTestSuite[] {
-    return Array.from(this.testSuites.values()).filter(suite => {
+    return Array.from(this.testSuites.values()).filter((suite) => {
       if (criteria.category && suite.category !== criteria.category) {
         return false;
       }
 
-      if (criteria.tags && !criteria.tags.some(tag => suite.tags.includes(tag))) {
+      if (criteria.tags && !criteria.tags.some((tag) => suite.tags.includes(tag))) {
         return false;
       }
 
       if (criteria.keyword) {
         const searchLower = criteria.keyword.toLowerCase();
-        const searchText = `${suite.name} ${suite.description} ${suite.tags.join(' ')}`.toLowerCase();
+        const searchText =
+          `${suite.name} ${suite.description} ${suite.tags.join(' ')}`.toLowerCase();
         if (!searchText.includes(searchLower)) {
           return false;
         }
@@ -572,7 +579,7 @@ export class AlertTestingService extends EventEmitter {
 
       if (suite.parallel) {
         // Execute scenarios in parallel
-        const promises = suite.scenarios.map(scenario =>
+        const promises = suite.scenarios.map((scenario) =>
           this.executeTestScenario(suite, scenario, config)
         );
         const results = await Promise.allSettled(promises);
@@ -581,11 +588,14 @@ export class AlertTestingService extends EventEmitter {
           if (result.status === 'fulfilled') {
             executions.push(result.value);
           } else {
-            logger.error({
-              suiteId,
-              scenarioId: suite.scenarios[index].id,
-              error: result.reason,
-            }, 'Test scenario execution failed');
+            logger.error(
+              {
+                suiteId,
+                scenarioId: suite.scenarios[index].id,
+                error: result.reason,
+              },
+              'Test scenario execution failed'
+            );
           }
         });
       } else {
@@ -600,11 +610,14 @@ export class AlertTestingService extends EventEmitter {
               break;
             }
           } catch (error) {
-            logger.error({
-              suiteId,
-              scenarioId: scenario.id,
-              error,
-            }, 'Test scenario execution failed');
+            logger.error(
+              {
+                suiteId,
+                scenarioId: scenario.id,
+                error,
+              },
+              'Test scenario execution failed'
+            );
 
             if (!config.continueOnFailure) {
               break;
@@ -613,11 +626,14 @@ export class AlertTestingService extends EventEmitter {
         }
       }
 
-      logger.info({
-        suiteId,
-        totalExecutions: executions.length,
-        passedExecutions: executions.filter(e => e.results.summary.passed).length,
-      }, 'Test suite execution completed');
+      logger.info(
+        {
+          suiteId,
+          totalExecutions: executions.length,
+          passedExecutions: executions.filter((e) => e.results.summary.passed).length,
+        },
+        'Test suite execution completed'
+      );
 
       this.emit('test_suite_completed', {
         suiteId,
@@ -693,11 +709,14 @@ export class AlertTestingService extends EventEmitter {
       this.executions.set(executionId, execution);
       this.activeTests.add(executionId);
 
-      logger.info({
-        executionId,
-        suiteId: suite.id,
-        scenarioId: scenario.id,
-      }, 'Test scenario execution started');
+      logger.info(
+        {
+          executionId,
+          suiteId: suite.id,
+          scenarioId: scenario.id,
+        },
+        'Test scenario execution started'
+      );
 
       this.emit('test_execution_started', execution);
 
@@ -706,11 +725,14 @@ export class AlertTestingService extends EventEmitter {
 
       return execution;
     } catch (error) {
-      logger.error({
-        suiteId: suite.id,
-        scenarioId: scenario.id,
-        error,
-      }, 'Test scenario execution failed');
+      logger.error(
+        {
+          suiteId: suite.id,
+          scenarioId: scenario.id,
+          error,
+        },
+        'Test scenario execution failed'
+      );
       throw error;
     }
   }
@@ -749,10 +771,13 @@ export class AlertTestingService extends EventEmitter {
       // Cleanup any active fault injections
       await this.cleanupFaultInjections(executionId);
 
-      logger.info({
-        executionId,
-        reason,
-      }, 'Test execution cancelled');
+      logger.info(
+        {
+          executionId,
+          reason,
+        },
+        'Test execution cancelled'
+      );
 
       this.emit('test_execution_cancelled', execution);
     } catch (error) {
@@ -773,12 +798,15 @@ export class AlertTestingService extends EventEmitter {
       this.validateFaultInjection(fault);
       this.faultInjections.set(fault.id, fault);
 
-      logger.info({
-        faultId: fault.id,
-        type: fault.type,
-        target: fault.target,
-        severity: fault.severity,
-      }, 'Injecting fault for testing');
+      logger.info(
+        {
+          faultId: fault.id,
+          type: fault.type,
+          target: fault.target,
+          severity: fault.severity,
+        },
+        'Injecting fault for testing'
+      );
 
       await this.executeFaultInjection(fault);
 
@@ -827,12 +855,15 @@ export class AlertTestingService extends EventEmitter {
    */
   async executeLoadTest(config: LoadTestConfig): Promise<LoadTestResult> {
     try {
-      logger.info({
-        scenario: config.scenario,
-        duration: config.duration,
-        concurrency: config.concurrency,
-        rate: config.rate,
-      }, 'Starting load test');
+      logger.info(
+        {
+          scenario: config.scenario,
+          duration: config.duration,
+          concurrency: config.concurrency,
+          rate: config.rate,
+        },
+        'Starting load test'
+      );
 
       const startTime = Date.now();
       const result = await this.runLoadTest(config);
@@ -840,13 +871,16 @@ export class AlertTestingService extends EventEmitter {
 
       result.duration = endTime - startTime;
 
-      logger.info({
-        scenario: config.scenario,
-        duration: result.duration,
-        totalRequests: result.totalRequests,
-        successRate: 100 - result.errorRate,
-        averageResponseTime: result.averageResponseTime,
-      }, 'Load test completed');
+      logger.info(
+        {
+          scenario: config.scenario,
+          duration: result.duration,
+          totalRequests: result.totalRequests,
+          successRate: 100 - result.errorRate,
+          averageResponseTime: result.averageResponseTime,
+        },
+        'Load test completed'
+      );
 
       this.emit('load_test_completed', result);
 
@@ -1037,12 +1071,15 @@ export class AlertTestingService extends EventEmitter {
 
       this.activeTests.delete(execution.id);
 
-      logger.info({
-        executionId: execution.id,
-        status: execution.status,
-        duration: execution.duration,
-        passed: execution.results.summary.passed,
-      }, 'Test scenario execution completed');
+      logger.info(
+        {
+          executionId: execution.id,
+          status: execution.status,
+          duration: execution.duration,
+          passed: execution.results.summary.passed,
+        },
+        'Test scenario execution completed'
+      );
 
       this.emit('test_execution_completed', execution);
     } catch (error) {
@@ -1051,10 +1088,13 @@ export class AlertTestingService extends EventEmitter {
       execution.duration = Date.now() - execution.startedAt.getTime();
       this.activeTests.delete(execution.id);
 
-      logger.error({
-        executionId: execution.id,
-        error,
-      }, 'Test scenario execution failed');
+      logger.error(
+        {
+          executionId: execution.id,
+          error,
+        },
+        'Test scenario execution failed'
+      );
 
       this.emit('test_execution_failed', execution);
     }
@@ -1074,11 +1114,14 @@ export class AlertTestingService extends EventEmitter {
           throw new Error(`Test step '${step.name}' failed: ${stepExecution.error}`);
         }
       } catch (error) {
-        logger.error({
-          executionId: execution.id,
-          stepId: step.id,
-          error,
-        }, 'Test step execution failed');
+        logger.error(
+          {
+            executionId: execution.id,
+            stepId: step.id,
+            error,
+          },
+          'Test step execution failed'
+        );
 
         if (!step.ignoreErrors) {
           throw error;
@@ -1137,7 +1180,6 @@ export class AlertTestingService extends EventEmitter {
       stepExecution.status = 'passed';
       stepExecution.completedAt = new Date();
       stepExecution.duration = Date.now() - startTime;
-
     } catch (error) {
       stepExecution.status = 'failed';
       stepExecution.error = error instanceof Error ? error.message : 'Unknown error';
@@ -1271,11 +1313,18 @@ export class AlertTestingService extends EventEmitter {
 
     execution.results.summary.passed = passed;
     execution.results.summary.totalSteps = execution.steps.length;
-    execution.results.summary.passedSteps = passed ? execution.steps.length : execution.steps.length - 1;
+    execution.results.summary.passedSteps = passed
+      ? execution.steps.length
+      : execution.steps.length - 1;
     execution.results.summary.failedSteps = passed ? 0 : 1;
     execution.results.summary.successRate = passed ? 100 : 0;
 
-    this.addLog(execution, 'info', `Scenario verification ${passed ? 'passed' : 'failed'}`, 'verifier');
+    this.addLog(
+      execution,
+      'info',
+      `Scenario verification ${passed ? 'passed' : 'failed'}`,
+      'verifier'
+    );
   }
 
   private createDatabaseDownHealthResult(): SystemHealthResult {
@@ -1425,7 +1474,12 @@ export class AlertTestingService extends EventEmitter {
     execution: AlertTestExecution
   ): Promise<void> {
     // Placeholder for notification verification step execution
-    this.addLog(execution, 'info', `Verifying notifications: ${step.name}`, 'notification-verifier');
+    this.addLog(
+      execution,
+      'info',
+      `Verifying notifications: ${step.name}`,
+      'notification-verifier'
+    );
     await this.sleep(500);
   }
 
@@ -1438,19 +1492,13 @@ export class AlertTestingService extends EventEmitter {
     await this.sleep(500);
   }
 
-  private async executeWaitStep(
-    step: TestStep,
-    execution: AlertTestExecution
-  ): Promise<void> {
-    const duration = step.parameters.duration || 5000;
+  private async executeWaitStep(step: TestStep, execution: AlertTestExecution): Promise<void> {
+    const duration = hasNumberProperty(step.parameters, 'duration') ? (step.parameters as any).duration : 5000;
     this.addLog(execution, 'info', `Waiting for ${duration}ms`, 'wait-step');
     await this.sleep(duration);
   }
 
-  private async executeGenericStep(
-    step: TestStep,
-    execution: AlertTestExecution
-  ): Promise<void> {
+  private async executeGenericStep(step: TestStep, execution: AlertTestExecution): Promise<void> {
     this.addLog(execution, 'info', `Executing step: ${step.name}`, 'generic-executor');
     await this.sleep(1000);
   }
@@ -1521,7 +1569,7 @@ export class AlertTestingService extends EventEmitter {
     const failedSteps = executions.reduce((sum, e) => sum + e.results.summary.failedSteps, 0);
     const skippedSteps = executions.reduce((sum, e) => sum + e.results.summary.skippedSteps, 0);
     const totalDuration = executions.reduce((sum, e) => sum + (e.duration || 0), 0);
-    const passed = executions.every(e => e.results.summary.passed);
+    const passed = executions.every((e) => e.results.summary.passed);
 
     return {
       totalSteps,
@@ -1564,7 +1612,12 @@ export class AlertTestingService extends EventEmitter {
     }
   }
 
-  private addLog(execution: AlertTestExecution, level: 'debug' | 'info' | 'warn' | 'error', message: string, source: string): void {
+  private addLog(
+    execution: AlertTestExecution,
+    level: 'debug' | 'info' | 'warn' | 'error',
+    message: string,
+    source: string
+  ): void {
     execution.logs.push({
       timestamp: new Date(),
       level,
@@ -1582,7 +1635,7 @@ export class AlertTestingService extends EventEmitter {
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -1596,7 +1649,7 @@ export class AlertTestingService extends EventEmitter {
 
     // Remove all fault injections
     for (const faultId of this.faultInjections.keys()) {
-      this.removeFault(faultId).catch(error => {
+      this.removeFault(faultId).catch((error) => {
         logger.error({ faultId, error }, 'Failed to remove fault during cleanup');
       });
     }

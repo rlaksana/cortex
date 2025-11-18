@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTELY FINAL EMERGENCY ROLLBACK: Complete ALL systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Unified Type Exports for Cortex MCP System
@@ -40,19 +38,10 @@ export type {
 } from './base-types.js';
 
 // Event and message types
-export type {
-  AsyncResult,
-  BaseEvent,
-  MessagePayload,
-  Result,
-} from './base-types.js';
+export type { AsyncResult, BaseEvent, MessagePayload, Result } from './base-types.js';
 
 // Collection types
-export type {
-  KeyValuePairs,
-  PaginatedCollection,
-  ReadOnlyCollection,
-} from './base-types.js';
+export type { KeyValuePairs, PaginatedCollection, ReadOnlyCollection } from './base-types.js';
 
 // Utility types for `any` replacement
 export type {
@@ -82,6 +71,9 @@ export {
   toJSONValue,
   toTags,
 } from './base-types.js';
+
+// Import types for local use
+import type { JSONValue, Metadata, Tags } from './base-types.js';
 
 // ============================================================================
 // Knowledge System Types
@@ -183,23 +175,13 @@ export type {
 } from './api-types-enhanced.js';
 
 // Rate limiting
-export type {
-  RateLimitConfig,
-  RateLimitResult,
-} from './api-types-enhanced.js';
+export type { RateLimitConfig, RateLimitResult } from './api-types-enhanced.js';
 
 // API versioning
-export type {
-  ApiVersion,
-  VersionStatus,
-} from './api-types-enhanced.js';
+export type { ApiVersion, VersionStatus } from './api-types-enhanced.js';
 
 // API contracts
-export type {
-  RequestExample,
-  RestApiContract,
-  ValidationSchema,
-} from './api-types-enhanced.js';
+export type { RequestExample, RestApiContract, ValidationSchema } from './api-types-enhanced.js';
 
 // GraphQL types
 export type {
@@ -291,20 +273,10 @@ export type {
 } from './monitoring-types-enhanced.js';
 
 // Logging
-export type {
-  LogEntry,
-  LogError,
-  LogLevel,
-  LogQuery,
-} from './monitoring-types-enhanced.js';
+export type { LogEntry, LogError, LogLevel, LogQuery } from './monitoring-types-enhanced.js';
 
 // Distributed tracing
-export type {
-  Span,
-  SpanStatus,
-  Trace,
-  TraceStatus,
-} from './monitoring-types-enhanced.js';
+export type { Span, SpanStatus, Trace, TraceStatus } from './monitoring-types-enhanced.js';
 
 // SLO/SLI types
 export type {
@@ -397,7 +369,6 @@ export type {
 export type {
   BatchOperation,
   BatchOperationResult,
-  BatchResult,
   BatchSummary,
   BatchUpdateData,
   CreateResult,
@@ -405,7 +376,6 @@ export type {
   FindResult,
   OperationOptions,
   RetryOptions,
-  SearchResult,
   UpdateResult,
 } from './database-types-enhanced.js';
 
@@ -434,10 +404,7 @@ export type {
 } from './database-types-enhanced.js';
 
 // Error handling
-export type {
-  DatabaseError,
-  ErrorType,
-} from './database-types-enhanced.js';
+export type { ErrorType } from './database-types-enhanced.js';
 
 // Health and metrics
 export type {
@@ -516,19 +483,39 @@ export {
 } from './filter-compatibility-adapter.js';
 
 // Re-export unified filter types
-export type {
-  UnifiedFilter,
-} from './filter-compatibility-adapter.js';
+export type { UnifiedFilter } from './filter-compatibility-adapter.js';
 
 // ============================================================================
-// Audit & Metrics Types
+// Audit & Metrics Types (Consolidated)
 // ============================================================================
 
-// Audit enums and types
+// Core audit enums and types - re-export from consolidated audit-types.ts
 export type {
+  AlertChannel,
+  AuditAggregateFunction,
+  AuditAlertCondition,
+  AuditAlertingConfig,
+  AuditAlertRule,
+  AuditComplianceConfig,
+  AuditGroupByField,
+  AuditMetadata,
+  AuditResult,
+  AuditSortField,
+  AuditStorageConfig,
+  AuditSystemConfig,
+  AuditValidationConfig,
   AuditValidationResult,
+  ComplianceInfo,
+  CompliancePolicy,
+  ComplianceReportingConfig,
+  ComplianceRequirement,
+  GeographicInfo,
   TypedAuditEvent,
-} from './audit-metrics-types.js';
+  TypedAuditFilter,
+  TypedAuditQueryOptions,
+  TypedAuditQueryResult,
+  TypedAuditStatistics,
+} from './audit-types.js';
 export {
   AuditCategory,
   AuditEventType,
@@ -536,22 +523,28 @@ export {
   AuditSource,
   ComplianceFramework,
   ComplianceRegulation,
+  createDefaultAuditConfig,
+  createTypedAuditEvent,
+  getAuditEventDescription,
+  isAuditMetadata,
+  isTypedAuditEvent,
+  isTypedAuditQueryOptions,
   SensitivityLevel,
-} from './audit-metrics-types.js';
+  validateAuditEvent,
+} from './audit-types.js';
 
-// Metrics enums and types
+// Metrics-specific types - re-export from audit-metrics-types.js
 export type {
+  ValidationResult as MetricsValidationResult,
   MetricValidationResult,
   TypedMetric,
   ValidationContext,
+  ValidationError,
   ValidationFunction,
   ValidationSuggestion,
   ValidationWarning,
 } from './audit-metrics-types.js';
-export {
-  MetricCategory,
-  OutputFormat,
-} from './audit-metrics-types.js';
+export { MetricCategory, OutputFormat } from './audit-metrics-types.js';
 
 // ============================================================================
 // Enhanced Type Guards (Runtime Validation)
@@ -574,9 +567,7 @@ export {
 } from './type-guards-enhanced.js';
 
 // Knowledge type guards
-export {
-  isKnowledgeItem,
-} from './type-guards-enhanced.js';
+export { isKnowledgeItem } from './type-guards-enhanced.js';
 
 // API type guards
 export {
@@ -647,6 +638,8 @@ export type {
   MemoryStoreRequest,
   MemoryStoreResponse,
   SimilarityService,
+  SuggestionType,
+  ValidationPerformance,
   ValidationResult,
   ValidationService,
   ValidatorRegistry,
@@ -662,13 +655,10 @@ export type {
 } from './contracts.js';
 
 // Error handling types
-export type {
-  ErrorCategory,
-} from './error-handling-interfaces.js';
+export type { ErrorCategory } from './error-handling-interfaces.js';
 
 // API interfaces (legacy)
 export type {
-  ApiContractResponse,
   ApiEndpoint as LegacyApiEndpoint,
   ApiEndpoint as LegacyApiEndpoint2,
   ApiMiddleware as LegacyApiMiddleware,
@@ -688,9 +678,7 @@ export type {
 } from './api-interfaces.js';
 
 // Auth types
-export type {
-  AuthContext as LegacyAuthContext,
-} from './auth-types.js';
+export type { AuthContext as LegacyAuthContext } from './auth-types.js';
 
 // ============================================================================
 // Standard Response Patterns
@@ -791,3 +779,10 @@ export type DeepPartial<T> = {
 
 // Safe alternative to `any`
 export type SafeAny = never; // Prevents any usage at type level
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+// Re-export utility functions
+export { generateCorrelationId } from '../utils/correlation-id.js';

@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: DI container interface compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Configuration Service Implementation
@@ -13,9 +11,8 @@
  * @since 2025
  */
 
-
 import { Injectable } from '../di-container.js';
-import type { IConfigService, ILoggerService  } from '../service-interfaces.js';
+import type { IConfigService, ILoggerService } from '../service-interfaces.js';
 import { ServiceTokens } from '../service-interfaces.js';
 
 /**
@@ -76,16 +73,16 @@ export class ConfigService implements IConfigService {
   /**
    * Get configuration value by key with optional default fallback
    */
-  get<T>(key: keyof ConfigSchema, defaultValue?: T): T {
-    const value = this.config[key];
+  get<T>(key: string, defaultValue?: T): T {
+    const value = this.config[key as keyof ConfigSchema];
     return value !== undefined ? (value as T) : (defaultValue as T);
   }
 
   /**
    * Check if configuration key exists
    */
-  has(key: keyof ConfigSchema): boolean {
-    return this.config[key] !== undefined;
+  has(key: string): boolean {
+    return this.config[key as keyof ConfigSchema] !== undefined;
   }
 
   /**
@@ -109,8 +106,8 @@ export class ConfigService implements IConfigService {
   /**
    * Get all configuration values (for debugging)
    */
-  getAll(): ConfigSchema {
-    return { ...this.config };
+  getAll(): Record<string, unknown> {
+    return { ...this.config } as Record<string, unknown>;
   }
 
   /**
@@ -306,5 +303,114 @@ export class ConfigService implements IConfigService {
     }
 
     return changes;
+  }
+
+  /**
+   * Get configuration section by name
+   */
+  getSection<T extends Record<string, unknown>>(section: string): T {
+    const sectionConfig = {} as T;
+    const sectionPrefix = `${section.toUpperCase()}_`;
+
+    // Find all config keys that start with the section prefix
+    Object.entries(this.config).forEach(([key, value]) => {
+      if (key.startsWith(sectionPrefix)) {
+        const sectionKey = key.substring(sectionPrefix.length);
+        (sectionConfig as Record<string, unknown>)[sectionKey] = value;
+      }
+    });
+
+    return sectionConfig;
+  }
+
+  /**
+   * Set configuration value (for runtime updates)
+   */
+  set(key: string, value: unknown): void {
+    // Type-safe configuration update with validation
+    if (!this.isValidConfigKey(key)) {
+      throw new Error(`Invalid configuration key: ${key}`);
+    }
+
+    const typedKey = key as keyof ConfigSchema;
+    const typedValue = value as ConfigSchema[keyof ConfigSchema];
+
+    // Validate the value type matches the expected schema type
+    this.validateConfigValue(typedKey, typedValue);
+
+    // Type-safe assignment with explicit assertion
+    (this.config as Record<keyof ConfigSchema, ConfigSchema[keyof ConfigSchema]>)[typedKey] = typedValue;
+    this.logger.debug(`Configuration value updated`, { key, value });
+  }
+
+  /**
+   * Check if a key is valid in the ConfigSchema
+   */
+  private isValidConfigKey(key: string): key is keyof ConfigSchema {
+    const validKeys: ReadonlyArray<string> = [
+      'QDRANT_URL', 'QDRANT_API_KEY', 'QDRANT_COLLECTION_NAME',
+      'OPENAI_API_KEY', 'LOG_LEVEL', 'NODE_ENV', 'CORTEX_ORG',
+      'CORTEX_PROJECT', 'CORTEX_BRANCH', 'PORT', 'MAX_MEMORY_ITEMS',
+      'SIMILARITY_THRESHOLD', 'CACHE_TTL', 'DATABASE_TIMEOUT', 'AUTH_SECRET'
+    ];
+    return validKeys.includes(key);
+  }
+
+  /**
+   * Validate configuration value type
+   */
+  private validateConfigValue(key: keyof ConfigSchema, value: unknown): void {
+    // Basic type validation based on the schema
+    const expectedType = typeof this.config[key];
+    const actualType = typeof value;
+
+    // Allow undefined for optional properties
+    if (value === undefined && this.isOptionalKey(key)) {
+      return;
+    }
+
+    // Special handling for numeric values that might come as strings
+    if (this.isNumericKey(key)) {
+      const numValue = typeof value === 'string' ? Number(value) : value;
+      if (typeof numValue !== 'number' || isNaN(numValue)) {
+        throw new Error(`Invalid numeric value for ${key}: ${value}`);
+      }
+      return;
+    }
+
+    if (expectedType !== actualType && value !== undefined) {
+      throw new Error(`Type mismatch for ${key}: expected ${expectedType}, got ${actualType}`);
+    }
+  }
+
+  /**
+   * Check if a config key is optional
+   */
+  private isOptionalKey(key: keyof ConfigSchema): boolean {
+    const optionalKeys: ReadonlyArray<keyof ConfigSchema> = [
+      'QDRANT_API_KEY', 'OPENAI_API_KEY', 'CORTEX_ORG', 'CORTEX_PROJECT',
+      'CORTEX_BRANCH', 'PORT', 'MAX_MEMORY_ITEMS', 'SIMILARITY_THRESHOLD',
+      'CACHE_TTL', 'DATABASE_TIMEOUT', 'AUTH_SECRET'
+    ];
+    return optionalKeys.includes(key);
+  }
+
+  /**
+   * Check if a config key expects a numeric value
+   */
+  private isNumericKey(key: keyof ConfigSchema): boolean {
+    const numericKeys: ReadonlyArray<keyof ConfigSchema> = [
+      'PORT', 'MAX_MEMORY_ITEMS', 'SIMILARITY_THRESHOLD',
+      'CACHE_TTL', 'DATABASE_TIMEOUT'
+    ];
+    return numericKeys.includes(key);
+  }
+
+  /**
+   * Validate a configuration value
+   */
+  validate(key: string, validator: (value: unknown) => boolean): boolean {
+    const value = this.config[key as keyof ConfigSchema];
+    return validator(value);
   }
 }

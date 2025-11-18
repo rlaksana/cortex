@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Cortex Memory MCP - Qdrant Migration System
  *
@@ -15,7 +11,7 @@
  */
 
 import { promises as fs } from 'fs';
-import { dirname,join } from 'path';
+import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import * as crypto from 'crypto';
 
@@ -556,7 +552,7 @@ export const qdrantMigrationManager = new QdrantMigrationManager();
 export { QdrantMigrationManager };
 
 // Export types
-export type { Migration, MigrationOperation,MigrationOptions, MigrationResult, MigrationStep };
+export type { Migration, MigrationOperation, MigrationOptions, MigrationResult, MigrationStep };
 
 // CLI support
 if (import.meta.url === `file://${process.argv[1]}`) {

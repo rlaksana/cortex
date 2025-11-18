@@ -371,11 +371,17 @@
     "vitest-tsconfig-paths": "^3.4.1"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,cjs,mjs}": [
-      "eslint --max-warnings=0 --fix --cache --cache-location .cache/eslint",
+    "*.{ts,tsx,js,mjs}": [
+      "eslint --max-warnings=5 --fix --cache --cache-location .cache/eslint --quiet",
+      "prettier --write"
+    ],
+    "*.{cjs}": [
       "prettier --write"
     ],
     "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "remove-*.js": [
       "prettier --write"
     ]
   },

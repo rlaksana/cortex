@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: DI container interface compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Event Bus Implementation
@@ -16,7 +14,7 @@
 import { EventEmitter } from 'node:events';
 
 import { Injectable } from './di-container.js';
-import type { IEventService, ILoggerService  } from './service-interfaces.js';
+import type { IEventService, ILoggerService } from './service-interfaces.js';
 import { ServiceTokens } from './service-interfaces.js';
 
 /**
@@ -37,7 +35,7 @@ export interface CortexEvent<T = unknown> {
  * Event handler interface
  */
 export interface EventHandler<T = unknown> {
-  (event: CortexEvent<T>): void | Promise<void>;
+  (event: CortexEvent): void | Promise<void>;
 }
 
 /**
@@ -80,8 +78,9 @@ export class EventBus implements IEventService {
   private schemas = new Map<string, EventSchema>();
   private handlers = new Map<
     string,
-    Array<{ handler: EventHandler; options: EventSubscriptionOptions }>
+    Array<{ handler: EventHandler; options: EventSubscriptionOptions; originalHandler: Function }>
   >();
+  private handlerMap = new WeakMap<Function, EventHandler>();
   private middleware: Array<(event: CortexEvent, next: () => void) => void> = [];
   private metrics = {
     eventsPublished: 0,
@@ -99,24 +98,16 @@ export class EventBus implements IEventService {
   /**
    * Publish an event
    */
-  emit(
+  emit<T = unknown>(
     eventType: string,
-    data: unknown,
-    options: {
-      correlationId?: string;
-      source?: string;
-      metadata?: Record<string, unknown>;
-    } = {}
+    data: T
   ): void {
-    const event: CortexEvent = {
+    const event: CortexEvent<T> = {
       id: this.generateEventId(),
       type: eventType,
       data,
       timestamp: new Date(),
-      correlationId: options.correlationId,
-      source: options.source,
       version: '1.0.0',
-      metadata: options.metadata,
     };
 
     this.publishEvent(event);
@@ -125,14 +116,27 @@ export class EventBus implements IEventService {
   /**
    * Subscribe to events
    */
-  on(eventType: string, handler: EventHandler, options: EventSubscriptionOptions = {}): void {
-    this.validateHandler(handler);
+  on<T = unknown>(eventType: string, handler: (data: T) => void, options?: EventSubscriptionOptions): { unsubscribe: () => void; isActive: boolean; eventId: string } {
+    if (typeof handler !== 'function') {
+      throw new Error('Event handler must be a function');
+    }
+
+    const eventId = this.generateEventId();
+    const subscriptionOptions = options || {};
 
     if (!this.handlers.has(eventType)) {
       this.handlers.set(eventType, []);
     }
 
-    const handlerEntry = { handler, options };
+    // Wrap the handler to match our internal EventHandler interface
+    const wrappedHandler: EventHandler = (event: CortexEvent) => {
+      handler((event as CortexEvent<T>).data);
+    };
+
+    // Store the mapping between original handler and wrapped handler
+    this.handlerMap.set(handler, wrappedHandler);
+
+    const handlerEntry = { handler: wrappedHandler, options: subscriptionOptions, originalHandler: handler };
     this.handlers.get(eventType)!.push(handlerEntry);
 
     // Sort by priority (higher priority first)
@@ -141,9 +145,9 @@ export class EventBus implements IEventService {
       .sort((a, b) => (b.options.priority || 0) - (a.options.priority || 0));
 
     this.metrics.handlersRegistered++;
-    this.logger.debug(`Event handler registered`, { eventType, priority: options.priority });
+    this.logger.debug(`Event handler registered`, { eventType, priority: subscriptionOptions.priority, eventId });
 
-    if (options.once) {
+    if (subscriptionOptions.once) {
       this.emitter.once(eventType, (event: CortexEvent) => {
         this.executeHandler(handlerEntry, event);
       });
@@ -152,25 +156,37 @@ export class EventBus implements IEventService {
         this.executeHandler(handlerEntry, event);
       });
     }
+
+    return {
+      unsubscribe: () => {
+        this.off(eventType, handler);
+      },
+      isActive: true,
+      eventId
+    };
   }
 
   /**
    * Subscribe to events (once)
    */
-  once(eventType: string, handler: EventHandler, options: EventSubscriptionOptions = {}): void {
-    this.on(eventType, handler, { ...options, once: true });
+  once<T = unknown>(eventType: string, handler: (data: T) => void): { unsubscribe: () => void; isActive: boolean; eventId: string } {
+    return this.on(eventType, handler, { once: true });
   }
 
   /**
    * Unsubscribe from events
    */
-  off(eventType: string, handler: EventHandler): void {
+  off<T = unknown>(eventType: string, handler: (data: T) => void): void {
     const handlers = this.handlers.get(eventType);
     if (handlers) {
-      const index = handlers.findIndex((h) => h.handler === handler);
+      const index = handlers.findIndex((h) => h.originalHandler === handler);
+
       if (index !== -1) {
-        handlers.splice(index, 1);
-        this.emitter.off(eventType, handler as unknown);
+        const removedHandler = handlers.splice(index, 1)[0];
+        // Remove from EventEmitter as well
+        this.emitter.removeListener(eventType, removedHandler.handler);
+        // Clean up the handler map
+        this.handlerMap.delete(handler);
         this.logger.debug(`Event handler removed`, { eventType });
       }
     }
@@ -219,10 +235,14 @@ export class EventBus implements IEventService {
     const warnings: string[] = [];
 
     // Check required fields
-    for (const requiredField of schema.required) {
-      if (!(requiredField in event.data)) {
-        errors.push(`Required field '${requiredField}' is missing`);
+    if (event.data && typeof event.data === 'object') {
+      for (const requiredField of schema.required) {
+        if (!(requiredField in event.data)) {
+          errors.push(`Required field '${requiredField}' is missing`);
+        }
       }
+    } else {
+      errors.push('Event data must be an object for schema validation');
     }
 
     // TODO: Add more comprehensive JSON schema validation
@@ -268,6 +288,34 @@ export class EventBus implements IEventService {
       eventsFailed: 0,
       handlersRegistered: 0,
     };
+  }
+
+  /**
+   * Get listener count for an event
+   */
+  getListenerCount(eventType: string): number {
+    return this.emitter.listenerCount(eventType);
+  }
+
+  /**
+   * Get all event names
+   */
+  getEventNames(): string[] {
+    return this.emitter.eventNames() as string[];
+  }
+
+  /**
+   * Emit event asynchronously
+   */
+  async emitAsync<T = unknown>(eventType: string, data: T): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      try {
+        this.emit(eventType, data);
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   /**

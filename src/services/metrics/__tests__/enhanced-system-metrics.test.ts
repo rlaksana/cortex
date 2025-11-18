@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * P4-1: Enhanced System Metrics Tests
  *
@@ -10,17 +5,17 @@
  * and dedupe_hits metrics.
  */
 
-import { beforeEach,describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it } from 'vitest';
 
-import { type SystemMetricsService, systemMetricsService } from '../system-metrics.js';
+import { type SystemMetricsService, systemMetricsService } from '../system-metrics';
 
 // Mock the logger
-jest.mock('../../utils/logger.js', () => ({
+vi.mock('../../utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 

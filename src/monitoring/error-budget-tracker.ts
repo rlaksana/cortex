@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Qdrant Error Budget Tracker
  *
@@ -18,7 +13,7 @@ import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
 
-import { type DegradationEvent,DegradationLevel } from './degradation-detector.js';
+import { type DegradationEvent, DegradationLevel } from './degradation-detector.js';
 
 /**
  * Error budget configuration
@@ -26,23 +21,23 @@ import { type DegradationEvent,DegradationLevel } from './degradation-detector.j
 export interface ErrorBudgetConfig {
   // Service level objectives (SLO)
   slo: {
-    availabilityTarget: number;        // percentage (e.g., 99.9)
-    latencyTarget: number;            // milliseconds (e.g., 1000)
-    errorRateTarget: number;          // percentage (e.g., 0.1)
-    timeWindowMs: number;             // SLO time window (e.g., 30 days)
+    availabilityTarget: number; // percentage (e.g., 99.9)
+    latencyTarget: number; // milliseconds (e.g., 1000)
+    errorRateTarget: number; // percentage (e.g., 0.1)
+    timeWindowMs: number; // SLO time window (e.g., 30 days)
   };
 
   // Error budget calculation
   budget: {
-    burnRateWarningThreshold: number;  // percentage of budget burned
+    burnRateWarningThreshold: number; // percentage of budget burned
     burnRateCriticalThreshold: number; // percentage of budget burned
-    rapidBurnThreshold: number;        // burn rate multiplier for rapid detection
-    minimumSampleSize: number;         // minimum operations for reliable calculation
+    rapidBurnThreshold: number; // burn rate multiplier for rapid detection
+    minimumSampleSize: number; // minimum operations for reliable calculation
   };
 
   // Reporting and alerting
   reporting: {
-    intervalMs: number;               // reporting interval
+    intervalMs: number; // reporting interval
     includeDegradedOperations: boolean; // count degraded ops in budget
     includeCircuitBreakerEvents: boolean;
     enableHistoricalTrends: boolean;
@@ -51,9 +46,9 @@ export interface ErrorBudgetConfig {
 
   // Budget actions
   actions: {
-    haltDeploymentThreshold: number;  // percentage burned - halt deployments
+    haltDeploymentThreshold: number; // percentage burned - halt deployments
     requireApprovalThreshold: number; // percentage burned - require approval
-    emergencyModeThreshold: number;   // percentage burned - emergency mode
+    emergencyModeThreshold: number; // percentage burned - emergency mode
   };
 }
 
@@ -78,9 +73,9 @@ export interface ErrorBudgetStatus {
   availability: number;
   errorRate: number;
   averageResponseTime: number;
-  budgetBurned: number;              // percentage
-  budgetRemaining: number;           // percentage
-  burnRate: number;                  // percentage per hour
+  budgetBurned: number; // percentage
+  budgetRemaining: number; // percentage
+  burnRate: number; // percentage per hour
 
   // Time-based calculations
   timeWindowStart: Date;
@@ -92,7 +87,7 @@ export interface ErrorBudgetStatus {
   fallbackOperations: number;
 
   // Budget consumption
-  projectedBurnTime: Date | null;    // when budget will be exhausted
+  projectedBurnTime: Date | null; // when budget will be exhausted
   burnRateVelocity: 'normal' | 'increasing' | 'rapid' | 'critical';
   recommendedActions: string[];
 }
@@ -120,10 +115,10 @@ export interface ErrorBudgetReport {
 
   // Error budget details
   errorBudget: {
-    totalBudget: number;           // percentage
-    consumed: number;              // percentage
-    remaining: number;             // percentage
-    burnRate: number;              // percentage per hour
+    totalBudget: number; // percentage
+    consumed: number; // percentage
+    remaining: number; // percentage
+    burnRate: number; // percentage per hour
   };
 
   // Operational metrics
@@ -140,7 +135,7 @@ export interface ErrorBudgetReport {
 
   // Degradation impact
   degradationImpact: {
-    totalDegradationTime: number;   // milliseconds
+    totalDegradationTime: number; // milliseconds
     degradationEvents: number;
     averageDegradationDuration: number;
     criticalEvents: number;
@@ -186,13 +181,13 @@ export class QdrantErrorBudgetTracker extends EventEmitter {
         timeWindowMs: 30 * 24 * 60 * 60 * 1000, // 30 days
       },
       budget: {
-        burnRateWarningThreshold: 50,   // 50% of budget burned
-        burnRateCriticalThreshold: 80,  // 80% of budget burned
-        rapidBurnThreshold: 2,          // 2x normal burn rate
+        burnRateWarningThreshold: 50, // 50% of budget burned
+        burnRateCriticalThreshold: 80, // 80% of budget burned
+        rapidBurnThreshold: 2, // 2x normal burn rate
         minimumSampleSize: 100,
       },
       reporting: {
-        intervalMs: 5 * 60 * 1000,      // 5 minutes
+        intervalMs: 5 * 60 * 1000, // 5 minutes
         includeDegradedOperations: true,
         includeCircuitBreakerEvents: true,
         enableHistoricalTrends: true,
@@ -290,7 +285,7 @@ export class QdrantErrorBudgetTracker extends EventEmitter {
 
     // Keep history within SLO time window
     const cutoff = Date.now() - this.config.slo.timeWindowMs;
-    this.operationHistory = this.operationHistory.filter(m => m.timestamp > cutoff);
+    this.operationHistory = this.operationHistory.filter((m) => m.timestamp > cutoff);
 
     // Check for immediate alerts
     this.checkImmediateAlerts();
@@ -310,7 +305,7 @@ export class QdrantErrorBudgetTracker extends EventEmitter {
 
     // Keep recent events
     const cutoff = Date.now() - this.config.slo.timeWindowMs;
-    this.degradationEvents = this.degradationEvents.filter(e => e.timestamp.getTime() > cutoff);
+    this.degradationEvents = this.degradationEvents.filter((e) => e.timestamp.getTime() > cutoff);
 
     this.emit('degradation_recorded', event);
 
@@ -328,7 +323,7 @@ export class QdrantErrorBudgetTracker extends EventEmitter {
     const windowStart = now - this.config.slo.timeWindowMs;
 
     // Filter operations within SLO window
-    const windowOperations = this.operationHistory.filter(m => m.timestamp > windowStart);
+    const windowOperations = this.operationHistory.filter((m) => m.timestamp > windowStart);
 
     if (windowOperations.length < this.config.budget.minimumSampleSize) {
       return {
@@ -352,15 +347,15 @@ export class QdrantErrorBudgetTracker extends EventEmitter {
     }
 
     // Calculate metrics
-    const successful = windowOperations.filter(m => m.success).length;
-    const failed = windowOperations.filter(m => !m.success).length;
-    const degraded = windowOperations.filter(m => m.degraded).length;
-    const fallback = windowOperations.filter(m => m.fallbackUsed).length;
+    const successful = windowOperations.filter((m) => m.success).length;
+    const failed = windowOperations.filter((m) => !m.success).length;
+    const degraded = windowOperations.filter((m) => m.degraded).length;
+    const fallback = windowOperations.filter((m) => m.fallbackUsed).length;
 
     const availability = (successful / windowOperations.length) * 100;
     const errorRate = (failed / windowOperations.length) * 100;
 
-    const responseTimes = windowOperations.map(m => m.responseTime);
+    const responseTimes = windowOperations.map((m) => m.responseTime);
     const averageResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
 
     // Calculate error budget
@@ -377,8 +372,9 @@ export class QdrantErrorBudgetTracker extends EventEmitter {
     let projectedBurnTime: Date | null = null;
     if (burnRate > 0) {
       const timeToExhaustion = (100 - budgetBurned) / burnRate;
-      if (timeToExhaustion > 0 && timeToExhaustion < 24 * 7) { // Only project if less than a week
-        projectedBurnTime = new Date(now + (timeToExhaustion * 60 * 60 * 1000));
+      if (timeToExhaustion > 0 && timeToExhaustion < 24 * 7) {
+        // Only project if less than a week
+        projectedBurnTime = new Date(now + timeToExhaustion * 60 * 60 * 1000);
       }
     }
 
@@ -387,7 +383,10 @@ export class QdrantErrorBudgetTracker extends EventEmitter {
     if (burnRate > this.config.budget.rapidBurnThreshold * (availabilityBudget / timeWindowHours)) {
       burnRateVelocity = 'rapid';
     }
-    if (burnRate > this.config.budget.rapidBurnThreshold * 2 * (availabilityBudget / timeWindowHours)) {
+    if (
+      burnRate >
+      this.config.budget.rapidBurnThreshold * 2 * (availabilityBudget / timeWindowHours)
+    ) {
       burnRateVelocity = 'critical';
     } else if (burnRate > (availabilityBudget / timeWindowHours) * 1.5) {
       burnRateVelocity = 'increasing';
@@ -437,24 +436,27 @@ export class QdrantErrorBudgetTracker extends EventEmitter {
     const windowStart = now - this.config.slo.timeWindowMs;
 
     // Get operations within window
-    const windowOperations = this.operationHistory.filter(m => m.timestamp > windowStart);
-    const windowDegradations = this.degradationEvents.filter(e => e.timestamp.getTime() > windowStart);
+    const windowOperations = this.operationHistory.filter((m) => m.timestamp > windowStart);
+    const windowDegradations = this.degradationEvents.filter(
+      (e) => e.timestamp.getTime() > windowStart
+    );
 
     // Calculate basic metrics
     const total = windowOperations.length;
-    const successful = windowOperations.filter(m => m.success).length;
-    const failed = windowOperations.filter(m => !m.success).length;
-    const degraded = windowOperations.filter(m => m.degraded).length;
-    const fallback = windowOperations.filter(m => m.fallbackUsed).length;
+    const successful = windowOperations.filter((m) => m.success).length;
+    const failed = windowOperations.filter((m) => !m.success).length;
+    const degraded = windowOperations.filter((m) => m.degraded).length;
+    const fallback = windowOperations.filter((m) => m.fallbackUsed).length;
 
     const availability = total > 0 ? (successful / total) * 100 : 100;
     const errorRate = total > 0 ? (failed / total) * 100 : 0;
 
     // Calculate response time metrics
-    const responseTimes = windowOperations.map(m => m.responseTime);
-    const averageResponseTime = responseTimes.length > 0
-      ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
-      : 0;
+    const responseTimes = windowOperations.map((m) => m.responseTime);
+    const averageResponseTime =
+      responseTimes.length > 0
+        ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+        : 0;
 
     const sortedTimes = responseTimes.sort((a, b) => a - b);
     const p95ResponseTime = this.calculatePercentile(sortedTimes, 0.95);
@@ -465,9 +467,10 @@ export class QdrantErrorBudgetTracker extends EventEmitter {
     const latencyTarget = this.config.slo.latencyTarget;
     const errorRateTarget = this.config.slo.errorRateTarget;
 
-    const sloPassed = availability >= availabilityTarget &&
-                     averageResponseTime <= latencyTarget &&
-                     errorRate <= errorRateTarget;
+    const sloPassed =
+      availability >= availabilityTarget &&
+      averageResponseTime <= latencyTarget &&
+      errorRate <= errorRateTarget;
 
     // Calculate error budget
     const availabilityBudget = 100 - availabilityTarget;
@@ -479,12 +482,15 @@ export class QdrantErrorBudgetTracker extends EventEmitter {
 
     // Calculate degradation impact
     const totalDegradationTime = this.calculateTotalDegradationTime(windowDegradations);
-    const averageDegradationDuration = windowDegradations.length > 0
-      ? totalDegradationTime / windowDegradations.length
-      : 0;
+    const averageDegradationDuration =
+      windowDegradations.length > 0 ? totalDegradationTime / windowDegradations.length : 0;
 
-    const criticalEvents = windowDegradations.filter(e => e.level === DegradationLevel.CRITICAL).length;
-    const unavailableEvents = windowDegradations.filter(e => e.level === DegradationLevel.UNAVAILABLE).length;
+    const criticalEvents = windowDegradations.filter(
+      (e) => e.level === DegradationLevel.CRITICAL
+    ).length;
+    const unavailableEvents = windowDegradations.filter(
+      (e) => e.level === DegradationLevel.UNAVAILABLE
+    ).length;
 
     // Generate recommendations and alerts
     const recommendations = this.generateRecommendations(
@@ -701,9 +707,9 @@ export class QdrantErrorBudgetTracker extends EventEmitter {
       } else {
         // Default estimate based on severity
         const defaultDurations: Partial<Record<DegradationLevel, number>> = {
-          [DegradationLevel.WARNING]: 10 * 60 * 1000,      // 10 minutes
-          [DegradationLevel.DEGRADED]: 30 * 60 * 1000,    // 30 minutes
-          [DegradationLevel.CRITICAL]: 60 * 60 * 1000,    // 1 hour
+          [DegradationLevel.WARNING]: 10 * 60 * 1000, // 10 minutes
+          [DegradationLevel.DEGRADED]: 30 * 60 * 1000, // 30 minutes
+          [DegradationLevel.CRITICAL]: 60 * 60 * 1000, // 1 hour
           [DegradationLevel.UNAVAILABLE]: 2 * 60 * 60 * 1000, // 2 hours
         };
 

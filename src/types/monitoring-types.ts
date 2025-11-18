@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Type definitions for the logging and monitoring system
  * Provides type-safe interfaces for all logging, metrics, and monitoring operations
@@ -67,6 +63,9 @@ export interface RequestContext {
   expand?: string;
   correlation_id?: string;
   timestamp?: number;
+  deduplication?: boolean;
+  chunking?: boolean;
+  batch_size?: number;
 }
 
 /**
@@ -100,6 +99,7 @@ export interface ResultMetrics {
   total_count?: number;
   result_count?: number;
   duplicates_found?: number;
+  duplicates?: number;
   newer_versions_allowed?: number;
   chunks_created?: number;
   cache_hit?: boolean;
@@ -121,6 +121,27 @@ export interface TTLInfo {
 // ============================================================================
 // Performance Monitoring Types
 // ============================================================================
+
+/**
+ * Simple performance metric interface for compatibility
+ */
+export interface PerformanceMetric {
+  timestamp: string | number;
+  operation: string;
+  operationType: string;
+  duration: number;
+  success: boolean;
+  itemCount?: number;
+  throughput?: number;
+  metadata?: Record<string, unknown>;
+  error?: string;
+  resourceUsage?: {
+    cpu: number;
+    memory: number;
+    disk: number;
+    network: number;
+  };
+}
 
 /**
  * Performance metric with comprehensive typing
@@ -640,12 +661,76 @@ export interface TypedLogger<TMetadata extends OperationMetadata = OperationMeta
 /**
  * Generic metrics collector interface
  */
-export interface TypedMetricsCollector<TMetric extends TypedPerformanceMetric = TypedPerformanceMetric> {
+export interface TypedMetricsCollector<
+  TMetadata extends OperationMetadata = OperationMetadata,
+  TMetric extends TypedPerformanceMetric = TypedPerformanceMetric,
+> {
   recordMetric(metric: TMetric): void;
   startMetric(operation: OperationType, metadata?: TMetadata['metadata']): () => void;
   recordError(operation: OperationType, error: Error, metadata?: TMetadata['metadata']): void;
   getSummary(operation: OperationType): TypedPerformanceSummary | null;
   getTrends(timeWindowMinutes?: number): Record<string, unknown>;
+}
+
+/**
+ * Incident declaration interface for disaster recovery
+ */
+export interface IncidentDeclaration {
+  incidentId?: string;
+  declaredAt?: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  declaredBy: string;
+  disasterType: string;
+  affectedSystems: string[];
+  impact: string;
+  estimatedDuration?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Backup configuration interface
+ */
+export interface BackupConfig {
+  schedule: string;
+  retention: {
+    daily: number;
+    weekly: number;
+    monthly: number;
+  };
+  storage: {
+    type: string;
+    location: string;
+    credentials?: Record<string, unknown>;
+  };
+  targets: string[];
+  performance: {
+    maxConcurrentBackups: number;
+    compressionEnabled: boolean;
+    encryptionEnabled: boolean;
+  };
+  validation?: {
+    enabled: boolean;
+    checksumVerification: boolean;
+    consistencyCheck: boolean;
+  };
+}
+
+/**
+ * Simple alert interface for compatibility
+ */
+export interface Alert {
+  id: string;
+  status: 'active' | 'resolved' | 'acknowledged' | 'suppressed';
+  timestamp: string;
+  escalationLevel: 'low' | 'medium' | 'high' | 'critical';
+  channels: string[];
+  title: string;
+  description: string;
+  tags: string[];
+  source: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  data?: Record<string, unknown>;
 }
 
 /**
@@ -661,6 +746,273 @@ export interface TypedAlert<TContext extends LoggableData = LoggableData> {
   resolved?: boolean;
   resolvedAt?: number;
   resolvedBy?: string;
+}
+
+/**
+ * Enhanced Alert interface with all required properties for monitoring dashboards
+ */
+export interface EnhancedAlert {
+  id: string;
+  ruleId?: string;
+  type: string;
+  severity: 'info' | 'warning' | 'critical' | 'low' | 'medium' | 'high' | 'emergency';
+  status: 'active' | 'resolved' | 'acknowledged' | 'suppressed' | 'firing';
+  serviceName?: string;
+  title: string;
+  message: string;
+  description?: string;
+  details?: Record<string, unknown>;
+  timestamp: Date | string;
+  acknowledged?: boolean;
+  acknowledgedBy?: string;
+  acknowledgedAt?: Date;
+  resolved?: boolean;
+  resolvedAt?: Date;
+  escalated?: boolean;
+  escalationLevel?: number;
+  notificationsSent?: string[];
+  correlationId?: string;
+  source?: string;
+  channels?: string[];
+  tags?: string[];
+  data?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Enhanced PerformanceMetric interface with comprehensive properties
+ */
+export interface EnhancedPerformanceMetric {
+  id?: string;
+  name: string;
+  type: 'counter' | 'gauge' | 'histogram' | 'timer' | 'rate' | 'ratio' | 'percentile';
+  category?: string;
+  value: number | string;
+  unit?: string;
+  timestamp: string | number;
+  interval?: number;
+  operation?: string;
+  component?: string;
+  version?: string;
+  dimensions?: Array<{
+    name: string;
+    value: string | number;
+  }>;
+  labels?: Record<string, string>;
+  quality?: {
+    accuracy: number;
+    consistency: number;
+    completeness: number;
+  };
+  metadata?: Record<string, unknown>;
+  parentMetricId?: string;
+  childMetricIds?: string[];
+  aggregation?: {
+    function: string;
+    window: number;
+  };
+  thresholds?: Array<{
+    operator: string;
+    value: number;
+    severity: string;
+  }>;
+  resourceUsage?: {
+    cpu: number;
+    memory: number;
+    disk: number;
+    network: number;
+  };
+  duration?: number;
+  success?: boolean;
+  itemCount?: number;
+  throughput?: number;
+  error?: string;
+}
+
+/**
+ * Circuit breaker health status with comprehensive properties
+ */
+export interface EnhancedCircuitBreakerStatus {
+  serviceName: string;
+  healthStatus: 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
+  isOpen: boolean;
+  isHalfOpen: boolean;
+  failureRate: number;
+  totalCalls: number;
+  successfulCalls: number;
+  failedCalls: number;
+  rejectedCalls: number;
+  timeoutMs: number;
+  resetTimeoutMs: number;
+  lastFailureTime?: Date;
+  lastSuccessTime?: Date;
+  state?: 'closed' | 'open' | 'half_open';
+  details?: Record<string, unknown>;
+}
+
+/**
+ * Retry budget metrics with enhanced properties
+ */
+export interface EnhancedRetryBudgetMetrics {
+  serviceName: string;
+  budgetUsed: number;
+  budgetTotal: number;
+  retryRate: number;
+  failureRate: number;
+  successRate: number;
+  totalRetries: number;
+  totalRequests: number;
+  windowSeconds: number;
+  predictions: {
+    riskLevel: 'low' | 'medium' | 'high' | 'critical';
+    budgetExhaustionTime?: Date;
+    confidence: number;
+    trend: 'improving' | 'stable' | 'degrading';
+  };
+  trends?: Array<{
+    metric: string;
+    direction: 'improving' | 'stable' | 'degrading';
+    changePercent: number;
+    confidence: number;
+  }>;
+  utilization: number;
+  riskScore: number;
+  details?: Record<string, unknown>;
+}
+
+/**
+ * Anomaly detection results
+ */
+export interface EnhancedAnomalyDetection {
+  id: string;
+  type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description: string;
+  serviceName?: string;
+  metricName: string;
+  timestamp: Date;
+  value: number;
+  expectedValue: number;
+  deviation: number;
+  confidence: number;
+  status: 'active' | 'resolved' | 'acknowledged';
+  context?: Record<string, unknown>;
+  recommendations?: string[];
+  relatedAlerts?: string[];
+}
+
+/**
+ * Predictive analysis results
+ */
+export interface EnhancedPredictiveAnalysis {
+  serviceName: string;
+  prediction: {
+    riskLevel: 'low' | 'medium' | 'high' | 'critical';
+    budgetExhaustionTime?: Date;
+    failureProbability: number;
+    timeToFailure?: number;
+    confidence: number;
+  };
+  factors: Array<{
+    name: string;
+    weight: number;
+    value: number;
+    impact: 'positive' | 'negative' | 'neutral';
+  }>;
+  recommendations: string[];
+  timestamp: Date;
+  timeHorizon: number; // minutes
+}
+
+/**
+ * Trend analysis results
+ */
+export interface EnhancedTrendAnalysis {
+  metricName: string;
+  serviceName?: string;
+  direction: 'increasing' | 'decreasing' | 'stable' | 'volatile';
+  changePercent: number;
+  confidence: number;
+  timeWindow: number; // minutes
+  dataPoints: number;
+  significance: 'low' | 'medium' | 'high';
+  prediction?: {
+    nextValue: number;
+    upperBound: number;
+    lowerBound: number;
+    timeHorizon: number;
+  };
+  timestamp: Date;
+}
+
+/**
+ * Service dependency relationship with enhanced properties
+ */
+export interface EnhancedServiceDependency {
+  id?: string;
+  fromService: string;
+  toService: string;
+  dependencyType: 'sync' | 'async' | 'shared_resource';
+  impactLevel: 'critical' | 'high' | 'medium' | 'low';
+  healthImpact: {
+    ifDown: number; // percentage impact on overall system
+    cascadeRisk: number; // 0-1 risk of cascade failure
+    recoveryTime: number; // estimated recovery time in minutes
+  };
+  status?: 'healthy' | 'degraded' | 'unhealthy';
+  latency?: number;
+  errorRate?: number;
+  throughput?: number;
+  lastChecked?: Date;
+  details?: Record<string, unknown>;
+}
+
+/**
+ * Dashboard filters interface
+ */
+export interface DashboardFilters {
+  serviceName?: string;
+  timeWindow?: number | string; // in minutes or predefined string
+  severity?: string[];
+  status?: string[];
+  type?: string[];
+  component?: string;
+  tags?: string[];
+  metrics?: string[]; // for trend analysis
+  dateRange?: {
+    start: string;
+    end: string;
+  };
+  limit?: number;
+  offset?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+/**
+ * Analysis window interface for trend analysis
+ */
+export interface AnalysisWindow {
+  start: Date;
+  end: Date;
+  duration: number; // in minutes
+}
+
+/**
+ * Dashboard response interface
+ */
+export interface DashboardResponse {
+  data: Record<string, unknown>;
+  timestamp: Date;
+  view: string;
+  filters?: DashboardFilters;
+  metadata?: {
+    totalRecords?: number;
+    processingTime?: number;
+    cacheHit?: boolean;
+    nextRefresh?: Date;
+  };
 }
 
 /**

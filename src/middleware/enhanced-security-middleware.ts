@@ -1,6 +1,4 @@
-// @ts-nocheck
 // COMPREHENSIVE EMERGENCY ROLLBACK: Final systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Enhanced Security Middleware for Cortex MCP Tools
@@ -14,11 +12,12 @@
  * - Security headers and CORS handling
  */
 
-import { type NextFunction,type Request, type Response } from 'express';
+import { type NextFunction, type Request, type Response } from 'express';
 
 import { logger } from '@/utils/logger.js';
 
 import { type AuthContext } from '../types/auth-types.js';
+import { safeGetProperty } from '@/utils/property-access-guards.js';
 
 import '../types/express.d.js'; // Reference the type extensions
 
@@ -118,7 +117,11 @@ export class InputValidator {
   /**
    * Validate request body against security rules
    */
-  validateRequestBody(body: unknown): { isValid: boolean; errors: string[]; sanitizedBody?: unknown } {
+  validateRequestBody(body: unknown): {
+    isValid: boolean;
+    errors: string[];
+    sanitizedBody?: unknown;
+  } {
     const errors: string[] = [];
     let sanitizedBody = body;
 
@@ -167,10 +170,13 @@ export class InputValidator {
       return data.map((item) => this.sanitizeData(item));
     }
 
-    const sanitized: unknown = {};
-    for (const [key, value] of Object.entries(data)) {
+    const sanitized: Record<string, unknown> = {};
+    const dataObj = data as Record<string, unknown>;
+    for (const [key, value] of Object.entries(dataObj)) {
       const sanitizedKey = this.sanitizeString(key);
-      sanitized[sanitizedKey] = this.sanitizeData(value);
+      if (sanitizedKey && typeof sanitizedKey === 'string') {
+        (sanitized as Record<string, unknown>)[sanitizedKey] = this.sanitizeData(value);
+      }
     }
     return sanitized;
   }
@@ -209,7 +215,9 @@ export class InputValidator {
 
     if (typeof data !== 'object' || data === null) return errors;
 
-    for (const key of Object.keys(data)) {
+    const dataObj = data as Record<string, unknown>;
+
+    for (const key of Object.keys(dataObj)) {
       // Check for dangerous field names
       if (key.includes('__proto__') || key.includes('constructor') || key.includes('prototype')) {
         errors.push(`Dangerous field name detected at ${path}${key}: ${key}`);
@@ -221,8 +229,8 @@ export class InputValidator {
       }
 
       // Recursively validate nested objects
-      if (typeof data[key] === 'object' && data[key] !== null) {
-        errors.push(...this.validateFieldNames(data[key], `${path}${key}.`));
+      if (typeof dataObj[key] === 'object' && dataObj[key] !== null) {
+        errors.push(...this.validateFieldNames(dataObj[key], `${path}${key}.`));
       }
     }
 
@@ -356,7 +364,7 @@ export class TenantIsolation {
 
     // Try headers
     if (sources.includes('header')) {
-      const tenantId = req.headers['x-tenant-id'] as string;
+      const tenantId = req.headers['x-tenant-id'];
       if (tenantId && typeof tenantId === 'string') {
         return tenantId;
       }
@@ -364,7 +372,7 @@ export class TenantIsolation {
 
     // Try query parameters
     if (sources.includes('query')) {
-      const tenantId = req.query.tenant_id as string;
+      const tenantId = req.query.tenant_id;
       if (tenantId && typeof tenantId === 'string') {
         return tenantId;
       }
@@ -413,7 +421,7 @@ export class TenantIsolation {
 
     // Validate scope consistency
     if (scope && requestTenantId) {
-      const scopeTenantId = scope.tenant || scope.organization_id;
+      const scopeTenantId = safeGetProperty(scope, 'tenant', '') || safeGetProperty(scope, 'organization_id', '');
       if (scopeTenantId && scopeTenantId !== requestTenantId) {
         errors.push(`Scope tenant mismatch: scope=${scopeTenantId}, request=${requestTenantId}`);
       }
@@ -428,12 +436,13 @@ export class TenantIsolation {
   applyTenantToScope(scope: unknown, tenantId: string): unknown {
     if (!scope) return { tenant: tenantId };
 
+    const scopeObj = scope as Record<string, unknown>;
     return {
-      ...scope,
+      ...scopeObj,
       tenant: tenantId,
       // Ensure consistency across all tenant-related fields
-      organization_id: scope.organization_id || tenantId,
-      org: scope.org || tenantId,
+      organization_id: scopeObj.organization_id || tenantId,
+      org: scopeObj.org || tenantId,
     };
   }
 }
@@ -542,8 +551,8 @@ export class EnhancedSecurityMiddleware {
         this.addSecurityHeaders(res, toolConfig.security_headers);
 
         // Add tenant info to request
-        (req as unknown).tenantId = tenantId;
-        (req as unknown).securityContext = {
+        req.tenantId = tenantId;
+        req.securityContext = {
           tenantId,
           validatedAt: Date.now(),
           warnings: tenantValidation.warnings,
@@ -651,7 +660,7 @@ export class EnhancedSecurityMiddleware {
         url: req.url,
         userAgent: req.headers['user-agent'],
         ip: req.ip,
-        ...details,
+        ...(details && typeof details === 'object' ? details : {}),
       },
       `Security event: ${eventType}`
     );

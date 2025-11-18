@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Runtime Type Guard Framework with Composition
  *
@@ -9,8 +5,6 @@
  * and managing runtime type guards with advanced features like validation
  * contexts, caching, and detailed error reporting.
  */
-
-
 
 // ============================================================================
 // Core Type Guard Types
@@ -180,16 +174,16 @@ export interface ValidationMetrics {
  * Composition operators for combining guards
  */
 export type CompositionOperator =
-  | 'and'      // All guards must pass
-  | 'or'       // At least one guard must pass
-  | 'xor'      // Exactly one guard must pass
-  | 'not'      // Guard must not pass
+  | 'and' // All guards must pass
+  | 'or' // At least one guard must pass
+  | 'xor' // Exactly one guard must pass
+  | 'not' // Guard must not pass
   | 'optional' // Guard may pass (treat undefined as success)
   | 'nullable' // Guard may pass or value may be null
-  | 'array'    // Validate array elements
-  | 'object'   // Validate object properties
-  | 'tuple'    // Validate tuple structure
-  | 'union'    // Validate against multiple possible types
+  | 'array' // Validate array elements
+  | 'object' // Validate object properties
+  | 'tuple' // Validate tuple structure
+  | 'union' // Validate against multiple possible types
   | 'intersection'; // Validate against multiple required types
 
 /**
@@ -223,7 +217,7 @@ export class GuardBuilder<T = unknown> {
     }
     return new GuardBuilder({
       ...this.guard,
-      name
+      name,
     });
   }
 
@@ -236,7 +230,7 @@ export class GuardBuilder<T = unknown> {
     }
     return new GuardBuilder({
       ...this.guard,
-      description
+      description,
     });
   }
 
@@ -249,7 +243,7 @@ export class GuardBuilder<T = unknown> {
     }
     return new GuardBuilder({
       ...this.guard,
-      metadata: { ...this.guard.metadata, ...metadata }
+      metadata: { ...this.guard.metadata, ...metadata },
     });
   }
 
@@ -339,7 +333,7 @@ export function createTypeGuard<T>(
     typeName: options.typeName,
     cacheable: options.cacheable ?? true,
     metadata: options.metadata,
-    dependencies: options.dependencies
+    dependencies: options.dependencies,
   };
 }
 
@@ -360,7 +354,10 @@ export const stringGuard: TypeGuard<string> = createTypeGuard(
         value,
         expected: 'string',
         actual: typeof value,
-        suggestions: ['Convert value to string using String(value)', 'Check if value is actually a string']
+        suggestions: [
+          'Convert value to string using String(value)',
+          'Check if value is actually a string',
+        ],
       });
       return { success: false, errors, warnings };
     }
@@ -369,7 +366,7 @@ export const stringGuard: TypeGuard<string> = createTypeGuard(
   },
   {
     description: 'Validates that a value is a string',
-    typeName: 'string'
+    typeName: 'string',
   }
 );
 
@@ -390,7 +387,10 @@ export const numberGuard: TypeGuard<number> = createTypeGuard(
         value,
         expected: 'number',
         actual: typeof value,
-        suggestions: ['Convert value to number using Number(value)', 'Check if value is actually a number']
+        suggestions: [
+          'Convert value to number using Number(value)',
+          'Check if value is actually a number',
+        ],
       });
       return { success: false, errors, warnings };
     }
@@ -403,7 +403,7 @@ export const numberGuard: TypeGuard<number> = createTypeGuard(
         value,
         expected: 'finite number',
         actual: String(value),
-        suggestions: ['Check for NaN or Infinity values', 'Use isFinite() to validate numbers']
+        suggestions: ['Check for NaN or Infinity values', 'Use isFinite() to validate numbers'],
       });
       return { success: false, errors, warnings };
     }
@@ -412,7 +412,7 @@ export const numberGuard: TypeGuard<number> = createTypeGuard(
   },
   {
     description: 'Validates that a value is a finite number',
-    typeName: 'number'
+    typeName: 'number',
   }
 );
 
@@ -433,7 +433,10 @@ export const booleanGuard: TypeGuard<boolean> = createTypeGuard(
         value,
         expected: 'boolean',
         actual: typeof value,
-        suggestions: ['Convert value to boolean using Boolean(value)', 'Check if value is actually a boolean']
+        suggestions: [
+          'Convert value to boolean using Boolean(value)',
+          'Check if value is actually a boolean',
+        ],
       });
       return { success: false, errors, warnings };
     }
@@ -442,7 +445,7 @@ export const booleanGuard: TypeGuard<boolean> = createTypeGuard(
   },
   {
     description: 'Validates that a value is a boolean',
-    typeName: 'boolean'
+    typeName: 'boolean',
   }
 );
 
@@ -463,7 +466,10 @@ export const nullGuard: TypeGuard<null> = createTypeGuard(
         value,
         expected: 'null',
         actual: typeof value,
-        suggestions: ['Check if value should actually be null', 'Consider using nullable guard for optional null values']
+        suggestions: [
+          'Check if value should actually be null',
+          'Consider using nullable guard for optional null values',
+        ],
       });
       return { success: false, errors, warnings };
     }
@@ -472,7 +478,7 @@ export const nullGuard: TypeGuard<null> = createTypeGuard(
   },
   {
     description: 'Validates that a value is null',
-    typeName: 'null'
+    typeName: 'null',
   }
 );
 
@@ -493,7 +499,10 @@ export const undefinedGuard: TypeGuard<undefined> = createTypeGuard(
         value,
         expected: 'undefined',
         actual: typeof value,
-        suggestions: ['Check if value should actually be undefined', 'Consider using optional guard for optional values']
+        suggestions: [
+          'Check if value should actually be undefined',
+          'Consider using optional guard for optional values',
+        ],
       });
       return { success: false, errors, warnings };
     }
@@ -502,7 +511,7 @@ export const undefinedGuard: TypeGuard<undefined> = createTypeGuard(
   },
   {
     description: 'Validates that a value is undefined',
-    typeName: 'undefined'
+    typeName: 'undefined',
   }
 );
 
@@ -513,10 +522,7 @@ export const undefinedGuard: TypeGuard<undefined> = createTypeGuard(
 /**
  * Create an AND composition guard
  */
-export function andGuard<T, U>(
-  guard1: TypeGuard<T>,
-  guard2: TypeGuard<U>
-): TypeGuard<T & U> {
+export function andGuard<T, U>(guard1: TypeGuard<T>, guard2: TypeGuard<U>): TypeGuard<T & U> {
   return createTypeGuard(
     `and(${guard1.name}, ${guard2.name})`,
     (value, context) => {
@@ -545,13 +551,13 @@ export function andGuard<T, U>(
         success: true,
         value: result1.value! as T & U, // Both guards succeeded, so we can safely cast
         errors,
-        warnings
+        warnings,
       };
     },
     {
       description: `Requires both ${guard1.name} and ${guard2.name} to pass`,
       typeName: `${guard1.typeName} & ${guard2.typeName}`,
-      dependencies: [guard1.name, guard2.name]
+      dependencies: [guard1.name, guard2.name],
     }
   );
 }
@@ -559,10 +565,7 @@ export function andGuard<T, U>(
 /**
  * Create an OR composition guard
  */
-export function orGuard<T, U>(
-  guard1: TypeGuard<T>,
-  guard2: TypeGuard<U>
-): TypeGuard<T | U> {
+export function orGuard<T, U>(guard1: TypeGuard<T>, guard2: TypeGuard<U>): TypeGuard<T | U> {
   return createTypeGuard(
     `or(${guard1.name}, ${guard2.name})`,
     (value, context) => {
@@ -576,7 +579,7 @@ export function orGuard<T, U>(
           success: true,
           value: result1.value as T,
           errors: [],
-          warnings: result1.warnings
+          warnings: result1.warnings,
         };
       }
       errors.push(...result1.errors);
@@ -589,7 +592,7 @@ export function orGuard<T, U>(
           success: true,
           value: result2.value as U,
           errors: [],
-          warnings: result2.warnings
+          warnings: result2.warnings,
         };
       }
       errors.push(...result2.errors);
@@ -598,13 +601,13 @@ export function orGuard<T, U>(
       return {
         success: false,
         errors,
-        warnings
+        warnings,
       };
     },
     {
       description: `Requires either ${guard1.name} or ${guard2.name} to pass`,
       typeName: `${guard1.typeName} | ${guard2.typeName}`,
-      dependencies: [guard1.name, guard2.name]
+      dependencies: [guard1.name, guard2.name],
     }
   );
 }
@@ -621,7 +624,7 @@ export function optionalGuard<T>(guard: TypeGuard<T>): TypeGuard<T | undefined> 
           success: true,
           value: undefined,
           errors: [],
-          warnings: []
+          warnings: [],
         };
       }
 
@@ -630,7 +633,7 @@ export function optionalGuard<T>(guard: TypeGuard<T>): TypeGuard<T | undefined> 
     {
       description: `Optional version of ${guard.name}`,
       typeName: `${guard.typeName} | undefined`,
-      dependencies: [guard.name]
+      dependencies: [guard.name],
     }
   );
 }
@@ -647,7 +650,7 @@ export function nullableGuard<T>(guard: TypeGuard<T>): TypeGuard<T | null> {
           success: true,
           value: null,
           errors: [],
-          warnings: []
+          warnings: [],
         };
       }
 
@@ -656,7 +659,7 @@ export function nullableGuard<T>(guard: TypeGuard<T>): TypeGuard<T | null> {
     {
       description: `Nullable version of ${guard.name}`,
       typeName: `${guard.typeName} | null`,
-      dependencies: [guard.name]
+      dependencies: [guard.name],
     }
   );
 }
@@ -664,10 +667,7 @@ export function nullableGuard<T>(guard: TypeGuard<T>): TypeGuard<T | null> {
 /**
  * Create a guard with default value
  */
-export function defaultGuard<T>(
-  guard: TypeGuard<T>,
-  defaultValue: T
-): TypeGuard<T> {
+export function defaultGuard<T>(guard: TypeGuard<T>, defaultValue: T): TypeGuard<T> {
   return createTypeGuard(
     `default(${guard.name}, ${JSON.stringify(defaultValue)})`,
     (value, context) => {
@@ -676,13 +676,15 @@ export function defaultGuard<T>(
           success: true,
           value: defaultValue,
           errors: [],
-          warnings: [{
-            code: 'DEFAULT_VALUE_USED',
-            message: `Using default value: ${JSON.stringify(defaultValue)}`,
-            path: context?.path || '',
-            value: defaultValue,
-            severity: 'low'
-          }]
+          warnings: [
+            {
+              code: 'DEFAULT_VALUE_USED',
+              message: `Using default value: ${JSON.stringify(defaultValue)}`,
+              path: context?.path || '',
+              value: defaultValue,
+              severity: 'low',
+            },
+          ],
         };
       }
 
@@ -691,7 +693,7 @@ export function defaultGuard<T>(
     {
       description: `${guard.name} with default value`,
       typeName: guard.typeName,
-      dependencies: [guard.name]
+      dependencies: [guard.name],
     }
   );
 }
@@ -723,7 +725,7 @@ export function arrayGuard<T>(
           value,
           expected: 'array',
           actual: typeof value,
-          suggestions: ['Ensure value is an array', 'Check Array.isArray(value) before validation']
+          suggestions: ['Ensure value is an array', 'Check Array.isArray(value) before validation'],
         });
         return { success: false, errors, warnings };
       }
@@ -737,7 +739,7 @@ export function arrayGuard<T>(
           value,
           expected: `length >= ${minLength}`,
           actual: `length = ${value.length}`,
-          suggestions: [`Add more items to reach minimum length of ${minLength}`]
+          suggestions: [`Add more items to reach minimum length of ${minLength}`],
         });
       }
 
@@ -749,7 +751,7 @@ export function arrayGuard<T>(
           value,
           expected: `length <= ${maxLength}`,
           actual: `length = ${value.length}`,
-          suggestions: [`Remove items to reduce length to ${maxLength}`]
+          suggestions: [`Remove items to reduce length to ${maxLength}`],
         });
       }
 
@@ -764,7 +766,7 @@ export function arrayGuard<T>(
           ...(context || {}),
           path: itemPath,
           parent: value,
-          parentProperty: String(i)
+          parentProperty: String(i),
         };
 
         const itemResult = itemGuard.validate(item, itemContext);
@@ -781,7 +783,7 @@ export function arrayGuard<T>(
                 message: `Duplicate item found at index ${i}`,
                 path: itemPath,
                 value: itemResult.value,
-                suggestions: ['Remove duplicate items from array']
+                suggestions: ['Remove duplicate items from array'],
               });
             } else {
               seenValues.add(key);
@@ -797,13 +799,13 @@ export function arrayGuard<T>(
         success: !hasErrors,
         value: hasErrors ? undefined : validatedItems,
         errors,
-        warnings
+        warnings,
       };
     },
     {
       description: `Array of ${itemGuard.name}`,
       typeName: `${itemGuard.typeName}[]`,
-      dependencies: [itemGuard.name]
+      dependencies: [itemGuard.name],
     }
   );
 }
@@ -822,7 +824,7 @@ export function objectGuard<T extends Record<string, unknown>>(
   const keys = Object.keys(shape) as (keyof T)[];
 
   return createTypeGuard(
-    `object(${keys.map(k => shape[k].name).join(', ')})`,
+    `object(${keys.map((k) => shape[k].name).join(', ')})`,
     (value, context) => {
       const errors: ValidationError[] = [];
       const warnings: ValidationWarning[] = [];
@@ -835,7 +837,7 @@ export function objectGuard<T extends Record<string, unknown>>(
           value,
           expected: 'object',
           actual: Array.isArray(value) ? 'array' : typeof value,
-          suggestions: ['Ensure value is a plain object', 'Check that value is not an array']
+          suggestions: ['Ensure value is a plain object', 'Check that value is not an array'],
         });
         return { success: false, errors, warnings };
       }
@@ -851,7 +853,7 @@ export function objectGuard<T extends Record<string, unknown>>(
           ...(context || {}),
           path: itemPath,
           parent: obj,
-          parentProperty: String(key)
+          parentProperty: String(key),
         };
 
         const itemResult = guard.validate(obj[key as string], itemContext);
@@ -867,7 +869,7 @@ export function objectGuard<T extends Record<string, unknown>>(
 
       // Check for extra properties in strict mode
       if (!allowExtra) {
-        const allowedKeys = new Set(keys.map(k => String(k)));
+        const allowedKeys = new Set(keys.map((k) => String(k)));
         for (const key of Object.keys(obj)) {
           if (!allowedKeys.has(key)) {
             warnings.push({
@@ -876,7 +878,7 @@ export function objectGuard<T extends Record<string, unknown>>(
               path: `${context?.path || ''}.${key}`,
               value: obj[key],
               severity: 'low',
-              suggestions: ['Remove extra properties or set allowExtra: true']
+              suggestions: ['Remove extra properties or set allowExtra: true'],
             });
           }
         }
@@ -886,13 +888,13 @@ export function objectGuard<T extends Record<string, unknown>>(
         success: true,
         value: validatedObj as T,
         errors,
-        warnings
+        warnings,
       };
     },
     {
-      description: `Object with shape: ${keys.map(k => `${k}: ${shape[k].typeName}`).join(', ')}`,
-      typeName: `{ ${keys.map(k => `${k}: ${shape[k].typeName}`).join('; ')} }`,
-      dependencies: keys.map(k => shape[k].name)
+      description: `Object with shape: ${keys.map((k) => `${k}: ${shape[k].typeName}`).join(', ')}`,
+      typeName: `{ ${keys.map((k) => `${k}: ${shape[k].typeName}`).join('; ')} }`,
+      dependencies: keys.map((k) => shape[k].name),
     }
   );
 }
@@ -904,7 +906,7 @@ export function tupleGuard<T extends readonly unknown[]>(
   ...guards: { [K in keyof T]: TypeGuard<T[K]> }
 ): TypeGuard<T> {
   return createTypeGuard(
-    `tuple(${guards.map(g => g.name).join(', ')})`,
+    `tuple(${guards.map((g) => g.name).join(', ')})`,
     (value, context) => {
       const errors: ValidationError[] = [];
       const warnings: ValidationWarning[] = [];
@@ -917,7 +919,7 @@ export function tupleGuard<T extends readonly unknown[]>(
           value,
           expected: 'array',
           actual: typeof value,
-          suggestions: ['Ensure value is an array with correct length']
+          suggestions: ['Ensure value is an array with correct length'],
         });
         return { success: false, errors, warnings };
       }
@@ -930,7 +932,7 @@ export function tupleGuard<T extends readonly unknown[]>(
           value,
           expected: `length = ${guards.length}`,
           actual: `length = ${value.length}`,
-          suggestions: [`Ensure array has exactly ${guards.length} elements`]
+          suggestions: [`Ensure array has exactly ${guards.length} elements`],
         });
         return { success: false, errors, warnings };
       }
@@ -945,7 +947,7 @@ export function tupleGuard<T extends readonly unknown[]>(
           ...(context || {}),
           path: itemPath,
           parent: value,
-          parentProperty: String(i)
+          parentProperty: String(i),
         };
 
         const itemResult = guard.validate(item, itemContext);
@@ -963,13 +965,13 @@ export function tupleGuard<T extends readonly unknown[]>(
         success: true,
         value: validatedTuple as T,
         errors,
-        warnings
+        warnings,
       };
     },
     {
-      description: `Tuple of [${guards.map(g => g.typeName).join(', ')}]`,
-      typeName: `[${guards.map(g => g.typeName).join(', ')}]`,
-      dependencies: guards.map(g => g.name)
+      description: `Tuple of [${guards.map((g) => g.typeName).join(', ')}]`,
+      typeName: `[${guards.map((g) => g.typeName).join(', ')}]`,
+      dependencies: guards.map((g) => g.name),
     }
   );
 }
@@ -981,7 +983,7 @@ export function unionGuard<T extends readonly unknown[]>(
   ...guards: { [K in keyof T]: TypeGuard<T[K]> }
 ): TypeGuard<T[number]> {
   return createTypeGuard(
-    `union(${guards.map(g => g.name).join(' | ')})`,
+    `union(${guards.map((g) => g.name).join(' | ')})`,
     (value, context) => {
       const errors: ValidationError[] = [];
       const warnings: ValidationWarning[] = [];
@@ -993,7 +995,7 @@ export function unionGuard<T extends readonly unknown[]>(
             success: true,
             value: result.value as T[number],
             errors: [],
-            warnings: result.warnings
+            warnings: result.warnings,
           };
         }
         errors.push(...result.errors);
@@ -1002,22 +1004,24 @@ export function unionGuard<T extends readonly unknown[]>(
 
       return {
         success: false,
-        errors: [{
-          code: 'UNION_NO_MATCH',
-          message: `Value does not match any type in union: ${guards.map(g => g.typeName).join(' | ')}`,
-          path: context?.path || '',
-          value,
-          expected: guards.map(g => g.typeName).join(' | '),
-          actual: typeof value,
-          suggestions: guards.map(g => `Check if value matches ${g.typeName}`)
-        }],
-        warnings
+        errors: [
+          {
+            code: 'UNION_NO_MATCH',
+            message: `Value does not match any type in union: ${guards.map((g) => g.typeName).join(' | ')}`,
+            path: context?.path || '',
+            value,
+            expected: guards.map((g) => g.typeName).join(' | '),
+            actual: typeof value,
+            suggestions: guards.map((g) => `Check if value matches ${g.typeName}`),
+          },
+        ],
+        warnings,
       };
     },
     {
-      description: `Union of ${guards.map(g => g.typeName).join(' | ')}`,
-      typeName: guards.map(g => g.typeName).join(' | '),
-      dependencies: guards.map(g => g.name)
+      description: `Union of ${guards.map((g) => g.typeName).join(' | ')}`,
+      typeName: guards.map((g) => g.typeName).join(' | '),
+      dependencies: guards.map((g) => g.name),
     }
   );
 }
@@ -1051,7 +1055,7 @@ export function predicateGuard<T>(
           value,
           expected: typeName,
           actual: typeof value,
-          suggestions: ['Check if value matches the expected predicate criteria']
+          suggestions: ['Check if value matches the expected predicate criteria'],
         });
         return { success: false, errors, warnings };
       }
@@ -1060,7 +1064,7 @@ export function predicateGuard<T>(
     },
     {
       description: options.description || `Validates ${typeName} using custom predicate`,
-      typeName
+      typeName,
     }
   );
 }
@@ -1091,7 +1095,7 @@ export function enumGuard<T extends readonly string[]>(
   } = {}
 ): TypeGuard<T[number]> {
   const { caseSensitive = true, allowCoercion = false } = options;
-  const valueSet = new Set(caseSensitive ? enumValues : enumValues.map(v => v.toLowerCase()));
+  const valueSet = new Set(caseSensitive ? enumValues : enumValues.map((v) => v.toLowerCase()));
 
   return createTypeGuard(
     `enum(${enumValues.join(' | ')})`,
@@ -1109,7 +1113,7 @@ export function enumGuard<T extends readonly string[]>(
           message: `Value coerced to string: ${stringValue}`,
           path: context?.path || '',
           value: stringValue,
-          severity: 'low'
+          severity: 'low',
         });
       } else {
         errors.push({
@@ -1119,7 +1123,7 @@ export function enumGuard<T extends readonly string[]>(
           value,
           expected: `string enum (${enumValues.join(' | ')})`,
           actual: typeof value,
-          suggestions: ['Ensure value is a string matching one of the enum values']
+          suggestions: ['Ensure value is a string matching one of the enum values'],
         });
         return { success: false, errors, warnings };
       }
@@ -1133,23 +1137,25 @@ export function enumGuard<T extends readonly string[]>(
           value: stringValue,
           expected: enumValues.join(' | '),
           actual: stringValue,
-          suggestions: [`Use one of: ${enumValues.join(', ')}`]
+          suggestions: [`Use one of: ${enumValues.join(', ')}`],
         });
         return { success: false, errors, warnings };
       }
 
-      const finalValue = caseSensitive ? stringValue : (enumValues.find(v => v.toLowerCase() === checkValue)!);
+      const finalValue = caseSensitive
+        ? stringValue
+        : enumValues.find((v) => v.toLowerCase() === checkValue)!;
 
       return {
         success: true,
         value: finalValue as T[number],
         errors,
-        warnings
+        warnings,
       };
     },
     {
       description: `Enum with values: ${enumValues.join(' | ')}`,
-      typeName: enumValues.join(' | ')
+      typeName: enumValues.join(' | '),
     }
   );
 }
@@ -1181,7 +1187,7 @@ export function rangeGuard(
           value,
           expected: 'number',
           actual: typeof value,
-          suggestions: ['Convert value to number using Number(value)']
+          suggestions: ['Convert value to number using Number(value)'],
         });
         return { success: false, errors, warnings };
       }
@@ -1194,7 +1200,7 @@ export function rangeGuard(
           value,
           expected: 'finite number',
           actual: String(value),
-          suggestions: ['Check for NaN or Infinity values']
+          suggestions: ['Check for NaN or Infinity values'],
         });
         return { success: false, errors, warnings };
       }
@@ -1207,12 +1213,12 @@ export function rangeGuard(
           value,
           expected: 'integer',
           actual: String(value),
-          suggestions: ['Use Math.floor() or Math.round() to convert to integer']
+          suggestions: ['Use Math.floor() or Math.round() to convert to integer'],
         });
         return { success: false, errors, warnings };
       }
 
-      const inRange = inclusive ? (value >= min && value <= max) : (value > min && value < max);
+      const inRange = inclusive ? value >= min && value <= max : value > min && value < max;
       if (!inRange) {
         errors.push({
           code: 'OUT_OF_RANGE',
@@ -1221,7 +1227,7 @@ export function rangeGuard(
           value,
           expected: inclusive ? `${min} <= value <= ${max}` : `${min} < value < ${max}`,
           actual: String(value),
-          suggestions: [`Adjust value to be within range ${min} to ${max}`]
+          suggestions: [`Adjust value to be within range ${min} to ${max}`],
         });
         return { success: false, errors, warnings };
       }
@@ -1230,7 +1236,7 @@ export function rangeGuard(
     },
     {
       description: `Number in range ${min} to ${max}${inclusive ? '' : ' (exclusive)'}`,
-      typeName: `number (${min}-${max})`
+      typeName: `number (${min}-${max})`,
     }
   );
 }
@@ -1262,7 +1268,7 @@ export function patternGuard(
           value,
           expected: 'string',
           actual: typeof value,
-          suggestions: ['Convert value to string using String(value)']
+          suggestions: ['Convert value to string using String(value)'],
         });
         return { success: false, errors, warnings };
       }
@@ -1275,7 +1281,7 @@ export function patternGuard(
           value,
           expected: `pattern: ${regex.toString()}`,
           actual: value,
-          suggestions: [`Ensure string matches pattern: ${regex.toString()}`]
+          suggestions: [`Ensure string matches pattern: ${regex.toString()}`],
         });
         return { success: false, errors, warnings };
       }
@@ -1284,7 +1290,7 @@ export function patternGuard(
     },
     {
       description: description || `String matching pattern ${regex.toString()}`,
-      typeName: `string (${regex.toString()})`
+      typeName: `string (${regex.toString()})`,
     }
   );
 }
@@ -1341,7 +1347,7 @@ export class GuardRegistry {
   getCacheStats(): { size: number; keys: string[] } {
     return {
       size: this.cache.size,
-      keys: Array.from(this.cache.keys())
+      keys: Array.from(this.cache.keys()),
     };
   }
 
@@ -1373,11 +1379,7 @@ export class GuardRegistry {
   /**
    * Generate cache key for validation
    */
-  private getCacheKey(
-    guard: TypeGuard,
-    value: unknown,
-    context?: ValidationContext
-  ): string {
+  private getCacheKey(guard: TypeGuard, value: unknown, context?: ValidationContext): string {
     const valueHash = JSON.stringify(value);
     const contextHash = context ? JSON.stringify(context.path) : '';
     return `${guard.name}:${valueHash}:${contextHash}`;
@@ -1430,14 +1432,16 @@ export function validate<T>(
   if (!guard) {
     return {
       success: false,
-      errors: [{
-        code: 'GUARD_NOT_FOUND',
-        message: `Guard '${guardName}' not found in registry`,
-        path: context?.path || '',
-        value,
-        suggestions: [`Register guard using globalGuardRegistry.register(${guardName})`]
-      }],
-      warnings: []
+      errors: [
+        {
+          code: 'GUARD_NOT_FOUND',
+          message: `Guard '${guardName}' not found in registry`,
+          path: context?.path || '',
+          value,
+          suggestions: [`Register guard using globalGuardRegistry.register(${guardName})`],
+        },
+      ],
+      warnings: [],
     };
   }
 

@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * P3 Data Management: Tenant Purge Service
  *
@@ -23,7 +19,6 @@
  * @version 3.0.0
  * @since 2025
  */
-
 
 import { logger } from '@/utils/logger.js';
 

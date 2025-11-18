@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Enhanced Memory Monitor
  *
@@ -181,7 +176,6 @@ export class EnhancedMemoryMonitor extends EventEmitter {
 
       // Log current status
       this.logMemoryStatus(stats);
-
     } catch (error) {
       logger.error('Memory monitoring cycle failed', { error });
     }
@@ -208,7 +202,10 @@ export class EnhancedMemoryMonitor extends EventEmitter {
     }
 
     const recent = this.history.slice(-this.config.trendWindowSize);
-    const older = this.history.slice(-this.config.trendWindowSize * 2, -this.config.trendWindowSize);
+    const older = this.history.slice(
+      -this.config.trendWindowSize * 2,
+      -this.config.trendWindowSize
+    );
 
     if (older.length === 0) {
       return null;
@@ -219,7 +216,8 @@ export class EnhancedMemoryMonitor extends EventEmitter {
     const olderAvg = older.reduce((sum, s) => sum + s.usagePercentage, 0) / older.length;
 
     // Calculate rate of change (percentage points per minute)
-    const timeDiffMinutes = (recent[recent.length - 1].timestamp - older[older.length - 1].timestamp) / 60000;
+    const timeDiffMinutes =
+      (recent[recent.length - 1].timestamp - older[older.length - 1].timestamp) / 60000;
     const usageDiff = recentAvg - olderAvg;
     const rate = timeDiffMinutes > 0 ? usageDiff / timeDiffMinutes : 0;
 
@@ -234,11 +232,11 @@ export class EnhancedMemoryMonitor extends EventEmitter {
     }
 
     // Predict usage in 1 hour
-    const prediction = recentAvg + (rate * 60);
+    const prediction = recentAvg + rate * 60;
 
     // Calculate confidence based on consistency
-    const recentVariance = this.calculateVariance(recent.map(s => s.usagePercentage));
-    const confidence = Math.max(0, 1 - (recentVariance / 100)); // Normalize to 0-1
+    const recentVariance = this.calculateVariance(recent.map((s) => s.usagePercentage));
+    const confidence = Math.max(0, 1 - recentVariance / 100); // Normalize to 0-1
 
     return {
       direction,
@@ -253,7 +251,7 @@ export class EnhancedMemoryMonitor extends EventEmitter {
    */
   private calculateVariance(values: number[]): number {
     const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-    const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
+    const squaredDiffs = values.map((val) => Math.pow(val - mean, 2));
     return squaredDiffs.reduce((sum, val) => sum + val, 0) / values.length;
   }
 
@@ -264,11 +262,18 @@ export class EnhancedMemoryMonitor extends EventEmitter {
     if (trend.direction === 'increasing' && trend.rate > 2) {
       // Rapid increase detected
       if (trend.prediction > this.config.alerts.warning.threshold) {
-        this.triggerAlert('warning', stats, `Rapid memory increase detected. Predicted usage: ${trend.prediction.toFixed(1)}% in 1 hour`);
+        this.triggerAlert(
+          'warning',
+          stats,
+          `Rapid memory increase detected. Predicted usage: ${trend.prediction.toFixed(1)}% in 1 hour`
+        );
       }
     }
 
-    if (trend.direction === 'decreasing' && stats.usagePercentage < this.config.alerts.warning.threshold - 5) {
+    if (
+      trend.direction === 'decreasing' &&
+      stats.usagePercentage < this.config.alerts.warning.threshold - 5
+    ) {
       // Recovery detected
       this.emit('recovery-detected', stats);
       logger.info('Memory usage recovering', {
@@ -310,7 +315,11 @@ export class EnhancedMemoryMonitor extends EventEmitter {
   /**
    * Trigger memory alert with cooldown
    */
-  private triggerAlert(severity: MemoryAlertSeverity, stats: MemoryStats, customMessage?: string): void {
+  private triggerAlert(
+    severity: MemoryAlertSeverity,
+    stats: MemoryStats,
+    customMessage?: string
+  ): void {
     const alert = this.config.alerts[severity];
     const now = Date.now();
 
@@ -333,9 +342,14 @@ export class EnhancedMemoryMonitor extends EventEmitter {
     this.emit('alert-triggered', alertObj, stats);
 
     // Log alert
-    const logMethod = severity === 'emergency' ? 'error' :
-                      severity === 'critical' ? 'error' :
-                      severity === 'warning' ? 'warn' : 'info';
+    const logMethod =
+      severity === 'emergency'
+        ? 'error'
+        : severity === 'critical'
+          ? 'error'
+          : severity === 'warning'
+            ? 'warn'
+            : 'info';
 
     logger[logMethod](`Memory Alert: ${severity.toUpperCase()}`, {
       message: alertObj.message,
@@ -411,7 +425,10 @@ export class EnhancedMemoryMonitor extends EventEmitter {
     };
   } {
     const current = memoryManager.getCurrentMemoryStats();
-    const trend = this.history.length >= this.config.trendWindowSize ? this.analyzeTrend() || undefined : undefined;
+    const trend =
+      this.history.length >= this.config.trendWindowSize
+        ? this.analyzeTrend() || undefined
+        : undefined;
 
     const lastTriggered: Record<MemoryAlertSeverity, number> = {
       info: this.alerts.get('info') || 0,
@@ -438,7 +455,8 @@ export class EnhancedMemoryMonitor extends EventEmitter {
       history: {
         size: this.history.length,
         oldestTimestamp: this.history.length > 0 ? this.history[0].timestamp : 0,
-        newestTimestamp: this.history.length > 0 ? this.history[this.history.length - 1].timestamp : 0,
+        newestTimestamp:
+          this.history.length > 0 ? this.history[this.history.length - 1].timestamp : 0,
       },
     };
   }

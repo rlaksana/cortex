@@ -1,6 +1,4 @@
-// @ts-nocheck
 // LAST ABSOLUTE FINAL EMERGENCY ROLLBACK: Complete the systematic rollback
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Cortex Memory MCP - Unified Knowledge Type Validator System
@@ -15,15 +13,69 @@
  * @version 2.0.0 - T20 Implementation
  */
 
-import { z, type ZodError,type ZodSchema } from 'zod';
+import { z, type ZodError, type ZodSchema } from 'zod';
 
 import type {
-  JSONValue,
   KnowledgeItem,
   MemoryFindRequest,
   MemoryStoreRequest,
   StoreError,
 } from '../types/core-interfaces.js';
+import type {
+  JSONValue,
+  Metadata,
+  Tags,
+} from '../types/base-types.js';
+import {
+  hasPropertySimple,
+  isString as isStringType,
+  isBoolean,
+  isNumber,
+  isUnknown,
+  isObject,
+} from '../utils/type-guards.js';
+
+// ============================================================================
+// Safe Property Access Helpers for JSONValue
+// ============================================================================
+
+/**
+ * Safely access a string property from a JSONValue object
+ */
+function safeString(obj: JSONValue, property: string): string | undefined {
+  return hasPropertySimple(obj, property) && isStringType(obj[property]) ? obj[property] : undefined;
+}
+
+/**
+ * Safely access a boolean property from a JSONValue object
+ */
+function safeBoolean(obj: JSONValue, property: string): boolean | undefined {
+  return hasPropertySimple(obj, property) && isBoolean(obj[property]) ? obj[property] : undefined;
+}
+
+/**
+ * Safely access a number property from a JSONValue object
+ */
+function safeNumber(obj: JSONValue, property: string): number | undefined {
+  return hasPropertySimple(obj, property) && isNumber(obj[property]) ? obj[property] : undefined;
+}
+
+/**
+ * Safely access an object property from a JSONValue object
+ */
+function safeObject(obj: JSONValue, property: string): Record<string, unknown> | undefined {
+  return hasPropertySimple(obj, property) && isObject(obj[property]) ? obj[property] : undefined;
+}
+
+/**
+ * Safely access an array property from a JSONValue object
+ */
+function safeArray(obj: JSONValue, property: string): unknown[] | undefined {
+  return hasPropertySimple(obj, property) && Array.isArray(obj[property]) ? obj[property] : undefined;
+}
+
+// Re-export JSONValue, Metadata, and Tags for external use
+export type { JSONValue, Metadata, Tags } from '../types/base-types.js';
 
 // ============================================================================
 // Type-Safe Validation Interfaces
@@ -79,6 +131,7 @@ export interface ValidationErrorDetail {
   code: string;
   message: string;
   field?: string;
+  path?: string[];
   category: ValidationErrorCategory;
   severity: ValidationErrorSeverity;
   suggestion?: string;
@@ -550,7 +603,11 @@ export class BusinessRuleValidator {
   private static validateSection(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
 
-    if (!data.body_md && !data.body_text && data.title && data.title.length > 200) {
+    const title = safeString(data, 'title');
+    const bodyMd = safeString(data, 'body_md');
+    const bodyText = safeString(data, 'body_text');
+
+    if (!bodyMd && !bodyText && title && title.length > 200) {
       errors.push({
         code: 'SECTION_TITLE_TOO_LONG',
         message: 'Section title is very long without body content',
@@ -567,26 +624,36 @@ export class BusinessRuleValidator {
   private static validateDecision(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
 
-    if (data.status === 'accepted' && (!data.rationale || data.rationale.length < 50)) {
-      errors.push({
-        code: 'DECISION_INSUFFICIENT_RATIONALE',
-        message: 'Accepted decisions must have detailed rationale (at least 50 characters)',
-        field: 'rationale',
-        category: ValidationErrorCategory.BUSINESS_RULE,
-        severity: ValidationErrorSeverity.ERROR,
-        suggestion: 'Provide comprehensive rationale for the decision',
-      });
+    if (!hasPropertySimple(data, 'status')) {
+      return errors;
     }
 
-    if (data.acceptance_date && !data.rationale) {
-      errors.push({
-        code: 'DECISION_ACCEPTANCE_WITHOUT_RATIONALE',
-        message: 'Decision has acceptance date but no rationale',
-        field: 'acceptance_date',
-        category: ValidationErrorCategory.BUSINESS_RULE,
-        severity: ValidationErrorSeverity.WARNING,
-        suggestion: 'Add rationale to explain the decision',
-      });
+    const record = data as Record<string, unknown>;
+
+    if (record.status === 'accepted') {
+      if (!hasPropertySimple(record, 'rationale') || typeof record.rationale !== 'string' || record.rationale.length < 50) {
+        errors.push({
+          code: 'DECISION_INSUFFICIENT_RATIONALE',
+          message: 'Accepted decisions must have detailed rationale (at least 50 characters)',
+          path: ['rationale'],
+          category: ValidationErrorCategory.BUSINESS_RULE,
+          severity: ValidationErrorSeverity.ERROR,
+          suggestion: 'Add detailed rationale explaining the decision',
+        });
+      }
+    }
+
+    if (hasPropertySimple(record, 'acceptance_date')) {
+      if (!hasPropertySimple(record, 'rationale') || typeof record.rationale !== 'string' || record.rationale.length < 30) {
+        errors.push({
+          code: 'DECISION_ACCEPTANCE_MISSING_RATIONALE',
+          message: 'Decisions with acceptance date must have rationale explaining acceptance',
+          path: ['rationale'],
+          category: ValidationErrorCategory.BUSINESS_RULE,
+          severity: ValidationErrorSeverity.WARNING,
+          suggestion: 'Add rationale explaining why this was accepted',
+        });
+      }
     }
 
     return errors;
@@ -594,8 +661,9 @@ export class BusinessRuleValidator {
 
   private static validateIssue(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
+    const record = data as Record<string, unknown>;
 
-    if (data.tracker && !data.external_id) {
+    if (hasPropertySimple(record, 'tracker') && record.tracker && !hasPropertySimple(record, 'external_id')) {
       errors.push({
         code: 'ISSUE_TRACKER_WITHOUT_ID',
         message: 'Issue has tracker but missing external ID',
@@ -606,7 +674,7 @@ export class BusinessRuleValidator {
       });
     }
 
-    if (data.severity === 'critical' && !data.description) {
+    if (hasPropertySimple(record, 'severity') && record.severity === 'critical' && !hasPropertySimple(record, 'description')) {
       errors.push({
         code: 'CRITICAL_ISSUE_NO_DESCRIPTION',
         message: 'Critical issues should have detailed descriptions',
@@ -622,8 +690,11 @@ export class BusinessRuleValidator {
 
   private static validateTodo(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
+    const record = data as Record<string, unknown>;
 
-    if (data.due_date && data.status === 'done' && !data.closed_at) {
+    if (hasPropertySimple(record, 'due_date') && record.due_date && 
+        hasPropertySimple(record, 'status') && record.status === 'done' && 
+        !hasPropertySimple(record, 'closed_at')) {
       errors.push({
         code: 'TODO_DONE_WITHOUT_CLOSE_DATE',
         message: 'Todo is marked done but missing closed date',
@@ -634,7 +705,7 @@ export class BusinessRuleValidator {
       });
     }
 
-    if (data.priority === 'critical' && !data.assignee) {
+    if (hasPropertySimple(record, 'priority') && record.priority === 'critical' && !hasPropertySimple(record, 'assignee')) {
       errors.push({
         code: 'CRITICAL_TODO_NO_ASSIGNEE',
         message: 'Critical todos should have assignees',
@@ -650,8 +721,9 @@ export class BusinessRuleValidator {
 
   private static validateRunbook(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
+    const record = data as Record<string, unknown>;
 
-    if (data.steps && data.steps.length > 50) {
+    if (hasPropertySimple(record, 'steps') && Array.isArray(record.steps) && record.steps.length > 50) {
       errors.push({
         code: 'RUNBOOK_TOO_MANY_STEPS',
         message: 'Runbook has too many steps (consider splitting)',
@@ -662,7 +734,7 @@ export class BusinessRuleValidator {
       });
     }
 
-    if (data.service && !data.last_verified_at) {
+    if (hasPropertySimple(record, 'service') && record.service && !hasPropertySimple(record, 'last_verified_at')) {
       errors.push({
         code: 'RUNBOOK_NOT_VERIFIED',
         message: 'Runbook has not been verified',
@@ -678,8 +750,12 @@ export class BusinessRuleValidator {
 
   private static validateChange(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
+    const record = data as Record<string, unknown>;
 
-    if (data.change_type?.startsWith('feature_') && !data.author) {
+    if (hasPropertySimple(record, 'change_type') && 
+        typeof record.change_type === 'string' && 
+        record.change_type.startsWith('feature_') && 
+        !hasPropertySimple(record, 'author')) {
       errors.push({
         code: 'FEATURE_CHANGE_NO_AUTHOR',
         message: 'Feature changes should have author attribution',
@@ -690,7 +766,9 @@ export class BusinessRuleValidator {
       });
     }
 
-    if (data.affected_files && data.affected_files.length > 100) {
+    if (hasPropertySimple(record, 'affected_files') && 
+        Array.isArray(record.affected_files) && 
+        record.affected_files.length > 100) {
       errors.push({
         code: 'CHANGE_TOO_MANY_FILES',
         message: 'Change affects too many files (consider splitting)',
@@ -706,11 +784,15 @@ export class BusinessRuleValidator {
 
   private static validateReleaseNote(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
+    const record = data as Record<string, unknown>;
 
     if (
-      data.breaking_changes &&
-      data.breaking_changes.length > 0 &&
-      !data.summary.toLowerCase().includes('breaking')
+      hasPropertySimple(record, 'breaking_changes') && 
+      Array.isArray(record.breaking_changes) &&
+      record.breaking_changes.length > 0 &&
+      hasPropertySimple(record, 'summary') && 
+      typeof record.summary === 'string' &&
+      !record.summary.toLowerCase().includes('breaking')
     ) {
       errors.push({
         code: 'BREAKING_CHANGES_NOT_IN_SUMMARY',
@@ -724,7 +806,9 @@ export class BusinessRuleValidator {
 
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 30); // 30 days from now
-    if (new Date(data.release_date) > futureDate) {
+    if (hasPropertySimple(record, 'release_date') && 
+        typeof record.release_date === 'string' &&
+        new Date(record.release_date) > futureDate) {
       errors.push({
         code: 'RELEASE_DATE_TOO_FAR',
         message: 'Release date is more than 30 days in the future',
@@ -740,11 +824,14 @@ export class BusinessRuleValidator {
 
   private static validateDDL(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
+    const record = data as Record<string, unknown>;
 
     if (
-      !data.ddl_text.toLowerCase().includes('create') &&
-      !data.ddl_text.toLowerCase().includes('alter') &&
-      !data.ddl_text.toLowerCase().includes('drop')
+      hasPropertySimple(record, 'ddl_text') && 
+      typeof record.ddl_text === 'string' &&
+      !record.ddl_text.toLowerCase().includes('create') &&
+      !record.ddl_text.toLowerCase().includes('alter') &&
+      !record.ddl_text.toLowerCase().includes('drop')
     ) {
       errors.push({
         code: 'DDL_NO_OPERATION',
@@ -756,11 +843,12 @@ export class BusinessRuleValidator {
       });
     }
 
-    if (data.migration_id && !/^[A-Z0-9_-]+$/i.test(data.migration_id)) {
+    if (hasPropertySimple(record, 'migration_id') && 
+        typeof record.migration_id === 'string' &&
+        !/^[A-Z0-9_-]+$/i.test(record.migration_id)) {
       errors.push({
         code: 'DDL_INVALID_MIGRATION_ID',
-        message:
-          'Migration ID should contain only alphanumeric characters, underscores, and hyphens',
+        message: 'Migration ID should contain only alphanumeric characters, underscores, and hyphens',
         field: 'migration_id',
         category: ValidationErrorCategory.BUSINESS_RULE,
         severity: ValidationErrorSeverity.WARNING,
@@ -773,8 +861,9 @@ export class BusinessRuleValidator {
 
   private static validatePRContext(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
+    const record = data as Record<string, unknown>;
 
-    if (data.status === 'merged' && !data.merged_at) {
+    if (hasPropertySimple(record, 'status') && record.status === 'merged' && !hasPropertySimple(record, 'merged_at')) {
       errors.push({
         code: 'PR_MERGED_WITHOUT_DATE',
         message: 'PR is marked merged but missing merge date',
@@ -785,7 +874,8 @@ export class BusinessRuleValidator {
       });
     }
 
-    if (data.base_branch === data.head_branch) {
+    if (hasPropertySimple(record, 'base_branch') && hasPropertySimple(record, 'head_branch') && 
+        record.base_branch === record.head_branch) {
       errors.push({
         code: 'PR_SAME_BRANCH',
         message: 'PR base and head branches are the same',
@@ -801,8 +891,14 @@ export class BusinessRuleValidator {
 
   private static validateEntity(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
+    const record = data as Record<string, unknown>;
 
-    if (Object.keys(data.data || {}).length > 1000) {
+    if (hasPropertySimple(record, 'data') && 
+        record.data && 
+        typeof record.data === 'object' && 
+        record.data !== null && 
+        !Array.isArray(record.data) &&
+        Object.keys(record.data as Record<string, unknown>).length > 1000) {
       errors.push({
         code: 'ENTITY_TOO_COMPLEX',
         message: 'Entity has too many data properties',
@@ -835,8 +931,11 @@ export class BusinessRuleValidator {
 
   private static validateObservation(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
+    const record = data as Record<string, unknown>;
 
-    if (data.content.length > 10000) {
+    if (hasPropertySimple(record, 'content') && 
+        typeof record.content === 'string' &&
+        record.content.length > 10000) {
       errors.push({
         code: 'OBSERVATION_TOO_LONG',
         message: 'Observation content is very long',
@@ -852,8 +951,9 @@ export class BusinessRuleValidator {
 
   private static validateIncident(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
+    const record = data as Record<string, unknown>;
 
-    if (data.severity === 'critical' && !data.root_cause_analysis) {
+    if (hasPropertySimple(record, 'severity') && record.severity === 'critical' && !hasPropertySimple(record, 'root_cause_analysis')) {
       errors.push({
         code: 'CRITICAL_INCIDENT_NO_RCA',
         message: 'Critical incidents should have root cause analysis',
@@ -864,7 +964,7 @@ export class BusinessRuleValidator {
       });
     }
 
-    if (data.affected_services && data.affected_services.length > 20) {
+    if (hasPropertySimple(record, 'affected_services') && Array.isArray(record.affected_services) && record.affected_services.length > 20) {
       errors.push({
         code: 'INCIDENT_TOO_MANY_SERVICES',
         message: 'Incident affects too many services',
@@ -880,8 +980,9 @@ export class BusinessRuleValidator {
 
   private static validateRelease(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
+    const record = data as Record<string, unknown>;
 
-    if (data.status === 'completed' && !data.release_date) {
+    if (hasPropertySimple(record, 'status') && record.status === 'completed' && !hasPropertySimple(record, 'release_date')) {
       errors.push({
         code: 'RELEASE_COMPLETED_WITHOUT_DATE',
         message: 'Release is marked completed but missing release date',
@@ -892,7 +993,7 @@ export class BusinessRuleValidator {
       });
     }
 
-    if (data.deployment_strategy && !data.rollback_plan) {
+    if (hasPropertySimple(record, 'deployment_strategy') && record.deployment_strategy && !hasPropertySimple(record, 'rollback_plan')) {
       errors.push({
         code: 'RELEASE_NO_ROLLBACK_PLAN',
         message: 'Release has deployment strategy but no rollback plan',
@@ -908,11 +1009,11 @@ export class BusinessRuleValidator {
 
   private static validateRisk(data: JSONValue): ValidationErrorDetail[] {
     const errors: ValidationErrorDetail[] = [];
+    const record = data as Record<string, unknown>;
 
     if (
-      data.probability === 'very_likely' &&
-      data.risk_level !== 'critical' &&
-      data.risk_level !== 'high'
+      hasPropertySimple(record, 'probability') && record.probability === 'very_likely' &&
+      hasPropertySimple(record, 'risk_level') && record.risk_level !== 'critical' && record.risk_level !== 'high'
     ) {
       errors.push({
         code: 'RISK_PROBABILITY_MISMATCH',
@@ -924,7 +1025,7 @@ export class BusinessRuleValidator {
       });
     }
 
-    if (!data.mitigation && data.risk_level === 'critical') {
+    if (!hasPropertySimple(record, 'mitigation') && hasPropertySimple(record, 'risk_level') && record.risk_level === 'critical') {
       errors.push({
         code: 'CRITICAL_RISK_NO_MITIGATION',
         message: 'Critical risks should have mitigation strategies',

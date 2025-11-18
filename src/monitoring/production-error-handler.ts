@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Final batch of type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Production Error Handler
@@ -77,13 +75,10 @@ export class ProductionErrorHandler extends EventEmitter {
   private errorCounts: Map<string, number> = new Map();
   private lastErrors: Map<string, number> = new Map();
 
-  constructor(
-    config?: Partial<ErrorHandlingConfig>,
-    monitoring?: ProductionMonitoringService
-  ) {
+  constructor(config?: Partial<ErrorHandlingConfig>, monitoring?: ProductionMonitoringService) {
     super();
 
-    this.logger = createChildLogger({ component: 'production-error-handler' });
+    this.logger = createChildLogger({ component: 'production-error-handler' }) as SimpleLogger;
     this.monitoring = monitoring;
 
     this.config = {
@@ -109,9 +104,11 @@ export class ProductionErrorHandler extends EventEmitter {
     this.addRecoveryStrategy({
       name: 'timeout-recovery',
       canHandle: (error, context) => {
-        return error.name === 'TimeoutError' ||
-               error.message.includes('timeout') ||
-               error.message.includes('ETIMEDOUT');
+        return (
+          error.name === 'TimeoutError' ||
+          error.message.includes('timeout') ||
+          error.message.includes('ETIMEDOUT')
+        );
       },
       execute: async (error, context) => {
         this.logger.info('Attempting timeout recovery', { operation: context.operation });
@@ -129,12 +126,16 @@ export class ProductionErrorHandler extends EventEmitter {
     this.addRecoveryStrategy({
       name: 'database-recovery',
       canHandle: (error, context) => {
-        return error.message.includes('database') ||
-               error.message.includes('connection') ||
-               error.message.includes('ECONNREFUSED');
+        return (
+          error.message.includes('database') ||
+          error.message.includes('connection') ||
+          error.message.includes('ECONNREFUSED')
+        );
       },
       execute: async (error, context) => {
-        this.logger.info('Attempting database connection recovery', { operation: context.operation });
+        this.logger.info('Attempting database connection recovery', {
+          operation: context.operation,
+        });
 
         // Wait and retry connection
         await this.delay(this.config.recoveryDelayMs * 2);
@@ -148,9 +149,11 @@ export class ProductionErrorHandler extends EventEmitter {
     this.addRecoveryStrategy({
       name: 'memory-recovery',
       canHandle: (error, context) => {
-        return error.message.includes('memory') ||
-               error.message.includes('heap') ||
-               error.name === 'OutOfMemoryError';
+        return (
+          error.message.includes('memory') ||
+          error.message.includes('heap') ||
+          error.name === 'OutOfMemoryError'
+        );
       },
       execute: async (error, context) => {
         this.logger.warn('Attempting memory pressure recovery', { operation: context.operation });
@@ -169,9 +172,11 @@ export class ProductionErrorHandler extends EventEmitter {
     this.addRecoveryStrategy({
       name: 'rate-limit-recovery',
       canHandle: (error, context) => {
-        return error.message.includes('rate limit') ||
-               error.message.includes('429') ||
-               error.message.includes('Too Many Requests');
+        return (
+          error.message.includes('rate limit') ||
+          error.message.includes('429') ||
+          error.message.includes('Too Many Requests')
+        );
       },
       execute: async (error, context) => {
         this.logger.info('Attempting rate limit recovery', { operation: context.operation });
@@ -188,10 +193,7 @@ export class ProductionErrorHandler extends EventEmitter {
   /**
    * Handle an error with context
    */
-  async handleError(
-    error: Error,
-    context: ErrorContext = {}
-  ): Promise<ErrorReport> {
+  async handleError(error: Error, context: ErrorContext = {}): Promise<ErrorReport> {
     const errorId = this.generateErrorId(error, context);
     const timestamp = new Date().toISOString();
     const startTime = Date.now();
@@ -215,7 +217,7 @@ export class ProductionErrorHandler extends EventEmitter {
       timestamp,
       type: errorType,
       severity,
-      code: (error as unknown).code,
+      code: (error as any).code,
       message: this.sanitizeErrorMessage(error.message),
       stack: this.config.sensitiveDataRedaction ? this.sanitizeStack(error.stack) : error.stack,
       context: this.sanitizeContext(context),
@@ -292,7 +294,7 @@ export class ProductionErrorHandler extends EventEmitter {
       attempts++;
 
       // Find suitable recovery strategy
-      const strategy = this.recoveryStrategies.find(s => s.canHandle(error, context));
+      const strategy = this.recoveryStrategies.find((s) => s.canHandle(error, context));
 
       if (!strategy) {
         this.logger.warn('No recovery strategy found for error', {
@@ -315,7 +317,7 @@ export class ProductionErrorHandler extends EventEmitter {
       } catch (recoveryError) {
         this.logger.error('Recovery strategy failed', {
           strategy: strategy.name,
-          error: recoveryError.message,
+          error: recoveryError instanceof Error ? recoveryError.message : String(recoveryError),
         });
       }
 
@@ -333,14 +335,18 @@ export class ProductionErrorHandler extends EventEmitter {
    */
   private classifyError(error: Error, context: ErrorContext): ErrorReport['type'] {
     const message = error.message.toLowerCase();
-    const code = (error as unknown).code;
+    const code = (error as any).code;
 
     if (message.includes('security') || message.includes('unauthorized') || code === 'EACCES') {
       return 'security';
     }
 
-    if (message.includes('network') || message.includes('connection') ||
-        code === 'ECONNREFUSED' || code === 'ENOTFOUND') {
+    if (
+      message.includes('network') ||
+      message.includes('connection') ||
+      code === 'ECONNREFUSED' ||
+      code === 'ENOTFOUND'
+    ) {
       return 'network';
     }
 
@@ -496,7 +502,8 @@ export class ProductionErrorHandler extends EventEmitter {
     // Check for error patterns (e.g., repeated errors)
     if (currentCount > 0) {
       const timeSinceLastError = Date.now() - this.lastErrors.get(key)!;
-      if (timeSinceLastError < 60000) { // Within last minute
+      if (timeSinceLastError < 60000) {
+        // Within last minute
         this.logger.warn('Repeated error detected', {
           errorType: error.name,
           component: context.component,
@@ -539,16 +546,16 @@ export class ProductionErrorHandler extends EventEmitter {
     const cutoffTime = Date.now() - this.config.errorRetentionMs;
     const errorsToRemove: string[] = [];
 
-    for (const [id, error] of this.errors.entries()) {
+    for (const [id, error] of Array.from(this.errors.entries())) {
       if (new Date(error.timestamp).getTime() < cutoffTime) {
         errorsToRemove.push(id);
       }
     }
 
-    errorsToRemove.forEach(id => this.errors.delete(id));
+    errorsToRemove.forEach((id) => this.errors.delete(id));
 
     // Also cleanup error counts and last errors
-    for (const [key, timestamp] of this.lastErrors.entries()) {
+    for (const [key, timestamp] of Array.from(this.lastErrors.entries())) {
       if (timestamp < cutoffTime) {
         this.errorCounts.delete(key);
         this.lastErrors.delete(key);
@@ -568,7 +575,7 @@ export class ProductionErrorHandler extends EventEmitter {
    * Remove a recovery strategy
    */
   removeRecoveryStrategy(name: string): boolean {
-    const index = this.recoveryStrategies.findIndex(s => s.name === name);
+    const index = this.recoveryStrategies.findIndex((s) => s.name === name);
     if (index !== -1) {
       this.recoveryStrategies.splice(index, 1);
       this.logger.info(`Removed recovery strategy: ${name}`);
@@ -598,7 +605,7 @@ export class ProductionErrorHandler extends EventEmitter {
     let totalResolutionTime = 0;
     let resolutionCount = 0;
 
-    errors.forEach(error => {
+    errors.forEach((error) => {
       // Count by type
       errorsByType[error.type] = (errorsByType[error.type] || 0) + 1;
 
@@ -659,7 +666,7 @@ export class ProductionErrorHandler extends EventEmitter {
    * Delay helper
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

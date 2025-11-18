@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Typed Pool Interfaces - Generic Resource Pool Management
  *
@@ -52,12 +48,7 @@ export type ResourceState =
 /**
  * Pool health status with detailed typing
  */
-export type PoolHealthStatus =
-  | 'healthy'
-  | 'degraded'
-  | 'unhealthy'
-  | 'maintenance'
-  | 'unknown';
+export type PoolHealthStatus = 'healthy' | 'degraded' | 'unhealthy' | 'maintenance' | 'unknown';
 
 /**
  * Resource validation result with detailed typing
@@ -381,7 +372,7 @@ export interface PoolEventListener<TResource = unknown> {
 /**
  * Pool factory interface for creating typed pools
  */
-export interface IPoolFactory {
+export interface PoolFactory {
   /**
    * Create a new resource pool
    */
@@ -416,6 +407,11 @@ export interface IPoolFactory {
 }
 
 /**
+ * Pool factory interface for creating typed pools (legacy alias)
+ */
+export interface IPoolFactory extends PoolFactory {}
+
+/**
  * Resource constraints for type safety
  */
 export interface ResourceConstraints<TResource = unknown> {
@@ -433,9 +429,7 @@ export interface IPoolManager {
   /**
    * Register a new pool
    */
-  registerPool<TResource, TConfig>(
-    pool: IResourcePool<TResource, TConfig>
-  ): Promise<void>;
+  registerPool<TResource, TConfig>(pool: IResourcePool<TResource, TConfig>): Promise<void>;
 
   /**
    * Unregister a pool
@@ -453,9 +447,7 @@ export interface IPoolManager {
   /**
    * Get all pools of a specific resource type
    */
-  getPoolsByType<TResource = unknown>(
-    resourceType: string
-  ): readonly IResourcePool<TResource>[];
+  getPoolsByType<TResource = unknown>(resourceType: string): readonly IResourcePool<TResource>[];
 
   /**
    * Get health status of all pools

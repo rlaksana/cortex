@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * MCP Response Envelope Validator
  *
@@ -16,7 +12,7 @@
 import {
   type MemoryFindResult,
   type MemoryStoreResult,
-  type SystemStatusResult
+  type SystemStatusResult,
 } from '../types/mcp-response-data.types';
 import {
   type ErrorEnvelope,
@@ -24,7 +20,8 @@ import {
   type PaginatedEnvelope,
   type ResponseEnvelope,
   type StreamingEnvelope,
-  type SuccessEnvelope} from '../types/response-envelope.types';
+  type SuccessEnvelope,
+} from '../types/response-envelope.types';
 
 /**
  * Validation result interface
@@ -102,11 +99,15 @@ export class ResponseEnvelopeValidator {
       errors.push(...errorValidation.errors);
       warnings.push(...errorValidation.warnings);
     } else if (env.type === 'paginated') {
-      const paginatedValidation = this.validatePaginatedEnvelope(env as unknown as PaginatedEnvelope);
+      const paginatedValidation = this.validatePaginatedEnvelope(
+        env as unknown as PaginatedEnvelope
+      );
       errors.push(...paginatedValidation.errors);
       warnings.push(...paginatedValidation.warnings);
     } else if (env.type === 'streaming') {
-      const streamingValidation = this.validateStreamingEnvelope(env as unknown as StreamingEnvelope);
+      const streamingValidation = this.validateStreamingEnvelope(
+        env as unknown as StreamingEnvelope
+      );
       errors.push(...streamingValidation.errors);
       warnings.push(...streamingValidation.warnings);
     } else {
@@ -116,7 +117,7 @@ export class ResponseEnvelopeValidator {
     return {
       valid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 
@@ -287,8 +288,10 @@ export class ResponseEnvelopeValidator {
       errors.push('stream.chunk_number must be a number >= 0');
     }
 
-    if (stream.total_chunks !== undefined &&
-        (typeof stream.total_chunks !== 'number' || stream.total_chunks < 1)) {
+    if (
+      stream.total_chunks !== undefined &&
+      (typeof stream.total_chunks !== 'number' || stream.total_chunks < 1)
+    ) {
       errors.push('stream.total_chunks must be a number >= 1 when provided');
     }
 
@@ -348,8 +351,11 @@ export class ResponseEnvelopeValidator {
       if (typeof summary.total_failed !== 'number' || summary.total_failed < 0) {
         errors.push('summary.total_failed must be a number >= 0');
       }
-      if (typeof summary.success_rate !== 'number' ||
-          summary.success_rate < 0 || summary.success_rate > 1) {
+      if (
+        typeof summary.success_rate !== 'number' ||
+        summary.success_rate < 0 ||
+        summary.success_rate > 1
+      ) {
         errors.push('summary.success_rate must be a number between 0 and 1');
       }
 
@@ -384,8 +390,7 @@ export class ResponseEnvelopeValidator {
       errors.push('strategy must be a string');
     }
 
-    if (typeof result.confidence !== 'number' ||
-        result.confidence < 0 || result.confidence > 1) {
+    if (typeof result.confidence !== 'number' || result.confidence < 0 || result.confidence > 1) {
       errors.push('confidence must be a number between 0 and 1');
     }
 
@@ -492,7 +497,7 @@ export class ResponseEnvelopeValidator {
     return {
       valid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 }
@@ -528,7 +533,9 @@ export function validateOperationResponseOrThrow<T>(
   }
 
   if (validation.warnings.length > 0) {
-    console.warn(`${operationType} response validation warnings: ${validation.warnings.join(', ')}`);
+    console.warn(
+      `${operationType} response validation warnings: ${validation.warnings.join(', ')}`
+    );
   }
 
   return envelope;

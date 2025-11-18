@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Alert Verifier
  *
@@ -58,7 +54,12 @@ export class AlertVerifier extends EventEmitter {
   /**
    * Record an alert trigger
    */
-  public recordAlert(scenarioId: string, alertType: string, severity: string, description: string): void {
+  public recordAlert(
+    scenarioId: string,
+    alertType: string,
+    severity: string,
+    description: string
+  ): void {
     const results = this.results.get(scenarioId) || [];
     results.push({
       alertType,
@@ -75,13 +76,16 @@ export class AlertVerifier extends EventEmitter {
   /**
    * Verify alert expectations against results
    */
-  public async verifyAlerts(scenarioId: string, context: ExperimentExecutionContext): Promise<AlertVerification> {
+  public async verifyAlerts(
+    scenarioId: string,
+    context: ExperimentExecutionContext
+  ): Promise<AlertVerification> {
     const expectations = this.expectations.get(scenarioId) || [];
     const results = this.results.get(scenarioId) || [];
 
     // Match results against expectations
-    const updatedResults = results.map(result => {
-      const expectation = expectations.find(exp => exp.alertType === result.alertType);
+    const updatedResults = results.map((result) => {
+      const expectation = expectations.find((exp) => exp.alertType === result.alertType);
       return {
         ...result,
         matchedExpectation: !!expectation,
@@ -89,18 +93,18 @@ export class AlertVerifier extends EventEmitter {
     });
 
     // Check for missing alerts
-    const missingAlerts = expectations.filter(exp =>
-      !updatedResults.some(result => result.alertType === exp.alertType)
-    ).map(exp => ({
-      alertType: exp.alertType,
-      triggered: false,
-      matchedExpectation: false,
-      description: `Expected alert ${exp.alertType} was not triggered`,
-    }));
+    const missingAlerts = expectations
+      .filter((exp) => !updatedResults.some((result) => result.alertType === exp.alertType))
+      .map((exp) => ({
+        alertType: exp.alertType,
+        triggered: false,
+        matchedExpectation: false,
+        description: `Expected alert ${exp.alertType} was not triggered`,
+      }));
 
     const allResults = [...updatedResults, ...missingAlerts];
-    const overallSuccess = expectations.every(exp =>
-      allResults.some(result => result.alertType === exp.alertType && result.triggered)
+    const overallSuccess = expectations.every((exp) =>
+      allResults.some((result) => result.alertType === exp.alertType && result.triggered)
     );
 
     const verification: AlertVerification = {
@@ -132,7 +136,10 @@ export class AlertVerifier extends EventEmitter {
   /**
    * Start monitoring for alerts in a scenario
    */
-  public async startMonitoring(scenarioId: string, expectations: AlertExpectation[]): Promise<void> {
+  public async startMonitoring(
+    scenarioId: string,
+    expectations: AlertExpectation[]
+  ): Promise<void> {
     this.addExpectations(scenarioId, expectations);
     this.clearResults(scenarioId);
   }

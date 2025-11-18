@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Final batch of type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Performance Benchmarks and SLO Compliance Monitoring
@@ -730,9 +728,8 @@ export class PerformanceBenchmarks extends EventEmitter {
    * Collect response time metrics
    */
   private async collectResponseTimeMetrics(): Promise<ResponseTimeMetrics> {
-    // Get response times from performance monitor - method doesn't exist, use fallback
-    const responseTimes = (performanceMonitor as unknown).getRecentResponseTimes?.(1000) ||
-                         this.getFallbackResponseTimes(1000); // Last 1000 requests
+    // Get response times from performance monitor - use fallback since method doesn't exist
+    const responseTimes = this.getFallbackResponseTimes(1000);
 
     if (responseTimes.length === 0) {
       return {
@@ -746,10 +743,12 @@ export class PerformanceBenchmarks extends EventEmitter {
     }
 
     const sorted = [...responseTimes].sort((a, b) => a - b);
-    const mean = responseTimes.reduce((sum: number, time: number) => sum + time, 0) / responseTimes.length;
+    const mean =
+      responseTimes.reduce((sum: number, time: number) => sum + time, 0) / responseTimes.length;
 
     const variance =
-      responseTimes.reduce((sum: number, time: number) => sum + Math.pow(time - mean, 2), 0) / responseTimes.length;
+      responseTimes.reduce((sum: number, time: number) => sum + Math.pow(time - mean, 2), 0) /
+      responseTimes.length;
     const stdDev = Math.sqrt(variance);
 
     return {
@@ -772,7 +771,7 @@ export class PerformanceBenchmarks extends EventEmitter {
    * Collect error rate
    */
   private async collectErrorRate(): Promise<number> {
-    const stats = (performanceMonitor as unknown).getStats?.() || this.getFallbackStats();
+    const stats = this.getFallbackStats();
     if (stats.totalRequests === 0) {
       return 0;
     }
@@ -783,7 +782,7 @@ export class PerformanceBenchmarks extends EventEmitter {
    * Collect throughput
    */
   private async collectThroughput(): Promise<number> {
-    const stats = (performanceMonitor as unknown).getStats?.() || this.getFallbackStats();
+    const stats = this.getFallbackStats();
     const timeWindow = 60; // 1 minute
     return stats.totalRequests / timeWindow;
   }
@@ -829,11 +828,28 @@ export class PerformanceBenchmarks extends EventEmitter {
    * Collect component metrics
    */
   private async collectComponentMetrics(): Promise<ComponentMetrics> {
-    const zaiMetrics = zaiServicesManager.isReady()
-      ? zaiServicesManager.getMetrics()
-      : {
-          zai: { totalRequests: 0, successRate: 0, averageLatency: 0, errorRate: 0 },
-        };
+    // Type-safe metrics collection
+    let zaiMetrics: unknown;
+    try {
+      zaiMetrics = zaiServicesManager.isReady()
+        ? zaiServicesManager.getMetrics()
+        : {
+            zai: { totalRequests: 0, successRate: 0, averageLatency: 0, errorRate: 0 },
+          };
+    } catch (error) {
+      logger.warn({ error }, 'Failed to get ZAI metrics, using defaults');
+      zaiMetrics = {
+        zai: { totalRequests: 0, successRate: 0, averageLatency: 0, errorRate: 0 },
+      };
+    }
+
+    // Type-safe extraction of metrics
+    const extractZaiMetric = (obj: unknown, path: string, defaultValue = 0): number => {
+      return this.getNestedValue(obj, path) ?? defaultValue;
+    };
+
+    const totalRequests = extractZaiMetric(zaiMetrics, 'zai.totalRequests', 0);
+    const errorRate = extractZaiMetric(zaiMetrics, 'zai.errorRate', 0);
 
     return {
       qdrant: {
@@ -844,13 +860,12 @@ export class PerformanceBenchmarks extends EventEmitter {
         connections: 0,
       },
       zai: {
-        requests: (zaiMetrics as unknown).zai?.totalRequests || 0,
-        errors:
-          ((zaiMetrics as unknown).zai?.totalRequests || 0) * ((zaiMetrics as unknown).zai?.errorRate || 0),
-        avgResponseTime: (zaiMetrics as unknown).zai?.averageLatency || 0,
-        cacheHitRate: (zaiMetrics as unknown).zai?.cacheHitRate || 0,
-        rateLimitHits: (zaiMetrics as unknown).zai?.rateLimitHits || 0,
-        circuitBreakerState: 'closed',
+        requests: totalRequests,
+        errors: totalRequests * errorRate,
+        avgResponseTime: extractZaiMetric(zaiMetrics, 'zai.averageLatency', 0),
+        cacheHitRate: extractZaiMetric(zaiMetrics, 'zai.cacheHitRate', 0),
+        rateLimitHits: extractZaiMetric(zaiMetrics, 'zai.rateLimitHits', 0),
+        circuitBreakerState: 'closed' as const,
       },
       memoryStore: {
         stores: 0, // Would get from memory store orchestrator
@@ -1227,10 +1242,29 @@ export class PerformanceBenchmarks extends EventEmitter {
   }
 
   /**
-   * Get nested value from object
+   * Get nested value from object with type safety
    */
-  private getNestedValue(obj: unknown, path: string): number {
-    return path.split('.').reduce((current, key) => current?.[key], obj) || 0;
+  private getNestedValue(obj: unknown, path: string): number | undefined {
+    try {
+      const parts = path.split('.');
+      let current: unknown = obj;
+
+      for (const part of parts) {
+        if (current === null || current === undefined) {
+          return undefined;
+        }
+
+        if (typeof current === 'object' && part in current) {
+          current = (current as Record<string, unknown>)[part];
+        } else {
+          return undefined;
+        }
+      }
+
+      return typeof current === 'number' ? current : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   /**
@@ -1322,7 +1356,7 @@ export class PerformanceBenchmarks extends EventEmitter {
     this.historicalData = this.historicalData.filter((metric) => metric.timestamp >= cutoff);
 
     // Clean up resolved alerts older than retention period
-    for (const [alertId, alert] of this.alerts) {
+    for (const [alertId, alert] of Array.from(this.alerts.entries())) {
       if (alert.status === 'resolved' && alert.timestamp < cutoff) {
         this.alerts.delete(alertId);
       }
@@ -1471,5 +1505,3 @@ export const DEFAULT_BENCHMARK_CONFIGS = {
     },
   } as BenchmarkConfig,
 } as const;
-
-

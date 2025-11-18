@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Qdrant Backup and Recovery Monitoring System
  *
@@ -19,9 +15,9 @@
  */
 
 import { EventEmitter } from 'node:events';
-import {writeFile } from 'fs/promises';
+import { writeFile } from 'fs/promises';
 
-import { logger } from '@/utils/logger.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Monitoring configuration
@@ -403,8 +399,10 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
       metricList.push(metric);
 
       // Keep only metrics within retention period
-      const cutoffTime = Date.now() - (this.config.metrics.retentionPeriod * 24 * 60 * 60 * 1000);
-      const filteredMetrics = metricList.filter(m => new Date(m.timestamp).getTime() > cutoffTime);
+      const cutoffTime = Date.now() - this.config.metrics.retentionPeriod * 24 * 60 * 60 * 1000;
+      const filteredMetrics = metricList.filter(
+        (m) => new Date(m.timestamp).getTime() > cutoffTime
+      );
       this.metrics.set(key, filteredMetrics);
 
       // Check for performance alerts
@@ -413,13 +411,15 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
       // Emit metric event
       this.emit('metric', metric);
 
-      logger.debug({
-        operation: metric.operation,
-        operationType: metric.operationType,
-        duration: metric.duration,
-        success: metric.success,
-      }, 'Performance metric recorded');
-
+      logger.debug(
+        {
+          operation: metric.operation,
+          operationType: metric.operationType,
+          duration: metric.duration,
+          success: metric.success,
+        },
+        'Performance metric recorded'
+      );
     } catch (error) {
       logger.error({ error, metric }, 'Failed to record performance metric');
     }
@@ -428,7 +428,9 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
   /**
    * Create and process alert
    */
-  async createAlert(alert: Omit<Alert, 'id' | 'timestamp' | 'status' | 'escalationLevel' | 'channels'>): Promise<string> {
+  async createAlert(
+    alert: Omit<Alert, 'id' | 'timestamp' | 'status' | 'escalationLevel' | 'channels'>
+  ): Promise<string> {
     try {
       // Check suppression rules
       if (this.isAlertSuppressed(alert)) {
@@ -462,15 +464,17 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
       // Emit alert event
       this.emit('alert', fullAlert);
 
-      logger.info({
-        alertId,
-        severity: alert.severity,
-        category: alert.category,
-        title: alert.title,
-      }, 'Alert created and processed');
+      logger.info(
+        {
+          alertId,
+          severity: alert.severity,
+          category: alert.category,
+          title: alert.title,
+        },
+        'Alert created and processed'
+      );
 
       return alertId;
-
     } catch (error) {
       logger.error({ error, alert }, 'Failed to create alert');
       throw error;
@@ -490,12 +494,14 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
       // Emit health status event
       this.emit('health', status);
 
-      logger.debug({
-        serviceId: status.serviceId,
-        status: status.status,
-        responseTime: status.responseTime,
-      }, 'Health status updated');
-
+      logger.debug(
+        {
+          serviceId: status.serviceId,
+          status: status.status,
+          responseTime: status.responseTime,
+        },
+        'Health status updated'
+      );
     } catch (error) {
       logger.error({ error, status }, 'Failed to update health status');
     }
@@ -509,9 +515,9 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
       this.capacityMetrics.push(metrics);
 
       // Keep only recent metrics
-      const cutoffTime = Date.now() - (24 * 60 * 60 * 1000); // 24 hours
-      this.capacityMetrics = this.capacityMetrics.filter(m =>
-        new Date(m.timestamp).getTime() > cutoffTime
+      const cutoffTime = Date.now() - 24 * 60 * 60 * 1000; // 24 hours
+      this.capacityMetrics = this.capacityMetrics.filter(
+        (m) => new Date(m.timestamp).getTime() > cutoffTime
       );
 
       // Check for capacity alerts
@@ -520,12 +526,14 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
       // Emit capacity metrics event
       this.emit('capacity', metrics);
 
-      logger.debug({
-        storageUtilization: metrics.storage.utilization,
-        memoryUtilization: metrics.memory.utilization,
-        networkUtilization: metrics.network.utilization,
-      }, 'Capacity metrics recorded');
-
+      logger.debug(
+        {
+          storageUtilization: metrics.storage.utilization,
+          memoryUtilization: metrics.memory.utilization,
+          networkUtilization: metrics.network.utilization,
+        },
+        'Capacity metrics recorded'
+      );
     } catch (error) {
       logger.error({ error, metrics }, 'Failed to record capacity metrics');
     }
@@ -559,18 +567,18 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
   }> {
     try {
       const alerts = Array.from(this.alerts.values());
-      const activeAlerts = alerts.filter(a => a.status === 'active');
-      const criticalAlerts = activeAlerts.filter(a => a.severity === 'critical');
-      const warningAlerts = activeAlerts.filter(a => a.severity === 'warning');
+      const activeAlerts = alerts.filter((a) => a.status === 'active');
+      const criticalAlerts = activeAlerts.filter((a) => a.severity === 'critical');
+      const warningAlerts = activeAlerts.filter((a) => a.severity === 'warning');
 
       const healthStatuses = Array.from(this.healthStatus.values());
-      const healthyServices = healthStatuses.filter(s => s.status === 'healthy').length;
-      const degradedServices = healthStatuses.filter(s => s.status === 'degraded').length;
-      const unhealthyServices = healthStatuses.filter(s => s.status === 'unhealthy').length;
+      const healthyServices = healthStatuses.filter((s) => s.status === 'healthy').length;
+      const degradedServices = healthStatuses.filter((s) => s.status === 'degraded').length;
+      const unhealthyServices = healthStatuses.filter((s) => s.status === 'unhealthy').length;
 
       // Collect recent performance metrics
       const performanceMetrics: PerformanceMetric[] = [];
-      Array.from(this.metrics.values()).forEach(metricList => {
+      Array.from(this.metrics.values()).forEach((metricList) => {
         performanceMetrics.push(...metricList.slice(-100)); // Last 100 metrics per type
       });
 
@@ -595,7 +603,6 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
         alerts: activeAlerts,
         trends,
       };
-
     } catch (error) {
       logger.error({ error }, 'Failed to get dashboard data');
       throw error;
@@ -619,13 +626,15 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
       // Stop escalation
       await this.stopAlertEscalation(alert);
 
-      logger.info({
-        alertId,
-        acknowledgedBy,
-      }, 'Alert acknowledged');
+      logger.info(
+        {
+          alertId,
+          acknowledgedBy,
+        },
+        'Alert acknowledged'
+      );
 
       return true;
-
     } catch (error) {
       logger.error({ error, alertId }, 'Failed to acknowledge alert');
       return false;
@@ -649,14 +658,16 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
       // Send resolution notification
       await this.sendResolutionNotification(alert, resolvedBy);
 
-      logger.info({
-        alertId,
-        resolution,
-        resolvedBy,
-      }, 'Alert resolved');
+      logger.info(
+        {
+          alertId,
+          resolution,
+          resolvedBy,
+        },
+        'Alert resolved'
+      );
 
       return true;
-
     } catch (error) {
       logger.error({ error, alertId }, 'Failed to resolve alert');
       return false;
@@ -675,16 +686,22 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
     uptime: number;
     lastUpdate: string;
   } {
-    const totalMetrics = Array.from(this.metrics.values()).reduce((sum, list) => sum + list.length, 0);
+    const totalMetrics = Array.from(this.metrics.values()).reduce(
+      (sum, list) => sum + list.length,
+      0
+    );
     const totalAlerts = this.alertHistory.length;
-    const activeAlerts = Array.from(this.alerts.values()).filter(a => a.status === 'active').length;
-    const resolvedAlerts = this.alertHistory.filter(a => a.status === 'resolved').length;
+    const activeAlerts = Array.from(this.alerts.values()).filter(
+      (a) => a.status === 'active'
+    ).length;
+    const resolvedAlerts = this.alertHistory.filter((a) => a.status === 'resolved').length;
 
     // Calculate average response time for health checks
     const healthStatuses = Array.from(this.healthStatus.values());
-    const avgResponseTime = healthStatuses.length > 0 ?
-      healthStatuses.reduce((sum, s) => sum + s.responseTime, 0) / healthStatuses.length :
-      0;
+    const avgResponseTime =
+      healthStatuses.length > 0
+        ? healthStatuses.reduce((sum, s) => sum + s.responseTime, 0) / healthStatuses.length
+        : 0;
 
     return {
       metricsCollected: totalMetrics,
@@ -768,9 +785,12 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
   }
 
   private scheduleHealthCheck(service: HealthCheckService): void {
-    setInterval(async () => {
-      await this.performHealthCheck(service);
-    }, service.interval * 60 * 1000); // Convert minutes to milliseconds
+    setInterval(
+      async () => {
+        await this.performHealthCheck(service);
+      },
+      service.interval * 60 * 1000
+    ); // Convert minutes to milliseconds
   }
 
   private async performHealthCheck(service: HealthCheckService): Promise<void> {
@@ -794,7 +814,6 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
       if (responseTime > service.timeout * 0.8) {
         status = 'degraded';
       }
-
     } catch (error) {
       status = 'unhealthy';
       responseTime = Date.now() - startTime;
@@ -840,18 +859,23 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
           duration: metric.duration,
           itemCount: metric.itemCount,
         },
-        metrics: [{
-          name: 'backup-duration',
-          value: metric.duration / 1000 / 60,
-          unit: 'minutes',
-          threshold: thresholds.backupDuration,
-        }],
+        metrics: [
+          {
+            name: 'backup-duration',
+            value: metric.duration / 1000 / 60,
+            unit: 'minutes',
+            threshold: thresholds.backupDuration,
+          },
+        ],
         tags: ['performance', 'backup', 'slow'],
       });
     }
 
     // Check restore duration
-    if (metric.operation === 'restore' && metric.duration > thresholds.restoreDuration * 60 * 1000) {
+    if (
+      metric.operation === 'restore' &&
+      metric.duration > thresholds.restoreDuration * 60 * 1000
+    ) {
       this.createAlert({
         severity: 'error',
         category: 'performance',
@@ -863,12 +887,14 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
           duration: metric.duration,
           itemCount: metric.itemCount,
         },
-        metrics: [{
-          name: 'restore-duration',
-          value: metric.duration / 1000 / 60,
-          unit: 'minutes',
-          threshold: thresholds.restoreDuration,
-        }],
+        metrics: [
+          {
+            name: 'restore-duration',
+            value: metric.duration / 1000 / 60,
+            unit: 'minutes',
+            threshold: thresholds.restoreDuration,
+          },
+        ],
         tags: ['performance', 'restore', 'slow'],
       });
     }
@@ -886,12 +912,14 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
           operationType: metric.operationType,
           throughput: metric.throughput,
         },
-        metrics: [{
-          name: 'throughput',
-          value: metric.throughput,
-          unit: 'items/second',
-          threshold: thresholds.throughput,
-        }],
+        metrics: [
+          {
+            name: 'throughput',
+            value: metric.throughput,
+            unit: 'items/second',
+            threshold: thresholds.throughput,
+          },
+        ],
         tags: ['performance', 'throughput', 'low'],
       });
     }
@@ -908,12 +936,14 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
           errorType: metric.errorType || 'Unknown',
           duration: metric.duration,
         },
-        metrics: [{
-          name: 'failure-rate',
-          value: 1,
-          unit: 'boolean',
-          threshold: 0,
-        }],
+        metrics: [
+          {
+            name: 'failure-rate',
+            value: 1,
+            unit: 'boolean',
+            threshold: 0,
+          },
+        ],
         tags: ['failure', metric.operation, metric.operationType],
       });
     }
@@ -930,9 +960,9 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
         details: {
           serviceId: status.serviceId,
           responseTime: status.responseTime,
-          failedChecks: status.checks.filter(c => c.status === 'fail'),
+          failedChecks: status.checks.filter((c) => c.status === 'fail'),
         },
-        metrics: status.checks.map(check => ({
+        metrics: status.checks.map((check) => ({
           name: check.name,
           value: check.value,
           unit: 'ms',
@@ -950,14 +980,16 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
         details: {
           serviceId: status.serviceId,
           responseTime: status.responseTime,
-          warningChecks: status.checks.filter(c => c.status === 'warn'),
+          warningChecks: status.checks.filter((c) => c.status === 'warn'),
         },
-        metrics: [{
-          name: 'response-time',
-          value: status.responseTime,
-          unit: 'ms',
-          threshold: 1000,
-        }],
+        metrics: [
+          {
+            name: 'response-time',
+            value: status.responseTime,
+            unit: 'ms',
+            threshold: 1000,
+          },
+        ],
         tags: ['health', 'degraded', status.serviceName],
       });
     }
@@ -979,12 +1011,14 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
           total: metrics.storage.total,
           available: metrics.storage.available,
         },
-        metrics: [{
-          name: 'storage-utilization',
-          value: metrics.storage.utilization,
-          unit: 'percent',
-          threshold: thresholds.storageUtilization,
-        }],
+        metrics: [
+          {
+            name: 'storage-utilization',
+            value: metrics.storage.utilization,
+            unit: 'percent',
+            threshold: thresholds.storageUtilization,
+          },
+        ],
         tags: ['capacity', 'storage', 'high-utilization'],
       });
     }
@@ -1002,26 +1036,32 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
           total: metrics.memory.total,
           available: metrics.memory.available,
         },
-        metrics: [{
-          name: 'memory-utilization',
-          value: metrics.memory.utilization,
-          unit: 'percent',
-          threshold: thresholds.memoryUtilization,
-        }],
+        metrics: [
+          {
+            name: 'memory-utilization',
+            value: metrics.memory.utilization,
+            unit: 'percent',
+            threshold: thresholds.memoryUtilization,
+          },
+        ],
         tags: ['capacity', 'memory', 'high-utilization'],
       });
     }
   }
 
-  private isAlertSuppressed(alert: Omit<Alert, 'id' | 'timestamp' | 'status' | 'escalationLevel' | 'channels'>): boolean {
+  private isAlertSuppressed(
+    alert: Omit<Alert, 'id' | 'timestamp' | 'status' | 'escalationLevel' | 'channels'>
+  ): boolean {
     // Implementation would check suppression rules
     return false;
   }
 
-  private isRateLimited(alert: Omit<Alert, 'id' | 'timestamp' | 'status' | 'escalationLevel' | 'channels'>): boolean {
+  private isRateLimited(
+    alert: Omit<Alert, 'id' | 'timestamp' | 'status' | 'escalationLevel' | 'channels'>
+  ): boolean {
     const key = `${alert.category}-${alert.source}`;
     const now = Date.now();
-    const hourAgo = now - (60 * 60 * 1000);
+    const hourAgo = now - 60 * 60 * 1000;
 
     if (!this.rateLimitTracker.has(key)) {
       this.rateLimitTracker.set(key, []);
@@ -1030,7 +1070,7 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
     const timestamps = this.rateLimitTracker.get(key)!;
 
     // Clean old timestamps
-    const recentTimestamps = timestamps.filter(t => t > hourAgo);
+    const recentTimestamps = timestamps.filter((t) => t > hourAgo);
     this.rateLimitTracker.set(key, recentTimestamps);
 
     // Check rate limit
@@ -1043,7 +1083,9 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
     return false;
   }
 
-  private determineAlertChannels(alert: Omit<Alert, 'id' | 'timestamp' | 'status' | 'escalationLevel' | 'channels'>): string[] {
+  private determineAlertChannels(
+    alert: Omit<Alert, 'id' | 'timestamp' | 'status' | 'escalationLevel' | 'channels'>
+  ): string[] {
     const channels: string[] = [];
 
     for (const channel of this.config.alerting.channels) {
@@ -1068,7 +1110,7 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
     try {
       // Send notifications to determined channels
       for (const channelId of alert.channels) {
-        const channel = this.config.alerting.channels.find(c => c.id === channelId);
+        const channel = this.config.alerting.channels.find((c) => c.id === channelId);
         if (channel) {
           await this.sendAlertNotification(alert, channel);
         }
@@ -1076,7 +1118,6 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
 
       // Start escalation timer
       this.startAlertEscalation(alert);
-
     } catch (error) {
       logger.error({ error, alertId: alert.id }, 'Failed to process alert');
     }
@@ -1085,31 +1126,38 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
   private async sendAlertNotification(alert: Alert, channel: AlertChannel): Promise<void> {
     try {
       // Implementation would send notification based on channel type
-      logger.debug({
-        alertId: alert.id,
-        channelId: channel.id,
-        channelType: channel.type,
-        severity: alert.severity,
-      }, 'Sending alert notification');
-
+      logger.debug(
+        {
+          alertId: alert.id,
+          channelId: channel.id,
+          channelType: channel.type,
+          severity: alert.severity,
+        },
+        'Sending alert notification'
+      );
     } catch (error) {
-      logger.error({
-        error,
-        alertId: alert.id,
-        channelId: channel.id,
-      }, 'Failed to send alert notification');
+      logger.error(
+        {
+          error,
+          alertId: alert.id,
+          channelId: channel.id,
+        },
+        'Failed to send alert notification'
+      );
     }
   }
 
   private async sendResolutionNotification(alert: Alert, resolvedBy?: string): Promise<void> {
     try {
       // Implementation would send resolution notification
-      logger.info({
-        alertId: alert.id,
-        resolvedBy,
-        resolution: alert.resolution,
-      }, 'Alert resolution notification sent');
-
+      logger.info(
+        {
+          alertId: alert.id,
+          resolvedBy,
+          resolution: alert.resolution,
+        },
+        'Alert resolution notification sent'
+      );
     } catch (error) {
       logger.error({ error, alertId: alert.id }, 'Failed to send resolution notification');
     }
@@ -1186,7 +1234,6 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
       }
 
       logger.debug('Dashboard data updated');
-
     } catch (error) {
       logger.error({ error }, 'Failed to update dashboard');
     }

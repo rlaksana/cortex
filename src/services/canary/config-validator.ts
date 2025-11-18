@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Canary Configuration Validator
  *
@@ -128,7 +124,13 @@ export enum ValidationCategory {
  * Configuration validation request
  */
 export interface ValidationRequest {
-  type: 'canary_deployment' | 'health_monitor' | 'rollback' | 'traffic_rule' | 'kill_switch' | 'feature_flag';
+  type:
+    | 'canary_deployment'
+    | 'health_monitor'
+    | 'rollback'
+    | 'traffic_rule'
+    | 'kill_switch'
+    | 'feature_flag';
   config: unknown;
   context?: ValidationContext;
   strictMode?: boolean;
@@ -273,7 +275,10 @@ export class CanaryConfigValidator {
     try {
       switch (request.type) {
         case 'canary_deployment':
-          result = this.validateCanaryDeploymentConfig(request.config as CanaryDeploymentConfig, context);
+          result = this.validateCanaryDeploymentConfig(
+            request.config as CanaryDeploymentConfig,
+            context
+          );
           break;
         case 'health_monitor':
           result = this.validateHealthMonitorConfig(request.config as CanaryHealthConfig, context);
@@ -312,126 +317,157 @@ export class CanaryConfigValidator {
       });
 
       return result;
-
     } catch (error) {
       logger.error('Error during configuration validation', {
         type: request.type,
         error: error instanceof Error ? error.message : String(error),
       });
 
-      return this.createErrorResult(`Validation error: ${error instanceof Error ? error.message : String(error)}`);
+      return this.createErrorResult(
+        `Validation error: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
   /**
    * Validate canary deployment configuration
    */
-  private validateCanaryDeploymentConfig(config: CanaryDeploymentConfig, context: ValidationContext): ValidationResult {
+  private validateCanaryDeploymentConfig(
+    config: CanaryDeploymentConfig,
+    context: ValidationContext
+  ): ValidationResult {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
     const info: ValidationInfo[] = [];
 
     // Basic field validation
-    this.validateRequiredFields(config, [
-      'name', 'serviceName', 'stableVersion', 'canaryVersion',
-      'initialTrafficPercentage', 'targetTrafficPercentage',
-      'phases', 'healthCheckIntervalMs'
-    ], errors, 'canary_deployment');
+    this.validateRequiredFields(
+      config,
+      [
+        'name',
+        'serviceName',
+        'stableVersion',
+        'canaryVersion',
+        'initialTrafficPercentage',
+        'targetTrafficPercentage',
+        'phases',
+        'healthCheckIntervalMs',
+      ],
+      errors,
+      'canary_deployment'
+    );
 
     // Version validation
     if (config.stableVersion === config.canaryVersion) {
-      errors.push(this.createError(
-        'versions_identical',
-        'Stable and canary versions must be different',
-        'canaryVersion',
-        config.canaryVersion,
-        'different version',
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'versions_identical',
+          'Stable and canary versions must be different',
+          'canaryVersion',
+          config.canaryVersion,
+          'different version',
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     // Traffic percentage validation
     if (config.initialTrafficPercentage < 0 || config.initialTrafficPercentage > 100) {
-      errors.push(this.createError(
-        'invalid_initial_traffic',
-        'Initial traffic percentage must be between 0 and 100',
-        'initialTrafficPercentage',
-        config.initialTrafficPercentage,
-        '0-100',
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'invalid_initial_traffic',
+          'Initial traffic percentage must be between 0 and 100',
+          'initialTrafficPercentage',
+          config.initialTrafficPercentage,
+          '0-100',
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     if (config.targetTrafficPercentage < 0 || config.targetTrafficPercentage > 100) {
-      errors.push(this.createError(
-        'invalid_target_traffic',
-        'Target traffic percentage must be between 0 and 100',
-        'targetTrafficPercentage',
-        config.targetTrafficPercentage,
-        '0-100',
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'invalid_target_traffic',
+          'Target traffic percentage must be between 0 and 100',
+          'targetTrafficPercentage',
+          config.targetTrafficPercentage,
+          '0-100',
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     if (config.targetTrafficPercentage < config.initialTrafficPercentage) {
-      errors.push(this.createError(
-        'traffic_progression_invalid',
-        'Target traffic percentage must be greater than or equal to initial',
-        'targetTrafficPercentage',
-        config.targetTrafficPercentage,
-        `>= ${config.initialTrafficPercentage}`,
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'traffic_progression_invalid',
+          'Target traffic percentage must be greater than or equal to initial',
+          'targetTrafficPercentage',
+          config.targetTrafficPercentage,
+          `>= ${config.initialTrafficPercentage}`,
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     // Phases validation
     if (!config.phases || config.phases.length === 0) {
-      errors.push(this.createError(
-        'no_phases',
-        'At least one deployment phase must be defined',
-        'phases',
-        config.phases,
-        'array of phases',
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'no_phases',
+          'At least one deployment phase must be defined',
+          'phases',
+          config.phases,
+          'array of phases',
+          ValidationCategory.SCHEMA
+        )
+      );
     } else {
       this.validatePhases(config.phases, errors, warnings, context);
     }
 
     // Health check validation
     if (config.healthCheckIntervalMs < 10000) {
-      warnings.push(this.createWarning(
-        'frequent_health_checks',
-        'Health check interval is very frequent, may impact performance',
-        'healthCheckIntervalMs',
-        config.healthCheckIntervalMs,
-        '>= 10000',
-        ValidationCategory.PERFORMANCE
-      ));
+      warnings.push(
+        this.createWarning(
+          'frequent_health_checks',
+          'Health check interval is very frequent, may impact performance',
+          'healthCheckIntervalMs',
+          config.healthCheckIntervalMs,
+          '>= 10000',
+          ValidationCategory.PERFORMANCE
+        )
+      );
     }
 
     // Timeout validation
-    if (config.maxDeploymentTimeMs < 300000) { // 5 minutes
-      warnings.push(this.createWarning(
-        'short_deployment_timeout',
-        'Maximum deployment time is very short, rollback may not complete',
-        'maxDeploymentTimeMs',
-        config.maxDeploymentTimeMs,
-        '>= 300000',
-        ValidationCategory.RELIABILITY
-      ));
+    if (config.maxDeploymentTimeMs < 300000) {
+      // 5 minutes
+      warnings.push(
+        this.createWarning(
+          'short_deployment_timeout',
+          'Maximum deployment time is very short, rollback may not complete',
+          'maxDeploymentTimeMs',
+          config.maxDeploymentTimeMs,
+          '>= 300000',
+          ValidationCategory.RELIABILITY
+        )
+      );
     }
 
     // Auto-rollback validation
     if (config.autoRollback && !config.rollbackThresholds) {
-      errors.push(this.createError(
-        'auto_rollback_no_thresholds',
-        'Auto-rollback enabled but no rollback thresholds defined',
-        'rollbackThresholds',
-        config.rollbackThresholds,
-        'rollback thresholds object',
-        ValidationCategory.RELIABILITY
-      ));
+      errors.push(
+        this.createError(
+          'auto_rollback_no_thresholds',
+          'Auto-rollback enabled but no rollback thresholds defined',
+          'rollbackThresholds',
+          config.rollbackThresholds,
+          'rollback thresholds object',
+          ValidationCategory.RELIABILITY
+        )
+      );
     }
 
     // Resource constraints validation
@@ -451,65 +487,85 @@ export class CanaryConfigValidator {
   /**
    * Validate health monitor configuration
    */
-  private validateHealthMonitorConfig(config: CanaryHealthConfig, context: ValidationContext): ValidationResult {
+  private validateHealthMonitorConfig(
+    config: CanaryHealthConfig,
+    context: ValidationContext
+  ): ValidationResult {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
     const info: ValidationInfo[] = [];
 
     // Basic field validation
-    this.validateRequiredFields(config, [
-      'deploymentId', 'serviceName', 'stableVersion', 'canaryVersion',
-      'checkIntervalMs', 'thresholds'
-    ], errors, 'health_monitor');
+    this.validateRequiredFields(
+      config,
+      [
+        'deploymentId',
+        'serviceName',
+        'stableVersion',
+        'canaryVersion',
+        'checkIntervalMs',
+        'thresholds',
+      ],
+      errors,
+      'health_monitor'
+    );
 
     // Check interval validation
     if (config.checkIntervalMs < 30000) {
-      warnings.push(this.createWarning(
-        'frequent_health_checks',
-        'Health check interval is very frequent, may impact performance',
-        'checkIntervalMs',
-        config.checkIntervalMs,
-        '>= 30000',
-        ValidationCategory.PERFORMANCE
-      ));
+      warnings.push(
+        this.createWarning(
+          'frequent_health_checks',
+          'Health check interval is very frequent, may impact performance',
+          'checkIntervalMs',
+          config.checkIntervalMs,
+          '>= 30000',
+          ValidationCategory.PERFORMANCE
+        )
+      );
     }
 
     // Thresholds validation
     if (!config.thresholds || config.thresholds.length === 0) {
-      errors.push(this.createError(
-        'no_thresholds',
-        'At least one health threshold must be defined',
-        'thresholds',
-        config.thresholds,
-        'array of thresholds',
-        ValidationCategory.MONITORING
-      ));
+      errors.push(
+        this.createError(
+          'no_thresholds',
+          'At least one health threshold must be defined',
+          'thresholds',
+          config.thresholds,
+          'array of thresholds',
+          ValidationCategory.MONITORING
+        )
+      );
     } else {
       this.validateHealthThresholds(config.thresholds, errors, warnings);
     }
 
     // Comparison settings validation
     if (config.comparisonEnabled && config.baselineWindow < 1) {
-      errors.push(this.createError(
-        'insufficient_baseline',
-        'Baseline window must be at least 1 hour for meaningful comparison',
-        'baselineWindow',
-        config.baselineWindow,
-        '>= 1',
-        ValidationCategory.MONITORING
-      ));
+      errors.push(
+        this.createError(
+          'insufficient_baseline',
+          'Baseline window must be at least 1 hour for meaningful comparison',
+          'baselineWindow',
+          config.baselineWindow,
+          '>= 1',
+          ValidationCategory.MONITORING
+        )
+      );
     }
 
     // Auto-rollback validation
     if (config.autoRollback.enabled && config.autoRollback.thresholds.length === 0) {
-      errors.push(this.createError(
-        'auto_rollback_no_thresholds',
-        'Auto-rollback enabled but no rollback thresholds defined',
-        'autoRollback.thresholds',
-        config.autoRollback.thresholds,
-        'array of rollback thresholds',
-        ValidationCategory.RELIABILITY
-      ));
+      errors.push(
+        this.createError(
+          'auto_rollback_no_thresholds',
+          'Auto-rollback enabled but no rollback thresholds defined',
+          'autoRollback.thresholds',
+          config.autoRollback.thresholds,
+          'array of rollback thresholds',
+          ValidationCategory.RELIABILITY
+        )
+      );
     }
 
     // Add best practice recommendations
@@ -521,77 +577,97 @@ export class CanaryConfigValidator {
   /**
    * Validate rollback configuration
    */
-  private validateRollbackConfig(config: RollbackConfig, context: ValidationContext): ValidationResult {
+  private validateRollbackConfig(
+    config: RollbackConfig,
+    context: ValidationContext
+  ): ValidationResult {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
     const info: ValidationInfo[] = [];
 
     // Basic field validation
-    this.validateRequiredFields(config, [
-      'deploymentId', 'name', 'strategy', 'actions'
-    ], errors, 'rollback');
+    this.validateRequiredFields(
+      config,
+      ['deploymentId', 'name', 'strategy', 'actions'],
+      errors,
+      'rollback'
+    );
 
     // Strategy validation
     const validStrategies = ['immediate', 'gradual', 'phased', 'blue_green', 'custom'];
     if (!validStrategies.includes(config.strategy)) {
-      errors.push(this.createError(
-        'invalid_strategy',
-        `Invalid rollback strategy. Must be one of: ${validStrategies.join(', ')}`,
-        'strategy',
-        config.strategy,
-        validStrategies.join(', '),
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'invalid_strategy',
+          `Invalid rollback strategy. Must be one of: ${validStrategies.join(', ')}`,
+          'strategy',
+          config.strategy,
+          validStrategies.join(', '),
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     // Actions validation
     if (!config.actions || config.actions.length === 0) {
-      errors.push(this.createError(
-        'no_actions',
-        'At least one rollback action must be defined',
-        'actions',
-        config.actions,
-        'array of actions',
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'no_actions',
+          'At least one rollback action must be defined',
+          'actions',
+          config.actions,
+          'array of actions',
+          ValidationCategory.SCHEMA
+        )
+      );
     } else {
       this.validateRollbackActions(config.actions, errors, warnings);
     }
 
     // Phased rollback validation
     if (config.strategy === 'phased' && (!config.phases || config.phases.length === 0)) {
-      errors.push(this.createError(
-        'phased_no_phases',
-        'Phased rollback strategy requires phases to be defined',
-        'phases',
-        config.phases,
-        'array of phases',
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'phased_no_phases',
+          'Phased rollback strategy requires phases to be defined',
+          'phases',
+          config.phases,
+          'array of phases',
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     // Safety controls validation
-    if (config.safety.requireApproval && (!config.safety.approvers || config.safety.approvers.length === 0)) {
-      errors.push(this.createError(
-        'approval_no_approvers',
-        'Approval required but no approvers defined',
-        'safety.approvers',
-        config.safety.approvers,
-        'array of approvers',
-        ValidationCategory.SECURITY
-      ));
+    if (
+      config.safety.requireApproval &&
+      (!config.safety.approvers || config.safety.approvers.length === 0)
+    ) {
+      errors.push(
+        this.createError(
+          'approval_no_approvers',
+          'Approval required but no approvers defined',
+          'safety.approvers',
+          config.safety.approvers,
+          'array of approvers',
+          ValidationCategory.SECURITY
+        )
+      );
     }
 
     // Timeout validation
-    if (config.safety.maxRollbackTimeMs < 60000) { // 1 minute
-      warnings.push(this.createWarning(
-        'short_rollback_timeout',
-        'Maximum rollback time is very short, may not complete all actions',
-        'safety.maxRollbackTimeMs',
-        config.safety.maxRollbackTimeMs,
-        '>= 60000',
-        ValidationCategory.RELIABILITY
-      ));
+    if (config.safety.maxRollbackTimeMs < 60000) {
+      // 1 minute
+      warnings.push(
+        this.createWarning(
+          'short_rollback_timeout',
+          'Maximum rollback time is very short, may not complete all actions',
+          'safety.maxRollbackTimeMs',
+          config.safety.maxRollbackTimeMs,
+          '>= 60000',
+          ValidationCategory.RELIABILITY
+        )
+      );
     }
 
     // Add best practice recommendations
@@ -603,39 +679,50 @@ export class CanaryConfigValidator {
   /**
    * Validate traffic rule configuration
    */
-  private validateTrafficRuleConfig(config: TrafficRule, context: ValidationContext): ValidationResult {
+  private validateTrafficRuleConfig(
+    config: TrafficRule,
+    context: ValidationContext
+  ): ValidationResult {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
     const info: ValidationInfo[] = [];
 
     // Basic field validation
-    this.validateRequiredFields(config, [
-      'name', 'strategy', 'targets'
-    ], errors, 'traffic_rule');
+    this.validateRequiredFields(config, ['name', 'strategy', 'targets'], errors, 'traffic_rule');
 
     // Strategy validation
-    const validStrategies = ['percentage', 'round_robin', 'weighted_round_robin', 'least_connections', 'consistent_hash'];
+    const validStrategies = [
+      'percentage',
+      'round_robin',
+      'weighted_round_robin',
+      'least_connections',
+      'consistent_hash',
+    ];
     if (!validStrategies.includes(config.strategy)) {
-      errors.push(this.createError(
-        'invalid_strategy',
-        `Invalid traffic strategy. Must be one of: ${validStrategies.join(', ')}`,
-        'strategy',
-        config.strategy,
-        validStrategies.join(', '),
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'invalid_strategy',
+          `Invalid traffic strategy. Must be one of: ${validStrategies.join(', ')}`,
+          'strategy',
+          config.strategy,
+          validStrategies.join(', '),
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     // Targets validation
     if (!config.targets || config.targets.length === 0) {
-      errors.push(this.createError(
-        'no_targets',
-        'At least one target must be defined',
-        'targets',
-        config.targets,
-        'array of targets',
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'no_targets',
+          'At least one target must be defined',
+          'targets',
+          config.targets,
+          'array of targets',
+          ValidationCategory.SCHEMA
+        )
+      );
     } else {
       this.validateTrafficTargets(config.targets, errors, warnings, context);
     }
@@ -644,27 +731,31 @@ export class CanaryConfigValidator {
     if (config.strategy === 'percentage') {
       const totalWeight = config.targets.reduce((sum, target) => sum + target.weight, 0);
       if (totalWeight !== 100) {
-        errors.push(this.createError(
-          'invalid_total_weight',
-          'Total weight must equal 100 for percentage-based routing',
-          'targets',
-          totalWeight,
-          100,
-          ValidationCategory.SCHEMA
-        ));
+        errors.push(
+          this.createError(
+            'invalid_total_weight',
+            'Total weight must equal 100 for percentage-based routing',
+            'targets',
+            totalWeight,
+            100,
+            ValidationCategory.SCHEMA
+          )
+        );
       }
     }
 
     // Health check validation
     if (config.healthCheck.enabled && config.healthCheck.intervalMs < 10000) {
-      warnings.push(this.createWarning(
-        'frequent_health_checks',
-        'Health check interval is very frequent, may impact performance',
-        'healthCheck.intervalMs',
-        config.healthCheck.intervalMs,
-        '>= 10000',
-        ValidationCategory.PERFORMANCE
-      ));
+      warnings.push(
+        this.createWarning(
+          'frequent_health_checks',
+          'Health check interval is very frequent, may impact performance',
+          'healthCheck.intervalMs',
+          config.healthCheck.intervalMs,
+          '>= 10000',
+          ValidationCategory.PERFORMANCE
+        )
+      );
     }
 
     // Add best practice recommendations
@@ -676,63 +767,80 @@ export class CanaryConfigValidator {
   /**
    * Validate kill switch configuration
    */
-  private validateKillSwitchConfig(config: KillSwitchConfig, context: ValidationContext): ValidationResult {
+  private validateKillSwitchConfig(
+    config: KillSwitchConfig,
+    context: ValidationContext
+  ): ValidationResult {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
     const info: ValidationInfo[] = [];
 
     // Basic field validation
-    this.validateRequiredFields(config, [
-      'name', 'scope', 'triggerConditions'
-    ], errors, 'kill_switch');
+    this.validateRequiredFields(
+      config,
+      ['name', 'scope', 'triggerConditions'],
+      errors,
+      'kill_switch'
+    );
 
     // Scope validation
     const validScopes = ['system_wide', 'component', 'feature', 'deployment', 'api_endpoint'];
     if (!validScopes.includes(config.scope)) {
-      errors.push(this.createError(
-        'invalid_scope',
-        `Invalid scope. Must be one of: ${validScopes.join(', ')}`,
-        'scope',
-        config.scope,
-        validScopes.join(', '),
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'invalid_scope',
+          `Invalid scope. Must be one of: ${validScopes.join(', ')}`,
+          'scope',
+          config.scope,
+          validScopes.join(', '),
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     // Target component validation for specific scopes
-    if ((config.scope === 'component' || config.scope === 'api_endpoint') && !config.targetComponent) {
-      errors.push(this.createError(
-        'target_component_required',
-        'Target component is required for this scope',
-        'targetComponent',
-        config.targetComponent,
-        'component name',
-        ValidationCategory.SCHEMA
-      ));
+    if (
+      (config.scope === 'component' || config.scope === 'api_endpoint') &&
+      !config.targetComponent
+    ) {
+      errors.push(
+        this.createError(
+          'target_component_required',
+          'Target component is required for this scope',
+          'targetComponent',
+          config.targetComponent,
+          'component name',
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     // Trigger conditions validation
     if (!config.triggerConditions || config.triggerConditions.length === 0) {
-      errors.push(this.createError(
-        'no_trigger_conditions',
-        'At least one trigger condition must be defined',
-        'triggerConditions',
-        config.triggerConditions,
-        'array of trigger conditions',
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'no_trigger_conditions',
+          'At least one trigger condition must be defined',
+          'triggerConditions',
+          config.triggerConditions,
+          'array of trigger conditions',
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     // Auto-recovery validation
     if (config.autoRecovery.enabled && config.autoRecovery.maxAttempts === 0) {
-      warnings.push(this.createWarning(
-        'auto_recovery_no_attempts',
-        'Auto-recovery enabled but max attempts is 0',
-        'autoRecovery.maxAttempts',
-        config.autoRecovery.maxAttempts,
-        '> 0',
-        ValidationCategory.RELIABILITY
-      ));
+      warnings.push(
+        this.createWarning(
+          'auto_recovery_no_attempts',
+          'Auto-recovery enabled but max attempts is 0',
+          'autoRecovery.maxAttempts',
+          config.autoRecovery.maxAttempts,
+          '> 0',
+          ValidationCategory.RELIABILITY
+        )
+      );
     }
 
     // Add best practice recommendations
@@ -744,87 +852,118 @@ export class CanaryConfigValidator {
   /**
    * Validate feature flag configuration
    */
-  private validateFeatureFlagConfig(config: FeatureFlag, context: ValidationContext): ValidationResult {
+  private validateFeatureFlagConfig(
+    config: FeatureFlag,
+    context: ValidationContext
+  ): ValidationResult {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
     const info: ValidationInfo[] = [];
 
     // Basic field validation
-    this.validateRequiredFields(config, [
-      'name', 'status', 'strategy'
-    ], errors, 'feature_flag');
+    this.validateRequiredFields(config, ['name', 'status', 'strategy'], errors, 'feature_flag');
 
     // Strategy validation
-    const validStrategies = ['all_users', 'percentage', 'cohort', 'user_list', 'attribute_based', 'ab_test'];
+    const validStrategies = [
+      'all_users',
+      'percentage',
+      'cohort',
+      'user_list',
+      'attribute_based',
+      'ab_test',
+    ];
     if (!validStrategies.includes(config.strategy)) {
-      errors.push(this.createError(
-        'invalid_strategy',
-        `Invalid strategy. Must be one of: ${validStrategies.join(', ')}`,
-        'strategy',
-        config.strategy,
-        validStrategies.join(', '),
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'invalid_strategy',
+          `Invalid strategy. Must be one of: ${validStrategies.join(', ')}`,
+          'strategy',
+          config.strategy,
+          validStrategies.join(', '),
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     // Percentage strategy validation
-    if (config.strategy === 'percentage' && (config.rolloutPercentage === undefined || config.rolloutPercentage < 0 || config.rolloutPercentage > 100)) {
-      errors.push(this.createError(
-        'invalid_percentage',
-        'Rollout percentage must be between 0 and 100 for percentage strategy',
-        'rolloutPercentage',
-        config.rolloutPercentage,
-        '0-100',
-        ValidationCategory.SCHEMA
-      ));
+    if (
+      config.strategy === 'percentage' &&
+      (config.rolloutPercentage === undefined ||
+        config.rolloutPercentage < 0 ||
+        config.rolloutPercentage > 100)
+    ) {
+      errors.push(
+        this.createError(
+          'invalid_percentage',
+          'Rollout percentage must be between 0 and 100 for percentage strategy',
+          'rolloutPercentage',
+          config.rolloutPercentage,
+          '0-100',
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     // Cohort strategy validation
-    if (config.strategy === 'cohort' && (!config.targetCohorts || config.targetCohorts.length === 0)) {
-      errors.push(this.createError(
-        'cohort_no_targets',
-        'Target cohorts must be specified for cohort strategy',
-        'targetCohorts',
-        config.targetCohorts,
-        'array of cohort IDs',
-        ValidationCategory.SCHEMA
-      ));
+    if (
+      config.strategy === 'cohort' &&
+      (!config.targetCohorts || config.targetCohorts.length === 0)
+    ) {
+      errors.push(
+        this.createError(
+          'cohort_no_targets',
+          'Target cohorts must be specified for cohort strategy',
+          'targetCohorts',
+          config.targetCohorts,
+          'array of cohort IDs',
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     // User list strategy validation
-    if (config.strategy === 'user_list' && (!config.targetUsers || config.targetUsers.length === 0)) {
-      errors.push(this.createError(
-        'user_list_no_targets',
-        'Target users must be specified for user list strategy',
-        'targetUsers',
-        config.targetUsers,
-        'array of user IDs',
-        ValidationCategory.SCHEMA
-      ));
+    if (
+      config.strategy === 'user_list' &&
+      (!config.targetUsers || config.targetUsers.length === 0)
+    ) {
+      errors.push(
+        this.createError(
+          'user_list_no_targets',
+          'Target users must be specified for user list strategy',
+          'targetUsers',
+          config.targetUsers,
+          'array of user IDs',
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     // A/B test validation
     if (config.strategy === 'ab_test' && !config.abTestConfig) {
-      errors.push(this.createError(
-        'ab_test_no_config',
-        'A/B test configuration must be specified for ab_test strategy',
-        'abTestConfig',
-        config.abTestConfig,
-        'A/B test configuration',
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'ab_test_no_config',
+          'A/B test configuration must be specified for ab_test strategy',
+          'abTestConfig',
+          config.abTestConfig,
+          'A/B test configuration',
+          ValidationCategory.SCHEMA
+        )
+      );
     }
 
     // Kill switch validation
     if (config.killSwitchEnabled && !config.emergencyDisabled) {
-      info.push(this.createInfo(
-        'kill_switch_enabled',
-        'Kill switch is enabled for this feature flag',
-        'killSwitchEnabled',
-        config.killSwitchEnabled,
-        ValidationCategory.SECURITY,
-        true
-      ));
+      info.push(
+        this.createInfo(
+          'kill_switch_enabled',
+          'Kill switch is enabled for this feature flag',
+          'killSwitchEnabled',
+          config.killSwitchEnabled,
+          ValidationCategory.SECURITY,
+          true
+        )
+      );
     }
 
     // Add best practice recommendations
@@ -851,31 +990,36 @@ export class CanaryConfigValidator {
       const phase = phases[i];
       if (phase && phase.id && typeof phase.id === 'string') {
         // Validate that phase IDs are unique
-        const duplicateCount = phases.filter(p => p.id === phase.id).length;
+        const duplicateCount = phases.filter((p) => p.id === phase.id).length;
         if (duplicateCount > 1) {
-          errors.push(this.createError(
-            'duplicate_phase_id',
-            'Phase IDs must be unique',
-            `phases[${i}].id`,
-            phase.id,
-            'unique identifier',
-            ValidationCategory.SCHEMA
-          ));
+          errors.push(
+            this.createError(
+              'duplicate_phase_id',
+              'Phase IDs must be unique',
+              `phases[${i}].id`,
+              phase.id,
+              'unique identifier',
+              ValidationCategory.SCHEMA
+            )
+          );
         }
       }
     }
 
     // Check phase durations
     for (const phase of phases) {
-      if (phase.durationMs < 60000) { // 1 minute
-        warnings.push(this.createWarning(
-          'short_phase_duration',
-          'Phase duration is very short, may not provide sufficient time for evaluation',
-          `phases[${phase.id}].durationMs`,
-          phase.durationMs,
-          '>= 60000',
-          ValidationCategory.PERFORMANCE
-        ));
+      if (phase.durationMs < 60000) {
+        // 1 minute
+        warnings.push(
+          this.createWarning(
+            'short_phase_duration',
+            'Phase duration is very short, may not provide sufficient time for evaluation',
+            `phases[${phase.id}].durationMs`,
+            phase.durationMs,
+            '>= 60000',
+            ValidationCategory.PERFORMANCE
+          )
+        );
       }
     }
 
@@ -885,14 +1029,16 @@ export class CanaryConfigValidator {
       const currPhase = phases[i];
 
       if (currPhase.trafficPercentage < prevPhase.trafficPercentage) {
-        warnings.push(this.createWarning(
-          'traffic_not_monotonic',
-          'Traffic percentage should generally increase across phases',
-          `phases[${currPhase.id}].trafficPercentage`,
-          currPhase.trafficPercentage,
-          `>= ${prevPhase.trafficPercentage}`,
-          ValidationCategory.BEST_PRACTICE
-        ));
+        warnings.push(
+          this.createWarning(
+            'traffic_not_monotonic',
+            'Traffic percentage should generally increase across phases',
+            `phases[${currPhase.id}].trafficPercentage`,
+            currPhase.trafficPercentage,
+            `>= ${prevPhase.trafficPercentage}`,
+            ValidationCategory.BEST_PRACTICE
+          )
+        );
       }
     }
   }
@@ -907,25 +1053,29 @@ export class CanaryConfigValidator {
   ): void {
     for (const threshold of thresholds) {
       if (threshold.warning >= threshold.critical) {
-        errors.push(this.createError(
-          'threshold_values_invalid',
-          'Warning threshold must be less than critical threshold',
-          'thresholds.warning',
-          threshold.warning,
-          `< critical threshold`,
-          ValidationCategory.SCHEMA
-        ));
+        errors.push(
+          this.createError(
+            'threshold_values_invalid',
+            'Warning threshold must be less than critical threshold',
+            'thresholds.warning',
+            threshold.warning,
+            `< critical threshold`,
+            ValidationCategory.SCHEMA
+          )
+        );
       }
 
       if (threshold.windowSize < 1) {
-        errors.push(this.createError(
-          'threshold_window_invalid',
-          'Window size must be at least 1 minute',
-          'thresholds.windowSize',
-          threshold.windowSize,
-          '>= 1',
-          ValidationCategory.SCHEMA
-        ));
+        errors.push(
+          this.createError(
+            'threshold_window_invalid',
+            'Window size must be at least 1 minute',
+            'thresholds.windowSize',
+            threshold.windowSize,
+            '>= 1',
+            ValidationCategory.SCHEMA
+          )
+        );
       }
     }
   }
@@ -939,33 +1089,46 @@ export class CanaryConfigValidator {
     warnings: ValidationWarning[]
   ): void {
     const validActionTypes = [
-      'stop_new_traffic', 'drain_connections', 'update_feature_flags',
-      'disable_kill_switches', 'route_traffic', 'scale_down', 'scale_up',
-      'restart_services', 'clear_caches', 'update_config', 'run_validation',
-      'notify_users', 'custom'
+      'stop_new_traffic',
+      'drain_connections',
+      'update_feature_flags',
+      'disable_kill_switches',
+      'route_traffic',
+      'scale_down',
+      'scale_up',
+      'restart_services',
+      'clear_caches',
+      'update_config',
+      'run_validation',
+      'notify_users',
+      'custom',
     ];
 
     for (const action of actions) {
       if (!validActionTypes.includes(action.type)) {
-        errors.push(this.createError(
-          'invalid_action_type',
-          `Invalid action type. Must be one of: ${validActionTypes.join(', ')}`,
-          'actions.type',
-          action.type,
-          validActionTypes.join(', '),
-          ValidationCategory.SCHEMA
-        ));
+        errors.push(
+          this.createError(
+            'invalid_action_type',
+            `Invalid action type. Must be one of: ${validActionTypes.join(', ')}`,
+            'actions.type',
+            action.type,
+            validActionTypes.join(', '),
+            ValidationCategory.SCHEMA
+          )
+        );
       }
 
       if (action.timeoutMs < 5000) {
-        warnings.push(this.createWarning(
-          'short_action_timeout',
-          'Action timeout is very short, may not complete successfully',
-          'actions.timeoutMs',
-          action.timeoutMs,
-          '>= 5000',
-          ValidationCategory.RELIABILITY
-        ));
+        warnings.push(
+          this.createWarning(
+            'short_action_timeout',
+            'Action timeout is very short, may not complete successfully',
+            'actions.timeoutMs',
+            action.timeoutMs,
+            '>= 5000',
+            ValidationCategory.RELIABILITY
+          )
+        );
       }
     }
   }
@@ -981,36 +1144,42 @@ export class CanaryConfigValidator {
   ): void {
     for (const target of targets) {
       if (!target.endpoint) {
-        errors.push(this.createError(
-          'target_no_endpoint',
-          'Target must have an endpoint',
-          'targets.endpoint',
-          target.endpoint,
-          'endpoint URL',
-          ValidationCategory.SCHEMA
-        ));
+        errors.push(
+          this.createError(
+            'target_no_endpoint',
+            'Target must have an endpoint',
+            'targets.endpoint',
+            target.endpoint,
+            'endpoint URL',
+            ValidationCategory.SCHEMA
+          )
+        );
       }
 
       if (target.weight < 0 || target.weight > 100) {
-        errors.push(this.createError(
-          'invalid_target_weight',
-          'Target weight must be between 0 and 100',
-          'targets.weight',
-          target.weight,
-          '0-100',
-          ValidationCategory.SCHEMA
-        ));
+        errors.push(
+          this.createError(
+            'invalid_target_weight',
+            'Target weight must be between 0 and 100',
+            'targets.weight',
+            target.weight,
+            '0-100',
+            ValidationCategory.SCHEMA
+          )
+        );
       }
 
       if (!target.name) {
-        warnings.push(this.createWarning(
-          'target_no_name',
-          'Target should have a descriptive name',
-          'targets.name',
-          target.name,
-          'descriptive name',
-          ValidationCategory.BEST_PRACTICE
-        ));
+        warnings.push(
+          this.createWarning(
+            'target_no_name',
+            'Target should have a descriptive name',
+            'targets.name',
+            target.name,
+            'descriptive name',
+            ValidationCategory.BEST_PRACTICE
+          )
+        );
       }
     }
   }
@@ -1024,28 +1193,38 @@ export class CanaryConfigValidator {
     errors: ValidationError[],
     warnings: ValidationWarning[]
   ): void {
-    if (constraints.maxTrafficPercentage &&
-        typeof config.targetTrafficPercentage === 'number' &&
-        config.targetTrafficPercentage > constraints.maxTrafficPercentage) {
-      errors.push(this.createError(
-        'traffic_exceeds_constraint',
-        'Target traffic percentage exceeds resource constraints',
-        'targetTrafficPercentage',
-        config.targetTrafficPercentage,
-        `<= ${constraints.maxTrafficPercentage}`,
-        ValidationCategory.RESOURCE
-      ));
+    if (
+      constraints.maxTrafficPercentage &&
+      typeof config.targetTrafficPercentage === 'number' &&
+      config.targetTrafficPercentage > constraints.maxTrafficPercentage
+    ) {
+      errors.push(
+        this.createError(
+          'traffic_exceeds_constraint',
+          'Target traffic percentage exceeds resource constraints',
+          'targetTrafficPercentage',
+          config.targetTrafficPercentage,
+          `<= ${constraints.maxTrafficPercentage}`,
+          ValidationCategory.RESOURCE
+        )
+      );
     }
 
-    if (constraints.maxRollbackTime && typeof config.maxDeploymentTimeMs === 'number' && config.maxDeploymentTimeMs > constraints.maxRollbackTime) {
-      warnings.push(this.createWarning(
-        'deployment_exceeds_rollback_time',
-        'Maximum deployment time exceeds rollback time constraint',
-        'maxDeploymentTimeMs',
-        config.maxDeploymentTimeMs,
-        `<= ${constraints.maxRollbackTime}`,
-        ValidationCategory.RESOURCE
-      ));
+    if (
+      constraints.maxRollbackTime &&
+      typeof config.maxDeploymentTimeMs === 'number' &&
+      config.maxDeploymentTimeMs > constraints.maxRollbackTime
+    ) {
+      warnings.push(
+        this.createWarning(
+          'deployment_exceeds_rollback_time',
+          'Maximum deployment time exceeds rollback time constraint',
+          'maxDeploymentTimeMs',
+          config.maxDeploymentTimeMs,
+          `<= ${constraints.maxRollbackTime}`,
+          ValidationCategory.RESOURCE
+        )
+      );
     }
   }
 
@@ -1071,14 +1250,16 @@ export class CanaryConfigValidator {
 
     // Check for sensitive data in configuration
     if (this.containsSensitiveData(config)) {
-      errors.push(this.createError(
-        'sensitive_data_exposed',
-        'Configuration contains sensitive data that should be secured',
-        'config',
-        'contains sensitive data',
-        'remove or encrypt sensitive data',
-        ValidationCategory.SECURITY
-      ));
+      errors.push(
+        this.createError(
+          'sensitive_data_exposed',
+          'Configuration contains sensitive data that should be secured',
+          'config',
+          'contains sensitive data',
+          'remove or encrypt sensitive data',
+          ValidationCategory.SECURITY
+        )
+      );
     }
   }
 
@@ -1103,66 +1284,82 @@ export class CanaryConfigValidator {
   /**
    * Add canary deployment best practices
    */
-  private addCanaryDeploymentBestPractices(config: Record<string, unknown>, info: ValidationInfo[]): void {
+  private addCanaryDeploymentBestPractices(
+    config: Record<string, unknown>,
+    info: ValidationInfo[]
+  ): void {
     if (config.initialTrafficPercentage > 10) {
-      info.push(this.createInfo(
-        'conservative_initial_traffic',
-        'Consider starting with lower initial traffic percentage (1-5%) for safer rollouts',
-        'initialTrafficPercentage',
-        config.initialTrafficPercentage,
-        ValidationCategory.BEST_PRACTICE,
-        true,
-        'https://example.com/canary-best-practices'
-      ));
+      info.push(
+        this.createInfo(
+          'conservative_initial_traffic',
+          'Consider starting with lower initial traffic percentage (1-5%) for safer rollouts',
+          'initialTrafficPercentage',
+          config.initialTrafficPercentage,
+          ValidationCategory.BEST_PRACTICE,
+          true,
+          'https://example.com/canary-best-practices'
+        )
+      );
     }
 
     if (config.phases.length < 3) {
-      info.push(this.createInfo(
-        'more_phases_recommended',
-        'Consider using more phases for gradual traffic increase and better monitoring',
-        'phases.length',
-        config.phases.length,
-        ValidationCategory.BEST_PRACTICE,
-        true
-      ));
+      info.push(
+        this.createInfo(
+          'more_phases_recommended',
+          'Consider using more phases for gradual traffic increase and better monitoring',
+          'phases.length',
+          config.phases.length,
+          ValidationCategory.BEST_PRACTICE,
+          true
+        )
+      );
     }
 
     if (!config.autoRollback) {
-      info.push(this.createInfo(
-        'auto_rollback_recommended',
-        'Consider enabling auto-rollback for automatic failure recovery',
-        'autoRollback',
-        config.autoRollback,
-        ValidationCategory.BEST_PRACTICE,
-        true
-      ));
+      info.push(
+        this.createInfo(
+          'auto_rollback_recommended',
+          'Consider enabling auto-rollback for automatic failure recovery',
+          'autoRollback',
+          config.autoRollback,
+          ValidationCategory.BEST_PRACTICE,
+          true
+        )
+      );
     }
   }
 
   /**
    * Add health monitor best practices
    */
-  private addHealthMonitorBestPractices(config: Record<string, unknown>, info: ValidationInfo[]): void {
+  private addHealthMonitorBestPractices(
+    config: Record<string, unknown>,
+    info: ValidationInfo[]
+  ): void {
     if (!config.comparisonEnabled) {
-      info.push(this.createInfo(
-        'comparison_recommended',
-        'Consider enabling comparison for better canary vs stable analysis',
-        'comparisonEnabled',
-        config.comparisonEnabled,
-        ValidationCategory.BEST_PRACTICE,
-        true
-      ));
+      info.push(
+        this.createInfo(
+          'comparison_recommended',
+          'Consider enabling comparison for better canary vs stable analysis',
+          'comparisonEnabled',
+          config.comparisonEnabled,
+          ValidationCategory.BEST_PRACTICE,
+          true
+        )
+      );
     }
 
     if (config.thresholds.length < 3) {
-      info.push(this.createInfo(
-        'more_thresholds_recommended',
-        'Consider defining more health thresholds for comprehensive monitoring',
-        'thresholds.length',
-        config.thresholds.length,
-        ValidationCategory.BEST_PRACTICE,
-        true
-      ));
+      info.push(
+        this.createInfo(
+          'more_thresholds_recommended',
+          'Consider defining more health thresholds for comprehensive monitoring',
+          'thresholds.length',
+          config.thresholds.length,
+          ValidationCategory.BEST_PRACTICE,
+          true
+        )
+      );
     }
   }
 
@@ -1171,106 +1368,131 @@ export class CanaryConfigValidator {
    */
   private addRollbackBestPractices(config: Record<string, unknown>, info: ValidationInfo[]): void {
     if (!config.safety.requireApproval) {
-      info.push(this.createInfo(
-        'approval_recommended',
-        'Consider requiring approval for rollback operations in production',
-        'safety.requireApproval',
-        config.safety.requireApproval,
-        ValidationCategory.BEST_PRACTICE,
-        true
-      ));
+      info.push(
+        this.createInfo(
+          'approval_recommended',
+          'Consider requiring approval for rollback operations in production',
+          'safety.requireApproval',
+          config.safety.requireApproval,
+          ValidationCategory.BEST_PRACTICE,
+          true
+        )
+      );
     }
 
     if (config.strategy === 'immediate') {
-      info.push(this.createInfo(
-        'gradual_rollback_recommended',
-        'Consider using gradual or phased rollback for smoother transitions',
-        'strategy',
-        config.strategy,
-        ValidationCategory.BEST_PRACTICE,
-        true
-      ));
+      info.push(
+        this.createInfo(
+          'gradual_rollback_recommended',
+          'Consider using gradual or phased rollback for smoother transitions',
+          'strategy',
+          config.strategy,
+          ValidationCategory.BEST_PRACTICE,
+          true
+        )
+      );
     }
   }
 
   /**
    * Add traffic rule best practices
    */
-  private addTrafficRuleBestPractices(config: Record<string, unknown>, info: ValidationInfo[]): void {
+  private addTrafficRuleBestPractices(
+    config: Record<string, unknown>,
+    info: ValidationInfo[]
+  ): void {
     if (!config.sessionAffinity.enabled) {
-      info.push(this.createInfo(
-        'session_affinity_recommended',
-        'Consider enabling session affinity for consistent user experience',
-        'sessionAffinity.enabled',
-        config.sessionAffinity.enabled,
-        ValidationCategory.BEST_PRACTICE,
-        true
-      ));
+      info.push(
+        this.createInfo(
+          'session_affinity_recommended',
+          'Consider enabling session affinity for consistent user experience',
+          'sessionAffinity.enabled',
+          config.sessionAffinity.enabled,
+          ValidationCategory.BEST_PRACTICE,
+          true
+        )
+      );
     }
 
     if (!config.failover.enabled) {
-      info.push(this.createInfo(
-        'failover_recommended',
-        'Consider enabling failover for better reliability',
-        'failover.enabled',
-        config.failover.enabled,
-        ValidationCategory.BEST_PRACTICE,
-        true
-      ));
+      info.push(
+        this.createInfo(
+          'failover_recommended',
+          'Consider enabling failover for better reliability',
+          'failover.enabled',
+          config.failover.enabled,
+          ValidationCategory.BEST_PRACTICE,
+          true
+        )
+      );
     }
   }
 
   /**
    * Add kill switch best practices
    */
-  private addKillSwitchBestPractices(config: Record<string, unknown>, info: ValidationInfo[]): void {
+  private addKillSwitchBestPractices(
+    config: Record<string, unknown>,
+    info: ValidationInfo[]
+  ): void {
     if (!config.autoRecovery.enabled) {
-      info.push(this.createInfo(
-        'auto_recovery_recommended',
-        'Consider enabling auto-recovery for automatic issue resolution',
-        'autoRecovery.enabled',
-        config.autoRecovery.enabled,
-        ValidationCategory.BEST_PRACTICE,
-        true
-      ));
+      info.push(
+        this.createInfo(
+          'auto_recovery_recommended',
+          'Consider enabling auto-recovery for automatic issue resolution',
+          'autoRecovery.enabled',
+          config.autoRecovery.enabled,
+          ValidationCategory.BEST_PRACTICE,
+          true
+        )
+      );
     }
 
     if (config.triggerConditions.length < 2) {
-      info.push(this.createInfo(
-        'more_triggers_recommended',
-        'Consider defining multiple trigger conditions for comprehensive monitoring',
-        'triggerConditions.length',
-        config.triggerConditions.length,
-        ValidationCategory.BEST_PRACTICE,
-        true
-      ));
+      info.push(
+        this.createInfo(
+          'more_triggers_recommended',
+          'Consider defining multiple trigger conditions for comprehensive monitoring',
+          'triggerConditions.length',
+          config.triggerConditions.length,
+          ValidationCategory.BEST_PRACTICE,
+          true
+        )
+      );
     }
   }
 
   /**
    * Add feature flag best practices
    */
-  private addFeatureFlagBestPractices(config: Record<string, unknown>, info: ValidationInfo[]): void {
+  private addFeatureFlagBestPractices(
+    config: Record<string, unknown>,
+    info: ValidationInfo[]
+  ): void {
     if (!config.description) {
-      info.push(this.createInfo(
-        'description_recommended',
-        'Consider adding a description for better flag documentation',
-        'description',
-        config.description,
-        ValidationCategory.BEST_PRACTICE,
-        true
-      ));
+      info.push(
+        this.createInfo(
+          'description_recommended',
+          'Consider adding a description for better flag documentation',
+          'description',
+          config.description,
+          ValidationCategory.BEST_PRACTICE,
+          true
+        )
+      );
     }
 
     if (!config.expiredAt && config.status === 'enabled') {
-      info.push(this.createInfo(
-        'expiration_recommended',
-        'Consider setting an expiration date for temporary flags',
-        'expiredAt',
-        config.expiredAt,
-        ValidationCategory.BEST_PRACTICE,
-        true
-      ));
+      info.push(
+        this.createInfo(
+          'expiration_recommended',
+          'Consider setting an expiration date for temporary flags',
+          'expiredAt',
+          config.expiredAt,
+          ValidationCategory.BEST_PRACTICE,
+          true
+        )
+      );
     }
   }
 
@@ -1281,31 +1503,43 @@ export class CanaryConfigValidator {
   /**
    * Validate required fields
    */
-  private validateRequiredFields(config: unknown, requiredFields: string[], errors: ValidationError[], configType: string): void {
+  private validateRequiredFields(
+    config: unknown,
+    requiredFields: string[],
+    errors: ValidationError[],
+    configType: string
+  ): void {
     if (typeof config !== 'object' || config === null) {
-      errors.push(this.createError(
-        'invalid_config_type',
-        'Configuration must be an object',
-        'config',
-        config,
-        'object',
-        ValidationCategory.SCHEMA
-      ));
+      errors.push(
+        this.createError(
+          'invalid_config_type',
+          'Configuration must be an object',
+          'config',
+          config,
+          'object',
+          ValidationCategory.SCHEMA
+        )
+      );
       return;
     }
 
     for (const field of requiredFields) {
-      if (!(field in config) || (config as Record<string, unknown>)[field] === undefined ||
-          (config as Record<string, unknown>)[field] === null ||
-          (config as Record<string, unknown>)[field] === '') {
-        errors.push(this.createError(
-          'required_field_missing',
-          `Required field '${field}' is missing or empty`,
-          field,
-          (config as Record<string, unknown>)[field],
-          'required value',
-          ValidationCategory.SCHEMA
-        ));
+      if (
+        !(field in config) ||
+        (config as Record<string, unknown>)[field] === undefined ||
+        (config as Record<string, unknown>)[field] === null ||
+        (config as Record<string, unknown>)[field] === ''
+      ) {
+        errors.push(
+          this.createError(
+            'required_field_missing',
+            `Required field '${field}' is missing or empty`,
+            field,
+            (config as Record<string, unknown>)[field],
+            'required value',
+            ValidationCategory.SCHEMA
+          )
+        );
       }
     }
   }
@@ -1314,16 +1548,10 @@ export class CanaryConfigValidator {
    * Check for sensitive data
    */
   private containsSensitiveData(config: unknown): boolean {
-    const sensitivePatterns = [
-      /password/i,
-      /secret/i,
-      /key/i,
-      /token/i,
-      /credential/i
-    ];
+    const sensitivePatterns = [/password/i, /secret/i, /key/i, /token/i, /credential/i];
 
     const configString = JSON.stringify(config);
-    return sensitivePatterns.some(pattern => pattern.test(configString));
+    return sensitivePatterns.some((pattern) => pattern.test(configString));
   }
 
   /**
@@ -1331,12 +1559,15 @@ export class CanaryConfigValidator {
    */
   private applyStrictMode(result: ValidationResult): ValidationResult {
     // In strict mode, treat warnings as errors
-    const warningsAsErrors = result.warnings.map(warning => ({
-      ...warning,
-      severity: ValidationSeverity.ERROR as ValidationSeverity,
-      category: ValidationCategory.BEST_PRACTICE,
-      fixable: warning.actionable
-    } as ValidationError));
+    const warningsAsErrors = result.warnings.map(
+      (warning) =>
+        ({
+          ...warning,
+          severity: ValidationSeverity.ERROR as ValidationSeverity,
+          category: ValidationCategory.BEST_PRACTICE,
+          fixable: warning.actionable,
+        }) as ValidationError
+    );
 
     result.errors.push(...warningsAsErrors);
     result.warnings = [];
@@ -1371,7 +1602,7 @@ export class CanaryConfigValidator {
       severity: ValidationSeverity.ERROR,
       category,
       fixable: true,
-      fixSuggestion: expectedValue ? `Should be ${expectedValue}` : undefined
+      fixSuggestion: expectedValue ? `Should be ${expectedValue}` : undefined,
     };
   }
 
@@ -1396,7 +1627,7 @@ export class CanaryConfigValidator {
       severity: ValidationSeverity.WARNING,
       category,
       actionable: true,
-      actionSuggestion: recommendedValue ? `Consider using ${recommendedValue}` : undefined
+      actionSuggestion: recommendedValue ? `Consider using ${recommendedValue}` : undefined,
     };
   }
 
@@ -1421,7 +1652,7 @@ export class CanaryConfigValidator {
       severity: ValidationSeverity.INFO,
       category,
       bestPractice,
-      reference
+      reference,
     };
   }
 
@@ -1435,16 +1666,20 @@ export class CanaryConfigValidator {
   ): ValidationResult {
     const summary = {
       totalIssues: errors.length + warnings.length + info.length,
-      criticalIssues: errors.filter(e => e.severity === ValidationSeverity.CRITICAL).length,
-      errorIssues: errors.filter(e => e.severity === ValidationSeverity.ERROR).length,
+      criticalIssues: errors.filter((e) => e.severity === ValidationSeverity.CRITICAL).length,
+      errorIssues: errors.filter((e) => e.severity === ValidationSeverity.ERROR).length,
       warningIssues: warnings.length,
-      infoIssues: info.length
+      infoIssues: info.length,
     };
 
     const recommendations = [
-      ...errors.filter(e => e.fixable).map(e => e.fixSuggestion || 'Fix the configuration error'),
-      ...warnings.filter(w => w.actionable).map(w => w.actionSuggestion || 'Address the configuration warning'),
-      ...info.filter(i => i.bestPractice).map(i => `Consider best practice: ${i.message}`)
+      ...errors
+        .filter((e) => e.fixable)
+        .map((e) => e.fixSuggestion || 'Fix the configuration error'),
+      ...warnings
+        .filter((w) => w.actionable)
+        .map((w) => w.actionSuggestion || 'Address the configuration warning'),
+      ...info.filter((i) => i.bestPractice).map((i) => `Consider best practice: ${i.message}`),
     ];
 
     return {
@@ -1454,7 +1689,7 @@ export class CanaryConfigValidator {
       info,
       summary,
       recommendations,
-      validatedAt: new Date()
+      validatedAt: new Date(),
     };
   }
 
@@ -1468,7 +1703,7 @@ export class CanaryConfigValidator {
       message,
       severity: ValidationSeverity.CRITICAL,
       category: ValidationCategory.SCHEMA,
-      fixable: false
+      fixable: false,
     };
 
     return {
@@ -1481,10 +1716,10 @@ export class CanaryConfigValidator {
         criticalIssues: 1,
         errorIssues: 0,
         warningIssues: 0,
-        infoIssues: 0
+        infoIssues: 0,
       },
       recommendations: ['Fix the validation error'],
-      validatedAt: new Date()
+      validatedAt: new Date(),
     };
   }
 
@@ -1532,7 +1767,7 @@ export class CanaryConfigValidator {
       successfulValidations: 0,
       failedValidations: 0,
       commonErrors: {},
-      commonWarnings: {}
+      commonWarnings: {},
     };
   }
 }

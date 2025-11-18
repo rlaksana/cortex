@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Migration Configuration Manager
  *
@@ -24,12 +20,13 @@
 import { logger } from '@/utils/logger.js';
 
 import type { MigrationConfig } from './database-config.js';
-import type { Dict,JSONValue } from '../types/index.js';
+import type { Dict, JSONValue } from '../types/index.js';
 import {
   isDictJSONValue,
   safePropertyAccess,
   safeStringToEnum,
-  validateMigrationConfig} from '../utils/configuration-type-guards.js';
+  validateMigrationConfig,
+} from '../utils/configuration-type-guards.js';
 
 /**
  * Branded type for filter rule values to ensure type safety
@@ -732,4 +729,3 @@ export function createMigrationConfigForMode(
 ): MigrationConfigManager {
   return MigrationConfigFactory.createForMode(mode, environment, overrides);
 }
-

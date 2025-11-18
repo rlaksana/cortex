@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Canary Deployment System
  *
@@ -22,8 +17,11 @@
 // Export main services
 export { FeatureFlagService, featureFlagService } from '../feature-flag/feature-flag-service.js';
 import type { FeatureFlag } from '../feature-flag/feature-flag-service.js';
-import { featureFlagService, FlagStatus, TargetingStrategy  } from '../feature-flag/feature-flag-service.js';
-
+import {
+  featureFlagService,
+  FlagStatus,
+  TargetingStrategy,
+} from '../feature-flag/feature-flag-service.js';
 
 // Note: Canary services are temporarily disabled due to missing implementations
 // These will be re-enabled when the services are properly implemented
@@ -42,7 +40,8 @@ export type {
   TargetingStrategy as FeatureTargetingStrategy,
   FlagEvaluationResult,
   UserCohort,
-  UserContext} from '../feature-flag/feature-flag-service.js';
+  UserContext,
+} from '../feature-flag/feature-flag-service.js';
 
 // Export enums for type compatibility
 export { FlagStatus, TargetingStrategy } from '../feature-flag/feature-flag-service.js';
@@ -242,7 +241,7 @@ export const CanaryUtils = {
   generateRecommendations: (): string[] => {
     return [
       'Canary deployment services are temporarily disabled',
-      'Only feature flag management is currently available'
+      'Only feature flag management is currently available',
     ];
   },
 };

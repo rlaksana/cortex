@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Utility type guard compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Configuration Runtime Validation and Type Guards
@@ -13,12 +11,8 @@
  * @since 2025
  */
 
-import type {
-  Dict,
-  isJSONObject,
-  isJSONValue,
-  JSONObject,
-  JSONValue} from '../types/index.js';
+import type { Dict, JSONObject, JSONValue } from '../types/index.js';
+import { isJSONObject, isJSONValue } from '../types/index.js';
 
 // ============================================================================
 // Configuration Type Guards
@@ -69,8 +63,10 @@ export function isQdrantConfig(value: unknown): value is {
     return false;
   }
 
-  if (obj.distance !== undefined &&
-      !['Cosine', 'Euclidean', 'Dot'].includes(obj.distance as string)) {
+  if (
+    obj.distance !== undefined &&
+    !['Cosine', 'Euclidean', 'Dot'].includes(obj.distance as string)
+  ) {
     return false;
   }
 
@@ -109,7 +105,9 @@ export function isDatabaseConnectionConfig(value: unknown): value is {
 /**
  * Type guard for filter rule values
  */
-export function isFilterValue(value: unknown): value is string | number | boolean | null | JSONValue {
+export function isFilterValue(
+  value: unknown
+): value is string | number | boolean | null | JSONValue {
   return isJSONValue(value);
 }
 
@@ -130,12 +128,14 @@ export function isTransformationRule(value: unknown): value is {
 
   const obj = value as Record<string, unknown>;
 
-  return typeof obj.name === 'string' &&
-         typeof obj.type === 'string' &&
-         typeof obj.transformation === 'string' &&
-         (obj.sourceField === undefined || typeof obj.sourceField === 'string') &&
-         (obj.targetField === undefined || typeof obj.targetField === 'string') &&
-         (obj.parameters === undefined || isJSONObject(obj.parameters));
+  return (
+    typeof obj.name === 'string' &&
+    typeof obj.type === 'string' &&
+    typeof obj.transformation === 'string' &&
+    (obj.sourceField === undefined || typeof obj.sourceField === 'string') &&
+    (obj.targetField === undefined || typeof obj.targetField === 'string') &&
+    (obj.parameters === undefined || isJSONObject(obj.parameters))
+  );
 }
 
 /**
@@ -171,14 +171,16 @@ export function isMigrationConfig(value: unknown): value is {
   const obj = value as Record<string, unknown>;
 
   // Check required fields
-  if (typeof obj.mode !== 'string' ||
-      !['always', 'if-missing', 'never'].includes(obj.generateEmbeddings as string) ||
-      typeof obj.embeddingModel !== 'string' ||
-      typeof obj.batchSize !== 'number' ||
-      !Array.isArray(obj.contentFields) ||
-      !Array.isArray(obj.metadataFields) ||
-      !Array.isArray(obj.filterRules) ||
-      !Array.isArray(obj.transformationRules)) {
+  if (
+    typeof obj.mode !== 'string' ||
+    !['always', 'if-missing', 'never'].includes(obj.generateEmbeddings as string) ||
+    typeof obj.embeddingModel !== 'string' ||
+    typeof obj.batchSize !== 'number' ||
+    !Array.isArray(obj.contentFields) ||
+    !Array.isArray(obj.metadataFields) ||
+    !Array.isArray(obj.filterRules) ||
+    !Array.isArray(obj.transformationRules)
+  ) {
     return false;
   }
 
@@ -233,10 +235,12 @@ export function isValidationResult(value: unknown): value is {
 
   const obj = value as Record<string, unknown>;
 
-  return typeof obj.valid === 'boolean' &&
-         Array.isArray(obj.errors) &&
-         Array.isArray(obj.warnings) &&
-         isJSONObject(obj.metadata);
+  return (
+    typeof obj.valid === 'boolean' &&
+    Array.isArray(obj.errors) &&
+    Array.isArray(obj.warnings) &&
+    isJSONObject(obj.metadata)
+  );
 }
 
 // ============================================================================
@@ -258,12 +262,12 @@ export function validateConfig<T>(
 
     return {
       success: false,
-      error: `Invalid configuration${context ? ` in ${context}` : ''}: type guard failed`
+      error: `Invalid configuration${context ? ` in ${context}` : ''}: type guard failed`,
     };
   } catch (error) {
     return {
       success: false,
-      error: `Configuration validation error${context ? ` in ${context}` : ''}: ${error instanceof Error ? error.message : String(error)}`
+      error: `Configuration validation error${context ? ` in ${context}` : ''}: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 }
@@ -376,38 +380,30 @@ export class QdrantConfigBuilder {
 /**
  * Type-safe configuration merger
  */
-export function mergeConfigs<T extends JSONObject>(
-  base: T,
-  ...configs: Partial<T>[]
-): T {
-  return configs.reduce((merged, config) => ({ ...merged, ...config }), base);
+export function mergeConfigs<T extends JSONObject>(base: T, ...configs: Partial<T>[]): T {
+  return configs.reduce((merged, config) => ({ ...merged, ...config }), { ...base });
 }
 
 /**
  * Deep configuration merger with type safety
  */
-export function deepMergeConfigs<T extends JSONObject>(
-  base: T,
-  ...configs: Partial<T>[]
-): T {
+export function deepMergeConfigs<T extends JSONObject>(base: T, ...configs: Partial<T>[]): T {
   return configs.reduce((merged, config) => {
-    const result = { ...merged };
+    const result = { ...merged } as T;
 
     for (const [key, value] of Object.entries(config)) {
       if (value === undefined) continue;
 
-      if (
-        isJSONObject(result[key]) &&
-        isJSONObject(value)
-      ) {
-        result[key] = deepMergeConfigs(result[key] as JSONObject, value as JSONObject);
+      const typedKey = key as Extract<keyof T, string>;
+      if (isJSONObject(result[typedKey]) && isJSONObject(value)) {
+        result[typedKey] = deepMergeConfigs(result[typedKey] as JSONObject, value as JSONObject) as T[Extract<keyof T, string>];
       } else {
-        result[key] = value as T[Extract<keyof T, string>];
+        (result as any)[typedKey] = value;
       }
     }
 
     return result;
-  }, base);
+  }, { ...base });
 }
 
 // ============================================================================
@@ -495,7 +491,14 @@ export function isProductionConfig(value: unknown): value is {
   const obj = value as Record<string, unknown>;
 
   // Validate required top-level sections
-  const requiredSections = ['security', 'health', 'shutdown', 'logging', 'performance', 'monitoring'];
+  const requiredSections = [
+    'security',
+    'health',
+    'shutdown',
+    'logging',
+    'performance',
+    'monitoring',
+  ];
   for (const section of requiredSections) {
     if (!isJSONObject(obj[section])) {
       return false;
@@ -559,7 +562,7 @@ export function createValidationError(
     message,
     code,
     severity,
-    context
+    context,
   };
 }
 
@@ -577,8 +580,8 @@ export function createValidationResult(
     data,
     metadata: {
       validatedAt: new Date().toISOString(),
-      validatorVersion: '2.0.0'
-    }
+      validatorVersion: '2.0.0',
+    },
   };
 }
 
@@ -595,8 +598,8 @@ export function createFailedValidationResult(
     warnings,
     metadata: {
       validatedAt: new Date().toISOString(),
-      validatorVersion: '2.0.0'
-    }
+      validatorVersion: '2.0.0',
+    },
   };
 }
 
@@ -612,7 +615,7 @@ export function validateConfigurationObject(
 ): ConfigurationValidationResult {
   if (!isJSONObject(config)) {
     return createFailedValidationResult([
-      createValidationError('root', 'Configuration must be an object', 'INVALID_TYPE')
+      createValidationError('root', 'Configuration must be an object', 'INVALID_TYPE'),
     ]);
   }
 
@@ -635,4 +638,89 @@ export function validateConfigurationObject(
   return errors.length > 0
     ? createFailedValidationResult(errors, warnings)
     : createValidationResult(config, warnings);
+}
+
+// ============================================================================
+// Basic Utility Type Guards (Missing Exports)
+// ============================================================================
+
+/**
+ * Type guard for dictionary objects (string-keyed records)
+ */
+export function isDict(value: unknown): value is Record<string, unknown> {
+  return isJSONObject(value);
+}
+
+/**
+ * Type guard for valid port numbers
+ */
+export function isValidPort(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 65535;
+}
+
+/**
+ * Type guard for valid timeout values
+ */
+export function isValidTimeout(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
+
+/**
+ * Validate and normalize configuration object
+ */
+export function validateAndNormalizeConfig(
+  config: unknown,
+  schema?: Record<string, { type: string; required?: boolean; default?: unknown }>
+): { valid: boolean; config: Record<string, unknown>; errors: string[] } {
+  const errors: string[] = [];
+
+  if (!isJSONObject(config)) {
+    errors.push('Configuration must be a valid object');
+    return { valid: false, config: {}, errors };
+  }
+
+  const normalized = { ...(config as Record<string, unknown>) };
+
+  if (schema) {
+    for (const [key, rule] of Object.entries(schema)) {
+      if (rule.required && !(key in normalized)) {
+        errors.push(`Required field '${key}' is missing`);
+        continue;
+      }
+
+      if (!(key in normalized) && rule.default !== undefined) {
+        normalized[key] = rule.default;
+      }
+
+      const value = normalized[key];
+      switch (rule.type) {
+        case 'string':
+          if (value !== undefined && typeof value !== 'string') {
+            errors.push(`Field '${key}' must be a string`);
+          }
+          break;
+        case 'number':
+          if (value !== undefined && typeof value !== 'number') {
+            errors.push(`Field '${key}' must be a number`);
+          }
+          break;
+        case 'boolean':
+          if (value !== undefined && typeof value !== 'boolean') {
+            errors.push(`Field '${key}' must be a boolean`);
+          }
+          break;
+        case 'object':
+          if (value !== undefined && !isJSONObject(value)) {
+            errors.push(`Field '${key}' must be an object`);
+          }
+          break;
+      }
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    config: normalized,
+    errors,
+  };
 }

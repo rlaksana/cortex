@@ -1,14 +1,9 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Content Similarity Verifier
  *
  * Provides comprehensive content similarity analysis for validating
  * document reassembly accuracy with multiple metrics and algorithms.
  */
-
 
 import { logger } from '@/utils/logger.js';
 

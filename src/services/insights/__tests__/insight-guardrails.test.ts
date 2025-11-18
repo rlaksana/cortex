@@ -1,25 +1,20 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Comprehensive test suite for insight generation guardrails
  * Tests token caps, deterministic templates, provenance tracking, and reproducible outputs
  */
 
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { InsightTypeUnion } from '../../../types/insight-interfaces.js';
-import { insightGenerationGuardrails } from '../insight-guardrails.js';
+import type { InsightTypeUnion } from '../../../types/insight-interfaces';
+import { insightGenerationGuardrails } from '../insight-guardrails';
 
 // Mock logger to avoid console output during tests
-jest.mock('../../../utils/logger.js', () => ({
+vi.mock('../../../utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
@@ -397,8 +392,8 @@ describe('Insight Generation Guardrails', () => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 31); // 31 days ago
 
-      // @ts-expect-error - Accessing private method for testing
-      insightGenerationGuardrails['provenanceStore'].forEach((_provenance, _id) => {
+      // Access private method for testing via type assertion
+      (insightGenerationGuardrails as any).provenanceStore.forEach((_provenance: any, _id: any) => {
         _provenance.generation_timestamp = thirtyDaysAgo.toISOString();
       });
 
@@ -426,8 +421,8 @@ describe('Insight Generation Guardrails', () => {
       });
 
       const insight = mockInsights[0];
-      // @ts-expect-error - Accessing private method for testing
-      const estimatedTokens = guardrailsApproximate['estimateTokens'](insight);
+      // Access private method for testing via type assertion
+      const estimatedTokens = (guardrailsApproximate as any).estimateTokens(insight);
 
       expect(estimatedTokens).toBeGreaterThan(0);
       expect(typeof estimatedTokens).toBe('number');
@@ -439,8 +434,8 @@ describe('Insight Generation Guardrails', () => {
       });
 
       const insight = mockInsights[0];
-      // @ts-expect-error - Accessing private method for testing
-      const estimatedTokens = guardrailsExact['estimateTokens'](insight);
+      // Access private method for testing via type assertion
+      const estimatedTokens = (guardrailsExact as any).estimateTokens(insight);
 
       expect(estimatedTokens).toBeGreaterThan(0);
       expect(typeof estimatedTokens).toBe('number');

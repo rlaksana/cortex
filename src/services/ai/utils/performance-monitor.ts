@@ -1,11 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Performance Monitor Implementation
  *
@@ -30,7 +22,7 @@ export class SimplePerformanceMonitor implements ZAIPerformanceMonitor {
   private totalRequests = 0;
   private successfulRequests = 0;
   private failedRequests = 0;
-private startTime = Date.now();
+  private startTime = Date.now();
 
   /**
    * Record the start of a request
@@ -224,10 +216,12 @@ private startTime = Date.now();
       if (now - startTime > maxAgeMs) {
         this.activeRequests.delete(requestId);
         cleanedCount++;
-        this.recordError(new ZAIError(
-          `Request ${requestId} timed out after ${maxAgeMs}ms`,
-          'TIMEOUT_ERROR' as unknown
-        ));
+        this.recordError(
+          new ZAIError(
+            `Request ${requestId} timed out after ${maxAgeMs}ms`,
+            'TIMEOUT_ERROR' as unknown
+          )
+        );
       }
     }
 

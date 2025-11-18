@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * ZAI Service Interfaces and Types
  *
@@ -475,7 +471,13 @@ export class ZAIError extends Error {
   }
 
   static fromNetworkError(error: Error): ZAIError {
-    return new ZAIError(error.message, ZAIErrorType['NETWORK_ERROR'], undefined, undefined, undefined);
+    return new ZAIError(
+      error.message,
+      ZAIErrorType['NETWORK_ERROR'],
+      undefined,
+      undefined,
+      undefined
+    );
   }
 
   static fromTimeoutError(timeout: number): ZAIError {
@@ -531,7 +533,6 @@ export interface ZAIPerformanceMonitor {
   getMetricsByTimeRange(start: number, end: number): unknown;
   reset(): void;
 }
-
 
 /**
  * AI Health Status interface
@@ -975,9 +976,6 @@ export interface AIOperabilityMetrics {
     diskUtilization: number;
   };
 }
-
-
-
 
 /**
  * ZAI Optimized Client Options interface

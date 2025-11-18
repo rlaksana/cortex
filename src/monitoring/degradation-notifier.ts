@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Monitoring system type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Qdrant Degradation Notifier
@@ -200,7 +198,8 @@ export class QdrantDegradationNotifier extends EventEmitter {
       },
       ui: {
         showUserFacingMessages: true,
-        bannerMessage: 'Database performance is degraded. Some features may be temporarily unavailable.',
+        bannerMessage:
+          'Database performance is degraded. Some features may be temporarily unavailable.',
         detailedLogsEnabled: true,
         progressIndicatorEnabled: true,
       },
@@ -255,7 +254,12 @@ export class QdrantDegradationNotifier extends EventEmitter {
       // Send to all recipients
       for (const recipient of this.recipients.values()) {
         if (this.shouldNotifyRecipient(recipient, event)) {
-          const recipientDeliveries = await this.sendToRecipient(recipient, event, message, template);
+          const recipientDeliveries = await this.sendToRecipient(
+            recipient,
+            event,
+            message,
+            template
+          );
           deliveries.push(...recipientDeliveries);
         }
       }
@@ -268,13 +272,12 @@ export class QdrantDegradationNotifier extends EventEmitter {
           eventId: event.id,
           level: event.level,
           deliveriesCount: deliveries.length,
-          successfulDeliveries: deliveries.filter(d => d.status === 'sent').length,
+          successfulDeliveries: deliveries.filter((d) => d.status === 'sent').length,
         },
         'Degradation notification sent'
       );
 
       this.emit('notification_sent', { event, deliveries });
-
     } catch (error) {
       logger.error({ error, eventId: event.id }, 'Failed to send degradation notification');
       this.emit('notification_error', { event, error });
@@ -337,7 +340,7 @@ export class QdrantDegradationNotifier extends EventEmitter {
 
     // Calculate statistics from delivery history
     const recentDeliveries = this.deliveryHistory.filter(
-      d => Date.now() - d.sentAt!.getTime() < 24 * 60 * 60 * 1000 // Last 24 hours
+      (d) => Date.now() - d.sentAt!.getTime() < 24 * 60 * 60 * 1000 // Last 24 hours
     );
 
     let totalDeliveryTime = 0;
@@ -347,9 +350,10 @@ export class QdrantDegradationNotifier extends EventEmitter {
       switch (delivery.status) {
         case 'sent':
           stats.totalSent++;
-          {
-            const lvl = (delivery as unknown).level as DegradationLevel | undefined;
-            if (lvl !== undefined) stats.byLevel[lvl]++;
+          // Find the associated event to get the level
+          const associatedEvent = this.activeNotifications.get(delivery.eventId);
+          if (associatedEvent) {
+            stats.byLevel[associatedEvent.level]++;
           }
           stats.byChannel[delivery.channel]++;
           break;
@@ -368,9 +372,10 @@ export class QdrantDegradationNotifier extends EventEmitter {
     }
 
     stats.averageDeliveryTime = deliveryCount > 0 ? totalDeliveryTime / deliveryCount : 0;
-    stats.lastNotificationTime = recentDeliveries.length > 0
-      ? recentDeliveries[recentDeliveries.length - 1].sentAt
-      : undefined;
+    stats.lastNotificationTime =
+      recentDeliveries.length > 0
+        ? recentDeliveries[recentDeliveries.length - 1].sentAt
+        : undefined;
 
     return stats;
   }
@@ -405,7 +410,9 @@ export class QdrantDegradationNotifier extends EventEmitter {
         DegradationLevel.WARNING,
         DegradationLevel.HEALTHY,
       ];
-      return severityOrder.indexOf(current.level) < severityOrder.indexOf(highest.level) ? current : highest;
+      return severityOrder.indexOf(current.level) < severityOrder.indexOf(highest.level)
+        ? current
+        : highest;
     });
 
     return {
@@ -425,7 +432,8 @@ export class QdrantDegradationNotifier extends EventEmitter {
     this.templates.set(DegradationLevel.WARNING, {
       level: DegradationLevel.WARNING,
       title: 'Performance Degradation Warning',
-      message: 'Qdrant database is experiencing performance degradation. Some operations may be slower than usual.',
+      message:
+        'Qdrant database is experiencing performance degradation. Some operations may be slower than usual.',
       severity: 'warning',
       estimatedDuration: '5-15 minutes',
       recommendedActions: [
@@ -438,7 +446,8 @@ export class QdrantDegradationNotifier extends EventEmitter {
     this.templates.set(DegradationLevel.DEGRADED, {
       level: DegradationLevel.DEGRADED,
       title: 'Service Degraded',
-      message: 'Qdrant database service is degraded. Some features may be temporarily unavailable or operating with reduced functionality.',
+      message:
+        'Qdrant database service is degraded. Some features may be temporarily unavailable or operating with reduced functionality.',
       severity: 'error',
       estimatedDuration: '15-30 minutes',
       recommendedActions: [
@@ -455,7 +464,8 @@ export class QdrantDegradationNotifier extends EventEmitter {
     this.templates.set(DegradationLevel.CRITICAL, {
       level: DegradationLevel.CRITICAL,
       title: 'Critical Service Issues',
-      message: 'Qdrant database is experiencing critical issues. Many features are unavailable. We are working to resolve the problem.',
+      message:
+        'Qdrant database is experiencing critical issues. Many features are unavailable. We are working to resolve the problem.',
       severity: 'critical',
       estimatedDuration: '30-60 minutes',
       recommendedActions: [
@@ -472,7 +482,8 @@ export class QdrantDegradationNotifier extends EventEmitter {
     this.templates.set(DegradationLevel.UNAVAILABLE, {
       level: DegradationLevel.UNAVAILABLE,
       title: 'Service Unavailable',
-      message: 'Qdrant database is currently unavailable. All database-dependent features are offline. Emergency response is in progress.',
+      message:
+        'Qdrant database is currently unavailable. All database-dependent features are offline. Emergency response is in progress.',
       severity: 'critical',
       estimatedDuration: '60+ minutes',
       recommendedActions: [
@@ -557,7 +568,10 @@ export class QdrantDegradationNotifier extends EventEmitter {
     }
 
     // Truncate if too long
-    if (this.config.formatting.truncateLongMessages && message.length > this.config.formatting.maxMessageLength) {
+    if (
+      this.config.formatting.truncateLongMessages &&
+      message.length > this.config.formatting.maxMessageLength
+    ) {
       message = message.substring(0, this.config.formatting.maxMessageLength - 3) + '...';
     }
 
@@ -567,7 +581,10 @@ export class QdrantDegradationNotifier extends EventEmitter {
   /**
    * Check if should notify recipient
    */
-  private shouldNotifyRecipient(recipient: NotificationRecipient, event: DegradationEvent): boolean {
+  private shouldNotifyRecipient(
+    recipient: NotificationRecipient,
+    event: DegradationEvent
+  ): boolean {
     // Check level preferences
     if (recipient.preferences.levels && !recipient.preferences.levels.includes(event.level)) {
       return false;
@@ -657,15 +674,20 @@ export class QdrantDegradationNotifier extends EventEmitter {
       meta: unknown,
       msg: string
     ) => {
-      if (sev === 'warning' && (logger as unknown).warn) return (logger as unknown).warn(meta, msg);
-      if (sev === 'critical' && (logger as unknown).error) return logger.error(meta, msg);
-      if (sev === 'info' && (logger as unknown).info) return logger.info(meta, msg);
-      if (sev === 'error' && (logger as unknown).error) return logger.error(meta, msg);
-      return logger.info?.(meta, msg);
+      switch (sev) {
+        case 'warning':
+          return logger.warn(meta, msg);
+        case 'critical':
+        case 'error':
+          return logger.error(meta, msg);
+        case 'info':
+        default:
+          return logger.info(meta, msg);
+      }
     };
     switch (channel) {
       case NotificationChannel.LOG:
-        logWithSeverity(template.severity as unknown, { recipientId: recipient.id }, message);
+        logWithSeverity(template.severity, { recipientId: recipient.id }, message);
         break;
 
       case NotificationChannel.CONSOLE:
@@ -750,10 +772,11 @@ export class QdrantDegradationNotifier extends EventEmitter {
     const cutoff = period === 'minute' ? now - 60000 : now - 3600000;
 
     return this.deliveryHistory.filter(
-      d => d.recipientId === recipientId &&
-           d.sentAt &&
-           d.sentAt.getTime() > cutoff &&
-           d.status === 'sent'
+      (d) =>
+        d.recipientId === recipientId &&
+        d.sentAt &&
+        d.sentAt.getTime() > cutoff &&
+        d.status === 'sent'
     ).length;
   }
 
@@ -777,7 +800,6 @@ export class QdrantDegradationNotifier extends EventEmitter {
         { deliveryId: delivery.id, retryCount: delivery.retryCount },
         'Notification delivery retry successful'
       );
-
     } catch (error) {
       delivery.status = 'failed';
       delivery.error = error instanceof Error ? error.message : 'Unknown error';
@@ -842,7 +864,11 @@ export class QdrantDegradationNotifier extends EventEmitter {
 
   // === Channel-specific implementations ===
 
-  private async sendWebhook(url: string, message: string, template: NotificationTemplate): Promise<void> {
+  private async sendWebhook(
+    url: string,
+    message: string,
+    template: NotificationTemplate
+  ): Promise<void> {
     const payload = {
       title: template.title,
       message,
@@ -865,14 +891,23 @@ export class QdrantDegradationNotifier extends EventEmitter {
     }
   }
 
-  private async sendSlackNotification(url: string, message: string, template: NotificationTemplate): Promise<void> {
+  private async sendSlackNotification(
+    url: string,
+    message: string,
+    template: NotificationTemplate
+  ): Promise<void> {
     const payload = {
       text: template.title,
       attachments: [
         {
-          color: template.severity === 'critical' ? 'danger' :
-                 template.severity === 'error' ? 'warning' :
-                 template.severity === 'warning' ? 'warning' : 'good',
+          color:
+            template.severity === 'critical'
+              ? 'danger'
+              : template.severity === 'error'
+                ? 'warning'
+                : template.severity === 'warning'
+                  ? 'warning'
+                  : 'good',
           text: message,
           fields: [
             {
@@ -905,7 +940,11 @@ export class QdrantDegradationNotifier extends EventEmitter {
     }
   }
 
-  private async sendEmail(email: string, message: string, template: NotificationTemplate): Promise<void> {
+  private async sendEmail(
+    email: string,
+    message: string,
+    template: NotificationTemplate
+  ): Promise<void> {
     // Email implementation would go here
     logger.debug({ email, template: template.title }, 'Email notification would be sent');
   }
@@ -917,7 +956,8 @@ export class QdrantDegradationNotifier extends EventEmitter {
     return `del_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  stop?: unknown|undefined
-  start?: unknown|undefined}
+  stop?: unknown | undefined;
+  start?: unknown | undefined;
+}
 
 export default QdrantDegradationNotifier;

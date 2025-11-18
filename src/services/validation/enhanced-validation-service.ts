@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Enhanced Validation Service
  *
@@ -440,4 +436,4 @@ export const mcpToolValidator = new MCPToolValidator();
 
 // Legacy compatibility exports
 export type { ValidationService as IValidationService };
-export type { KnowledgeItem,StoreError };
+export type { KnowledgeItem, StoreError };

@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Final batch of type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * On-Call Management and Escalation Service for MCP Cortex
@@ -19,6 +17,8 @@
  */
 
 import { EventEmitter } from 'events';
+
+import { safeGetProperty } from '@/utils/type-safe-access.js';
 
 import { logger } from '@/utils/logger.js';
 
@@ -50,7 +50,7 @@ export interface NotificationPreferences {
   push: boolean;
   quietHours?: {
     start: string; // HH:MM
-    end: string;   // HH:MM
+    end: string; // HH:MM
     timezone: string;
   };
   escalationDelay: number; // minutes
@@ -58,8 +58,8 @@ export interface NotificationPreferences {
 
 export interface WorkingHours {
   days: number[]; // 0-6 (Sunday-Saturday)
-  start: string;  // HH:MM
-  end: string;    // HH:MM
+  start: string; // HH:MM
+  end: string; // HH:MM
   timezone: string;
 }
 
@@ -233,11 +233,9 @@ export class OnCallManagementService extends EventEmitter {
    */
   getAvailableUsers(): OnCallUser[] {
     const now = new Date();
-    return Array.from(this.users.values()).filter(user => {
+    return Array.from(this.users.values()).filter((user) => {
       // Check if user is on vacation
-      if (user.vacationPeriods?.some(vacation =>
-        now >= vacation.start && now <= vacation.end
-      )) {
+      if (user.vacationPeriods?.some((vacation) => now >= vacation.start && now <= vacation.end)) {
         return false;
       }
 
@@ -279,10 +277,9 @@ export class OnCallManagementService extends EventEmitter {
    */
   getCurrentAssignments(): OnCallAssignment[] {
     const now = new Date();
-    return Array.from(this.assignments.values()).filter(assignment =>
-      assignment.status === 'active' &&
-      assignment.start <= now &&
-      assignment.end >= now
+    return Array.from(this.assignments.values()).filter(
+      (assignment) =>
+        assignment.status === 'active' && assignment.start <= now && assignment.end >= now
     );
   }
 
@@ -291,7 +288,7 @@ export class OnCallManagementService extends EventEmitter {
    */
   getCurrentOnCallUser(scheduleId: string): OnCallUser | null {
     const currentAssignments = this.getCurrentAssignments();
-    const assignment = currentAssignments.find(a => a.scheduleId === scheduleId);
+    const assignment = currentAssignments.find((a) => a.scheduleId === scheduleId);
     return assignment ? this.users.get(assignment.userId) || null : null;
   }
 
@@ -342,11 +339,14 @@ export class OnCallManagementService extends EventEmitter {
 
       this.alertAssignments.set(alertId, assignment);
 
-      logger.info({
-        alertId,
-        userId: targetUserId,
-        assignedBy: assignment.assignedBy,
-      }, 'Alert assigned to on-call user');
+      logger.info(
+        {
+          alertId,
+          userId: targetUserId,
+          assignedBy: assignment.assignedBy,
+        },
+        'Alert assigned to on-call user'
+      );
 
       this.emit('alert_assigned', assignment);
 
@@ -415,9 +415,7 @@ export class OnCallManagementService extends EventEmitter {
         };
       }
 
-      const escalationLevel = escalationPath.levels.find(
-        level => level.level === currentLevel
-      );
+      const escalationLevel = escalationPath.levels.find((level) => level.level === currentLevel);
 
       if (!escalationLevel) {
         return {
@@ -450,18 +448,17 @@ export class OnCallManagementService extends EventEmitter {
       }
 
       // Execute escalation actions
-      const results = await this.executeEscalationActions(
-        escalationLevel.actions,
-        alert,
-        targets
-      );
+      const results = await this.executeEscalationActions(escalationLevel.actions, alert, targets);
 
-      logger.info({
-        alertId: alert.id,
-        escalationLevel: currentLevel,
-        targets: targets.map(t => t.userId),
-        results,
-      }, 'Alert escalation executed');
+      logger.info(
+        {
+          alertId: alert.id,
+          escalationLevel: currentLevel,
+          targets: targets.map((t) => t.userId),
+          results,
+        },
+        'Alert escalation executed'
+      );
 
       this.emit('alert_escalated', {
         alert,
@@ -513,7 +510,7 @@ export class OnCallManagementService extends EventEmitter {
    * Get default escalation path
    */
   getDefaultEscalationPath(): EscalationPath | undefined {
-    return Array.from(this.escalationPaths.values()).find(path => path.default);
+    return Array.from(this.escalationPaths.values()).find((path) => path.default);
   }
 
   // ========================================================================
@@ -554,11 +551,14 @@ export class OnCallManagementService extends EventEmitter {
       // Send handoff notification
       await this.sendHandoffNotification(handoff);
 
-      logger.info({
-        handoffId: handoff.id,
-        fromUserId,
-        toUserId,
-      }, 'On-call handoff initiated');
+      logger.info(
+        {
+          handoffId: handoff.id,
+          fromUserId,
+          toUserId,
+        },
+        'On-call handoff initiated'
+      );
 
       this.emit('handoff_initiated', handoff);
 
@@ -594,11 +594,14 @@ export class OnCallManagementService extends EventEmitter {
       // Transfer active assignments
       await this.transferActiveAssignments(handoff.fromUserId, handoff.toUserId);
 
-      logger.info({
-        handoffId,
-        fromUserId: handoff.fromUserId,
-        toUserId: handoff.toUserId,
-      }, 'On-call handoff acknowledged');
+      logger.info(
+        {
+          handoffId,
+          fromUserId: handoff.fromUserId,
+          toUserId: handoff.toUserId,
+        },
+        'On-call handoff acknowledged'
+      );
 
       this.emit('handoff_acknowledged', handoff);
     } catch (error) {
@@ -618,7 +621,7 @@ export class OnCallManagementService extends EventEmitter {
     const now = new Date();
     const activeAssignments = this.getCurrentAssignments();
     const pendingHandoffs = Array.from(this.handoffs.values()).filter(
-      h => h.status === 'pending'
+      (h) => h.status === 'pending'
     );
 
     const userWorkloads: Record<string, UserWorkload> = {};
@@ -626,7 +629,7 @@ export class OnCallManagementService extends EventEmitter {
     const userAlerts = new Map<string, typeof alertAssignments>();
 
     // Group alerts by user
-    alertAssignments.forEach(assignment => {
+    alertAssignments.forEach((assignment) => {
       if (!userAlerts.has(assignment.userId)) {
         userAlerts.set(assignment.userId, []);
       }
@@ -634,17 +637,13 @@ export class OnCallManagementService extends EventEmitter {
     });
 
     // Calculate workload for each user
-    this.users.forEach(user => {
+    this.users.forEach((user) => {
       const userAssignmentList = userAlerts.get(user.id) || [];
-      const activeAlerts = userAssignmentList.filter(a =>
+      const activeAlerts = userAssignmentList.filter((a) =>
         ['assigned', 'acknowledged'].includes(a.status)
       );
-      const acknowledgedAlerts = userAssignmentList.filter(a =>
-        a.status === 'acknowledged'
-      );
-      const resolvedAlerts = userAssignmentList.filter(a =>
-        a.status === 'resolved'
-      );
+      const acknowledgedAlerts = userAssignmentList.filter((a) => a.status === 'acknowledged');
+      const resolvedAlerts = userAssignmentList.filter((a) => a.status === 'resolved');
 
       userWorkloads[user.id] = {
         userId: user.id,
@@ -739,7 +738,7 @@ export class OnCallManagementService extends EventEmitter {
       },
     ];
 
-    defaultUsers.forEach(user => {
+    defaultUsers.forEach((user) => {
       this.users.set(user.id, user);
     });
   }
@@ -875,17 +874,20 @@ export class OnCallManagementService extends EventEmitter {
 
   private async checkPendingHandoffs(): Promise<void> {
     const pendingHandoffs = Array.from(this.handoffs.values()).filter(
-      h => h.status === 'pending'
+      (h) => h.status === 'pending'
     );
 
     for (const handoff of pendingHandoffs) {
       // Check if handoff has timed out
       const timeout = Date.now() - (handoff.timestamp.getTime() + 30 * 60 * 1000); // 30 minutes
       if (timeout > 0) {
-        logger.warn({
-          handoffId: handoff.id,
-          timeout: timeout,
-        }, 'On-call handoff timed out');
+        logger.warn(
+          {
+            handoffId: handoff.id,
+            timeout: timeout,
+          },
+          'On-call handoff timed out'
+        );
 
         // Auto-escalate or notify manager
         await this.handleHandoffTimeout(handoff);
@@ -934,15 +936,17 @@ export class OnCallManagementService extends EventEmitter {
   }
 
   private isWithinWorkingHours(date: Date, workingHours: WorkingHours): boolean {
-    const timeZoneDate = new Date(date.toLocaleString('en-US', { timeZone: workingHours.timezone }));
+    const timeZoneDate = new Date(
+      date.toLocaleString('en-US', { timeZone: workingHours.timezone })
+    );
     const dayOfWeek = timeZoneDate.getDay();
     const currentTime = timeZoneDate.getHours() * 60 + timeZoneDate.getMinutes();
     const startTime = this.parseTime(workingHours.start);
     const endTime = this.parseTime(workingHours.end);
 
-    return workingHours.days.includes(dayOfWeek) &&
-           currentTime >= startTime &&
-           currentTime <= endTime;
+    return (
+      workingHours.days.includes(dayOfWeek) && currentTime >= startTime && currentTime <= endTime
+    );
   }
 
   private parseTime(timeStr: string): number {
@@ -970,9 +974,9 @@ export class OnCallManagementService extends EventEmitter {
     let currentTime = rotation.startTime;
 
     while (currentTime < endDate) {
-      const userIndex = Math.floor(
-        (currentTime.getTime() - rotation.startTime.getTime()) / durationMs
-      ) % rotation.users.length;
+      const userIndex =
+        Math.floor((currentTime.getTime() - rotation.startTime.getTime()) / durationMs) %
+        rotation.users.length;
       const userId = rotation.users[userIndex];
 
       const assignment: OnCallAssignment = {
@@ -1010,9 +1014,9 @@ export class OnCallManagementService extends EventEmitter {
     if (!rotation) return null;
 
     const durationMs = this.getRotationDuration(rotation);
-    const userIndex = Math.floor(
-      (currentTime.getTime() - rotation.startTime.getTime()) / durationMs
-    ) % rotation.users.length;
+    const userIndex =
+      Math.floor((currentTime.getTime() - rotation.startTime.getTime()) / durationMs) %
+      rotation.users.length;
     const userId = rotation.users[userIndex];
 
     return this.users.get(userId) || null;
@@ -1024,8 +1028,8 @@ export class OnCallManagementService extends EventEmitter {
     // Filter by skills if required
     let candidates = availableUsers;
     if (options.requiredSkills && options.requiredSkills.length > 0) {
-      candidates = availableUsers.filter(user =>
-        options.requiredSkills!.some(skill => user.skills.includes(skill))
+      candidates = availableUsers.filter((user) =>
+        options.requiredSkills!.some((skill) => user.skills.includes(skill))
       );
     }
 
@@ -1041,18 +1045,21 @@ export class OnCallManagementService extends EventEmitter {
     return candidates[0].id;
   }
 
-  private async findEscalationUser(currentUserId: string, options: AlertAssignmentOptions): Promise<string | null> {
+  private async findEscalationUser(
+    currentUserId: string,
+    options: AlertAssignmentOptions
+  ): Promise<string | null> {
     const currentUser = this.users.get(currentUserId);
     if (!currentUser) return null;
 
     // Find next best user
-    const availableUsers = this.getAvailableUsers().filter(u => u.id !== currentUserId);
+    const availableUsers = this.getAvailableUsers().filter((u) => u.id !== currentUserId);
 
     // Filter by skills
     let candidates = availableUsers;
     if (options.requiredSkills && options.requiredSkills.length > 0) {
-      candidates = availableUsers.filter(user =>
-        options.requiredSkills!.some(skill => user.skills.includes(skill))
+      candidates = availableUsers.filter((user) =>
+        options.requiredSkills!.some((skill) => user.skills.includes(skill))
       );
     }
 
@@ -1068,8 +1075,8 @@ export class OnCallManagementService extends EventEmitter {
       }
 
       // Prefer users with matching skills
-      const skillMatchA = a.skills.filter(s => currentUser.skills.includes(s)).length;
-      const skillMatchB = b.skills.filter(s => currentUser.skills.includes(s)).length;
+      const skillMatchA = a.skills.filter((s) => currentUser.skills.includes(s)).length;
+      const skillMatchB = b.skills.filter((s) => currentUser.skills.includes(s)).length;
 
       return skillMatchB - skillMatchA;
     });
@@ -1079,18 +1086,18 @@ export class OnCallManagementService extends EventEmitter {
 
   private getUserWorkload(userId: string): UserWorkload {
     const userAssignments = Array.from(this.alertAssignments.values()).filter(
-      assignment => assignment.userId === userId
+      (assignment) => assignment.userId === userId
     );
 
-    const activeAlerts = userAssignments.filter(a =>
+    const activeAlerts = userAssignments.filter((a) =>
       ['assigned', 'acknowledged'].includes(a.status)
     ).length;
 
     return {
       userId,
       activeAlerts,
-      acknowledgedAlerts: userAssignments.filter(a => a.status === 'acknowledged').length,
-      resolvedAlerts: userAssignments.filter(a => a.status === 'resolved').length,
+      acknowledgedAlerts: userAssignments.filter((a) => a.status === 'acknowledged').length,
+      resolvedAlerts: userAssignments.filter((a) => a.status === 'resolved').length,
       averageResponseTime: this.calculateAverageResponseTime(userAssignments),
       lastActivity: this.getLastUserActivity(userAssignments),
     };
@@ -1102,8 +1109,8 @@ export class OnCallManagementService extends EventEmitter {
   }
 
   private getLastUserActivity(assignments: AlertAssignment[]): Date {
-    const latestAssignment = assignments.reduce((latest, current) =>
-      current.assignedAt > latest.assignedAt ? current : latest,
+    const latestAssignment = assignments.reduce(
+      (latest, current) => (current.assignedAt > latest.assignedAt ? current : latest),
       assignments[0]
     );
     return latestAssignment?.assignedAt || new Date();
@@ -1133,15 +1140,28 @@ export class OnCallManagementService extends EventEmitter {
     alert: Alert,
     currentLevel: number
   ): Promise<boolean> {
+    // Type guard for criteria object
+    const isValidCriteria = (criteria: unknown): criteria is Record<string, unknown> => {
+      return criteria && typeof criteria === 'object';
+    };
+
+    if (!isValidCriteria(condition.criteria)) {
+      return true; // Default to true if criteria is invalid
+    }
+
     switch (condition.type) {
       case 'time':
-        const delay = condition.criteria.delay || 15;
-        const timeSinceAlert = Date.now() - alert.timestamp.getTime();
+        const delay = typeof condition.criteria.delay === 'number' ? condition.criteria.delay : 15;
+        const alertTime = alert.timestamp instanceof Date ? alert.timestamp : new Date();
+        const timeSinceAlert = Date.now() - alertTime.getTime();
         return timeSinceAlert >= delay * 60 * 1000;
 
       case 'severity':
-        const minSeverity = condition.criteria.minSeverity || 'warning';
-        return this.compareSeverity(alert.severity, minSeverity) >= 0;
+        const minSeverity = typeof condition.criteria.minSeverity === 'string'
+          ? condition.criteria.minSeverity
+          : 'warning';
+        const alertSeverity = typeof alert.severity === 'string' ? alert.severity : 'unknown';
+        return this.compareSeverity(alertSeverity, minSeverity) >= 0;
 
       case 'count':
         // Would need to count related alerts
@@ -1157,15 +1177,18 @@ export class OnCallManagementService extends EventEmitter {
   }
 
   private compareSeverity(severity1: string, severity2: string): number {
-    const severityOrder = {
-      'info': 0,
-      'warning': 1,
-      'critical': 2,
-      'emergency': 3,
+    const severityOrder: Record<string, number> = {
+      info: 0,
+      warning: 1,
+      critical: 2,
+      emergency: 3,
     };
 
-    return (severityOrder[severity1 as keyof typeof severityOrder] || 0) -
-           (severityOrder[severity2 as keyof typeof severityOrder] || 0);
+    const getSeverityValue = (severity: string): number => {
+      return severityOrder[severity] ?? 0; // Use nullish coalescing for safety
+    };
+
+    return getSeverityValue(severity1) - getSeverityValue(severity2);
   }
 
   private async findEscalationTargets(
@@ -1197,9 +1220,7 @@ export class OnCallManagementService extends EventEmitter {
     const now = new Date();
 
     // Check vacation
-    if (user.vacationPeriods?.some(vacation =>
-      now >= vacation.start && now <= vacation.end
-    )) {
+    if (user.vacationPeriods?.some((vacation) => now >= vacation.start && now <= vacation.end)) {
       return false;
     }
 
@@ -1245,7 +1266,10 @@ export class OnCallManagementService extends EventEmitter {
         results.push(result);
       } catch (error) {
         logger.error({ action, error }, 'Failed to execute escalation action');
-        results.push({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+        results.push({
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
       }
     }
 
@@ -1277,17 +1301,20 @@ export class OnCallManagementService extends EventEmitter {
     targets: Array<{ userId: string; user: OnCallUser }>
   ): Promise<unknown> {
     // Placeholder for notification execution
-    logger.info({
-      action: 'notify',
-      alertId: alert.id,
-      targets: targets.map(t => t.userId),
-      config,
-    }, 'Executing notification escalation action');
+    logger.info(
+      {
+        action: 'notify',
+        alertId: alert.id,
+        targets: targets.map((t) => t.userId),
+        config,
+      },
+      'Executing notification escalation action'
+    );
 
     return {
       success: true,
-      notifiedUsers: targets.map(t => t.userId),
-      channels: config.channels || ['email'],
+      notifiedUsers: targets.map((t) => t.userId),
+      channels: safeGetProperty(config, 'channels', ['email']),
     };
   }
 
@@ -1308,7 +1335,10 @@ export class OnCallManagementService extends EventEmitter {
         });
         reassignments.push(target.userId);
       } catch (error) {
-        logger.error({ userId: target.userId, error }, 'Failed to reassign alert during escalation');
+        logger.error(
+          { userId: target.userId, error },
+          'Failed to reassign alert during escalation'
+        );
       }
     }
 
@@ -1324,18 +1354,21 @@ export class OnCallManagementService extends EventEmitter {
     targets: Array<{ userId: string; user: OnCallUser }>
   ): Promise<unknown> {
     // Placeholder for incident creation
-    logger.info({
-      action: 'create_incident',
-      alertId: alert.id,
-      severity: config.severity,
-      notifyAll: config.notifyAll,
-    }, 'Creating incident from alert escalation');
+    logger.info(
+      {
+        action: 'create_incident',
+        alertId: alert.id,
+        severity: safeGetProperty(config, 'severity', 'unknown'),
+        notifyAll: safeGetProperty(config, 'notifyAll', false),
+      },
+      'Creating incident from alert escalation'
+    );
 
     return {
       success: true,
       incidentId: `incident-${Date.now()}`,
-      severity: config.severity || 'high',
-      assignedTo: targets.map(t => t.userId),
+      severity: safeGetProperty(config, 'severity', 'high'),
+      assignedTo: targets.map((t) => t.userId),
     };
   }
 
@@ -1345,15 +1378,18 @@ export class OnCallManagementService extends EventEmitter {
     targets: Array<{ userId: string; user: OnCallUser }>
   ): Promise<unknown> {
     // Placeholder for custom action execution
-    logger.info({
-      action: 'custom',
-      alertId: alert.id,
-      config,
-    }, 'Executing custom escalation action');
+    logger.info(
+      {
+        action: 'custom',
+        alertId: alert.id,
+        config,
+      },
+      'Executing custom escalation action'
+    );
 
     return {
       success: true,
-      action: config.action || 'unknown',
+      action: safeGetProperty(config, 'action', 'unknown'),
     };
   }
 
@@ -1367,11 +1403,14 @@ export class OnCallManagementService extends EventEmitter {
 
   private async sendHandoffNotification(handoff: OnCallHandoff): Promise<void> {
     // Placeholder for handoff notification
-    logger.info({
-      handoffId: handoff.id,
-      fromUserId: handoff.fromUserId,
-      toUserId: handoff.toUserId,
-    }, 'Sending handoff notification');
+    logger.info(
+      {
+        handoffId: handoff.id,
+        fromUserId: handoff.fromUserId,
+        toUserId: handoff.toUserId,
+      },
+      'Sending handoff notification'
+    );
   }
 
   private async scheduleHandoff(
@@ -1380,18 +1419,14 @@ export class OnCallManagementService extends EventEmitter {
     scheduleId: string
   ): Promise<void> {
     if (fromUserId && fromUserId !== toUserId) {
-      await this.initiateHandoff(
-        fromUserId,
-        toUserId,
-        `Scheduled handoff for ${scheduleId}`
-      );
+      await this.initiateHandoff(fromUserId, toUserId, `Scheduled handoff for ${scheduleId}`);
     }
   }
 
   private async transferActiveAssignments(fromUserId: string, toUserId: string): Promise<void> {
     const activeAssignments = Array.from(this.alertAssignments.values()).filter(
-      assignment => assignment.userId === fromUserId &&
-      ['assigned', 'acknowledged'].includes(assignment.status)
+      (assignment) =>
+        assignment.userId === fromUserId && ['assigned', 'acknowledged'].includes(assignment.status)
     );
 
     for (const assignment of activeAssignments) {
@@ -1400,20 +1435,26 @@ export class OnCallManagementService extends EventEmitter {
       assignment.notes = `Transferred from ${fromUserId} due to handoff`;
     }
 
-    logger.info({
-      fromUserId,
-      toUserId,
-      transferredAssignments: activeAssignments.length,
-    }, 'Transferred active assignments during handoff');
+    logger.info(
+      {
+        fromUserId,
+        toUserId,
+        transferredAssignments: activeAssignments.length,
+      },
+      'Transferred active assignments during handoff'
+    );
   }
 
   private async handleHandoffTimeout(handoff: OnCallHandoff): Promise<void> {
     // Handle handoff timeout - escalate to manager or notify team
-    logger.warn({
-      handoffId: handoff.id,
-      fromUserId: handoff.fromUserId,
-      toUserId: handoff.toUserId,
-    }, 'Handling handoff timeout');
+    logger.warn(
+      {
+        handoffId: handoff.id,
+        fromUserId: handoff.fromUserId,
+        toUserId: handoff.toUserId,
+      },
+      'Handling handoff timeout'
+    );
 
     this.emit('handoff_timeout', handoff);
   }

@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Monitoring system type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Enhanced Circuit Breaker Monitor
@@ -16,11 +14,14 @@
 import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
+import { isCircuitBreakerData } from '../types/database-types-enhanced.js';
+import { safeGetProperty, hasProperty, hasStringProperty, hasNumberProperty } from '@/utils/property-access-guards.js';
 
 import {
   circuitBreakerManager,
-  type CircuitBreakerStats} from '../services/circuit-breaker.service.js';
-import {HealthStatus } from '../types/unified-health-interfaces.js';
+  type CircuitBreakerStats,
+} from '../services/circuit-breaker.service.js';
+import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**
  * Circuit breaker monitoring event types
@@ -107,12 +108,12 @@ export interface CircuitBreakerMonitorConfig {
   // Alerting thresholds
   alerts: {
     enabled: boolean;
-    failureRateWarning: number;      // percentage
-    failureRateCritical: number;     // percentage
+    failureRateWarning: number; // percentage
+    failureRateCritical: number; // percentage
     consecutiveFailuresWarning: number;
     consecutiveFailuresCritical: number;
-    responseTimeWarning: number;     // milliseconds
-    responseTimeCritical: number;    // milliseconds
+    responseTimeWarning: number; // milliseconds
+    responseTimeCritical: number; // milliseconds
     openCircuitAlert: boolean;
     recoveryAlert: boolean;
   };
@@ -152,29 +153,32 @@ export class CircuitBreakerMonitor extends EventEmitter {
   private performanceHistory: Map<string, number[]> = new Map();
 
   // Alert tracking
-  private activeAlerts: Map<string, {
-    type: string;
-    severity: string;
-    count: number;
-    firstTriggered: Date;
-    lastTriggered: Date;
-  }> = new Map();
+  private activeAlerts: Map<
+    string,
+    {
+      type: string;
+      severity: string;
+      count: number;
+      firstTriggered: Date;
+      lastTriggered: Date;
+    }
+  > = new Map();
 
   constructor(config?: Partial<CircuitBreakerMonitorConfig>) {
     super();
 
     this.config = {
-      healthCheckIntervalMs: 15000,        // 15 seconds
-      metricsCollectionIntervalMs: 10000,  // 10 seconds
-      eventRetentionMinutes: 60,           // 1 hour
+      healthCheckIntervalMs: 15000, // 15 seconds
+      metricsCollectionIntervalMs: 10000, // 10 seconds
+      eventRetentionMinutes: 60, // 1 hour
       alerts: {
         enabled: true,
-        failureRateWarning: 10,            // 10%
-        failureRateCritical: 25,           // 25%
+        failureRateWarning: 10, // 10%
+        failureRateCritical: 25, // 25%
         consecutiveFailuresWarning: 3,
         consecutiveFailuresCritical: 5,
-        responseTimeWarning: 2000,         // 2 seconds
-        responseTimeCritical: 5000,        // 5 seconds
+        responseTimeWarning: 2000, // 2 seconds
+        responseTimeCritical: 5000, // 5 seconds
         openCircuitAlert: true,
         recoveryAlert: true,
       },
@@ -295,10 +299,11 @@ export class CircuitBreakerMonitor extends EventEmitter {
   } {
     const history = this.performanceHistory.get(serviceName) || [];
     const now = Date.now();
-    const windowStart = now - (this.config.performance.throughputWindowSeconds * 1000);
+    const windowStart = now - this.config.performance.throughputWindowSeconds * 1000;
 
-    const recentCalls = history.filter(time => time >= windowStart);
-    const throughputPerSecond = recentCalls.length / this.config.performance.throughputWindowSeconds;
+    const recentCalls = history.filter((time) => time >= windowStart);
+    const throughputPerSecond =
+      recentCalls.length / this.config.performance.throughputWindowSeconds;
 
     return {
       responseTimeHistory: [...history].slice(-this.config.performance.responseTimeHistorySize),
@@ -368,10 +373,14 @@ export class CircuitBreakerMonitor extends EventEmitter {
     const alerts = this.getActiveAlerts();
 
     const totalCircuits = statuses.length;
-    const healthyCircuits = statuses.filter(s => s.healthStatus === HealthStatus.HEALTHY).length;
-    const degradedCircuits = statuses.filter(s => s.healthStatus === HealthStatus.DEGRADED).length;
-    const failingCircuits = statuses.filter(s => s.healthStatus === HealthStatus.UNHEALTHY).length;
-    const openCircuits = statuses.filter(s => s.isOpen).length;
+    const healthyCircuits = statuses.filter((s) => s.healthStatus === HealthStatus.HEALTHY).length;
+    const degradedCircuits = statuses.filter(
+      (s) => s.healthStatus === HealthStatus.DEGRADED
+    ).length;
+    const failingCircuits = statuses.filter(
+      (s) => s.healthStatus === HealthStatus.UNHEALTHY
+    ).length;
+    const openCircuits = statuses.filter((s) => s.isOpen).length;
 
     let overallHealth = HealthStatus.HEALTHY;
     if (failingCircuits > 0) {
@@ -392,14 +401,20 @@ export class CircuitBreakerMonitor extends EventEmitter {
       }
 
       if (status.metrics.failureRate > this.config.alerts.failureRateCritical) {
-        criticalIssues.push(`${status.serviceName} has critical failure rate: ${status.metrics.failureRate.toFixed(2)}%`);
+        criticalIssues.push(
+          `${status.serviceName} has critical failure rate: ${status.metrics.failureRate.toFixed(2)}%`
+        );
         recommendations.push(`Review ${status.serviceName} error handling and retry logic`);
       } else if (status.metrics.failureRate > this.config.alerts.failureRateWarning) {
-        warnings.push(`${status.serviceName} has high failure rate: ${status.metrics.failureRate.toFixed(2)}%`);
+        warnings.push(
+          `${status.serviceName} has high failure rate: ${status.metrics.failureRate.toFixed(2)}%`
+        );
       }
 
       if (status.metrics.consecutiveFailures >= this.config.alerts.consecutiveFailuresCritical) {
-        criticalIssues.push(`${status.serviceName} has ${status.metrics.consecutiveFailures} consecutive failures`);
+        criticalIssues.push(
+          `${status.serviceName} has ${status.metrics.consecutiveFailures} consecutive failures`
+        );
         recommendations.push(`Check ${status.serviceName} service availability and configuration`);
       }
     }
@@ -415,7 +430,7 @@ export class CircuitBreakerMonitor extends EventEmitter {
         overallHealth,
       },
       circuitBreakers: statuses,
-      activeAlerts: alerts.map(a => ({
+      activeAlerts: alerts.map((a) => ({
         serviceName: a.serviceName,
         type: a.type,
         severity: a.severity,
@@ -460,7 +475,6 @@ export class CircuitBreakerMonitor extends EventEmitter {
           this.performanceHistory.delete(serviceName);
         }
       }
-
     } catch (error) {
       logger.error({ error }, 'Failed to perform circuit breaker health check');
     }
@@ -486,7 +500,6 @@ export class CircuitBreakerMonitor extends EventEmitter {
           timestamp: new Date(),
         });
       }
-
     } catch (error) {
       logger.error({ error }, 'Failed to collect circuit breaker metrics');
     }
@@ -500,16 +513,17 @@ export class CircuitBreakerMonitor extends EventEmitter {
     // For now, we'll monitor through periodic checks
 
     // Listen to circuit breaker manager events if available
-    if ((circuitBreakerManager as unknown).on) {
-      (circuitBreakerManager as unknown).on('circuitStateChanged', (event: unknown) => {
+    const cbManager = circuitBreakerManager as any;
+    if (cbManager && typeof cbManager.on === 'function') {
+      cbManager.on('circuitStateChanged', (event: unknown) => {
         this.handleCircuitStateChange(event);
       });
 
-      (circuitBreakerManager as unknown).on('circuitFailure', (event: unknown) => {
+      cbManager.on('circuitFailure', (event: unknown) => {
         this.handleCircuitFailure(event);
       });
 
-      (circuitBreakerManager as unknown).on('circuitRecovery', (event: unknown) => {
+      cbManager.on('circuitRecovery', (event: unknown) => {
         this.handleCircuitRecovery(event);
       });
     }
@@ -518,7 +532,10 @@ export class CircuitBreakerMonitor extends EventEmitter {
   /**
    * Calculate health status for a circuit breaker
    */
-  private calculateHealthStatus(serviceName: string, stats: CircuitBreakerStats): CircuitBreakerHealthStatus {
+  private calculateHealthStatus(
+    serviceName: string,
+    stats: CircuitBreakerStats
+  ): CircuitBreakerHealthStatus {
     const now = Date.now();
     let healthStatus = HealthStatus.HEALTHY;
     const alerts: Array<{
@@ -598,7 +615,10 @@ export class CircuitBreakerMonitor extends EventEmitter {
     return {
       serviceName,
       healthStatus,
-      state: stats.state === 'half-open' ? 'half-open' : stats.state as 'closed' | 'open' | 'half-open',
+      state:
+        stats.state === 'half-open'
+          ? 'half-open'
+          : (stats.state as 'closed' | 'open' | 'half-open'),
       isOpen: stats.isOpen,
       isHalfOpen: stats.state === 'half-open',
       metrics: {
@@ -698,8 +718,12 @@ export class CircuitBreakerMonitor extends EventEmitter {
     const history = this.getEventHistory(serviceName, 20);
     if (history.length < 10) return 'stable';
 
-    const recentFailures = history.slice(0, 10).filter(e => e.eventType === CircuitBreakerEventType.FAILURE).length;
-    const olderFailures = history.slice(10, 20).filter(e => e.eventType === CircuitBreakerEventType.FAILURE).length;
+    const recentFailures = history
+      .slice(0, 10)
+      .filter((e) => e.eventType === CircuitBreakerEventType.FAILURE).length;
+    const olderFailures = history
+      .slice(10, 20)
+      .filter((e) => e.eventType === CircuitBreakerEventType.FAILURE).length;
 
     if (recentFailures < olderFailures * 0.8) return 'improving';
     if (recentFailures > olderFailures * 1.2) return 'degrading';
@@ -724,22 +748,22 @@ export class CircuitBreakerMonitor extends EventEmitter {
     const history = this.eventHistory.get(serviceName);
     if (!history || history.length === 0) return undefined;
 
-    return history.reduce((latest, event) =>
-      event.timestamp > latest.timestamp ? event : latest
-    );
+    return history.reduce((latest, event) => (event.timestamp > latest.timestamp ? event : latest));
   }
 
   /**
    * Handle circuit state change event
    */
   private handleCircuitStateChange(event: unknown): void {
-    const { serviceName, previousState, currentState } = event;
+    const eventData = isCircuitBreakerData(event) ? event : { serviceName: 'unknown', state: 'closed' };
+    const serviceName = safeGetProperty(eventData, 'serviceName', 'unknown');
+    const currentState = safeGetProperty(eventData, 'state', 'closed') as string;
 
     const circuitEvent: CircuitBreakerEvent = {
       serviceName,
       eventType: CircuitBreakerEventType.STATE_CHANGE,
       timestamp: new Date(),
-      previousState,
+      previousState: 'unknown',
       currentState,
     };
 
@@ -751,7 +775,10 @@ export class CircuitBreakerMonitor extends EventEmitter {
    * Handle circuit failure event
    */
   private handleCircuitFailure(event: unknown): void {
-    const { serviceName, error, responseTime } = event;
+    const eventData = isCircuitBreakerData(event) ? event : { serviceName: 'unknown', state: 'closed' };
+    const serviceName = safeGetProperty(eventData, 'serviceName', 'unknown');
+    const error = safeGetProperty(event, 'error', 'Unknown error') as string;
+    const responseTime = safeGetProperty(event, 'responseTime', 0) as number;
 
     const circuitEvent: CircuitBreakerEvent = {
       serviceName,
@@ -769,7 +796,8 @@ export class CircuitBreakerMonitor extends EventEmitter {
    * Handle circuit recovery event
    */
   private handleCircuitRecovery(event: unknown): void {
-    const { serviceName } = event;
+    const eventData = isCircuitBreakerData(event) ? event : { serviceName: 'unknown', state: 'closed' };
+    const serviceName = safeGetProperty(eventData, 'serviceName', 'unknown');
 
     const circuitEvent: CircuitBreakerEvent = {
       serviceName,

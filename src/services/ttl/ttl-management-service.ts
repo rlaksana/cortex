@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * TTL Management Service
  *
@@ -23,16 +19,9 @@
 
 import { logger } from '@/utils/logger.js';
 
-import {
-  type TTLPolicyOptions,
-  ttlPolicyService,
-} from './ttl-policy-service.js';
+import { type TTLPolicyOptions, ttlPolicyService } from './ttl-policy-service.js';
 import { type QdrantOnlyDatabaseLayer } from '../../db/unified-database-layer-v2.js';
-import type {
-  KnowledgeItem,
-} from '../../types/core-interfaces.js';
-
-
+import type { KnowledgeItem } from '../../types/core-interfaces.js';
 
 /**
  * TTL management operation result interface

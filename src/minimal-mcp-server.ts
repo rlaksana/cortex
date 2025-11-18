@@ -1,9 +1,6 @@
 #!/usr/bin/env node
 
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Core entry point type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
-
 
 /**
  * Minimal MCP Server Implementation
@@ -12,15 +9,17 @@
  * and implements the basic JSON-RPC protocol directly.
  */
 
+import { safeGetProperty, hasProperty, hasStringProperty, hasNumberProperty, hasObjectProperty, hasArrayProperty } from '@/utils/property-access-guards.js';
+
 interface MCPRequest {
-  jsonrpc: "2.0";
+  jsonrpc: '2.0';
   id?: string | number;
   method: string;
   params?: unknown;
 }
 
 interface MCPResponse {
-  jsonrpc: "2.0";
+  jsonrpc: '2.0';
   id?: string | number;
   result?: unknown;
   error?: {
@@ -64,16 +63,16 @@ class MinimalMCPServer {
                   properties: {
                     project: { type: 'string' },
                     branch: { type: 'string' },
-                    org: { type: 'string' }
-                  }
-                }
+                    org: { type: 'string' },
+                  },
+                },
               },
-              required: ['kind', 'data']
-            }
-          }
+              required: ['kind', 'data'],
+            },
+          },
         },
-        required: ['items']
-      }
+        required: ['items'],
+      },
     });
 
     // Register memory_find tool
@@ -91,11 +90,11 @@ class MinimalMCPServer {
             properties: {
               project: { type: 'string' },
               branch: { type: 'string' },
-              org: { type: 'string' }
-            }
-          }
-        }
-      }
+              org: { type: 'string' },
+            },
+          },
+        },
+      },
     });
 
     // Register system_status tool
@@ -104,15 +103,15 @@ class MinimalMCPServer {
       description: 'Get system status and health information',
       inputSchema: {
         type: 'object',
-        properties: {}
-      }
+        properties: {},
+      },
     });
   }
 
   async handleRequest(request: MCPRequest): Promise<MCPResponse> {
     const response: MCPResponse = {
-      jsonrpc: "2.0",
-      id: request.id
+      jsonrpc: '2.0',
+      id: request.id,
     };
 
     try {
@@ -139,14 +138,14 @@ class MinimalMCPServer {
         default:
           response.error = {
             code: -32601,
-            message: 'Method not found'
+            message: 'Method not found',
           };
       }
     } catch (error) {
       response.error = {
         code: -32603,
         message: error instanceof Error ? error.message : 'Internal error',
-        data: error
+        data: error,
       };
     }
 
@@ -158,13 +157,13 @@ class MinimalMCPServer {
       protocolVersion: '2024-11-05',
       capabilities: {
         tools: {
-          listChanged: true
-        }
+          listChanged: true,
+        },
       },
       serverInfo: {
         name: 'cortex-memory-mcp',
-        version: '2.0.1'
-      }
+        version: '2.0.1',
+      },
     };
   }
 
@@ -174,7 +173,12 @@ class MinimalMCPServer {
   }
 
   private async handleToolCall(params: unknown): Promise<unknown> {
-    const { name, arguments: args } = params;
+    if (!hasObjectProperty(params, 'name') || !hasStringProperty(params, 'name')) {
+      throw new Error('Invalid tool call parameters: missing name');
+    }
+
+    const name = (params as any).name;
+    const args = safeGetProperty(params, 'arguments', {});
 
     const tool = this.tools.get(name);
     if (!tool) {
@@ -194,31 +198,45 @@ class MinimalMCPServer {
   }
 
   private async memoryStore(args: unknown): Promise<unknown> {
-    const items = args.items || [];
-    const storedItems = items.map((item: unknown) => ({
-      id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      kind: item.kind,
-      data: item.data,
-      scope: item.scope,
-      timestamp: new Date().toISOString(),
-      stored: true
-    }));
+    if (!hasObjectProperty(args, 'data')) {
+      throw new Error('Invalid memory store arguments');
+    }
+
+    const items = hasArrayProperty(args, 'items', (item) => hasObjectProperty(item, 'data')) ? (args as any).items : [];
+    const storedItems = items.map((item: unknown) => {
+      if (!hasObjectProperty(item, 'data')) {
+        throw new Error('Invalid item structure');
+      }
+
+      return {
+        id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        kind: safeGetProperty(item, 'kind', 'unknown'),
+        data: safeGetProperty(item, 'data', {}),
+        scope: safeGetProperty(item, 'scope', {}),
+        timestamp: new Date().toISOString(),
+        stored: true,
+      };
+    });
 
     return {
       content: [
         {
           type: 'text',
-          text: `Successfully stored ${storedItems.length} items in memory.`
-        }
-      ]
+          text: `Successfully stored ${storedItems.length} items in memory.`,
+        },
+      ],
     };
   }
 
   private async memoryFind(args: unknown): Promise<unknown> {
-    const query = args.query || '';
-    const limit = args.limit || 10;
-    const types = args.types || [];
-    const scope = args.scope || {};
+    if (!hasObjectProperty(args, 'query')) {
+      throw new Error('Invalid memory find arguments');
+    }
+
+    const query = hasStringProperty(args, 'query') ? (args as any).query : '';
+    const limit = hasNumberProperty(args, 'limit') ? (args as any).limit : 10;
+    const types = hasArrayProperty(args, 'types', (item) => typeof item === 'string') ? (args as any).types : [];
+    const scope = hasObjectProperty(args, 'scope') ? (args as any).scope : {};
 
     // Mock search results for demonstration
     const results = [
@@ -226,57 +244,58 @@ class MinimalMCPServer {
         id: 'sample_1',
         kind: 'observation',
         data: { content: 'Sample observation matching query' },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       {
         id: 'sample_2',
         kind: 'decision',
         data: { content: 'Sample decision related to search' },
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     ].slice(0, limit);
 
     return {
       content: [
         {
           type: 'text',
-          text: `Found ${results.length} items matching query: "${query}"`
+          text: `Found ${results.length} items matching query: "${query}"`,
         },
         {
           type: 'text',
-          text: JSON.stringify(results, null, 2)
-        }
-      ]
+          text: JSON.stringify(results, null, 2),
+        },
+      ],
     };
   }
 
   private async systemStatus(args: unknown): Promise<unknown> {
+    // args is not used in this implementation but we validate it for consistency
+    if (!hasObjectProperty(args, 'data')) {
+      throw new Error('Invalid system status arguments');
+    }
+
     const status = {
       server: {
         status: 'healthy',
         uptime: process.uptime(),
         memory: process.memoryUsage(),
-        version: '2.0.1'
+        version: '2.0.1',
       },
       storage: {
         type: 'in-memory',
         status: 'available',
-        items: 0 // Would be actual count in real implementation
+        items: 0, // Would be actual count in real implementation
       },
-      capabilities: [
-        'memory_store',
-        'memory_find',
-        'system_status'
-      ]
+      capabilities: ['memory_store', 'memory_find', 'system_status'],
     };
 
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify(status, null, 2)
-        }
-      ]
+          text: JSON.stringify(status, null, 2),
+        },
+      ],
     };
   }
 }
@@ -302,27 +321,30 @@ async function main() {
       if (line) {
         try {
           const request: MCPRequest = JSON.parse(line);
-          server.handleRequest(request).then(response => {
-            console.log(JSON.stringify(response));
-          }).catch(error => {
-            const errorResponse: MCPResponse = {
-              jsonrpc: "2.0",
-              id: request.id,
-              error: {
-                code: -32603,
-                message: error.message || 'Internal error'
-              }
-            };
-            console.log(JSON.stringify(errorResponse));
-          });
+          server
+            .handleRequest(request)
+            .then((response) => {
+              console.log(JSON.stringify(response));
+            })
+            .catch((error) => {
+              const errorResponse: MCPResponse = {
+                jsonrpc: '2.0',
+                id: request.id,
+                error: {
+                  code: -32603,
+                  message: error.message || 'Internal error',
+                },
+              };
+              console.log(JSON.stringify(errorResponse));
+            });
         } catch (error) {
           const errorResponse: MCPResponse = {
-            jsonrpc: "2.0",
+            jsonrpc: '2.0',
             id: undefined,
             error: {
               code: -32700,
-              message: 'Parse error'
-            }
+              message: 'Parse error',
+            },
           };
           console.log(JSON.stringify(errorResponse));
         }
@@ -341,7 +363,7 @@ async function main() {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(error => {
+  main().catch((error) => {
     console.error('Failed to start MCP server:', error);
     process.exit(1);
   });

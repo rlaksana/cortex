@@ -17,7 +17,6 @@
  * @since 2025
  */
 
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
 // TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
@@ -37,6 +36,7 @@ import {
   UnsupportedDatabaseError,
 } from '../interfaces/database-factory.interface.js';
 import type { IVectorAdapter, VectorConfig } from '../interfaces/vector-adapter.interface.js';
+import { isVectorConfig, validateVectorConfig, createVectorConfig } from '../type-guards.js';
 
 /**
  * Database factory implementation
@@ -192,21 +192,21 @@ export class DatabaseFactory implements IDatabaseFactory {
     return capabilities;
   }
 
-  async testConnection(type: DatabaseType, config: unknown): Promise<boolean> {
+  async testConnection(_type: DatabaseType, config: VectorConfig): Promise<boolean> {
     try {
-      logger.debug({ type }, 'Testing database connection');
+      logger.debug({ type: _type }, 'Testing database connection');
 
-      switch (type) {
+      switch (_type) {
         case 'qdrant': {
-          const vectorAdapter = new QdrantAdapter(config as VectorConfig);
+          const vectorAdapter = new QdrantAdapter(config);
           return await vectorAdapter.healthCheck();
         }
 
         default:
-          throw new UnsupportedDatabaseError(type);
+          throw new UnsupportedDatabaseError(_type);
       }
     } catch (error) {
-      logger.error({ error, type }, 'Database connection test failed');
+      logger.error({ error, type: _type }, 'Database connection test failed');
       return false;
     }
   }
@@ -273,6 +273,16 @@ export class DatabaseFactory implements IDatabaseFactory {
   // === Static Factory Methods ===
 
   /**
+   * Get singleton instance of the database factory
+   */
+  static getInstance(): DatabaseFactory {
+    if (!(DatabaseFactory as any)._instance) {
+      (DatabaseFactory as any)._instance = new DatabaseFactory();
+    }
+    return (DatabaseFactory as any)._instance;
+  }
+
+  /**
    * Create a database factory instance with environment configuration
    */
   static createWithEnvironment(): DatabaseFactory {
@@ -286,22 +296,24 @@ export class DatabaseFactory implements IDatabaseFactory {
     const factory = new DatabaseFactory();
     const env = Environment.getInstance();
 
-    const qdrantConfig: unknown = {
+    // Create VectorConfig using type-safe factory function
+    const qdrantConfig = createVectorConfig({
+      type: 'qdrant',
       url: env.getQdrantConfig().url,
-      vectorSize: env.getQdrantConfig().vectorSize,
+      size: env.getQdrantConfig().vectorSize || 1536,
+      vectorSize: env.getQdrantConfig().vectorSize || 1536,
       distance: 'Cosine',
+      embeddingModel: 'text-embedding-3-small',
+      batchSize: 10,
       logQueries: env.isDevelopmentMode(),
       connectionTimeout: env.getQdrantConfig().connectionTimeout,
       maxConnections: env.getQdrantConfig().maxConnections,
-    };
-
-    if (env.getQdrantConfig().apiKey) {
-      qdrantConfig.apiKey = env.getQdrantConfig().apiKey;
-    }
+      ...(env.getQdrantConfig().apiKey && { apiKey: env.getQdrantConfig().apiKey }),
+    });
 
     const config: DatabaseFactoryConfig = {
       type: 'qdrant',
-      qdrant: qdrantConfig,
+      qdrant: validateVectorConfig(qdrantConfig),
       fallback: {
         enabled: true,
         retryAttempts: 3,
@@ -315,3 +327,9 @@ export class DatabaseFactory implements IDatabaseFactory {
 
 // Export factory instance
 export const databaseFactory = DatabaseFactory.createWithEnvironment();
+
+// Export convenience function for creating database from VectorConfig
+export async function createDatabase(config: VectorConfig): Promise<IVectorAdapter> {
+  const factory = DatabaseFactory.createWithEnvironment();
+  return await factory.createVectorAdapter(config);
+}

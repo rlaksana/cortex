@@ -1,23 +1,19 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Utility type guard compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
-
 /**
  * Type guards and validation utilities for monitoring and logging system
  * Provides runtime type checking and validation for all monitoring data structures
+ *
+ * TypeScript Recovery: Phase 2.2e - Assessing remaining TypeScript compatibility issues
  */
 
+import { OperationType } from '../monitoring/operation-types.js';
 import type {
-  DeduplicationStrategy,
   ErrorInfo,
   LoggableData,
   LogLevel,
   OperationMetadata,
-  OperationType,
   QueryDetails,
   RequestContext,
   ResultMetrics,
-  SearchStrategy,
   SlowQueryAnalysis,
   SlowQueryContext,
   SlowQuerySystemState,
@@ -27,7 +23,9 @@ import type {
   TypedPerformanceAlert,
   TypedPerformanceMetric,
   TypedPerformanceSummary,
-  UserContext} from '../types/monitoring-types.js';
+  UserContext,
+} from '../types/monitoring-types.js';
+import { DeduplicationStrategy, SearchStrategy } from '../types/monitoring-types.js';
 
 // ============================================================================
 // Basic Type Guards
@@ -42,7 +40,7 @@ export function isLoggableData(value: unknown): value is LoggableData {
     value !== null &&
     !Array.isArray(value) &&
     Object.values(value as Record<string, unknown>).every(
-      val =>
+      (val) =>
         typeof val === 'string' ||
         typeof val === 'number' ||
         typeof val === 'boolean' ||
@@ -72,14 +70,19 @@ export function isOperationType(value: unknown): value is OperationType {
  * Type guard for SearchStrategy
  */
 export function isSearchStrategy(value: unknown): value is SearchStrategy {
-  return typeof value === 'string' && Object.values(SearchStrategy).includes(value as SearchStrategy);
+  return (
+    typeof value === 'string' && Object.values(SearchStrategy).includes(value as SearchStrategy)
+  );
 }
 
 /**
  * Type guard for DeduplicationStrategy
  */
 export function isDeduplicationStrategy(value: unknown): value is DeduplicationStrategy {
-  return typeof value === 'string' && Object.values(DeduplicationStrategy).includes(value as DeduplicationStrategy);
+  return (
+    typeof value === 'string' &&
+    Object.values(DeduplicationStrategy).includes(value as DeduplicationStrategy)
+  );
 }
 
 // ============================================================================
@@ -113,7 +116,8 @@ export function isRequestContext(value: unknown): value is RequestContext {
     (ctx.query === undefined || typeof ctx.query === 'string') &&
     (ctx.mode === undefined || typeof ctx.mode === 'string') &&
     (ctx.limit === undefined || typeof ctx.limit === 'number') &&
-    (ctx.types === undefined || (Array.isArray(ctx.types) && ctx.types.every((t: unknown) => typeof t === 'string'))) &&
+    (ctx.types === undefined ||
+      (Array.isArray(ctx.types) && ctx.types.every((t: unknown) => typeof t === 'string'))) &&
     (ctx.scope === undefined || isLoggableData(ctx.scope)) &&
     (ctx.expand === undefined || typeof ctx.expand === 'string')
   );
@@ -130,7 +134,9 @@ export function isErrorInfo(value: unknown): value is ErrorInfo {
     typeof error.type === 'string' &&
     typeof error.message === 'string' &&
     (error.stack === undefined || typeof error.stack === 'string') &&
-    (error.code === undefined || typeof error.code === 'string' || typeof error.code === 'number') &&
+    (error.code === undefined ||
+      typeof error.code === 'string' ||
+      typeof error.code === 'number') &&
     (error.context === undefined || isLoggableData(error.context))
   );
 }
@@ -160,9 +166,12 @@ export function isSystemHealth(value: unknown): value is SystemHealth {
 
   const health = value as Record<string, unknown>;
   return (
-    (health.qdrant_status === undefined || ['healthy', 'degraded', 'unhealthy'].includes(health.qdrant_status as string)) &&
-    (health.database_status === undefined || ['connected', 'error', 'timeout'].includes(health.database_status as string)) &&
-    (health.embedding_service_status === undefined || ['healthy', 'error'].includes(health.embedding_service_status as string)) &&
+    (health.qdrant_status === undefined ||
+      ['healthy', 'degraded', 'unhealthy'].includes(health.qdrant_status as string)) &&
+    (health.database_status === undefined ||
+      ['connected', 'error', 'timeout'].includes(health.database_status as string)) &&
+    (health.embedding_service_status === undefined ||
+      ['healthy', 'error'].includes(health.embedding_service_status as string)) &&
     (health.memory_usage_mb === undefined || typeof health.memory_usage_mb === 'number') &&
     (health.cpu_usage_percent === undefined || typeof health.cpu_usage_percent === 'number') &&
     (health.active_connections === undefined || typeof health.active_connections === 'number')
@@ -180,7 +189,8 @@ export function isResultMetrics(value: unknown): value is ResultMetrics {
     (metrics.total_count === undefined || typeof metrics.total_count === 'number') &&
     (metrics.result_count === undefined || typeof metrics.result_count === 'number') &&
     (metrics.duplicates_found === undefined || typeof metrics.duplicates_found === 'number') &&
-    (metrics.newer_versions_allowed === undefined || typeof metrics.newer_versions_allowed === 'number') &&
+    (metrics.newer_versions_allowed === undefined ||
+      typeof metrics.newer_versions_allowed === 'number') &&
     (metrics.chunks_created === undefined || typeof metrics.chunks_created === 'number') &&
     (metrics.cache_hit === undefined || typeof metrics.cache_hit === 'boolean')
   );
@@ -291,7 +301,8 @@ export function isTypedPerformanceMetric(value: unknown): value is TypedPerforma
     typeof metric.duration === 'number' &&
     typeof metric.success === 'boolean' &&
     (metric.metadata === undefined || isOperationMetadata(metric.metadata)) &&
-    (metric.tags === undefined || (Array.isArray(metric.tags) && metric.tags.every((t: unknown) => typeof t === 'string'))) &&
+    (metric.tags === undefined ||
+      (Array.isArray(metric.tags) && metric.tags.every((t: unknown) => typeof t === 'string'))) &&
     (metric.correlationId === undefined || typeof metric.correlationId === 'string') &&
     (metric.userId === undefined || typeof metric.userId === 'string')
   );
@@ -328,7 +339,9 @@ export function isTypedPerformanceAlert(value: unknown): value is TypedPerforman
   const alert = value as Record<string, unknown>;
   return (
     isOperationType(alert.operation) &&
-    ['slow_query', 'high_error_rate', 'memory_usage', 'connection_pool', 'rate_limit'].includes(alert.alertType as string) &&
+    ['slow_query', 'high_error_rate', 'memory_usage', 'connection_pool', 'rate_limit'].includes(
+      alert.alertType as string
+    ) &&
     typeof alert.threshold === 'number' &&
     typeof alert.currentValue === 'number' &&
     ['low', 'medium', 'high', 'critical'].includes(alert.severity as string) &&
@@ -384,7 +397,7 @@ export function validateUserContext(value: unknown): UserContext | null {
     user_id: String(value.user_id),
     username: String(value.username),
     role: String(value.role),
-    scopes: Array.isArray(value.scopes) ? value.scopes.map(String) : []
+    scopes: Array.isArray(value.scopes) ? value.scopes.map(String) : [],
   };
 }
 
@@ -399,7 +412,8 @@ export function validateRequestContext(value: unknown): RequestContext | null {
   if (value.query !== undefined) ctx.query = String(value.query);
   if (value.mode !== undefined) ctx.mode = String(value.mode);
   if (value.limit !== undefined) ctx.limit = Number(value.limit);
-  if (value.types !== undefined) ctx.types = Array.isArray(value.types) ? value.types.map(String) : [];
+  if (value.types !== undefined)
+    ctx.types = Array.isArray(value.types) ? value.types.map(String) : [];
   if (value.scope !== undefined) ctx.scope = isLoggableData(value.scope) ? value.scope : {};
   if (value.expand !== undefined) ctx.expand = String(value.expand);
 
@@ -417,7 +431,7 @@ export function validateErrorInfo(value: unknown): ErrorInfo | null {
     message: String(value.message),
     stack: value.stack ? String(value.stack) : undefined,
     code: value.code !== undefined ? value.code : undefined,
-    context: value.context && isLoggableData(value.context) ? value.context : undefined
+    context: value.context && isLoggableData(value.context) ? value.context : undefined,
   };
 }
 
@@ -451,15 +465,21 @@ export function validateStructuredLogEntry(value: unknown): StructuredLogEntry |
     correlation_id: String(value.correlation_id),
     latency_ms: Number(value.latency_ms),
     success: Boolean(value.success),
-    user_context: value.user_context ? validateUserContext(value.user_context) : undefined,
-    request_context: value.request_context ? validateRequestContext(value.request_context) : undefined,
+    user_context: value.user_context
+      ? validateUserContext(value.user_context)
+      : value.user_context || undefined,
+    request_context: value.request_context
+      ? validateRequestContext(value.request_context)
+      : value.request_context || undefined,
     result_metrics: value.result_metrics || undefined,
     system_health: value.system_health || undefined,
     ttl_info: value.ttl_info || undefined,
     strategy: value.strategy || undefined,
     deduplication: value.deduplication || undefined,
-    error: value.error ? validateErrorInfo(value.error) : undefined,
-    metadata: value.metadata ? validateOperationMetadata(value.metadata) : undefined
+    error: value.error ? validateErrorInfo(value.error) : value.error || undefined,
+    metadata: value.metadata
+      ? validateOperationMetadata(value.metadata)
+      : value.metadata || undefined,
   };
 }
 
@@ -470,16 +490,26 @@ export function validateStructuredLogEntry(value: unknown): StructuredLogEntry |
 /**
  * Safe type assertion with runtime check
  */
-export function assertType<T>(value: unknown, guard: (value: unknown) => value is T, errorMessage?: string): asserts value is T {
+export function assertType<T>(
+  value: unknown,
+  guard: (value: unknown) => value is T,
+  errorMessage?: string
+): asserts value is T {
   if (!guard(value)) {
-    throw new TypeError(errorMessage || `Type assertion failed: ${value} does not match expected type`);
+    throw new TypeError(
+      errorMessage || `Type assertion failed: ${value} does not match expected type`
+    );
   }
 }
 
 /**
  * Safe type coercion with fallback
  */
-export function coerceType<T>(value: unknown, guard: (value: unknown) => value is T, fallback: T): T {
+export function coerceType<T>(
+  value: unknown,
+  guard: (value: unknown) => value is T,
+  fallback: T
+): T {
   return guard(value) ? value : fallback;
 }
 
@@ -499,7 +529,7 @@ export function validateRecord<T extends Record<string, unknown>>(
 ): record is T {
   if (!isLoggableData(record)) return false;
 
-  return Object.entries(record).every(([_, value]) => valueGuard(value));
+  return Object.entries(record).every(([, value]) => valueGuard(value));
 }
 
 // ============================================================================
@@ -544,7 +574,7 @@ export function validatePerformanceMetricInput(input: unknown): TypedPerformance
     if (!isTypedPerformanceMetric(input)) return null;
 
     // Ensure timestamps are valid
-    const metric = input as Record<string, unknown>;
+    const metric = input as TypedPerformanceMetric;
     const now = Date.now();
 
     if (metric.startTime > now || metric.endTime > now) {
@@ -584,7 +614,7 @@ export function createLogEntry(partial: Partial<StructuredLogEntry>): Structured
     strategy: partial.strategy,
     deduplication: partial.deduplication,
     error: partial.error,
-    metadata: partial.metadata
+    metadata: partial.metadata,
   };
 
   return validateStructuredLogEntry(entry);
@@ -607,7 +637,9 @@ export function isSlowLogEntry(entry: StructuredLogEntry, thresholdMs: number = 
 /**
  * Get severity level from log entry
  */
-export function getLogEntrySeverity(entry: StructuredLogEntry): 'low' | 'medium' | 'high' | 'critical' {
+export function getLogEntrySeverity(
+  entry: StructuredLogEntry
+): 'low' | 'medium' | 'high' | 'critical' {
   if (entry.level === 'error' && entry.error) {
     return 'critical';
   }

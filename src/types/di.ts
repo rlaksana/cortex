@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Dependency Injection and Event System Types
  *
@@ -51,7 +47,11 @@ export type ServiceLifetime = 'transient' | 'scoped' | 'singleton';
 // ============================================================================
 
 export interface ServiceRegistry {
-  register<T>(identifier: ServiceIdentifier<T>, implementation: ServiceImplementation<T>, lifetime?: ServiceLifetime): void;
+  register<T>(
+    identifier: ServiceIdentifier<T>,
+    implementation: ServiceImplementation<T>,
+    lifetime?: ServiceLifetime
+  ): void;
   get<T>(identifier: ServiceIdentifier<T>): T;
   getAsync<T>(identifier: ServiceIdentifier<T>): Promise<T>;
   isRegistered<T>(identifier: ServiceIdentifier<T>): boolean;
@@ -215,7 +215,11 @@ export interface AggregateRoot<TId = string> {
 export interface EventStore {
   saveEvents(aggregateId: string, events: DomainEvent[], expectedVersion?: number): Promise<void>;
   getEvents(aggregateId: string, fromVersion?: number, toVersion?: number): Promise<DomainEvent[]>;
-  getEventsByType(eventType: string, fromTimestamp?: Date, toTimestamp?: Date): Promise<DomainEvent[]>;
+  getEventsByType(
+    eventType: string,
+    fromTimestamp?: Date,
+    toTimestamp?: Date
+  ): Promise<DomainEvent[]>;
   snapshot(aggregateId: string, version: number, snapshot: unknown): Promise<void>;
   getSnapshot(aggregateId: string, version?: number): Promise<unknown | null>;
 }
@@ -358,7 +362,13 @@ export interface DIContainerConfig {
 }
 
 export interface LifecycleEvent {
-  type: 'container_created' | 'container_disposed' | 'service_registered' | 'service_resolved' | 'scope_created' | 'scope_disposed';
+  type:
+    | 'container_created'
+    | 'container_disposed'
+    | 'service_registered'
+    | 'service_resolved'
+    | 'scope_created'
+    | 'scope_disposed';
   timestamp: Date;
   containerId?: string;
   serviceId?: string;
@@ -383,7 +393,16 @@ export interface ServiceLifecycleManager {
 }
 
 export interface LifecycleStatus {
-  phase: 'uninitialized' | 'initializing' | 'initialized' | 'starting' | 'started' | 'stopping' | 'stopped' | 'destroying' | 'destroyed';
+  phase:
+    | 'uninitialized'
+    | 'initializing'
+    | 'initialized'
+    | 'starting'
+    | 'started'
+    | 'stopping'
+    | 'stopped'
+    | 'destroying'
+    | 'destroyed';
   servicesStarted: number;
   totalServices: number;
   startTime?: Date;

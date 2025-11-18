@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Configuration Validation System
  *
@@ -265,7 +261,8 @@ export class ConfigurationValidator {
         };
 
         // Check JWT secrets (these would come from environment config)
-        const env = (global as unknown as { environment?: { config?: Record<string, string> } }).environment; // Access to environment if available
+        const env = (global as unknown as { environment?: { config?: Record<string, string> } })
+          .environment; // Access to environment if available
         if (env) {
           checkJwtSecret(env.config?.JWT_SECRET, 'JWT_SECRET');
           checkJwtSecret(env.config?.JWT_REFRESH_SECRET, 'JWT_REFRESH_SECRET');
@@ -349,7 +346,7 @@ export class ConfigurationValidator {
         // Check vector model compatibility
         if (
           config.vector.embeddingModel === 'text-embedding-3-small' &&
-            config.vector.size !== 1536
+          config.vector.size !== 1536
         ) {
           errors.push({
             field: 'vector.size',
@@ -736,4 +733,3 @@ export function addValidationRule(rule: ValidationRule): void {
 export function removeValidationRule(name: string): void {
   configValidator.removeRule(name);
 }
-

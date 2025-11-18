@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Final batch of type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Performance Dashboard API for Cortex MCP
@@ -11,7 +9,8 @@ import { type NextFunction, type Request, type Response, Router } from 'express'
 
 import { logger } from '@/utils/logger.js';
 
-import { type PerformanceAlert,performanceCollector } from './performance-collector.js';
+import { OperationType } from './operation-types.js';
+import { type PerformanceAlert, performanceCollector } from './performance-collector.js';
 
 export interface DashboardConfig {
   enableMetricsEndpoint?: boolean;
@@ -19,6 +18,20 @@ export interface DashboardConfig {
   enableTrendsEndpoint?: boolean;
   requireAuthentication?: boolean;
   cacheTimeout?: number; // milliseconds
+}
+
+/**
+ * Type guard to validate if a string is a valid OperationType
+ */
+function isValidOperationType(value: string): value is OperationType {
+  return Object.values(OperationType).includes(value as OperationType);
+}
+
+/**
+   * Type guard to check if object has summaries property
+   */
+function hasSummaries(obj: unknown): obj is { summaries: unknown } {
+  return typeof obj === 'object' && obj !== null && 'summaries' in obj;
 }
 
 export class PerformanceDashboard {
@@ -56,13 +69,22 @@ export class PerformanceDashboard {
       let data: unknown;
 
       if (operation) {
+        // Validate operation type
+        const operationStr = operation as string;
+        if (!isValidOperationType(operationStr)) {
+          res.status(400).json({ error: 'Invalid operation type' });
+          return;
+        }
+
         // Get specific operation metrics
-        data = performanceCollector.getSummary(operation as string);
+        data = performanceCollector.getSummary(operationStr);
         if (!data) {
           res.status(404).json({ error: 'Operation not found' });
           return;
         }
-        data.recentMetrics = performanceCollector.getRecentMetrics(operation as string, 100);
+        if (data && typeof data === 'object') {
+          (data as any).recentMetrics = performanceCollector.getRecentMetrics(operationStr, 100);
+        }
       } else {
         // Get all metrics
         data = {
@@ -148,17 +170,24 @@ export class PerformanceDashboard {
       const cached = this.alertCache.get(cacheKey);
 
       // Return cached data if still valid
-      if (cached && Date.now() - cached.timestamp < this.config.cacheTimeout!) {
-        res.json(cached.data);
+      if (cached && Date.now() - (cached as any).timestamp < this.config.cacheTimeout!) {
+        res.json((cached as any).data);
         return;
       }
 
       let trends: unknown;
 
       if (operation) {
+        // Validate operation type
+        const operationStr = operation as string;
+        if (!isValidOperationType(operationStr)) {
+          res.status(400).json({ error: 'Invalid operation type' });
+          return;
+        }
+
         // Get trends for specific operation
         const allTrends = performanceCollector.getPerformanceTrends(timeWindowMinutes);
-        trends = allTrends[operation as string];
+        trends = allTrends[operationStr];
         if (!trends) {
           res.status(404).json({ error: 'Operation not found' });
           return;
@@ -352,7 +381,7 @@ export class PerformanceDashboard {
   }
 
   private exportToCSV(data: unknown): string {
-    if (data.summaries) {
+    if (hasSummaries(data) && data.summaries) {
       // Export summaries as CSV
       const headers = [
         'operation',
@@ -364,7 +393,8 @@ export class PerformanceDashboard {
         'p99',
         'successRate',
       ];
-      const rows = data.summaries.map((s: unknown) => [
+      const summaries = data.summaries as any[];
+      const rows = summaries?.map((s: any) => [
         s.operation,
         s.count,
         s.averageDuration,
@@ -373,7 +403,7 @@ export class PerformanceDashboard {
         s.p95,
         s.p99,
         s.successRate,
-      ]);
+      ]) || [];
 
       return [headers, ...rows].map((row) => row.join(',')).join('\n');
     }

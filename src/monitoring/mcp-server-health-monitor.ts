@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Enhanced MCP Server Health Monitor
  *
@@ -19,12 +14,16 @@ import { EventEmitter } from 'events';
 import { logger } from '@/utils/logger.js';
 
 import { metricsService } from './metrics-service.js';
-import { circuitBreakerManager, type CircuitBreakerStats } from '../services/circuit-breaker.service.js';
+import {
+  circuitBreakerManager,
+  type CircuitBreakerStats,
+} from '../services/circuit-breaker.service.js';
 import {
   type ComponentHealth,
   DependencyType,
   HealthStatus,
-  type SystemHealthResult} from '../types/unified-health-interfaces.js';
+  type SystemHealthResult,
+} from '../types/unified-health-interfaces.js';
 
 /**
  * MCP Server specific health metrics
@@ -73,15 +72,15 @@ export interface MCPServerHealthConfig {
 
   // Thresholds for alerts
   thresholds: {
-    errorRateWarning: number;      // percentage
-    errorRateCritical: number;     // percentage
-    responseTimeWarning: number;   // milliseconds
-    responseTimeCritical: number;  // milliseconds
-    memoryUsageWarning: number;    // percentage
-    memoryUsageCritical: number;   // percentage
-    cpuUsageWarning: number;       // percentage
-    cpuUsageCritical: number;      // percentage
-    connectionErrorRateWarning: number;  // percentage
+    errorRateWarning: number; // percentage
+    errorRateCritical: number; // percentage
+    responseTimeWarning: number; // milliseconds
+    responseTimeCritical: number; // milliseconds
+    memoryUsageWarning: number; // percentage
+    memoryUsageCritical: number; // percentage
+    cpuUsageWarning: number; // percentage
+    cpuUsageCritical: number; // percentage
+    connectionErrorRateWarning: number; // percentage
     connectionErrorRateCritical: number; // percentage
   };
 
@@ -136,27 +135,27 @@ export class MCPServerHealthMonitor extends EventEmitter {
     super();
 
     this.config = {
-      healthCheckIntervalMs: 30000,      // 30 seconds
+      healthCheckIntervalMs: 30000, // 30 seconds
       metricsCollectionIntervalMs: 10000, // 10 seconds
       thresholds: {
-        errorRateWarning: 5,          // 5%
-        errorRateCritical: 15,        // 15%
-        responseTimeWarning: 1000,    // 1 second
-        responseTimeCritical: 5000,   // 5 seconds
-        memoryUsageWarning: 80,       // 80%
-        memoryUsageCritical: 95,      // 95%
-        cpuUsageWarning: 80,          // 80%
-        cpuUsageCritical: 95,         // 95%
-        connectionErrorRateWarning: 5,   // 5%
-        connectionErrorRateCritical: 15,  // 15%
+        errorRateWarning: 5, // 5%
+        errorRateCritical: 15, // 15%
+        responseTimeWarning: 1000, // 1 second
+        responseTimeCritical: 5000, // 5 seconds
+        memoryUsageWarning: 80, // 80%
+        memoryUsageCritical: 95, // 95%
+        cpuUsageWarning: 80, // 80%
+        cpuUsageCritical: 95, // 95%
+        connectionErrorRateWarning: 5, // 5%
+        connectionErrorRateCritical: 15, // 15%
       },
       circuitBreakerMonitoring: {
         enabled: true,
         alertOnOpen: true,
         alertOnHalfOpen: true,
-        checkIntervalMs: 15000,       // 15 seconds
+        checkIntervalMs: 15000, // 15 seconds
       },
-      startupGracePeriodMs: 120000,    // 2 minutes
+      startupGracePeriodMs: 120000, // 2 minutes
       healthHistoryRetentionMinutes: 60, // 1 hour
       ...config,
     };
@@ -307,9 +306,10 @@ export class MCPServerHealthMonitor extends EventEmitter {
         },
         summary: {
           total_components: components.length,
-          healthy_components: components.filter(c => c.status === HealthStatus.HEALTHY).length,
-          degraded_components: components.filter(c => c.status === HealthStatus.DEGRADED).length,
-          unhealthy_components: components.filter(c => c.status === HealthStatus.UNHEALTHY).length,
+          healthy_components: components.filter((c) => c.status === HealthStatus.HEALTHY).length,
+          degraded_components: components.filter((c) => c.status === HealthStatus.DEGRADED).length,
+          unhealthy_components: components.filter((c) => c.status === HealthStatus.UNHEALTHY)
+            .length,
         },
         issues,
       };
@@ -337,7 +337,6 @@ export class MCPServerHealthMonitor extends EventEmitter {
 
         this.emit('status_change', { previous: previousStatus, current: overallStatus, issues });
       }
-
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       logger.error({ error }, 'Health check failed');
@@ -393,7 +392,6 @@ export class MCPServerHealthMonitor extends EventEmitter {
       };
 
       this.emit('metrics_collected', this.currentMetrics);
-
     } catch (error) {
       logger.error({ error }, 'Failed to collect metrics');
     }
@@ -426,15 +424,18 @@ export class MCPServerHealthMonitor extends EventEmitter {
       if (this.currentMetrics.averageResponseTime > this.config.thresholds.responseTimeCritical) {
         status = HealthStatus.UNHEALTHY;
         issues.push(`Critical response time: ${this.currentMetrics.averageResponseTime}ms`);
-      } else if (this.currentMetrics.averageResponseTime > this.config.thresholds.responseTimeWarning) {
+      } else if (
+        this.currentMetrics.averageResponseTime > this.config.thresholds.responseTimeWarning
+      ) {
         status = HealthStatus.DEGRADED;
         issues.push(`High response time: ${this.currentMetrics.averageResponseTime}ms`);
       }
 
       // Check connection error rate
-      const connectionErrorRate = this.currentMetrics.totalConnections > 0
-        ? (this.currentMetrics.connectionErrors / this.currentMetrics.totalConnections) * 100
-        : 0;
+      const connectionErrorRate =
+        this.currentMetrics.totalConnections > 0
+          ? (this.currentMetrics.connectionErrors / this.currentMetrics.totalConnections) * 100
+          : 0;
 
       if (connectionErrorRate > this.config.thresholds.connectionErrorRateCritical) {
         status = HealthStatus.UNHEALTHY;
@@ -469,7 +470,6 @@ export class MCPServerHealthMonitor extends EventEmitter {
           issues,
         },
       };
-
     } catch (error) {
       return {
         name: 'mcp-server',
@@ -504,7 +504,9 @@ export class MCPServerHealthMonitor extends EventEmitter {
         if (this.currentMetrics.qdrantResponseTime > this.config.thresholds.responseTimeCritical) {
           status = HealthStatus.UNHEALTHY;
           issues.push(`Qdrant response time critical: ${this.currentMetrics.qdrantResponseTime}ms`);
-        } else if (this.currentMetrics.qdrantResponseTime > this.config.thresholds.responseTimeWarning) {
+        } else if (
+          this.currentMetrics.qdrantResponseTime > this.config.thresholds.responseTimeWarning
+        ) {
           status = HealthStatus.DEGRADED;
           issues.push(`Qdrant response time high: ${this.currentMetrics.qdrantResponseTime}ms`);
         }
@@ -512,7 +514,9 @@ export class MCPServerHealthMonitor extends EventEmitter {
         // Check error rate
         if (this.currentMetrics.qdrantErrorRate > this.config.thresholds.errorRateCritical) {
           status = HealthStatus.UNHEALTHY;
-          issues.push(`Qdrant error rate critical: ${this.currentMetrics.qdrantErrorRate.toFixed(2)}%`);
+          issues.push(
+            `Qdrant error rate critical: ${this.currentMetrics.qdrantErrorRate.toFixed(2)}%`
+          );
         } else if (this.currentMetrics.qdrantErrorRate > this.config.thresholds.errorRateWarning) {
           status = HealthStatus.DEGRADED;
           issues.push(`Qdrant error rate high: ${this.currentMetrics.qdrantErrorRate.toFixed(2)}%`);
@@ -532,7 +536,9 @@ export class MCPServerHealthMonitor extends EventEmitter {
         last_check: new Date(),
         response_time_ms: this.currentMetrics.qdrantResponseTime,
         error_rate: this.currentMetrics.qdrantErrorRate,
-        uptime_percentage: this.currentMetrics.qdrantConnectionStatus ? 100 - this.currentMetrics.qdrantErrorRate : 0,
+        uptime_percentage: this.currentMetrics.qdrantConnectionStatus
+          ? 100 - this.currentMetrics.qdrantErrorRate
+          : 0,
         details: {
           connectionStatus: this.currentMetrics.qdrantConnectionStatus,
           responseTime: this.currentMetrics.qdrantResponseTime,
@@ -541,7 +547,6 @@ export class MCPServerHealthMonitor extends EventEmitter {
           issues,
         },
       };
-
     } catch (error) {
       return {
         name: 'qdrant-vector-db',
@@ -575,7 +580,7 @@ export class MCPServerHealthMonitor extends EventEmitter {
         issues.push(`Open circuits: ${openCircuits.join(', ')}`);
 
         // If critical services have open circuits, mark as unhealthy
-        const criticalOpenCircuits = openCircuits.filter(name =>
+        const criticalOpenCircuits = openCircuits.filter((name) =>
           ['qdrant', 'memory-store', 'memory-find'].includes(name)
         );
 
@@ -596,10 +601,14 @@ export class MCPServerHealthMonitor extends EventEmitter {
         // Check individual circuit failure rates
         if (stats.failureRate > this.config.thresholds.errorRateCritical) {
           status = HealthStatus.UNHEALTHY;
-          issues.push(`Circuit ${serviceName} has critical failure rate: ${(stats.failureRate * 100).toFixed(2)}%`);
+          issues.push(
+            `Circuit ${serviceName} has critical failure rate: ${(stats.failureRate * 100).toFixed(2)}%`
+          );
         } else if (stats.failureRate > this.config.thresholds.errorRateWarning) {
           if (status === HealthStatus.HEALTHY) status = HealthStatus.DEGRADED;
-          issues.push(`Circuit ${serviceName} has high failure rate: ${(stats.failureRate * 100).toFixed(2)}%`);
+          issues.push(
+            `Circuit ${serviceName} has high failure rate: ${(stats.failureRate * 100).toFixed(2)}%`
+          );
         }
       }
 
@@ -621,7 +630,6 @@ export class MCPServerHealthMonitor extends EventEmitter {
           issues,
         },
       };
-
     } catch (error) {
       return {
         name: 'circuit-breakers',
@@ -651,7 +659,9 @@ export class MCPServerHealthMonitor extends EventEmitter {
       if (this.currentMetrics.memoryUsagePercent > this.config.thresholds.memoryUsageCritical) {
         status = HealthStatus.UNHEALTHY;
         issues.push(`Critical memory usage: ${this.currentMetrics.memoryUsagePercent.toFixed(2)}%`);
-      } else if (this.currentMetrics.memoryUsagePercent > this.config.thresholds.memoryUsageWarning) {
+      } else if (
+        this.currentMetrics.memoryUsagePercent > this.config.thresholds.memoryUsageWarning
+      ) {
         status = HealthStatus.DEGRADED;
         issues.push(`High memory usage: ${this.currentMetrics.memoryUsagePercent.toFixed(2)}%`);
       }
@@ -666,10 +676,12 @@ export class MCPServerHealthMonitor extends EventEmitter {
       }
 
       // Check event loop lag
-      if (this.currentMetrics.eventLoopLag > 100) { // 100ms threshold
+      if (this.currentMetrics.eventLoopLag > 100) {
+        // 100ms threshold
         status = HealthStatus.UNHEALTHY;
         issues.push(`Critical event loop lag: ${this.currentMetrics.eventLoopLag}ms`);
-      } else if (this.currentMetrics.eventLoopLag > 50) { // 50ms threshold
+      } else if (this.currentMetrics.eventLoopLag > 50) {
+        // 50ms threshold
         if (status === HealthStatus.HEALTHY) status = HealthStatus.DEGRADED;
         issues.push(`High event loop lag: ${this.currentMetrics.eventLoopLag}ms`);
       }
@@ -690,7 +702,6 @@ export class MCPServerHealthMonitor extends EventEmitter {
           issues,
         },
       };
-
     } catch (error) {
       return {
         name: 'system-resources',
@@ -719,17 +730,25 @@ export class MCPServerHealthMonitor extends EventEmitter {
       // Check tool execution success rate
       if (this.currentMetrics.toolExecutionSuccessRate < 90) {
         status = HealthStatus.UNHEALTHY;
-        issues.push(`Low tool execution success rate: ${this.currentMetrics.toolExecutionSuccessRate.toFixed(2)}%`);
+        issues.push(
+          `Low tool execution success rate: ${this.currentMetrics.toolExecutionSuccessRate.toFixed(2)}%`
+        );
       } else if (this.currentMetrics.toolExecutionSuccessRate < 95) {
         status = HealthStatus.DEGRADED;
-        issues.push(`Tool execution success rate below optimal: ${this.currentMetrics.toolExecutionSuccessRate.toFixed(2)}%`);
+        issues.push(
+          `Tool execution success rate below optimal: ${this.currentMetrics.toolExecutionSuccessRate.toFixed(2)}%`
+        );
       }
 
       // Check tool execution time
-      if (this.currentMetrics.toolExecutionAverageTime > 10000) { // 10 seconds
+      if (this.currentMetrics.toolExecutionAverageTime > 10000) {
+        // 10 seconds
         status = HealthStatus.UNHEALTHY;
-        issues.push(`Critical tool execution time: ${this.currentMetrics.toolExecutionAverageTime}ms`);
-      } else if (this.currentMetrics.toolExecutionAverageTime > 5000) { // 5 seconds
+        issues.push(
+          `Critical tool execution time: ${this.currentMetrics.toolExecutionAverageTime}ms`
+        );
+      } else if (this.currentMetrics.toolExecutionAverageTime > 5000) {
+        // 5 seconds
         if (status === HealthStatus.HEALTHY) status = HealthStatus.DEGRADED;
         issues.push(`High tool execution time: ${this.currentMetrics.toolExecutionAverageTime}ms`);
       }
@@ -750,7 +769,6 @@ export class MCPServerHealthMonitor extends EventEmitter {
           issues,
         },
       };
-
     } catch (error) {
       return {
         name: 'performance-metrics',
@@ -770,8 +788,8 @@ export class MCPServerHealthMonitor extends EventEmitter {
    * Calculate overall health status
    */
   private calculateOverallStatus(components: ComponentHealth[], issues: string[]): HealthStatus {
-    const unhealthyComponents = components.filter(c => c.status === HealthStatus.UNHEALTHY);
-    const degradedComponents = components.filter(c => c.status === HealthStatus.DEGRADED);
+    const unhealthyComponents = components.filter((c) => c.status === HealthStatus.UNHEALTHY);
+    const degradedComponents = components.filter((c) => c.status === HealthStatus.DEGRADED);
 
     if (unhealthyComponents.length > 0) {
       return HealthStatus.UNHEALTHY;
@@ -876,7 +894,9 @@ export class MCPServerHealthMonitor extends EventEmitter {
 
   private getConnectionErrors(): number {
     // This would be implemented based on actual error tracking
-    return Math.floor(this.currentMetrics.requestsPerSecond * this.currentMetrics.errorRate / 100);
+    return Math.floor(
+      (this.currentMetrics.requestsPerSecond * this.currentMetrics.errorRate) / 100
+    );
   }
 
   private getActiveSessions(): number {
@@ -891,7 +911,9 @@ export class MCPServerHealthMonitor extends EventEmitter {
 
   private getMCPProtocolErrors(): number {
     // This would be implemented based on actual MCP protocol error tracking
-    return Math.floor(this.currentMetrics.requestsPerSecond * this.currentMetrics.errorRate / 200);
+    return Math.floor(
+      (this.currentMetrics.requestsPerSecond * this.currentMetrics.errorRate) / 200
+    );
   }
 
   private getToolExecutionSuccessRate(): number {

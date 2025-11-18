@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Simplified AI Orchestrator Service
  *
@@ -182,7 +177,7 @@ export class SimplifiedAIOrchestratorService {
    */
   private startHealthMonitoring(): void {
     this.healthCheckInterval = setInterval(
-      async function(this: SimplifiedAIOrchestratorService): Promise<void> {
+      async function (this: SimplifiedAIOrchestratorService): Promise<void> {
         await this.performHealthCheck();
       }.bind(this),
       this.config.healthCheckInterval

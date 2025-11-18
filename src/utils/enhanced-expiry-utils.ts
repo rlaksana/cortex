@@ -1,6 +1,4 @@
-// @ts-nocheck
 // FINAL COMPREHENSIVE EMERGENCY ROLLBACK: Utility layer type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Enhanced Expiry Utilities
@@ -21,6 +19,7 @@
  */
 
 import { logger } from '@/utils/logger.js';
+import { isNumber, isString, safePropertyAccess } from '@/utils/type-guards.js';
 
 import type { KnowledgeItem } from '../types/core-interfaces.js';
 
@@ -190,9 +189,9 @@ export class EnhancedExpiryUtils {
       // Parse input to Date object
       let expiryDate: Date;
 
-      if (typeof expiryInput === 'string') {
+      if (isString(expiryInput)) {
         expiryDate = new Date(expiryInput);
-      } else if (typeof expiryInput === 'number') {
+      } else if (isNumber(expiryInput)) {
         expiryDate = new Date(expiryInput);
       } else if (expiryInput instanceof Date) {
         expiryDate = new Date(expiryInput.getTime());
@@ -284,7 +283,9 @@ export class EnhancedExpiryUtils {
     timeRemaining: number; // milliseconds
     gracePeriodRemaining: number; // milliseconds
   } {
-    const expiryTime = item.expiry_at || item.data?.expiry_at;
+    const expiryTime =
+      safePropertyAccess(item, 'expiry_at', isString) ||
+      safePropertyAccess(item.data, 'expiry_at', isString);
 
     if (!expiryTime) {
       return {
@@ -339,7 +340,9 @@ export class EnhancedExpiryUtils {
     };
     isExpired: boolean;
   } {
-    const expiryTime = item.expiry_at || item.data?.expiry_at;
+    const expiryTime =
+      safePropertyAccess(item, 'expiry_at', isString) ||
+      safePropertyAccess(item.data, 'expiry_at', isString);
 
     if (!expiryTime) {
       return {
@@ -445,7 +448,7 @@ export class EnhancedExpiryUtils {
   /**
    * Adjust expiry time for business hours
    */
-  private adjustForBusinessHours(date: Date, timezoneConfig?: TimezoneConfig): Date {
+  private adjustForBusinessHours(date: Date, _timezoneConfig?: TimezoneConfig): Date {
     let adjustedDate = new Date(date);
 
     // Continue adjusting until we hit business hours
@@ -576,7 +579,7 @@ export class EnhancedExpiryUtils {
         timeZone: timezoneConfig.timezone,
       });
       formatter.format(date);
-    } catch (error) {
+    } catch (_error) {
       result.isValid = false;
       result.errors.push(`Invalid timezone: ${timezoneConfig.timezone}`);
     }

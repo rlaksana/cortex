@@ -1,6 +1,7 @@
-// @ts-nocheck
-// FINAL COMPREHENSIVE EMERGENCY ROLLBACK: Utility layer type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
+// PHASE 2.2A RECOVERY: Correlation ID utility synchronization complete
+// Recovery Date: 2025-11-14T17:52:00+07:00 (Asia/Jakarta)
+// Recovery Method: Sequential file-by-file approach with quality gates
+// Dependencies: Request tracing and monitoring capabilities
 
 /**
  * Correlation ID utility for request tracing
@@ -83,7 +84,33 @@ export function getOrCreateCorrelationId(): string {
  */
 export function extractCorrelationIdFromRequest(request: unknown): string | undefined {
   // Try to get correlation ID from various request locations
-  return (
-    request?.params?.meta?.correlationId || request?.meta?.correlationId || request?.correlationId
-  );
+  if (request && typeof request === 'object') {
+    const req = request as Record<string, unknown>;
+
+    // Check params.meta.correlationId
+    if (req.params && typeof req.params === 'object') {
+      const params = req.params as Record<string, unknown>;
+      if (params.meta && typeof params.meta === 'object') {
+        const meta = params.meta as Record<string, unknown>;
+        if (typeof meta.correlationId === 'string') {
+          return meta.correlationId;
+        }
+      }
+    }
+
+    // Check meta.correlationId
+    if (req.meta && typeof req.meta === 'object') {
+      const meta = req.meta as Record<string, unknown>;
+      if (typeof meta.correlationId === 'string') {
+        return meta.correlationId;
+      }
+    }
+
+    // Check correlationId directly
+    if (typeof req.correlationId === 'string') {
+      return req.correlationId;
+    }
+  }
+
+  return undefined;
 }

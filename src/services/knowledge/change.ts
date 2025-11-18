@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { ChangeData, ScopeFilter } from '../../types/knowledge-data.js';
 import { computeContentHash } from '../../utils/hash.js';

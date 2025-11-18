@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * HTTP Client Utility with Timeout Handling
  *
@@ -30,8 +26,7 @@ export interface HttpClientConfig {
   retryDelayMs?: number;
 }
 
-import type {
-  SerializableRequestBody} from '../types/http-client-types.js';
+import type { SerializableRequestBody } from '../types/http-client-types.js';
 
 export interface HttpClientResponse<T = unknown> {
   data: T;

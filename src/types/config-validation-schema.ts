@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Generic Configuration Validation Schema with Runtime Checks
  *
@@ -9,15 +5,22 @@
  * for configuration objects with runtime type safety and detailed error reporting.
  */
 
-import type {
-  JSONObject,
-  ValidationError,
-  ValidationResult,
-  ValidationWarning
-} from './base-types.js';
+import type { JSONObject } from './base-types.js';
 import type {
   ConfigKey,
   ConnectionString,
+  Environment,
+  FeatureFlag,
+  Hostname,
+  MetricName,
+  Port,
+  Secret,
+  ServiceName,
+  TagKey,
+  TagValue,
+  Version,
+} from './branded-types.js';
+import {
   createConfigKey,
   createConnectionString,
   createEnvironment,
@@ -30,18 +33,13 @@ import type {
   createTagKey,
   createTagValue,
   createVersion,
-  Environment,
-  FeatureFlag,
-  Hostname,
-  MetricName,
-  Port,
-  Secret,
-  ServiceName,
-  TagKey,
-  TagValue,
-  Version} from './branded-types.js';
+} from './branded-types.js';
+import type { ConfigPath } from './config.js';
 import type {
-  ConfigPath} from './config.js';
+  ValidationError,
+  ValidationResult,
+  ValidationWarning,
+} from './runtime-type-guard-framework.js';
 
 // ============================================================================
 // Validation Schema Types
@@ -85,14 +83,22 @@ export interface ValidationContext {
   readonly errors: ValidationError[];
   /** Accumulated warnings */
   readonly warnings: ValidationWarning[];
+  /** Validation options */
+  readonly options?: {
+    strict?: boolean;
+    maxDepth?: number;
+    collectMetrics?: boolean;
+    useCache?: boolean;
+    shortCircuit?: boolean;
+  };
 }
 
 /**
  * Validation execution modes
  */
 export type ValidationMode =
-  | 'strict'    // Fail on any issue
-  | 'lenient'   // Allow warnings, fail on errors
+  | 'strict' // Fail on any issue
+  | 'lenient' // Allow warnings, fail on errors
   | 'permissive'; // Allow both warnings and errors
 
 /**
@@ -156,13 +162,15 @@ export interface PropertyValidationOptions<T = unknown> {
 /**
  * String validation rule
  */
-export function stringRule(options: {
-  minLength?: number;
-  maxLength?: number;
-  pattern?: RegExp;
-  trim?: boolean;
-  transform?: (value: string) => string;
-} = {}): ValidationRule<string> {
+export function stringRule(
+  options: {
+    minLength?: number;
+    maxLength?: number;
+    pattern?: RegExp;
+    trim?: boolean;
+    transform?: (value: string) => string;
+  } = {}
+): ValidationRule<string> {
   const { minLength, maxLength, pattern, trim = true, transform } = options;
 
   return {
@@ -178,14 +186,15 @@ export function stringRule(options: {
       if (typeof value === 'string') {
         strValue = trim ? value.trim() : value;
       } else if (value === null || value === undefined) {
-        return { valid: true, errors: [], warnings: [] };
+        return { success: true, errors: [], warnings: [] };
       } else {
         strValue = String(value);
         warnings.push({
           code: 'TYPE_COERCION',
           message: `Value at ${context.path} was coerced to string`,
           path: context.path,
-          value
+          value,
+          severity: 'low',
         });
       }
 
@@ -200,7 +209,7 @@ export function stringRule(options: {
           code: 'MIN_LENGTH',
           message: `String at ${context.path} must be at least ${minLength} characters long`,
           path: context.path,
-          value: strValue
+          value: strValue,
         });
       }
 
@@ -209,7 +218,7 @@ export function stringRule(options: {
           code: 'MAX_LENGTH',
           message: `String at ${context.path} must be at most ${maxLength} characters long`,
           path: context.path,
-          value: strValue
+          value: strValue,
         });
       }
 
@@ -219,30 +228,32 @@ export function stringRule(options: {
           code: 'PATTERN_MISMATCH',
           message: `String at ${context.path} does not match required pattern`,
           path: context.path,
-          value: strValue
+          value: strValue,
         });
       }
 
       return {
-        valid: errors.length === 0,
+        success: errors.length === 0,
         errors,
         warnings,
-        data: strValue
+        data: strValue,
       };
-    }
+    },
   };
 }
 
 /**
  * Number validation rule
  */
-export function numberRule(options: {
-  min?: number;
-  max?: number;
-  integer?: boolean;
-  positive?: boolean;
-  transform?: (value: number) => number;
-} = {}): ValidationRule<number> {
+export function numberRule(
+  options: {
+    min?: number;
+    max?: number;
+    integer?: boolean;
+    positive?: boolean;
+    transform?: (value: number) => number;
+  } = {}
+): ValidationRule<number> {
   const { min, max, integer = false, positive = false, transform } = options;
 
   return {
@@ -264,27 +275,28 @@ export function numberRule(options: {
             code: 'INVALID_NUMBER',
             message: `Value at ${context.path} is not a valid number`,
             path: context.path,
-            value
+            value,
           });
-          return { valid: false, errors, warnings };
+          return { success: false, errors, warnings };
         }
         numValue = parsed;
         warnings.push({
           code: 'TYPE_COERCION',
           message: `String value at ${context.path} was parsed as number`,
           path: context.path,
-          value
+          value: value,
+          severity: 'low',
         });
       } else if (value === null || value === undefined) {
-        return { valid: true, errors: [], warnings: [] };
+        return { success: true, errors: [], warnings: [] };
       } else {
         errors.push({
           code: 'INVALID_TYPE',
           message: `Value at ${context.path} must be a number`,
           path: context.path,
-          value
+          value,
         });
-        return { valid: false, errors, warnings };
+        return { success: false, errors, warnings };
       }
 
       // Apply custom transform
@@ -298,7 +310,7 @@ export function numberRule(options: {
           code: 'INVALID_NUMBER',
           message: `Value at ${context.path} must be a finite number`,
           path: context.path,
-          value: numValue
+          value: numValue,
         });
       }
 
@@ -308,7 +320,7 @@ export function numberRule(options: {
           code: 'NOT_INTEGER',
           message: `Value at ${context.path} must be an integer`,
           path: context.path,
-          value: numValue
+          value: numValue,
         });
       }
 
@@ -318,7 +330,7 @@ export function numberRule(options: {
           code: 'NOT_POSITIVE',
           message: `Value at ${context.path} must be positive`,
           path: context.path,
-          value: numValue
+          value: numValue,
         });
       }
 
@@ -328,7 +340,7 @@ export function numberRule(options: {
           code: 'MIN_VALUE',
           message: `Value at ${context.path} must be at least ${min}`,
           path: context.path,
-          value: numValue
+          value: numValue,
         });
       }
 
@@ -337,29 +349,35 @@ export function numberRule(options: {
           code: 'MAX_VALUE',
           message: `Value at ${context.path} must be at most ${max}`,
           path: context.path,
-          value: numValue
+          value: numValue,
         });
       }
 
       return {
-        valid: errors.length === 0,
+        success: errors.length === 0,
         errors,
         warnings,
-        data: numValue
+        data: numValue,
       };
-    }
+    },
   };
 }
 
 /**
  * Boolean validation rule
  */
-export function booleanRule(options: {
-  allowStringBoolean?: boolean;
-  truthyValues?: unknown[];
-  falsyValues?: unknown[];
-} = {}): ValidationRule<boolean> {
-  const { allowStringBoolean = true, truthyValues = [true, 1, 'true', '1'], falsyValues = [false, 0, 'false', '0'] } = options;
+export function booleanRule(
+  options: {
+    allowStringBoolean?: boolean;
+    truthyValues?: unknown[];
+    falsyValues?: unknown[];
+  } = {}
+): ValidationRule<boolean> {
+  const {
+    allowStringBoolean = true,
+    truthyValues = [true, 1, 'true', '1'],
+    falsyValues = [false, 0, 'false', '0'],
+  } = options;
 
   return {
     name: 'boolean',
@@ -370,11 +388,11 @@ export function booleanRule(options: {
       const warnings: ValidationWarning[] = [];
 
       if (typeof value === 'boolean') {
-        return { valid: true, errors: [], warnings: [], data: value };
+        return { success: true, errors: [], warnings: [], data: value };
       }
 
       if (value === null || value === undefined) {
-        return { valid: true, errors: [], warnings: [] };
+        return { success: true, errors: [], warnings: [] };
       }
 
       // String boolean conversion
@@ -385,18 +403,20 @@ export function booleanRule(options: {
             code: 'TYPE_COERCION',
             message: `String 'true' at ${context.path} was converted to boolean`,
             path: context.path,
-            value
+            value: value,
+            severity: 'low',
           });
-          return { valid: true, errors: [], warnings, data: true };
+          return { success: true, errors: [], warnings, data: true };
         }
         if (lower === 'false') {
           warnings.push({
             code: 'TYPE_COERCION',
             message: `String 'false' at ${context.path} was converted to boolean`,
             path: context.path,
-            value
+            value: value,
+            severity: 'low',
           });
-          return { valid: true, errors: [], warnings, data: false };
+          return { success: true, errors: [], warnings, data: false };
         }
       }
 
@@ -406,9 +426,10 @@ export function booleanRule(options: {
           code: 'TYPE_COERCION',
           message: `Value at ${context.path} was converted to boolean (true)`,
           path: context.path,
-          value
+          value: value,
+          severity: 'low',
         });
-        return { valid: true, errors: [], warnings, data: true };
+        return { success: true, errors: [], warnings, data: true };
       }
 
       if (falsyValues.includes(value)) {
@@ -416,20 +437,21 @@ export function booleanRule(options: {
           code: 'TYPE_COERCION',
           message: `Value at ${context.path} was converted to boolean (false)`,
           path: context.path,
-          value
+          value: value,
+          severity: 'low',
         });
-        return { valid: true, errors: [], warnings, data: false };
+        return { success: true, errors: [], warnings, data: false };
       }
 
       errors.push({
         code: 'INVALID_BOOLEAN',
         message: `Value at ${context.path} must be a boolean or convertible to boolean`,
         path: context.path,
-        value
+        value,
       });
 
-      return { valid: false, errors, warnings };
-    }
+      return { success: false, errors, warnings };
+    },
   };
 }
 
@@ -456,7 +478,7 @@ export function arrayRule<T>(
       const warnings: ValidationWarning[] = [];
 
       if (value === null || value === undefined) {
-        return { valid: true, errors: [], warnings: [] };
+        return { success: true, errors: [], warnings: [] };
       }
 
       if (!Array.isArray(value)) {
@@ -464,9 +486,9 @@ export function arrayRule<T>(
           code: 'INVALID_ARRAY',
           message: `Value at ${context.path} must be an array`,
           path: context.path,
-          value
+          value,
         });
-        return { valid: false, errors, warnings };
+        return { success: false, errors, warnings };
       }
 
       // Empty array check
@@ -475,7 +497,7 @@ export function arrayRule<T>(
           code: 'EMPTY_ARRAY',
           message: `Array at ${context.path} cannot be empty`,
           path: context.path,
-          value
+          value,
         });
       }
 
@@ -485,7 +507,7 @@ export function arrayRule<T>(
           code: 'MIN_LENGTH',
           message: `Array at ${context.path} must have at least ${minLength} items`,
           path: context.path,
-          value
+          value,
         });
       }
 
@@ -494,7 +516,7 @@ export function arrayRule<T>(
           code: 'MAX_LENGTH',
           message: `Array at ${context.path} must have at most ${maxLength} items`,
           path: context.path,
-          value
+          value,
         });
       }
 
@@ -508,8 +530,8 @@ export function arrayRule<T>(
         errors.push(...itemResult.errors);
         warnings.push(...itemResult.warnings);
 
-        if (itemResult.valid && itemResult.data !== undefined) {
-          validatedItems.push(itemResult.data);
+        if (itemResult.success && itemResult.value !== undefined) {
+          validatedItems.push(itemResult.value);
         }
       }
 
@@ -523,7 +545,7 @@ export function arrayRule<T>(
               code: 'DUPLICATE_ITEM',
               message: `Array at ${context.path} contains duplicate items`,
               path: context.path,
-              value: item
+              value: item,
             });
           }
           seen.add(key);
@@ -531,12 +553,12 @@ export function arrayRule<T>(
       }
 
       return {
-        valid: errors.length === 0,
+        success: errors.length === 0,
         errors,
         warnings,
-        data: validatedItems
+        data: validatedItems,
       };
-    }
+    },
   };
 }
 
@@ -561,7 +583,7 @@ export function objectRule<T extends Record<string, unknown>>(
       const warnings: ValidationWarning[] = [];
 
       if (value === null || value === undefined) {
-        return { valid: true, errors: [], warnings: [] };
+        return { success: true, errors: [], warnings: [] };
       }
 
       if (typeof value !== 'object' || Array.isArray(value)) {
@@ -569,9 +591,9 @@ export function objectRule<T extends Record<string, unknown>>(
           code: 'INVALID_OBJECT',
           message: `Value at ${context.path} must be an object`,
           path: context.path,
-          value
+          value,
         });
-        return { valid: false, errors, warnings };
+        return { success: false, errors, warnings };
       }
 
       const obj = value as Record<string, unknown>;
@@ -586,7 +608,8 @@ export function objectRule<T extends Record<string, unknown>>(
               code: 'UNKNOWN_PROPERTY',
               message: `Unknown property '${key}' at ${context.path}`,
               path: `${context.path}.${key}`,
-              value: obj[key]
+              value: obj[key],
+              severity: 'medium',
             });
           }
         }
@@ -604,7 +627,7 @@ export function objectRule<T extends Record<string, unknown>>(
             code: 'REQUIRED_PROPERTY',
             message: `Required property '${propertyName}' is missing at ${context.path}`,
             path: propertyPath,
-            value: propertyValue
+            value: propertyValue,
           });
           continue;
         }
@@ -616,18 +639,18 @@ export function objectRule<T extends Record<string, unknown>>(
         errors.push(...result.errors);
         warnings.push(...result.warnings);
 
-        if (result.valid && result.data !== undefined) {
-          validatedObj[propertyName] = result.data;
+        if (result.success && result.value !== undefined) {
+          validatedObj[propertyName] = result.value;
         }
       }
 
       return {
-        valid: errors.length === 0,
+        success: errors.length === 0,
         errors,
         warnings,
-        data: validatedObj as T
+        data: validatedObj as T,
       };
-    }
+    },
   };
 }
 
@@ -643,7 +666,9 @@ export function enumRule<T extends string>(
 ): ValidationRule<T> {
   const { caseSensitive = true, allowCoercion = false } = options;
 
-  const valueSet = new Set(caseSensitive ? allowedValues : allowedValues.map(v => v.toLowerCase()));
+  const valueSet = new Set(
+    caseSensitive ? allowedValues : allowedValues.map((v) => v.toLowerCase())
+  );
 
   return {
     name: 'enum',
@@ -654,7 +679,7 @@ export function enumRule<T extends string>(
       const warnings: ValidationWarning[] = [];
 
       if (value === null || value === undefined) {
-        return { valid: true, errors: [], warnings: [] };
+        return { success: true, errors: [], warnings: [] };
       }
 
       let strValue = String(value);
@@ -665,27 +690,30 @@ export function enumRule<T extends string>(
       }
 
       if (valueSet.has(strValue as T)) {
-        const finalValue = caseSensitive ? strValue : (allowedValues.find(v => v.toLowerCase() === strValue) as T);
+        const finalValue = caseSensitive
+          ? strValue
+          : (allowedValues.find((v) => v.toLowerCase() === strValue) as T);
         if (allowCoercion && originalValue !== finalValue) {
           warnings.push({
             code: 'ENUM_COERCION',
             message: `Value '${originalValue}' at ${context.path} was coerced to '${finalValue}'`,
             path: context.path,
-            value
+            value: originalValue,
+            severity: 'medium',
           });
         }
-        return { valid: true, errors: [], warnings, data: finalValue };
+        return { success: true, errors: [], warnings, data: finalValue };
       }
 
       errors.push({
         code: 'INVALID_ENUM',
         message: `Value at ${context.path} must be one of: ${allowedValues.join(', ')}`,
         path: context.path,
-        value
+        value,
       });
 
-      return { valid: false, errors, warnings };
-    }
+      return { success: false, errors, warnings };
+    },
   };
 }
 
@@ -700,20 +728,22 @@ export const configKeyRule: ValidationRule<ConfigKey> = {
   validate: (value: unknown, context): ValidationResult => {
     try {
       const configKey = createConfigKey(String(value));
-      return { valid: true, errors: [], warnings: [], data: configKey };
+      return { success: true, errors: [], warnings: [], data: configKey };
     } catch (error) {
       return {
-        valid: false,
-        errors: [{
-          code: 'INVALID_CONFIG_KEY',
-          message: `Invalid configuration key at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
-          path: context.path,
-          value
-        }],
-        warnings: []
+        success: false,
+        errors: [
+          {
+            code: 'INVALID_CONFIG_KEY',
+            message: `Invalid configuration key at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
+            path: context.path,
+            value,
+          },
+        ],
+        warnings: [],
       };
     }
-  }
+  },
 };
 
 export const environmentRule: ValidationRule<Environment> = {
@@ -723,20 +753,22 @@ export const environmentRule: ValidationRule<Environment> = {
   validate: (value: unknown, context): ValidationResult => {
     try {
       const env = createEnvironment(String(value));
-      return { valid: true, errors: [], warnings: [], data: env };
+      return { success: true, errors: [], warnings: [], data: env };
     } catch (error) {
       return {
-        valid: false,
-        errors: [{
-          code: 'INVALID_ENVIRONMENT',
-          message: `Invalid environment at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
-          path: context.path,
-          value
-        }],
-        warnings: []
+        success: false,
+        errors: [
+          {
+            code: 'INVALID_ENVIRONMENT',
+            message: `Invalid environment at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
+            path: context.path,
+            value,
+          },
+        ],
+        warnings: [],
       };
     }
-  }
+  },
 };
 
 export const serviceNameRule: ValidationRule<ServiceName> = {
@@ -746,20 +778,22 @@ export const serviceNameRule: ValidationRule<ServiceName> = {
   validate: (value: unknown, context): ValidationResult => {
     try {
       const serviceName = createServiceName(String(value));
-      return { valid: true, errors: [], warnings: [], data: serviceName };
+      return { success: true, errors: [], warnings: [], data: serviceName };
     } catch (error) {
       return {
-        valid: false,
-        errors: [{
-          code: 'INVALID_SERVICE_NAME',
-          message: `Invalid service name at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
-          path: context.path,
-          value
-        }],
-        warnings: []
+        success: false,
+        errors: [
+          {
+            code: 'INVALID_SERVICE_NAME',
+            message: `Invalid service name at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
+            path: context.path,
+            value,
+          },
+        ],
+        warnings: [],
       };
     }
-  }
+  },
 };
 
 export const connectionStringRule: ValidationRule<ConnectionString> = {
@@ -769,20 +803,22 @@ export const connectionStringRule: ValidationRule<ConnectionString> = {
   validate: (value: unknown, context): ValidationResult => {
     try {
       const connectionString = createConnectionString(String(value));
-      return { valid: true, errors: [], warnings: [], data: connectionString };
+      return { success: true, errors: [], warnings: [], data: connectionString };
     } catch (error) {
       return {
-        valid: false,
-        errors: [{
-          code: 'INVALID_CONNECTION_STRING',
-          message: `Invalid connection string at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
-          path: context.path,
-          value
-        }],
-        warnings: []
+        success: false,
+        errors: [
+          {
+            code: 'INVALID_CONNECTION_STRING',
+            message: `Invalid connection string at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
+            path: context.path,
+            value,
+          },
+        ],
+        warnings: [],
       };
     }
-  }
+  },
 };
 
 export const secretRule: ValidationRule<Secret> = {
@@ -792,20 +828,22 @@ export const secretRule: ValidationRule<Secret> = {
   validate: (value: unknown, context): ValidationResult => {
     try {
       const secret = createSecret(String(value));
-      return { valid: true, errors: [], warnings: [], data: secret };
+      return { success: true, errors: [], warnings: [], data: secret };
     } catch (error) {
       return {
-        valid: false,
-        errors: [{
-          code: 'INVALID_SECRET',
-          message: `Invalid secret at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
-          path: context.path,
-          value
-        }],
-        warnings: []
+        success: false,
+        errors: [
+          {
+            code: 'INVALID_SECRET',
+            message: `Invalid secret at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
+            path: context.path,
+            value,
+          },
+        ],
+        warnings: [],
       };
     }
-  }
+  },
 };
 
 export const hostnameRule: ValidationRule<Hostname> = {
@@ -815,20 +853,22 @@ export const hostnameRule: ValidationRule<Hostname> = {
   validate: (value: unknown, context): ValidationResult => {
     try {
       const hostname = createHostname(String(value));
-      return { valid: true, errors: [], warnings: [], data: hostname };
+      return { success: true, errors: [], warnings: [], data: hostname };
     } catch (error) {
       return {
-        valid: false,
-        errors: [{
-          code: 'INVALID_HOSTNAME',
-          message: `Invalid hostname at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
-          path: context.path,
-          value
-        }],
-        warnings: []
+        success: false,
+        errors: [
+          {
+            code: 'INVALID_HOSTNAME',
+            message: `Invalid hostname at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
+            path: context.path,
+            value,
+          },
+        ],
+        warnings: [],
       };
     }
-  }
+  },
 };
 
 export const portRule: ValidationRule<Port> = {
@@ -838,20 +878,22 @@ export const portRule: ValidationRule<Port> = {
   validate: (value: unknown, context): ValidationResult => {
     try {
       const port = createPort(Number(value));
-      return { valid: true, errors: [], warnings: [], data: port };
+      return { success: true, errors: [], warnings: [], data: port };
     } catch (error) {
       return {
-        valid: false,
-        errors: [{
-          code: 'INVALID_PORT',
-          message: `Invalid port at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
-          path: context.path,
-          value
-        }],
-        warnings: []
+        success: false,
+        errors: [
+          {
+            code: 'INVALID_PORT',
+            message: `Invalid port at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
+            path: context.path,
+            value,
+          },
+        ],
+        warnings: [],
       };
     }
-  }
+  },
 };
 
 export const versionRule: ValidationRule<Version> = {
@@ -861,20 +903,22 @@ export const versionRule: ValidationRule<Version> = {
   validate: (value: unknown, context): ValidationResult => {
     try {
       const version = createVersion(String(value));
-      return { valid: true, errors: [], warnings: [], data: version };
+      return { success: true, errors: [], warnings: [], data: version };
     } catch (error) {
       return {
-        valid: false,
-        errors: [{
-          code: 'INVALID_VERSION',
-          message: `Invalid version at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
-          path: context.path,
-          value
-        }],
-        warnings: []
+        success: false,
+        errors: [
+          {
+            code: 'INVALID_VERSION',
+            message: `Invalid version at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
+            path: context.path,
+            value,
+          },
+        ],
+        warnings: [],
       };
     }
-  }
+  },
 };
 
 export const featureFlagRule: ValidationRule<FeatureFlag> = {
@@ -884,20 +928,22 @@ export const featureFlagRule: ValidationRule<FeatureFlag> = {
   validate: (value: unknown, context): ValidationResult => {
     try {
       const flag = createFeatureFlag(String(value));
-      return { valid: true, errors: [], warnings: [], data: flag };
+      return { success: true, errors: [], warnings: [], data: flag };
     } catch (error) {
       return {
-        valid: false,
-        errors: [{
-          code: 'INVALID_FEATURE_FLAG',
-          message: `Invalid feature flag at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
-          path: context.path,
-          value
-        }],
-        warnings: []
+        success: false,
+        errors: [
+          {
+            code: 'INVALID_FEATURE_FLAG',
+            message: `Invalid feature flag at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
+            path: context.path,
+            value,
+          },
+        ],
+        warnings: [],
       };
     }
-  }
+  },
 };
 
 export const metricNameRule: ValidationRule<MetricName> = {
@@ -907,20 +953,22 @@ export const metricNameRule: ValidationRule<MetricName> = {
   validate: (value: unknown, context): ValidationResult => {
     try {
       const metricName = createMetricName(String(value));
-      return { valid: true, errors: [], warnings: [], data: metricName };
+      return { success: true, errors: [], warnings: [], data: metricName };
     } catch (error) {
       return {
-        valid: false,
-        errors: [{
-          code: 'INVALID_METRIC_NAME',
-          message: `Invalid metric name at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
-          path: context.path,
-          value
-        }],
-        warnings: []
+        success: false,
+        errors: [
+          {
+            code: 'INVALID_METRIC_NAME',
+            message: `Invalid metric name at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
+            path: context.path,
+            value,
+          },
+        ],
+        warnings: [],
       };
     }
-  }
+  },
 };
 
 export const tagKeyRule: ValidationRule<TagKey> = {
@@ -930,20 +978,22 @@ export const tagKeyRule: ValidationRule<TagKey> = {
   validate: (value: unknown, context): ValidationResult => {
     try {
       const tagKey = createTagKey(String(value));
-      return { valid: true, errors: [], warnings: [], data: tagKey };
+      return { success: true, errors: [], warnings: [], data: tagKey };
     } catch (error) {
       return {
-        valid: false,
-        errors: [{
-          code: 'INVALID_TAG_KEY',
-          message: `Invalid tag key at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
-          path: context.path,
-          value
-        }],
-        warnings: []
+        success: false,
+        errors: [
+          {
+            code: 'INVALID_TAG_KEY',
+            message: `Invalid tag key at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
+            path: context.path,
+            value,
+          },
+        ],
+        warnings: [],
       };
     }
-  }
+  },
 };
 
 export const tagValueRule: ValidationRule<TagValue> = {
@@ -953,20 +1003,22 @@ export const tagValueRule: ValidationRule<TagValue> = {
   validate: (value: unknown, context): ValidationResult => {
     try {
       const tagValue = createTagValue(String(value));
-      return { valid: true, errors: [], warnings: [], data: tagValue };
+      return { success: true, errors: [], warnings: [], data: tagValue };
     } catch (error) {
       return {
-        valid: false,
-        errors: [{
-          code: 'INVALID_TAG_VALUE',
-          message: `Invalid tag value at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
-          path: context.path,
-          value
-        }],
-        warnings: []
+        success: false,
+        errors: [
+          {
+            code: 'INVALID_TAG_VALUE',
+            message: `Invalid tag value at ${context.path}: ${error instanceof Error ? error.message : String(error)}`,
+            path: context.path,
+            value,
+          },
+        ],
+        warnings: [],
       };
     }
-  }
+  },
 };
 
 // ============================================================================
@@ -1020,18 +1072,20 @@ export class ConfigSchemaBuilder {
         validate: (value: unknown, context): ValidationResult => {
           if (value === undefined || value === null) {
             return {
-              valid: false,
-              errors: [{
-                code: 'REQUIRED_PROPERTY',
-                message: `Required property '${path}' is missing`,
-                path: context.path,
-                value
-              }],
-              warnings: []
+              success: false,
+              errors: [
+                {
+                  code: 'REQUIRED_PROPERTY',
+                  message: `Required property '${path}' is missing`,
+                  path: context.path,
+                  value,
+                },
+              ],
+              warnings: [],
             };
           }
-          return { valid: true, errors: [], warnings: [] };
-        }
+          return { success: true, errors: [], warnings: [] };
+        },
       });
     }
 
@@ -1048,8 +1102,8 @@ export class ConfigSchemaBuilder {
         required: false,
         default: options.default,
         validate: (value: unknown): ValidationResult => {
-          return { valid: true, errors: [], warnings: [], data: value ?? options.default };
-        }
+          return { success: true, errors: [], warnings: [], data: value ?? options.default };
+        },
       });
     }
 
@@ -1087,8 +1141,9 @@ export class ConfigSchemaBuilder {
       version: this.version,
       description: this.description,
       rules: this.rules,
-      environmentOverrides: this.environmentOverrides.size > 0 ? this.environmentOverrides : undefined,
-      deprecatedPaths: this.deprecatedPaths.size > 0 ? this.deprecatedPaths : undefined
+      environmentOverrides:
+        this.environmentOverrides.size > 0 ? this.environmentOverrides : undefined,
+      deprecatedPaths: this.deprecatedPaths.size > 0 ? this.deprecatedPaths : undefined,
     };
   }
 }
@@ -1132,14 +1187,16 @@ export class ConfigValidationEngine {
     const schema = this.getSchema(schemaName);
     if (!schema) {
       return {
-        valid: false,
-        errors: [{
-          code: 'SCHEMA_NOT_FOUND',
-          message: `Schema '${schemaName}' not found`,
-          path: '',
-          value: config
-        }],
-        warnings: []
+        success: false,
+        errors: [
+          {
+            code: 'SCHEMA_NOT_FOUND',
+            message: `Schema '${schemaName}' not found`,
+            path: '',
+            value: config,
+          },
+        ],
+        warnings: [],
       };
     }
 
@@ -1151,7 +1208,7 @@ export class ConfigValidationEngine {
       strict,
       mode,
       errors: [],
-      warnings: []
+      warnings: [],
     };
 
     // Apply environment-specific overrides if present
@@ -1160,7 +1217,7 @@ export class ConfigValidationEngine {
       const override = schema.environmentOverrides.get(environment)!;
       schemaToUse = {
         ...schema,
-        rules: new Map([...schema.rules, ...(override.rules || new Map())])
+        rules: new Map([...schema.rules, ...(override.rules || new Map())]),
       };
     }
 
@@ -1185,7 +1242,8 @@ export class ConfigValidationEngine {
           code: 'DEPRECATED_PATH',
           message: `Configuration path '${path}' is deprecated: ${info.message}`,
           path,
-          value: this.getProperty(config, path)
+          value: this.getProperty(config, path),
+          severity: 'medium',
         });
 
         // Auto-migrate if possible
@@ -1197,7 +1255,8 @@ export class ConfigValidationEngine {
             code: 'AUTO_MIGRATED',
             message: `Deprecated path '${path}' was automatically migrated to '${info.migrationPath}'`,
             path: info.migrationPath,
-            value: migratedValue
+            value: migratedValue,
+            severity: 'low',
           });
         }
       }
@@ -1214,8 +1273,8 @@ export class ConfigValidationEngine {
         warnings.push(...result.warnings);
 
         // Update config with transformed/validated data
-        if (result.valid && result.data !== undefined) {
-          this.setProperty(config, path, result.data);
+        if (result.success && result.value !== undefined) {
+          this.setProperty(config, path, result.value);
         }
       }
     }
@@ -1229,27 +1288,28 @@ export class ConfigValidationEngine {
             code: 'UNKNOWN_PROPERTY',
             message: `Unknown configuration property: ${path}`,
             path,
-            value: this.getProperty(config, path)
+            value: this.getProperty(config, path),
+            severity: 'medium',
           });
         }
       }
     }
 
     // Determine overall validity based on mode
-    let valid = errors.length === 0;
+    let success = errors.length === 0;
     if (context.mode === 'permissive') {
-      valid = true; // Always valid in permissive mode
+      success = true; // Always valid in permissive mode
     } else if (context.mode === 'lenient') {
-      valid = errors.length === 0; // Valid if no errors (warnings allowed)
+      success = errors.length === 0; // Valid if no errors (warnings allowed)
     } else {
-      valid = errors.length === 0 && warnings.length === 0; // Strict mode
+      success = errors.length === 0 && warnings.length === 0; // Strict mode
     }
 
     return {
-      valid,
+      success,
       errors,
       warnings,
-      data: config
+      data: config,
     };
   }
 
@@ -1292,14 +1352,14 @@ export class ConfigValidationEngine {
    */
   private setProperty(obj: JSONObject, path: string, value: unknown): void {
     const parts = path.split('.');
-    let current: unknown = obj;
+    let current: Record<string, unknown> = obj;
 
     for (let i = 0; i < parts.length - 1; i++) {
       const part = parts[i];
       if (!(part in current) || current[part] === null || typeof current[part] !== 'object') {
         current[part] = {};
       }
-      current = current[part];
+      current = current[part] as Record<string, unknown>;
     }
 
     current[parts[parts.length - 1]] = value;
@@ -1335,27 +1395,27 @@ export function createAppConfigSchema(version: Version): ConfigSchema {
   return new ConfigSchemaBuilder('application', version, 'Basic application configuration')
     .addProperty('environment', {
       required: true,
-      rules: [environmentRule]
+      rules: [environmentRule],
     })
     .addProperty('debug', {
       required: false,
       default: false,
-      rules: [booleanRule()]
+      rules: [booleanRule()],
     })
     .addProperty('logLevel', {
       required: false,
       default: 'info',
-      rules: [enumRule(['error', 'warn', 'info', 'debug', 'trace'] as const)]
+      rules: [enumRule(['error', 'warn', 'info', 'debug', 'trace'] as const)],
     })
     .addProperty('port', {
       required: false,
       default: 3000,
-      rules: [portRule]
+      rules: [portRule],
     })
     .addProperty('host', {
       required: false,
       default: 'localhost',
-      rules: [hostnameRule]
+      rules: [hostnameRule],
     })
     .build();
 }
@@ -1367,35 +1427,37 @@ export function createDatabaseConfigSchema(version: Version): ConfigSchema {
   return new ConfigSchemaBuilder('database', version, 'Database configuration')
     .addProperty('qdrant', {
       required: true,
-      rules: [objectRule({
-        host: hostnameRule,
-        port: portRule,
-        apiKey: secretRule,
-        timeout: numberRule({ min: 1000, max: 300000 }),
-        maxRetries: numberRule({ min: 0, max: 10, integer: true }),
-        retryDelay: numberRule({ min: 100, max: 10000 }),
-        useHttps: booleanRule(),
-        collectionPrefix: stringRule({ maxLength: 50 }),
-        enableHealthChecks: booleanRule(),
-        connectionPoolSize: numberRule({ min: 1, max: 100, integer: true }),
-        requestTimeout: numberRule({ min: 1000, max: 300000 }),
-        connectTimeout: numberRule({ min: 1000, max: 300000 })
-      })]
+      rules: [
+        objectRule({
+          host: hostnameRule,
+          port: portRule,
+          apiKey: secretRule,
+          timeout: numberRule({ min: 1000, max: 300000 }),
+          maxRetries: numberRule({ min: 0, max: 10, integer: true }),
+          retryDelay: numberRule({ min: 100, max: 10000 }),
+          useHttps: booleanRule(),
+          collectionPrefix: stringRule({ maxLength: 50 }),
+          enableHealthChecks: booleanRule(),
+          connectionPoolSize: numberRule({ min: 1, max: 100, integer: true }),
+          requestTimeout: numberRule({ min: 1000, max: 300000 }),
+          connectTimeout: numberRule({ min: 1000, max: 300000 }),
+        }),
+      ],
     })
     .addProperty('fallbackEnabled', {
       required: false,
       default: true,
-      rules: [booleanRule()]
+      rules: [booleanRule()],
     })
     .addProperty('backupEnabled', {
       required: false,
       default: false,
-      rules: [booleanRule()]
+      rules: [booleanRule()],
     })
     .addProperty('migrationEnabled', {
       required: false,
       default: true,
-      rules: [booleanRule()]
+      rules: [booleanRule()],
     })
     .build();
 }
@@ -1407,38 +1469,47 @@ export function createMonitoringConfigSchema(version: Version): ConfigSchema {
   return new ConfigSchemaBuilder('monitoring', version, 'Monitoring configuration')
     .addProperty('metrics', {
       required: false,
-      rules: [objectRule({
-        enabled: booleanRule(),
-        interval: numberRule({ min: 1000, max: 300000 }),
-        prefix: stringRule({ maxLength: 50 }),
-        labels: objectRule({}, { allowUnknownProperties: true }),
-        defaultBuckets: arrayRule(numberRule({ positive: true }), { minLength: 1 })
-      })]
+      rules: [
+        objectRule({
+          enabled: booleanRule(),
+          interval: numberRule({ min: 1000, max: 300000 }),
+          prefix: stringRule({ maxLength: 50 }),
+          labels: objectRule({}, { allowUnknownProperties: true }),
+          defaultBuckets: arrayRule(numberRule({ positive: true }), { minLength: 1 }),
+        }),
+      ],
     })
     .addProperty('healthCheck', {
       required: false,
-      rules: [objectRule({
-        enabled: booleanRule(),
-        interval: numberRule({ min: 5000, max: 300000 }),
-        timeout: numberRule({ min: 1000, max: 30000 }),
-        retries: numberRule({ min: 0, max: 10, integer: true }),
-        endpoints: arrayRule(objectRule({
-          name: stringRule({ minLength: 1 }),
-          path: stringRule({ minLength: 1 }),
-          method: enumRule(['GET', 'POST', 'PUT', 'DELETE'] as const),
-          expectedStatus: numberRule({ min: 200, max: 299 }),
-          timeout: numberRule({ min: 100, max: 30000 })
-        }), { minLength: 1 })
-      })]
+      rules: [
+        objectRule({
+          enabled: booleanRule(),
+          interval: numberRule({ min: 5000, max: 300000 }),
+          timeout: numberRule({ min: 1000, max: 30000 }),
+          retries: numberRule({ min: 0, max: 10, integer: true }),
+          endpoints: arrayRule(
+            objectRule({
+              name: stringRule({ minLength: 1 }),
+              path: stringRule({ minLength: 1 }),
+              method: enumRule(['GET', 'POST', 'PUT', 'DELETE'] as const),
+              expectedStatus: numberRule({ min: 200, max: 299 }),
+              timeout: numberRule({ min: 100, max: 30000 }),
+            }),
+            { minLength: 1 }
+          ),
+        }),
+      ],
     })
     .addProperty('tracing', {
       required: false,
-      rules: [objectRule({
-        enabled: booleanRule(),
-        samplingRate: numberRule({ min: 0, max: 1 }),
-        serviceName: serviceNameRule,
-        version: versionRule
-      })]
+      rules: [
+        objectRule({
+          enabled: booleanRule(),
+          samplingRate: numberRule({ min: 0, max: 1 }),
+          serviceName: serviceNameRule,
+          version: versionRule,
+        }),
+      ],
     })
     .build();
 }
@@ -1486,43 +1557,45 @@ export function isValidValidationResult(value: unknown): value is ValidationResu
     return false;
   }
 
-  const result = value as Record<string, unknown>;
+  const result = value as ValidationResult;
 
-  return typeof result.valid === 'boolean' &&
-         Array.isArray(result.errors) &&
-         Array.isArray(result.warnings);
+  return (
+    typeof result.success === 'boolean' &&
+    Array.isArray(result.errors) &&
+    Array.isArray(result.warnings)
+  );
 }
 
 /**
  * Extract error messages from validation result
  */
 export function getErrorMessages(result: ValidationResult): string[] {
-  return result.errors.map(error => `${error.code}: ${error.message}`);
+  return result.errors.map((error) => `${error.code}: ${error.message}`);
 }
 
 /**
  * Extract warning messages from validation result
  */
 export function getWarningMessages(result: ValidationResult): string[] {
-  return result.warnings.map(warning => `${warning.code}: ${warning.message}`);
+  return result.warnings.map((warning) => `${warning.code}: ${warning.message}`);
 }
 
 /**
  * Format validation result for logging
  */
 export function formatValidationResult(result: ValidationResult): string {
-  const lines = [`Validation ${result.valid ? 'passed' : 'failed'}`];
+  const lines = [`Validation ${result.success ? 'passed' : 'failed'}`];
 
   if (result.errors.length > 0) {
     lines.push('Errors:');
-    result.errors.forEach(error => {
+    result.errors.forEach((error) => {
       lines.push(`  - ${error.path}: ${error.message} (${error.code})`);
     });
   }
 
   if (result.warnings.length > 0) {
     lines.push('Warnings:');
-    result.warnings.forEach(warning => {
+    result.warnings.forEach((warning) => {
       lines.push(`  - ${warning.path}: ${warning.message} (${warning.code})`);
     });
   }

@@ -1,29 +1,24 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-
-import { environment } from '../../../config/environment.js';
-import type { InsightGenerationRequest } from '../../../types/insight-interfaces.js';
-import { InsightGenerationService } from '../insight-generation-service.js';
+import { environment } from '../../../config/environment';
+import type { InsightGenerationRequest } from '../../../types/insight-interfaces';
+import { InsightGenerationService } from '../insight-generation-service';
 
 // Mock dependencies
-jest.mock('../../../utils/logger.js');
-jest.mock('../../../config/environment.js');
-jest.mock('../metrics/system-metrics.js');
+vi.mock('../../../utils/logger.js');
+vi.mock('../../../config/environment.js');
+vi.mock('../metrics/system-metrics.js');
 
-const mockEnvironment = environment as jest.Mocked<typeof environment>;
+const mockEnvironment = vi.mocked(environment);
 const _mockSystemMetrics = {
-  updateMetrics: jest.fn(),
+  updateMetrics: vi.fn(),
 };
 
 describe('InsightGenerationService', () => {
   let insightService: InsightGenerationService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Mock environment configuration
     mockEnvironment.isDevelopmentMode.mockReturnValue(true);
@@ -98,7 +93,7 @@ describe('InsightGenerationService', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Configuration and Initialization', () => {
@@ -617,7 +612,7 @@ describe('InsightGenerationService', () => {
     it('should handle system errors without crashing', async () => {
       // Mock a system error during processing
       const originalConsoleError = console.error;
-      console.error = jest.fn();
+      console.error = vi.fn();
 
       const request: InsightGenerationRequest = {
         items: [

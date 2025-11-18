@@ -1,17 +1,16 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Final batch of type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Performance Monitoring Middleware for Cortex MCP
  * Provides automatic performance tracking for HTTP requests and MCP operations
  */
 
-import { type NextFunction,type Request, type Response } from 'express';
+import { type NextFunction, type Request, type Response } from 'express';
 
 import { logger } from '@/utils/logger.js';
 
 import { performanceCollector } from './performance-collector.js';
+import { OperationType } from './operation-types.js';
 
 export interface PerformanceMiddlewareOptions {
   trackRequestBody?: boolean;
@@ -36,7 +35,7 @@ export class PerformanceMiddleware {
       }
 
       const startTime = Date.now();
-      const operation = `${req.method} ${req.path}`;
+      const operation = `${req.method} ${req.path}` as const;
       const metadata: Record<string, unknown> = {
         method: req.method,
         path: req.path,
@@ -70,7 +69,8 @@ export class PerformanceMiddleware {
 
         // Add response metadata
         metadata.statusCode = res.statusCode;
-        metadata.responseSize = chunk ? chunk.length : 0;
+        metadata.responseSize = chunk && typeof chunk === 'string' ? chunk.length :
+                               chunk && Buffer.isBuffer(chunk) ? chunk.length : 0;
 
         if (duration > slowQueryThreshold) {
           logger.warn(
@@ -94,10 +94,10 @@ export class PerformanceMiddleware {
           success: res.statusCode < 400,
           metadata,
           tags: ['http', req.method.toLowerCase()],
-        });
+        } as any); // Type assertion for HTTP operations
 
         // Call original end
-        return originalEnd.call(this, chunk, encoding);
+        return originalEnd.call(this, chunk, encoding as BufferEncoding);
       };
 
       next();
@@ -112,22 +112,22 @@ export class PerformanceMiddleware {
       const method = descriptor.value;
 
       descriptor.value = async function (...args: any[]) {
-        const endMetric = performanceCollector.startMetric(operationName, {
+        const endMetric = performanceCollector.startMetric(operationName as any, {
           className: target.constructor.name,
           methodName: propertyName,
           ...metadata,
-        });
+        } as any);
 
         try {
           const result = await method.apply(this, args);
           endMetric();
           return result;
         } catch (error) {
-          performanceCollector.recordError(operationName, error as Error, {
+          performanceCollector.recordError(operationName as any, error as Error, {
             className: target.constructor.name,
             methodName: propertyName,
             ...metadata,
-          });
+          } as any);
           throw error;
         }
       };
@@ -144,14 +144,14 @@ export class PerformanceMiddleware {
     fn: () => Promise<T>,
     metadata?: Record<string, unknown>
   ): Promise<T> {
-    const endMetric = performanceCollector.startMetric(operationName, metadata);
+    const endMetric = performanceCollector.startMetric(operationName as any, metadata as any);
 
     try {
       const result = await fn();
       endMetric();
       return result;
     } catch (error) {
-      performanceCollector.recordError(operationName, error as Error, metadata);
+      performanceCollector.recordError(operationName as any, error as Error, metadata as any);
       throw error;
     }
   }
@@ -161,7 +161,7 @@ export class PerformanceMiddleware {
    */
   static trackDatabaseQuery(query: string, params?: unknown[]) {
     return performanceCollector.startMetric(
-      'database_query',
+      OperationType.DATABASE_QUERY,
       {
         query: query.substring(0, 100), // Truncate long queries
         paramCount: params?.length || 0,
@@ -176,7 +176,7 @@ export class PerformanceMiddleware {
    */
   static trackEmbeddingGeneration(textLength: number, model?: string) {
     return performanceCollector.startMetric(
-      'embedding_generation',
+      OperationType.EMBEDDING_GENERATION,
       {
         textLength,
         model,
@@ -191,7 +191,7 @@ export class PerformanceMiddleware {
    */
   static trackVectorSearch(vectorSize: number, topK: number) {
     return performanceCollector.startMetric(
-      'vector_search',
+      OperationType.VECTOR_SEARCH,
       {
         vectorSize,
         topK,
@@ -206,7 +206,7 @@ export class PerformanceMiddleware {
    */
   static trackAuthentication(method: 'jwt' | 'api_key', userId?: string) {
     return performanceCollector.startMetric(
-      'auth_validation',
+      OperationType.AUTH_VALIDATION,
       {
         method,
         userId: userId ? `${userId.substring(0, 8)}...` : undefined,
@@ -220,8 +220,12 @@ export class PerformanceMiddleware {
    * Cache operation performance tracking
    */
   static trackCacheOperation(operation: 'get' | 'set' | 'delete', key?: string) {
+    const cacheOperation = operation === 'get' ? OperationType.CACHE_GET :
+                          operation === 'set' ? OperationType.CACHE_SET :
+                          OperationType.CACHE_DELETE;
+
     return performanceCollector.startMetric(
-      `cache_${operation}`,
+      cacheOperation,
       {
         key: key ? key.substring(0, 50) : undefined,
         operation,

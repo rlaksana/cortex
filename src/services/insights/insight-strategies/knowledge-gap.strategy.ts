@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Knowledge Gap Analysis Strategy
  *
@@ -320,7 +316,9 @@ export class KnowledgeGapStrategy {
         (item) =>
           item.kind === 'runbook' ||
           item.kind === 'todo' ||
-          (item.data && (item.data as unknown).tags && (item.data as unknown).tags.includes('process'))
+          (item.data &&
+            (item.data as unknown).tags &&
+            (item.data as unknown).tags.includes('process'))
       );
 
       const prompt = this.buildProcessGapPrompt(processItems);
@@ -363,7 +361,9 @@ export class KnowledgeGapStrategy {
         (item) =>
           (item.data as unknown)?.content?.includes('?') ||
           (item.data as unknown)?.title?.includes('?') ||
-          (item.data && (item.data as unknown).tags && (item.data as unknown).tags.includes('question'))
+          (item.data &&
+            (item.data as unknown).tags &&
+            (item.data as unknown).tags.includes('question'))
       );
 
       const prompt = this.buildUnansweredQuestionsPrompt(questionItems);

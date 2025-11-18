@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * P3 Data Management: Backup Service
  *
@@ -25,7 +21,7 @@
 
 import { performance } from 'node:perf_hooks';
 import { promises as fs } from 'fs';
-import {join } from 'path';
+import { join } from 'path';
 import { createHash } from 'crypto';
 
 import { logger } from '@/utils/logger.js';

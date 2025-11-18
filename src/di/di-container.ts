@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: DI container interface compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Dependency Injection Container
@@ -23,7 +21,7 @@
 
 import { EventEmitter } from 'node:events';
 
-import { logger } from '@/utils/logger.js';
+import { logger } from '../utils/logger.js';
 
 import 'reflect-metadata';
 
@@ -39,13 +37,13 @@ export enum ServiceLifetime {
 /**
  * Service registration configuration
  */
-export interface ServiceRegistration {
-  token: string | symbol | (new (...args: any[]) => unknown);
-  implementation: new (...args: any[]) => unknown | (() => unknown);
+export interface ServiceRegistration<T = unknown> {
+  token: string | symbol | (new (...args: any[]) => T);
+  implementation: new (...args: any[]) => T | (() => T);
   lifetime: ServiceLifetime;
   dependencies?: (string | symbol | (new (...args: any[]) => unknown))[];
-  factory?: (container: DIContainer) => unknown;
-  instance?: unknown;
+  factory?: (container: DIContainer) => T;
+  instance?: T;
 }
 
 /**
@@ -61,7 +59,7 @@ export interface ResolutionOptions {
  * Dependency injection container with comprehensive service management
  */
 export class DIContainer {
-  private services = new Map<string | symbol, ServiceRegistration>();
+  private services = new Map<string | symbol, ServiceRegistration<unknown>>();
   private instances = new Map<string | symbol, unknown>();
   private scopedInstances = new Map<string, Map<string | symbol, unknown>>();
   private resolving = new Set<string | symbol>();
@@ -82,7 +80,7 @@ export class DIContainer {
       throw new Error(`Service ${String(key)} is already registered`);
     }
 
-    const registration: ServiceRegistration = {
+    const registration: ServiceRegistration<T> = {
       token,
       implementation,
       lifetime,
@@ -101,7 +99,7 @@ export class DIContainer {
   registerInstance<T>(token: string | symbol | (new (...args: any[]) => T), instance: T): void {
     const key = this.getServiceKey(token);
 
-    const registration: ServiceRegistration = {
+    const registration: ServiceRegistration<T> = {
       token,
       implementation:
         instance && instance.constructor
@@ -133,9 +131,9 @@ export class DIContainer {
       throw new Error(`Service ${String(key)} is already registered`);
     }
 
-    const registration: ServiceRegistration = {
+    const registration: ServiceRegistration<T> = {
       token,
-      implementation: null as unknown,
+      implementation: null as unknown as new (...args: any[]) => T,
       lifetime,
       dependencies: dependencies || [],
       factory,
@@ -173,14 +171,14 @@ export class DIContainer {
       this.instances.has(key) &&
       !options.forceNew
     ) {
-      return this.instances.get(key);
+      return this.instances.get(key) as T;
     }
 
     // Check scoped instances
     if (registration.lifetime === ServiceLifetime.SCOPED && options.scope) {
       const scope = this.scopedInstances.get(options.scope);
       if (scope && scope.has(key) && !options.forceNew) {
-        return scope.get(key);
+        return scope.get(key) as T;
       }
     }
 
@@ -190,13 +188,13 @@ export class DIContainer {
       let instance: T;
 
       if (registration.factory) {
-        instance = registration.factory(this);
+        instance = registration.factory(this) as T;
       } else if (registration.instance) {
-        instance = registration.instance;
+        instance = registration.instance as T;
       } else {
         // Resolve dependencies first
         const dependencies = this.resolveDependencies(registration.dependencies || [], options);
-        instance = new registration.implementation(...dependencies);
+        instance = new registration.implementation(...dependencies) as T;
       }
 
       // Store instance based on lifetime
@@ -232,9 +230,9 @@ export class DIContainer {
     const scopedContainer = new DIContainer();
 
     // Copy all registrations to the scoped container
-    for (const [key, registration] of this.services) {
+    Array.from(this.services.entries()).forEach(([key, registration]) => {
       scopedContainer.services.set(key, { ...registration });
-    }
+    });
 
     // Set the scope for resolution
     scopedContainer.scopedInstances.set(scope, new Map());
@@ -288,15 +286,17 @@ export class DIContainer {
    */
   async dispose(): Promise<void> {
     // Dispose all instances that have dispose method
-    for (const [key, instance] of this.instances) {
-      if (instance && typeof instance.dispose === 'function') {
+    const disposePromises = Array.from(this.instances.entries()).map(async ([key, instance]) => {
+      if (instance && typeof (instance as any).dispose === 'function') {
         try {
-          await instance.dispose();
+          await (instance as any).dispose();
         } catch (error) {
           logger.error(`Error disposing service ${String(key)}:`, error);
         }
       }
-    }
+    });
+
+    await Promise.all(disposePromises);
 
     // Clear all containers
     this.instances.clear();
@@ -321,7 +321,9 @@ export class DIContainer {
   /**
    * Get consistent key for service tokens
    */
-  private getServiceKey(token: string | symbol | (new (...args: any[]) => unknown)): string | symbol {
+  private getServiceKey(
+    token: string | symbol | (new (...args: any[]) => unknown)
+  ): string | symbol {
     if (typeof token === 'string' || typeof token === 'symbol') {
       return token;
     }
@@ -352,7 +354,11 @@ export function Injectable(token?: string | symbol) {
  * Inject decorator for constructor parameters
  */
 export function Inject(token: string | symbol) {
-  return function (target: unknown, propertyKey: string | symbol | undefined, parameterIndex: number) {
+  return function (
+    target: unknown,
+    propertyKey: string | symbol | undefined,
+    parameterIndex: number
+  ) {
     const existingTokens = Reflect.getMetadata('inject-tokens', target) || [];
     existingTokens[parameterIndex] = token;
     Reflect.defineMetadata('inject-tokens', existingTokens, target);

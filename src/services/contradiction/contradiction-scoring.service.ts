@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Contradiction Scoring and Prioritization Service
  *
@@ -321,7 +316,8 @@ export class ContradictionScoringService {
           business_value: aiEnhancedFactors.business_value ?? factors.business_value,
           dependency_count: aiEnhancedFactors.dependency_count ?? factors.dependency_count,
           stakeholder_impact: aiEnhancedFactors.stakeholder_impact ?? factors.stakeholder_impact,
-          resolution_complexity: aiEnhancedFactors.resolution_complexity ?? factors.resolution_complexity,
+          resolution_complexity:
+            aiEnhancedFactors.resolution_complexity ?? factors.resolution_complexity,
           risk_exposure: aiEnhancedFactors.risk_exposure ?? factors.risk_exposure,
         });
       } catch (error) {
@@ -340,8 +336,10 @@ export class ContradictionScoringService {
       urgency: typeof factors.urgency === 'number' ? factors.urgency : 0,
       business_value: typeof factors.business_value === 'number' ? factors.business_value : 0,
       dependency_count: typeof factors.dependency_count === 'number' ? factors.dependency_count : 0,
-      stakeholder_impact: typeof factors.stakeholder_impact === 'number' ? factors.stakeholder_impact : 0,
-      resolution_complexity: typeof factors.resolution_complexity === 'number' ? factors.resolution_complexity : 0,
+      stakeholder_impact:
+        typeof factors.stakeholder_impact === 'number' ? factors.stakeholder_impact : 0,
+      resolution_complexity:
+        typeof factors.resolution_complexity === 'number' ? factors.resolution_complexity : 0,
       risk_exposure: typeof factors.risk_exposure === 'number' ? factors.risk_exposure : 0,
     };
   }
@@ -729,9 +727,19 @@ Respond with a JSON object containing these adjusted scores and your reasoning:
       dependency_count = 0,
       stakeholder_impact = 0,
       resolution_complexity = 0,
-      risk_exposure = 0
+      risk_exposure = 0,
     } = weightedScores;
-    return confidence + severity + impact + urgency + business_value + dependency_count + stakeholder_impact + resolution_complexity + risk_exposure;
+    return (
+      confidence +
+      severity +
+      impact +
+      urgency +
+      business_value +
+      dependency_count +
+      stakeholder_impact +
+      resolution_complexity +
+      risk_exposure
+    );
   }
 
   /**
@@ -776,13 +784,17 @@ Respond with a JSON object containing these adjusted scores and your reasoning:
       );
     }
     if (safeWeightedScores.confidence > 0.1) {
-      explanations.push(`High confidence (${(factors.confidence ?? 0).toFixed(2)}) increases urgency`);
+      explanations.push(
+        `High confidence (${(factors.confidence ?? 0).toFixed(2)}) increases urgency`
+      );
     }
     if (safeWeightedScores.impact > 0.15) {
       explanations.push(`Significant impact (${(factors.impact ?? 0).toFixed(2)}) on operations`);
     }
     if (safeWeightedScores.urgency > 0.1) {
-      explanations.push(`High urgency (${(factors.urgency ?? 0).toFixed(2)}) requires prompt attention`);
+      explanations.push(
+        `High urgency (${(factors.urgency ?? 0).toFixed(2)}) requires prompt attention`
+      );
     }
 
     return (

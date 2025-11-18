@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Global type definitions for Cortex Memory MCP Server
  * Provides missing global types and resolves common type issues
@@ -17,11 +13,13 @@ declare global {
   var global: GlobalPerformance & typeof globalThis;
 
   // Performance service global for compatibility
-  var performanceService: {
-    collectMetrics?(): unknown;
-    trackPerformance?(name: string, duration: number): void;
-    getMetrics?(): Record<string, unknown>;
-  } | undefined;
+  var performanceService:
+    | {
+        collectMetrics?(): unknown;
+        trackPerformance?(name: string, duration: number): void;
+        getMetrics?(): Record<string, unknown>;
+      }
+    | undefined;
 }
 
 // Global GC function for Node.js with --expose-gc
@@ -123,11 +121,14 @@ export interface DatabaseConfiguration {
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'degraded';
   timestamp: Date;
-  services: Record<string, {
-    status: 'healthy' | 'unhealthy' | 'degraded';
-    message?: string;
-    responseTime?: number;
-  }>;
+  services: Record<
+    string,
+    {
+      status: 'healthy' | 'unhealthy' | 'degraded';
+      message?: string;
+      responseTime?: number;
+    }
+  >;
 }
 
 // Monitoring and metrics types

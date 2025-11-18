@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTELY FINAL EMERGENCY ROLLBACK: Complete ALL systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Migration Bridge - Legacy to Modern Type Adapter
@@ -16,7 +14,8 @@ import {
   adaptWidget as baseAdaptWidget,
   BreachSeverity,
   IncidentStatus,
-  type ModernDashboardWidget} from './slo-types.js';
+  type ModernDashboardWidget,
+} from './slo-types.js';
 import { AlertSeverity } from './unified-health-interfaces.js';
 
 // ============================================================================
@@ -45,8 +44,8 @@ export type Status = IncidentStatus;
 export interface LegacyWidgetPosition {
   x: number;
   y: number;
-  w: number;  // Legacy width property
-  h: number;  // Legacy height property
+  w: number; // Legacy width property
+  h: number; // Legacy height property
 }
 
 export interface ModernWidgetPosition {
@@ -64,7 +63,7 @@ export function adaptPosition(legacy: LegacyWidgetPosition): ModernWidgetPositio
     x: legacy.x,
     y: legacy.y,
     width: legacy.w,
-    height: legacy.h
+    height: legacy.h,
   };
 }
 
@@ -76,7 +75,7 @@ export function revertPosition(modern: ModernWidgetPosition): LegacyWidgetPositi
     x: modern.x,
     y: modern.y,
     w: modern.width,
-    h: modern.height
+    h: modern.height,
   };
 }
 
@@ -104,12 +103,12 @@ export function adaptWidget(legacy: LegacyWidgetConfig): ModernDashboardWidget {
     x: legacy.x ?? 0,
     y: legacy.y ?? 0,
     type: legacy.type,
-    title: legacy.title
+    title: legacy.title,
   });
 
   return {
     ...baseWidget,
-    category: legacy.category ?? 'legacy'
+    category: legacy.category ?? 'legacy',
   };
 }
 
@@ -235,7 +234,7 @@ export function normalizeWidget(widget: unknown): ModernDashboardWidget {
     x: 0,
     y: 0,
     defaultPosition: { x: 0, y: 0 },
-    category: 'auto-normalized'
+    category: 'auto-normalized',
   };
 }
 
@@ -260,7 +259,7 @@ export class MigrationTracker {
     totalPositionsAdapted: 0,
     totalEnumsMapped: 0,
     errorsEncountered: 0,
-    timestamp: new Date()
+    timestamp: new Date(),
   };
 
   incrementWidgetMigrated(): void {
@@ -289,7 +288,7 @@ export class MigrationTracker {
       totalPositionsAdapted: 0,
       totalEnumsMapped: 0,
       errorsEncountered: 0,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 }

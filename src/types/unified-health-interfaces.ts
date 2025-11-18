@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 import { DependencyStatus, DependencyType } from '../services/deps-registry.js';
 
 // Re-export DependencyStatus for centralized access
@@ -11,8 +7,10 @@ export { DependencyStatus, DependencyType };
 export type HealthCheckResult = ProductionHealthResult;
 
 // Import ValidationMode from schemas for re-export
-import { type ValidationMode as SchemaValidationMode, type ValidationOptions } from '../schemas/unified-knowledge-validator.js';
-
+import {
+  type ValidationMode as SchemaValidationMode,
+  type ValidationOptions,
+} from '../schemas/unified-knowledge-validator.js';
 
 // Re-export ValidationMode with a local name to avoid conflicts
 export { ValidationOptions };
@@ -406,7 +404,7 @@ export interface HealthAlert {
   timestamp: Date;
   acknowledged: boolean;
   acknowledgedBy?: string;
-acknowledgedAt?: Date;
+  acknowledgedAt?: Date;
   resolved: boolean;
   resolvedAt?: Date;
   metadata?: Record<string, unknown>;
@@ -594,7 +592,9 @@ export function isEnhancedHealthResult(result: unknown): result is EnhancedHealt
 /**
  * Type guard to check if a result is a health check diagnostics object
  */
-export function isHealthCheckDiagnostics(diagnostics: unknown): diagnostics is HealthCheckDiagnostics {
+export function isHealthCheckDiagnostics(
+  diagnostics: unknown
+): diagnostics is HealthCheckDiagnostics {
   return !!(
     diagnostics &&
     typeof diagnostics === 'object' &&
@@ -867,7 +867,7 @@ export function getWorstDependencyStatus(statuses: DependencyStatus[]): Dependen
 
   return statuses.reduce((worst, current) => {
     return compareDependencyStatusSeverity(current, worst) > 0 ? current : worst;
-});
+  });
 }
 
 /**
@@ -900,4 +900,3 @@ export class ValidationPerformanceMonitor {
     // Placeholder implementation
   }
 }
-

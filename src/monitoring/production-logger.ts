@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Final batch of type compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Production Logger
@@ -129,9 +127,9 @@ export class ProductionLogger {
       security: {
         event,
         severity,
-        ip: metadata?.ip,
-        userAgent: metadata?.userAgent,
-        action: metadata?.action,
+        ip: metadata?.ip as string | undefined,
+        userAgent: metadata?.userAgent as string | undefined,
+        action: metadata?.action as string | undefined,
       },
       metadata: this.sanitizeMetadata(metadata),
     };
@@ -164,7 +162,12 @@ export class ProductionLogger {
   /**
    * Core logging method
    */
-  private log(level: string, message: string, metadata?: Record<string, unknown>, error?: Error): void {
+  private log(
+    level: string,
+    message: string,
+    metadata?: Record<string, unknown>,
+    error?: Error
+  ): void {
     if (!this.shouldLog(level)) return;
 
     const logEntry: LogEntry = {
@@ -181,7 +184,7 @@ export class ProductionLogger {
         name: error.name,
         message: error.message,
         stack: error.stack,
-        code: (error as unknown).code,
+        code: (error as any).code,
       };
     }
 
@@ -244,7 +247,9 @@ export class ProductionLogger {
   /**
    * Sanitize metadata to remove sensitive information
    */
-  private sanitizeMetadata(metadata?: Record<string, unknown>): Record<string, unknown> | undefined {
+  private sanitizeMetadata(
+    metadata?: Record<string, unknown>
+  ): Record<string, unknown> | undefined {
     if (!metadata) return undefined;
 
     const sensitiveFields = [
@@ -264,8 +269,8 @@ export class ProductionLogger {
     for (const [key, value] of Object.entries(sanitized)) {
       if (sensitiveFields.some((field) => key.toLowerCase().includes(field))) {
         sanitized[key] = '[REDACTED]';
-      } else if (typeof value === 'object' && value !== null) {
-        sanitized[key] = this.sanitizeMetadata(value);
+      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        sanitized[key] = this.sanitizeMetadata(value as Record<string, unknown>);
       }
     }
 
@@ -280,7 +285,7 @@ export class ProductionLogger {
     childLogger.config = { ...this.config };
 
     // Store context for use in log entries
-    (childLogger as unknown).context = context;
+    (childLogger as any).context = context;
 
     return childLogger;
   }

@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ULTIMATE FINAL EMERGENCY ROLLBACK: Remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Performance Dashboard
@@ -9,10 +7,16 @@
  * trends, and regression analysis with interactive charts and reports
  */
 
-import { mkdirSync,writeFileSync } from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
-import type {PerformanceRegression, PerformanceTestResult } from './performance-harness.js';
+import type { PerformanceRegression, PerformanceTestResult } from './performance-harness.js';
+
+export interface DataPoint {
+  value: number;
+  timestamp?: number;
+  label?: string;
+}
 
 export interface DashboardConfig {
   /** Dashboard title */
@@ -106,9 +110,9 @@ export class PerformanceDashboard {
       charts: {
         defaultType: 'line',
         colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'],
-        animationDuration: 750
+        animationDuration: 750,
       },
-      ...config
+      ...config,
     };
 
     this.ensureDirectories();
@@ -148,13 +152,13 @@ export class PerformanceDashboard {
       metadata: {
         generated: new Date().toISOString(),
         version: '2.0.1',
-        totalTests: new Set(results.map(r => r.config.name)).size,
-        totalResults: results.length
+        totalTests: new Set(results.map((r) => r.config.name)).size,
+        totalResults: results.length,
       },
       results: recentResults,
       regressions: [], // Would be calculated from regression analysis
       trends,
-      systemMetrics
+      systemMetrics,
     };
   }
 
@@ -198,37 +202,46 @@ export class PerformanceDashboard {
   ): PerformanceTrend | null {
     if (results.length < 3) return null; // Need at least 3 data points for trend
 
-    const dataPoints = results.map(result => {
-      let value: number;
+    const metricDataPoints = results
+      .map((result) => {
+        let value: number;
 
-      switch (metric) {
-        case 'p50_latency':
-          value = result.results.metrics.latencies.p50;
-          break;
-        case 'p95_latency':
-          value = result.results.metrics.latencies.p95;
-          break;
-        case 'p99_latency':
-          value = result.results.metrics.latencies.p99;
-          break;
-        case 'throughput':
-          value = result.results.metrics.throughput;
-          break;
-        case 'error_rate':
-          value = result.results.metrics.errorRate;
-          break;
-        default:
-          return null;
-      }
+        switch (metric) {
+          case 'p50_latency':
+            value = result.results.metrics.latencies.p50;
+            break;
+          case 'p95_latency':
+            value = result.results.metrics.latencies.p95;
+            break;
+          case 'p99_latency':
+            value = result.results.metrics.latencies.p99;
+            break;
+          case 'throughput':
+            value = result.results.metrics.throughput;
+            break;
+          case 'error_rate':
+            value = result.results.metrics.errorRate;
+            break;
+          default:
+            return null;
+        }
 
-      return {
-        timestamp: result.metadata.timestamp,
-        value,
-        testId: result.metadata.testId
-      };
-    }).filter(point => point !== null);
+        return {
+          timestamp: result.metadata.timestamp,
+          value,
+          testId: result.metadata.testId,
+        };
+      })
+      .filter((point) => point !== null);
 
-    if (dataPoints.length < 3) return null;
+    if (metricDataPoints.length < 3) return null;
+
+    // Convert to DataPoint format for trend calculation
+    const dataPoints: DataPoint[] = metricDataPoints.map(point => ({
+      value: point.value,
+      timestamp: Date.parse(point.timestamp),
+      label: point.testId
+    }));
 
     // Calculate trend direction using linear regression
     const direction = this.calculateTrendDirection(dataPoints);
@@ -237,17 +250,19 @@ export class PerformanceDashboard {
     return {
       testName,
       metric,
-      dataPoints,
+      dataPoints: metricDataPoints,
       direction,
-      strength
+      strength,
     };
   }
 
   /**
    * Calculate trend direction
    */
-  private calculateTrendDirection(dataPoints: unknown[]): 'improving' | 'degrading' | 'stable' {
+  private calculateTrendDirection(dataPoints: DataPoint[]): 'improving' | 'degrading' | 'stable' {
     const n = dataPoints.length;
+    if (n < 2) return 'stable';
+
     const sumX = dataPoints.reduce((sum, _, i) => sum + i, 0);
     const sumY = dataPoints.reduce((sum, point) => sum + point.value, 0);
     const sumXY = dataPoints.reduce((sum, point, i) => sum + i * point.value, 0);
@@ -262,8 +277,8 @@ export class PerformanceDashboard {
   /**
    * Calculate trend strength
    */
-  private calculateTrendStrength(dataPoints: unknown[]): number {
-    const values = dataPoints.map(p => p.value);
+  private calculateTrendStrength(dataPoints: DataPoint[]): number {
+    const values = dataPoints.map((p) => p.value);
     const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
     const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
     const stdDev = Math.sqrt(variance);
@@ -279,19 +294,20 @@ export class PerformanceDashboard {
    * Extract system metrics from results
    */
   private extractSystemMetrics(results: PerformanceTestResult[]): SystemMetricData[] {
-    return results.map(result => ({
+    return results.map((result) => ({
       timestamp: result.metadata.timestamp,
       cpu: 0, // Would be extracted from system monitoring
       memory: {
         used: result.metadata.systemMetrics.peakMemoryUsage,
         total: 2 * 1024 * 1024 * 1024, // 2GB assumed total
-        percentage: (result.metadata.systemMetrics.peakMemoryUsage / (2 * 1024 * 1024 * 1024)) * 100
+        percentage:
+          (result.metadata.systemMetrics.peakMemoryUsage / (2 * 1024 * 1024 * 1024)) * 100,
       },
       disk: {
         used: 0, // Would be extracted from system monitoring
         total: 0,
-        percentage: 0
-      }
+        percentage: 0,
+      },
     }));
   }
 
@@ -462,7 +478,7 @@ export class PerformanceDashboard {
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        ${data.results.map(result => this.generateResultRow(result)).join('')}
+                        ${data.results.map((result) => this.generateResultRow(result)).join('')}
                     </tbody>
                 </table>
             </div>
@@ -606,11 +622,15 @@ export class PerformanceDashboard {
         }
 
         function setupAutoRefresh() {
-            ${this.config.enableRealTime ? `
+            ${
+              this.config.enableRealTime
+                ? `
             setInterval(() => {
                 refreshData();
             }, ${this.config.refreshInterval * 1000});
-            ` : ''}
+            `
+                : ''
+            }
         }
     </script>
 </body>
@@ -659,7 +679,7 @@ export class PerformanceDashboard {
    */
   private calculatePassRate(results: PerformanceTestResult[]): number {
     if (results.length === 0) return 0;
-    const passed = results.filter(r => r.validation.passed).length;
+    const passed = results.filter((r) => r.validation.passed).length;
     return Math.round((passed / results.length) * 100);
   }
 
@@ -669,7 +689,7 @@ export class PerformanceDashboard {
   private calculateAverageDuration(results: PerformanceTestResult[]): number {
     if (results.length === 0) return 0;
     const totalDuration = results.reduce((sum, r) => sum + r.metadata.duration, 0);
-    return Math.round((totalDuration / results.length) / 1000 * 100) / 100; // Convert to seconds and round to 2 decimal places
+    return Math.round((totalDuration / results.length / 1000) * 100) / 100; // Convert to seconds and round to 2 decimal places
   }
 
   /**
@@ -682,21 +702,21 @@ export class PerformanceDashboard {
     // Generate results API
     const resultsAPI = {
       results: data.results,
-      metadata: data.metadata
+      metadata: data.metadata,
     };
     writeFileSync(join(apiDir, 'results.json'), JSON.stringify(resultsAPI, null, 2));
 
     // Generate trends API
     const trendsAPI = {
       trends: data.trends,
-      metadata: data.metadata
+      metadata: data.metadata,
     };
     writeFileSync(join(apiDir, 'trends.json'), JSON.stringify(trendsAPI, null, 2));
 
     // Generate system metrics API
     const systemMetricsAPI = {
       metrics: data.systemMetrics,
-      metadata: data.metadata
+      metadata: data.metadata,
     };
     writeFileSync(join(apiDir, 'system-metrics.json'), JSON.stringify(systemMetricsAPI, null, 2));
   }
@@ -981,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dirs = [
       this.config.outputDir,
       join(this.config.outputDir, 'api'),
-      join(this.config.outputDir, 'assets')
+      join(this.config.outputDir, 'assets'),
     ];
 
     for (const dir of dirs) {

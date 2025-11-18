@@ -1,11 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Authentication Service for Cortex MCP
  * Implements JWT-based authentication with RBAC and scope-based authorization
@@ -16,10 +8,10 @@ import * as crypto from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 
-import { logger } from '@/utils/logger.js';
+import { logger } from '../../utils/logger.js';
 
 import { qdrant } from '../../db/qdrant-client.js';
-import { AsyncErrorHandler,ServiceErrorHandler } from '../../middleware/error-middleware.js';
+import { AsyncErrorHandler, ServiceErrorHandler } from '../../middleware/error-middleware.js';
 import {
   type ApiKey,
   type AuthContext,

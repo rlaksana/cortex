@@ -1,10 +1,6 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 import { logger } from '@/utils/logger.js';
 
-import type { ScopeFilter,SectionData } from '../../types/knowledge-data.js';
+import type { ScopeFilter, SectionData } from '../../types/knowledge-data.js';
 import { validateSpecWriteLock } from '../../utils/immutability.js';
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 

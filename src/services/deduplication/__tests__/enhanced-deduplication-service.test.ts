@@ -1,35 +1,30 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Comprehensive test suite for enhanced deduplication service
  * Tests all 5 merge strategies and scope window configuration
  */
 
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { DeduplicationConfig } from '../../../config/deduplication-config.js';
-import type { KnowledgeItem } from '../../../types/core-interfaces.js';
-import { EnhancedDeduplicationService } from '../enhanced-deduplication-service.js';
+import type { DeduplicationConfig } from '../../../config/deduplication-config';
+import type { KnowledgeItem } from '../../../types/core-interfaces';
+import { EnhancedDeduplicationService } from '../enhanced-deduplication-service';
 
 // Mock logger to avoid console output during tests
-jest.mock('../../../utils/logger.js', () => ({
+vi.mock('../../../utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
 // Mock qdrant client
-jest.mock('../../../db/qdrant-client.js', () => ({
+vi.mock('../../../db/qdrant-client.js', () => ({
   qdrant: {
     client: {
-      scroll: jest.fn(),
-      search: jest.fn(),
+      scroll: vi.fn(),
+      search: vi.fn(),
     },
   },
 }));
@@ -40,7 +35,7 @@ describe('Enhanced Deduplication Service', () => {
 
   beforeEach(() => {
     // Reset mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Create service with test configuration
     const testConfig: Partial<DeduplicationConfig> = {
@@ -113,8 +108,8 @@ describe('Enhanced Deduplication Service', () => {
         id: 'existing-item-1',
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(mockExistingItem);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(mockExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([mockItems[0]]);
 
@@ -125,8 +120,8 @@ describe('Enhanced Deduplication Service', () => {
 
     it('should store non-duplicate items', async () => {
       // Mock no matches
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([mockItems[0]]);
 
@@ -146,8 +141,8 @@ describe('Enhanced Deduplication Service', () => {
         id: 'existing-item-1',
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(mockExistingItem);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(mockExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([mockItems[0]]);
 
@@ -177,8 +172,8 @@ describe('Enhanced Deduplication Service', () => {
         updated_at: '2025-01-01T00:00:00Z',
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(oldExistingItem);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(oldExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([newItem]);
 
@@ -201,8 +196,8 @@ describe('Enhanced Deduplication Service', () => {
         updated_at: '2024-12-01T00:00:00Z',
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([oldNewItem]);
 
@@ -237,8 +232,8 @@ describe('Enhanced Deduplication Service', () => {
         },
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([newItem]);
 
@@ -274,8 +269,8 @@ describe('Enhanced Deduplication Service', () => {
         },
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(oldExistingItem);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(oldExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([betterNewItem]);
 
@@ -305,8 +300,8 @@ describe('Enhanced Deduplication Service', () => {
         },
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(goodExistingItem);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(goodExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([poorNewItem]);
 
@@ -331,8 +326,8 @@ describe('Enhanced Deduplication Service', () => {
         scope: { project: 'test-project', branch: 'main' }, // Same scope
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([newItem]);
 
@@ -358,8 +353,8 @@ describe('Enhanced Deduplication Service', () => {
         scope: { project: 'test-project', branch: 'main' }, // Different scope
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([newItem]);
 
@@ -389,8 +384,8 @@ describe('Enhanced Deduplication Service', () => {
         updated_at: '2025-01-08T00:00:00Z',
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(oldExistingItem);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(oldExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([newItem]);
 
@@ -418,8 +413,8 @@ describe('Enhanced Deduplication Service', () => {
         updated_at: '2025-01-08T00:00:00Z',
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(recentExistingItem);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(recentExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([newItem]);
 
@@ -442,8 +437,8 @@ describe('Enhanced Deduplication Service', () => {
         },
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([
         {
           item: dissimilarItem,
           similarity: 0.8, // Below threshold
@@ -469,8 +464,8 @@ describe('Enhanced Deduplication Service', () => {
         },
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([
         {
           item: similarItem,
           similarity: 0.8, // Above threshold
@@ -489,8 +484,8 @@ describe('Enhanced Deduplication Service', () => {
     it('should log audit entries when enabled', async () => {
       service.updateConfig({ enableAuditLogging: true });
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([mockItems[0]]);
 
@@ -505,8 +500,8 @@ describe('Enhanced Deduplication Service', () => {
     it('should not log audit entries when disabled', async () => {
       service.updateConfig({ enableAuditLogging: false });
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([mockItems[0]]);
 
@@ -542,8 +537,8 @@ describe('Enhanced Deduplication Service', () => {
 
   describe('Performance Metrics', () => {
     it('should track performance metrics', async () => {
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       await service.processItems(mockItems);
 
@@ -559,7 +554,7 @@ describe('Enhanced Deduplication Service', () => {
   describe('Error Handling', () => {
     it('should handle errors gracefully', async () => {
       const error = new Error('Database error');
-      jest.spyOn(service as unknown, 'findExactMatch').mockRejectedValue(error);
+      vi.spyOn(service as unknown, 'findExactMatch').mockRejectedValue(error);
 
       const results = await service.processItems([mockItems[0]]);
 
@@ -605,8 +600,8 @@ describe('Enhanced Deduplication Service', () => {
         },
       };
 
-      jest.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
-      jest.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       const results = await service.processItems([mockItems[0]]);
 

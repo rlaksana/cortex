@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTELY FINAL EMERGENCY ROLLBACK: Complete ALL systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * LRU Cache with Memory Limits for Cortex MCP
@@ -386,7 +384,10 @@ export class CacheFactory {
       maxMemoryBytes: 100 * 1024 * 1024, // 100MB
       ttlMs: 60 * 60 * 1000, // 1 hour
       cleanupIntervalMs: 5 * 60 * 1000, // 5 minutes
-      sizeEstimator: (embedding: number[]) => embedding.length * 8, // 8 bytes per float
+      sizeEstimator: (_value: unknown) => {
+      const embedding = _value as number[];
+      return embedding.length * 8; // 8 bytes per float
+    },
     });
   }
 

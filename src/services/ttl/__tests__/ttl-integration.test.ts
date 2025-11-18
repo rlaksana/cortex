@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * TTL Integration Test Suite
  *
@@ -22,27 +17,26 @@
  * @since 2025
  */
 
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { enhancedExpiryUtils } from '../../../utils/enhanced-expiry-utils.js';
-import { createTTLManagementService,type TTLManagementService } from '../ttl-management-service.js';
+import { enhancedExpiryUtils } from '../../../utils/enhanced-expiry-utils';
+import { createTTLManagementService, type TTLManagementService, type TTLBulkOperationOptions } from '../ttl-management-service';
 import type {
   KnowledgeItem,
-  TTLBulkOperationOptions,
   TTLPolicyOptions,
-} from '../ttl-policy-service.js';
-import { ttlPolicyService } from '../ttl-policy-service.js';
-import { ttlSafetyService } from '../ttl-safety-service.js';
+} from '../ttl-policy-service';
+import { ttlPolicyService } from '../ttl-policy-service';
+import { ttlSafetyService } from '../ttl-safety-service';
 
 // Mock database layer for testing
 const mockDatabaseLayer = {
-  store: jest.fn(),
-  findById: jest.fn(),
-  search: jest.fn(),
-  delete: jest.fn(),
-  healthCheck: jest.fn().mockResolvedValue(true),
-  generateUUID: jest.fn().mockReturnValue('test-id'),
-  getStatistics: jest.fn(),
+  store: vi.fn(),
+  findById: vi.fn(),
+  search: vi.fn(),
+  delete: vi.fn(),
+  healthCheck: vi.fn().mockResolvedValue(true),
+  generateUUID: vi.fn().mockReturnValue('test-id'),
+  getStatistics: vi.fn(),
 };
 
 describe('TTL Integration Test Suite', () => {
@@ -50,7 +44,7 @@ describe('TTL Integration Test Suite', () => {
   let testItems: KnowledgeItem[];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     ttlManagementService = createTTLManagementService(mockDatabaseLayer as unknown);
 
     testItems = [
@@ -93,7 +87,7 @@ describe('TTL Integration Test Suite', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('TTL Policy Service Integration', () => {

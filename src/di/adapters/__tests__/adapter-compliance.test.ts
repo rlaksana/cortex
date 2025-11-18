@@ -1,7 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
 /**
  * Adapter Interface Compliance Tests
  *
@@ -12,24 +8,24 @@
  * @since 2025
  */
 
-import { afterEach,beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import type { IDatabase } from '../../../db/database-interface.js';
+import type { IDatabase } from '../../../db/database-interface';
 // Import implementations to wrap
-import { DatabaseManager } from '../../../db/database-manager.js';
-import { circuitBreakerManager } from '../../../services/circuit-breaker.service.js';
-import { MemoryStoreOrchestrator } from '../../../services/orchestrators/memory-store-orchestrator.js';
+import { DatabaseManager } from '../../../db/database-manager';
+import { circuitBreakerManager } from '../../../services/circuit-breaker.service';
+import { MemoryStoreOrchestrator } from '../../../services/orchestrators/memory-store-orchestrator';
 // Import interfaces for type checking
 import type {
   ICircuitBreakerService,
   IDatabaseService,
   IMemoryStoreOrchestrator,
   KnowledgeItem,
-} from '../../service-interfaces.js';
-import { CircuitBreakerServiceAdapter } from '../circuit-breaker-service-adapter.js';
+} from '../../service-interfaces';
+import { CircuitBreakerServiceAdapter } from '../circuit-breaker-service-adapter';
 // Import adapters
-import { DatabaseServiceAdapter } from '../database-service-adapter.js';
-import { MemoryStoreOrchestratorAdapter } from '../memory-store-orchestrator-adapter.js';
+import { DatabaseServiceAdapter } from '../database-service-adapter';
+import { MemoryStoreOrchestratorAdapter } from '../memory-store-orchestrator-adapter';
 
 describe('Adapter Interface Compliance', () => {
   describe('DatabaseServiceAdapter', () => {
@@ -77,7 +73,7 @@ describe('Adapter Interface Compliance', () => {
         await adapter.getConnection();
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
-        expect(error.message).toContain('Failed to get database connection');
+        expect((error as Error).message).toContain('Failed to get database connection');
       }
     });
   });
@@ -174,7 +170,7 @@ describe('Adapter Interface Compliance', () => {
       const result = await adapter.delete(testIds);
 
       expect(typeof result.success).toBe('boolean');
-      expect(typeof result.deleted).toBe('number');
+      expect(typeof result.data?.deleted).toBe('number');
     });
 
     it('should update items via adapter', async () => {

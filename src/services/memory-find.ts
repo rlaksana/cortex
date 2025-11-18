@@ -1,15 +1,10 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-import { logger } from '@/utils/logger.js';
-
-import { type CoreFindParams,coreMemoryFind } from './core-memory-find.js';
+import { type CoreFindParams, coreMemoryFind } from './core-memory-find.js';
 import {
   searchStrategyManager,
   type SearchStrategyType,
 } from './search/search-strategy-manager.js';
-import type { MemoryFindResponse,SearchQuery } from '../types/core-interfaces.js';
+import type { MemoryFindResponse, SearchQuery } from '../types/core-interfaces.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Main entry point for memory find operations - Phase 3 Enhanced
@@ -273,14 +268,20 @@ export async function memoryFindWithStrategies(query: SearchQuery): Promise<Memo
       total_count: strategyResult.results.length,
       total: strategyResult.results.length, // Compatibility
       autonomous_context: {
-        search_mode_used: typeof strategyResult.strategy === 'string' ? strategyResult.strategy : strategyResult.strategy.primary.name,
+        search_mode_used:
+          typeof strategyResult.strategy === 'string'
+            ? strategyResult.strategy
+            : strategyResult.strategy.primary.name,
         results_found: strategyResult.results.length,
         confidence_average: strategyResult.confidence ?? 0,
         user_message_suggestion: generateStrategyUserMessage(strategyResult),
       },
       observability: {
         source: 'cortex_memory',
-        strategy: typeof strategyResult.strategy === 'string' ? strategyResult.strategy : strategyResult.strategy.primary.name,
+        strategy:
+          typeof strategyResult.strategy === 'string'
+            ? strategyResult.strategy
+            : strategyResult.strategy.primary.name,
         vector_used: strategyResult.vectorUsed ?? false,
         degraded: strategyResult.degraded ?? false,
         execution_time_ms: strategyResult.executionTime ?? 0,
@@ -288,7 +289,10 @@ export async function memoryFindWithStrategies(query: SearchQuery): Promise<Memo
         search_id: `strategy_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       },
       meta: {
-        strategy: typeof strategyResult.strategy === 'string' ? strategyResult.strategy : strategyResult.strategy.primary.name,
+        strategy:
+          typeof strategyResult.strategy === 'string'
+            ? strategyResult.strategy
+            : strategyResult.strategy.primary.name,
         vector_used: strategyResult.vectorUsed ?? false,
         degraded: strategyResult.degraded ?? false,
         source: 'cortex_memory',
@@ -455,7 +459,7 @@ export async function getSearchStrategies(): Promise<{
     lastChecked: now,
     degradationReason: vectorHealthStatus ? undefined : 'Vector service unavailable',
     consecutiveFailures: vectorHealthStatus ? 0 : 1,
-    responseTime: 0
+    responseTime: 0,
   };
   const performanceMetrics = searchStrategyManager.getPerformanceMetrics();
 

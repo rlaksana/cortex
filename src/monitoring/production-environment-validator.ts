@@ -1,8 +1,3 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Production Environment Validator
  *
@@ -15,12 +10,15 @@
  */
 
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
-import { cpus,freemem, loadavg, totalmem } from 'os';
+import { cpus, freemem, loadavg, totalmem } from 'os';
 
 import type { SimpleLogger } from '@/utils/logger.js';
 import { createChildLogger } from '@/utils/logger.js';
 
-import { type EnvironmentValidationResult,ProductionEnvironmentValidator as BaseValidator } from '../config/production-validator.js';
+import {
+  type EnvironmentValidationResult,
+  ProductionEnvironmentValidator as BaseValidator,
+} from '../config/production-validator.js';
 
 export interface ValidationResult {
   category: string;
@@ -79,7 +77,7 @@ export class ProductionEnvironmentValidator extends BaseValidator {
 
   constructor(config?: Partial<ValidationConfig>) {
     super();
-    this.logger = createChildLogger({ component: 'environment-validator' });
+    this.logger = createChildLogger({ component: 'environment-validator' }) as SimpleLogger;
 
     this.config = {
       strictMode: process.env.VALIDATION_STRICT_MODE === 'true',
@@ -105,7 +103,7 @@ export class ProductionEnvironmentValidator extends BaseValidator {
   /**
    * Override the base class validation method to integrate enhanced validation
    */
-  validateProductionEnvironment(): EnvironmentValidationResult {
+  override validateProductionEnvironment(): EnvironmentValidationResult {
     // First run the base class validation
     const baseResult = super.validateProductionEnvironment();
 
@@ -158,7 +156,9 @@ export class ProductionEnvironmentValidator extends BaseValidator {
 
     // Skip async dependency security check for sync version
     if (this.config.enableDeepChecks) {
-      result.warnings.push('Deep security checks (dependency vulnerability scanning) skipped in sync validation mode');
+      result.warnings.push(
+        'Deep security checks (dependency vulnerability scanning) skipped in sync validation mode'
+      );
     }
   }
 
@@ -184,14 +184,20 @@ export class ProductionEnvironmentValidator extends BaseValidator {
 
     // Skip async network connectivity and response time checks for sync version
     if (this.config.enableDeepChecks) {
-      result.warnings.push('Deep performance checks (network connectivity, response times) skipped in sync validation mode');
+      result.warnings.push(
+        'Deep performance checks (network connectivity, response times) skipped in sync validation mode'
+      );
     }
   }
 
   /**
    * Helper function for fetch with timeout using AbortController
    */
-  private async fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs: number = 5000): Promise<Response> {
+  private async fetchWithTimeout(
+    url: string,
+    options: RequestInit = {},
+    timeoutMs: number = 5000
+  ): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -204,10 +210,10 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       return response;
     } catch (error) {
       clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         throw new Error(`Request timeout after ${timeoutMs}ms`);
       }
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -266,10 +272,9 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       });
 
       return report;
-
     } catch (error) {
       this.logger.error('Comprehensive validation failed', {
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         duration: Date.now() - startTime,
       });
 
@@ -277,7 +282,7 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       report.categories.infrastructure.push({
         category: 'infrastructure',
         status: 'critical',
-        message: `Validation system error: ${error.message}`,
+        message: `Validation system error: ${error instanceof Error ? error.message : String(error)}`,
         fixable: false,
       });
 
@@ -285,11 +290,13 @@ export class ProductionEnvironmentValidator extends BaseValidator {
     }
   }
 
-  
   /**
    * Helper method to convert ValidationResult to EnvironmentValidationResult
    */
-  private addValidationResult(result: EnvironmentValidationResult, validationResult: ValidationResult): void {
+  private addValidationResult(
+    result: EnvironmentValidationResult,
+    validationResult: ValidationResult
+  ): void {
     switch (validationResult.status) {
       case 'critical':
         result.critical.push(validationResult.message);
@@ -336,7 +343,6 @@ export class ProductionEnvironmentValidator extends BaseValidator {
     }
   }
 
-  
   /**
    * Internal async performance validation implementation
    */
@@ -458,9 +464,13 @@ export class ProductionEnvironmentValidator extends BaseValidator {
     return {
       category: 'security',
       status: usesHTTPS ? 'pass' : 'critical',
-      message: usesHTTPS ? 'HTTPS configured for external services' : 'External services should use HTTPS',
+      message: usesHTTPS
+        ? 'HTTPS configured for external services'
+        : 'External services should use HTTPS',
       details: { qdrantUrl, usesHTTPS },
-      recommendation: usesHTTPS ? undefined : 'Configure HTTPS for all external service connections',
+      recommendation: usesHTTPS
+        ? undefined
+        : 'Configure HTTPS for all external service connections',
       fixable: true,
     };
   }
@@ -475,7 +485,9 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       status: isSecure ? 'pass' : 'critical',
       message: isSecure ? 'API key meets security requirements' : 'API key is too short or missing',
       details: { apiKeyLength, requiredLength: 32 },
-      recommendation: isSecure ? undefined : 'Generate a secure API key with at least 32 characters',
+      recommendation: isSecure
+        ? undefined
+        : 'Generate a secure API key with at least 32 characters',
       fixable: true,
     };
   }
@@ -487,9 +499,13 @@ export class ProductionEnvironmentValidator extends BaseValidator {
     return {
       category: 'security',
       status: hasAuth ? 'pass' : 'warn',
-      message: hasAuth ? 'Authentication properly configured' : 'Authentication may not be properly configured',
+      message: hasAuth
+        ? 'Authentication properly configured'
+        : 'Authentication may not be properly configured',
       details: { hasJWTSecret: !!jwtSecret, secretLength: jwtSecret?.length || 0 },
-      recommendation: hasAuth ? undefined : 'Ensure JWT secret is properly configured for authentication',
+      recommendation: hasAuth
+        ? undefined
+        : 'Ensure JWT secret is properly configured for authentication',
       fixable: true,
     };
   }
@@ -516,7 +532,9 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       status: hasSpecificOrigin ? 'pass' : 'warn',
       message: hasSpecificOrigin ? 'CORS properly configured' : 'CORS may be too permissive',
       details: { corsOrigin },
-      recommendation: hasSpecificOrigin ? undefined : 'Configure specific CORS origins instead of wildcard',
+      recommendation: hasSpecificOrigin
+        ? undefined
+        : 'Configure specific CORS origins instead of wildcard',
       fixable: true,
     };
   }
@@ -601,9 +619,13 @@ export class ProductionEnvironmentValidator extends BaseValidator {
         return {
           category: 'performance',
           status: response.ok ? 'pass' : 'fail',
-          message: response.ok ? 'Network connectivity confirmed' : 'Network connectivity issues detected',
+          message: response.ok
+            ? 'Network connectivity confirmed'
+            : 'Network connectivity issues detected',
           details: { service: 'qdrant', status: response.status },
-          recommendation: response.ok ? undefined : 'Check network configuration and firewall settings',
+          recommendation: response.ok
+            ? undefined
+            : 'Check network configuration and firewall settings',
           fixable: true,
         };
       }
@@ -618,7 +640,7 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       return {
         category: 'performance',
         status: 'critical',
-        message: `Network connectivity failed: ${error.message}`,
+        message: `Network connectivity failed: ${error instanceof Error ? error.message : String(error)}`,
         fixable: true,
       };
     }
@@ -665,11 +687,13 @@ export class ProductionEnvironmentValidator extends BaseValidator {
     return {
       category: 'infrastructure',
       status,
-      message: meetsRequirement ?
-        `Node.js version ${nodeVersion} meets requirements` :
-        `Node.js version ${nodeVersion} below minimum ${minVersion}`,
+      message: meetsRequirement
+        ? `Node.js version ${nodeVersion} meets requirements`
+        : `Node.js version ${nodeVersion} below minimum ${minVersion}`,
       details: { currentVersion: nodeVersion, minVersion },
-      recommendation: meetsRequirement ? undefined : `Upgrade Node.js to version ${minVersion} or higher`,
+      recommendation: meetsRequirement
+        ? undefined
+        : `Upgrade Node.js to version ${minVersion} or higher`,
       fixable: true,
     };
   }
@@ -706,7 +730,7 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       return {
         category: 'infrastructure',
         status: 'critical',
-        message: `File system permission error: ${error.message}`,
+        message: `File system permission error: ${error instanceof Error ? error.message : String(error)}`,
         recommendation: 'Check file permissions and user access rights',
         fixable: true,
       };
@@ -726,7 +750,8 @@ export class ProductionEnvironmentValidator extends BaseValidator {
 
   private validateBackupMechanisms(): ValidationResult {
     // Check if backup scripts and configurations exist
-    const backupScriptExists = existsSync('scripts/backup.sh') || existsSync('scripts/complete-backup.sh');
+    const backupScriptExists =
+      existsSync('scripts/backup.sh') || existsSync('scripts/complete-backup.sh');
 
     return {
       category: 'infrastructure',
@@ -750,7 +775,9 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       status,
       message: fullyConfigured ? 'Monitoring fully configured' : 'Monitoring partially configured',
       details: { monitoringEnabled, healthChecksEnabled },
-      recommendation: fullyConfigured ? undefined : 'Enable comprehensive monitoring and health checks',
+      recommendation: fullyConfigured
+        ? undefined
+        : 'Enable comprehensive monitoring and health checks',
       fixable: true,
     };
   }
@@ -778,14 +805,16 @@ export class ProductionEnvironmentValidator extends BaseValidator {
         status: response.ok ? 'pass' : 'critical',
         message: response.ok ? 'Qdrant database accessible' : 'Qdrant database not accessible',
         details: { url: qdrantUrl, status: response.status },
-        recommendation: response.ok ? undefined : 'Check Qdrant server status and network connectivity',
+        recommendation: response.ok
+          ? undefined
+          : 'Check Qdrant server status and network connectivity',
         fixable: true,
       };
     } catch (error) {
       return {
         category: 'dependencies',
         status: 'critical',
-        message: `Database connection failed: ${error.message}`,
+        message: `Database connection failed: ${error instanceof Error ? error.message : String(error)}`,
         recommendation: 'Verify Qdrant server is running and accessible',
         fixable: true,
       };
@@ -805,9 +834,13 @@ export class ProductionEnvironmentValidator extends BaseValidator {
         };
       }
 
-      const response = await this.fetchWithTimeout('https://api.openai.com/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}` },
-      }, 10000);
+      const response = await this.fetchWithTimeout(
+        'https://api.openai.com/v1/models',
+        {
+          headers: { Authorization: `Bearer ${apiKey}` },
+        },
+        10000
+      );
 
       return {
         category: 'dependencies',
@@ -821,7 +854,7 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       return {
         category: 'dependencies',
         status: 'warn',
-        message: `OpenAI API connection failed: ${error.message}`,
+        message: `OpenAI API connection failed: ${error instanceof Error ? error.message : String(error)}`,
         recommendation: 'OpenAI features may not be available',
         fixable: false,
       };
@@ -849,14 +882,16 @@ export class ProductionEnvironmentValidator extends BaseValidator {
         status: hasLockFile ? 'pass' : 'warn',
         message: hasLockFile ? 'Package integrity verified' : 'Package lock file not found',
         details: { hasLockFile, name: packageJson.name, version: packageJson.version },
-        recommendation: hasLockFile ? undefined : 'Generate package lock file for reproducible builds',
+        recommendation: hasLockFile
+          ? undefined
+          : 'Generate package lock file for reproducible builds',
         fixable: true,
       };
     } catch (error) {
       return {
         category: 'dependencies',
         status: 'critical',
-        message: `Package integrity check failed: ${error.message}`,
+        message: `Package integrity check failed: ${error instanceof Error ? error.message : String(error)}`,
         recommendation: 'Ensure package.json is valid and accessible',
         fixable: true,
       };
@@ -865,14 +900,15 @@ export class ProductionEnvironmentValidator extends BaseValidator {
 
   private validateConfigurationFiles(): ValidationResult {
     const requiredFiles = ['.env.production'];
-    const missingFiles = requiredFiles.filter(file => !existsSync(file));
+    const missingFiles = requiredFiles.filter((file) => !existsSync(file));
 
     return {
       category: 'dependencies',
       status: missingFiles.length === 0 ? 'pass' : 'warn',
-      message: missingFiles.length === 0 ?
-        'All required configuration files present' :
-        `Missing configuration files: ${missingFiles.join(', ')}`,
+      message:
+        missingFiles.length === 0
+          ? 'All required configuration files present'
+          : `Missing configuration files: ${missingFiles.join(', ')}`,
       details: { requiredFiles, missingFiles },
       recommendation: missingFiles.length === 0 ? undefined : 'Create missing configuration files',
       fixable: true,
@@ -892,9 +928,13 @@ export class ProductionEnvironmentValidator extends BaseValidator {
     return {
       category: 'compliance',
       status,
-      message: fullyCompliant ? 'Data protection measures enabled' : 'Data protection partially configured',
+      message: fullyCompliant
+        ? 'Data protection measures enabled'
+        : 'Data protection partially configured',
       details: { encryptionEnabled, piiRedactionEnabled },
-      recommendation: fullyCompliant ? undefined : 'Enable encryption and PII redaction for data protection',
+      recommendation: fullyCompliant
+        ? undefined
+        : 'Enable encryption and PII redaction for data protection',
       fixable: true,
     };
   }
@@ -919,9 +959,13 @@ export class ProductionEnvironmentValidator extends BaseValidator {
     return {
       category: 'compliance',
       status: hasRetentionPolicy ? 'pass' : 'warn',
-      message: hasRetentionPolicy ? 'Data retention policies configured' : 'Data retention policies not configured',
+      message: hasRetentionPolicy
+        ? 'Data retention policies configured'
+        : 'Data retention policies not configured',
       details: { hasRetentionPolicy },
-      recommendation: hasRetentionPolicy ? undefined : 'Configure data retention policies for compliance',
+      recommendation: hasRetentionPolicy
+        ? undefined
+        : 'Configure data retention policies for compliance',
       fixable: true,
     };
   }
@@ -948,9 +992,13 @@ export class ProductionEnvironmentValidator extends BaseValidator {
     return {
       category: 'compliance',
       status: accessibilityEnabled ? 'pass' : 'warn',
-      message: accessibilityEnabled ? 'Accessibility features enabled' : 'Accessibility features not enabled',
+      message: accessibilityEnabled
+        ? 'Accessibility features enabled'
+        : 'Accessibility features not enabled',
       details: { accessibilityEnabled },
-      recommendation: accessibilityEnabled ? undefined : 'Consider enabling accessibility features for inclusivity',
+      recommendation: accessibilityEnabled
+        ? undefined
+        : 'Consider enabling accessibility features for inclusivity',
       fixable: true,
     };
   }
@@ -968,10 +1016,10 @@ export class ProductionEnvironmentValidator extends BaseValidator {
     ];
 
     report.summary.total = allResults.length;
-    report.summary.critical = allResults.filter(r => r.status === 'critical').length;
-    report.summary.failed = allResults.filter(r => r.status === 'fail').length;
-    report.summary.warnings = allResults.filter(r => r.status === 'warn').length;
-    report.summary.passed = allResults.filter(r => r.status === 'pass').length;
+    report.summary.critical = allResults.filter((r) => r.status === 'critical').length;
+    report.summary.failed = allResults.filter((r) => r.status === 'fail').length;
+    report.summary.warnings = allResults.filter((r) => r.status === 'warn').length;
+    report.summary.passed = allResults.filter((r) => r.status === 'pass').length;
 
     // Calculate overall score (0-100)
     const weights = { pass: 100, warn: 50, fail: 25, critical: 0 };
@@ -1004,7 +1052,7 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       ...report.categories.compliance,
     ];
 
-    allResults.forEach(result => {
+    allResults.forEach((result) => {
       if (result.recommendation) {
         recommendations.add(result.recommendation);
       }
@@ -1084,16 +1132,21 @@ export class ProductionEnvironmentValidator extends BaseValidator {
       { name: 'Compliance', key: 'compliance' },
     ];
 
-    categories.forEach(category => {
+    categories.forEach((category) => {
       const results = report.categories[category.key as keyof typeof report.categories];
       if (results.length > 0) {
         lines.push(`## ${category.name}`);
         lines.push('');
 
-        results.forEach(result => {
-          const icon = result.status === 'pass' ? '✅' :
-                     result.status === 'warn' ? '⚠️' :
-                     result.status === 'fail' ? '❌' : '🚨';
+        results.forEach((result) => {
+          const icon =
+            result.status === 'pass'
+              ? '✅'
+              : result.status === 'warn'
+                ? '⚠️'
+                : result.status === 'fail'
+                  ? '❌'
+                  : '🚨';
 
           lines.push(`${icon} **${result.message}**`);
 
@@ -1123,7 +1176,7 @@ export class ProductionEnvironmentValidator extends BaseValidator {
     // Add next steps
     lines.push('## Next Steps');
     lines.push('');
-    report.nextSteps.forEach(step => {
+    report.nextSteps.forEach((step) => {
       lines.push(`- ${step}`);
     });
     lines.push('');

@@ -1,15 +1,15 @@
-// @ts-nocheck
-// ABSOLUTELY FINAL EMERGENCY ROLLBACK: Complete ALL systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
+// P4 MCP INTEGRATION RESOLUTION: Fixed MCP SDK v1.22.0 compatibility
 
 /**
  * MCP Input Transformation Utilities
  *
  * Transforms MCP tool input format to internal schema format
  * Handles the conversion between {content, metadata} and {data} fields
+ * Updated for MCP SDK v1.22.0 compatibility.
  */
 
 import * as crypto from 'crypto';
+import type { ContentBlock } from '@modelcontextprotocol/sdk/types.js';
 
 // Define KnowledgeItem interface to match index.ts requirements
 interface KnowledgeItem {
@@ -48,23 +48,32 @@ export interface CoreKnowledgeItem {
  * Converts {content, metadata} → {data} structure expected by internal schemas
  */
 export function transformMcpInputToKnowledgeItems(items: unknown[]): KnowledgeItem[] {
-  return items.map((item) => {
-    const { kind, content, data, metadata, scope } = item;
+  return items.map((item: unknown) => {
+    if (!item || typeof item !== 'object') {
+      throw new Error('Invalid item: must be an object');
+    }
+
+    const itemObj = item as Record<string, unknown>;
+    const kind = itemObj.kind;
+    const content = itemObj.content;
+    const data = itemObj.data;
+    const metadata = itemObj.metadata;
+    const scope = itemObj.scope;
 
     // Handle both content-based and data-based items
     let finalContent = '';
-    let finalMetadata = metadata || {};
+    let finalMetadata = (metadata && typeof metadata === 'object') ? metadata as Record<string, unknown> : {};
 
-    if (content !== undefined) {
+    if (content !== undefined && typeof content === 'string') {
       // Content-based item (text types like section, decision, etc.)
       finalContent = content;
-    } else if (data !== undefined) {
+    } else if (data !== undefined && typeof data === 'object') {
       // Data-based item (entity, relation, observation, etc.)
       // Store data as JSON string in content for compatibility
       finalContent = JSON.stringify(data);
       // Move structured data to metadata for proper handling
       finalMetadata = {
-        ...metadata,
+        ...finalMetadata,
         structured_data: data,
       };
     }
@@ -72,10 +81,10 @@ export function transformMcpInputToKnowledgeItems(items: unknown[]): KnowledgeIt
     // Return knowledge item in index.ts format
     const knowledgeItem: KnowledgeItem = {
       id: crypto.randomUUID(),
-      kind,
+      kind: typeof kind === 'string' ? kind : 'unknown',
       content: finalContent,
       metadata: finalMetadata,
-      scope: scope || {},
+      scope: (scope && typeof scope === 'object') ? scope as Record<string, unknown> : {},
     };
 
     return knowledgeItem;
@@ -127,15 +136,16 @@ export function transformKnowledgeItemToMcpOutput(item: KnowledgeItem): unknown 
   const { kind, content, metadata, scope, id, created_at, updated_at } = item;
 
   // Extract content from content field
-  const itemContent = content || '';
+  const itemContent = (content && typeof content === 'string') ? content : '';
 
   // Use metadata field directly
+  const metadataObj = (metadata && typeof metadata === 'object') ? metadata as Record<string, unknown> : undefined;
 
   return {
     id,
     kind,
     content: itemContent,
-    metadata: metadata && Object.keys(metadata).length > 0 ? metadata : undefined,
+    metadata: metadataObj && Object.keys(metadataObj).length > 0 ? metadataObj : undefined,
     scope,
     created_at,
     updated_at,
@@ -182,22 +192,28 @@ export function validateMcpInputFormat(items: unknown[]): { valid: boolean; erro
       return;
     }
 
-    if (!item.kind || typeof item.kind !== 'string') {
+    const itemObj = item as Record<string, unknown>;
+    const kind = itemObj.kind;
+    const content = itemObj.content;
+    const data = itemObj.data;
+    const scope = itemObj.scope;
+
+    if (!kind || typeof kind !== 'string') {
       errors.push(`Item ${index}: kind is required and must be a string`);
-    } else if (!validKinds.includes(item.kind)) {
-      errors.push(`Item ${index}: invalid kind "${item.kind}"`);
+    } else if (!validKinds.includes(kind)) {
+      errors.push(`Item ${index}: invalid kind "${kind}"`);
     }
 
     // Support both content and data fields
-    if (!item.content && !item.data) {
+    if (!content && !data) {
       errors.push(`Item ${index}: either content or data must be provided`);
-    } else if (item.content && typeof item.content !== 'string') {
+    } else if (content && typeof content !== 'string') {
       errors.push(`Item ${index}: content must be a string if provided`);
-    } else if (item.data && typeof item.data !== 'object') {
+    } else if (data && typeof data !== 'object') {
       errors.push(`Item ${index}: data must be an object if provided`);
     }
 
-    if (item.scope && typeof item.scope !== 'object') {
+    if (scope && typeof scope !== 'object') {
       errors.push(`Item ${index}: scope must be an object if provided`);
     }
   });

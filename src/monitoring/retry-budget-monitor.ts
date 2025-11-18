@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ABSOLUTE FINAL EMERGENCY ROLLBACK: Last remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Comprehensive Retry Budget Monitor
@@ -17,10 +15,36 @@ import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
 
-import {
-  type CircuitBreakerEvent,
-  circuitBreakerMonitor} from './circuit-breaker-monitor.js';
+import { type CircuitBreakerEvent, circuitBreakerMonitor } from './circuit-breaker-monitor.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
+
+/**
+ * Interface for circuit breaker alerts
+ */
+export interface CircuitBreakerAlert {
+  serviceName: string;
+  severity: string;
+  message: string;
+  timestamp?: Date;
+  [key: string]: unknown;
+}
+
+/**
+ * Type guard to validate circuit breaker alerts
+ */
+export function isCircuitBreakerAlert(obj: unknown): obj is CircuitBreakerAlert {
+  if (!obj || typeof obj !== 'object') {
+    return false;
+  }
+
+  const alert = obj as Record<string, unknown>;
+
+  return (
+    typeof alert.serviceName === 'string' &&
+    typeof alert.severity === 'string' &&
+    typeof alert.message === 'string'
+  );
+}
 
 /**
  * Retry budget configuration per service
@@ -162,8 +186,7 @@ export interface RetryBudgetMonitorConfig {
     jsonExportEnabled: boolean;
     exportIntervalMinutes: number;
   };
-
-  }
+}
 
 /**
  * Retry consumption event
@@ -200,13 +223,16 @@ export class RetryBudgetMonitor extends EventEmitter {
   private exportInterval: NodeJS.Timeout | null = null;
 
   // Alert management
-  private activeAlerts: Map<string, {
-    type: string;
-    severity: string;
-    firstTriggered: Date;
-    lastTriggered: Date;
-    count: number;
-  }> = new Map();
+  private activeAlerts: Map<
+    string,
+    {
+      type: string;
+      severity: string;
+      firstTriggered: Date;
+      lastTriggered: Date;
+      count: number;
+    }
+  > = new Map();
 
   // Metrics storage for export
   private metricsHistory: Map<string, RetryBudgetMetrics[]> = new Map();
@@ -456,11 +482,11 @@ export class RetryBudgetMonitor extends EventEmitter {
    */
   getHistoricalMetrics(serviceName: string, hours: number = 24): RetryBudgetMetrics[] {
     const history = this.metricsHistory.get(serviceName) || [];
-    const cutoff = Date.now() - (hours * 60 * 60 * 1000);
+    const cutoff = Date.now() - hours * 60 * 60 * 1000;
 
-    return history.filter(metrics =>
-      metrics.timestamp.getTime() >= cutoff
-    ).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    return history
+      .filter((metrics) => metrics.timestamp.getTime() >= cutoff)
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
   }
 
   /**
@@ -495,14 +521,19 @@ export class RetryBudgetMonitor extends EventEmitter {
     const alerts = this.getActiveAlerts();
 
     const totalServices = metrics.length;
-    const servicesWithinBudget = metrics.filter(m => m.current.budgetUtilizationPercent < 80).length;
-    const servicesOverBudget = metrics.filter(m => m.current.budgetUtilizationPercent >= 80).length;
-    const servicesWithSLOViolations = metrics.filter(m => !m.slo.overallCompliance).length;
+    const servicesWithinBudget = metrics.filter(
+      (m) => m.current.budgetUtilizationPercent < 80
+    ).length;
+    const servicesOverBudget = metrics.filter(
+      (m) => m.current.budgetUtilizationPercent >= 80
+    ).length;
+    const servicesWithSLOViolations = metrics.filter((m) => !m.slo.overallCompliance).length;
 
     const totalRetriesLastHour = metrics.reduce((sum, m) => sum + m.current.usedRetriesHour, 0);
-    const averageBudgetUtilization = metrics.length > 0
-      ? metrics.reduce((sum, m) => sum + m.current.budgetUtilizationPercent, 0) / metrics.length
-      : 0;
+    const averageBudgetUtilization =
+      metrics.length > 0
+        ? metrics.reduce((sum, m) => sum + m.current.budgetUtilizationPercent, 0) / metrics.length
+        : 0;
 
     let overallBudgetHealth = HealthStatus.HEALTHY;
     if (servicesWithSLOViolations > 0 || servicesOverBudget > totalServices * 0.3) {
@@ -516,9 +547,13 @@ export class RetryBudgetMonitor extends EventEmitter {
     // Generate recommendations
     for (const metric of metrics) {
       if (metric.current.budgetUtilizationPercent > 90) {
-        recommendations.push(`Critical: ${metric.serviceName} retry budget nearly exhausted (${metric.current.budgetUtilizationPercent.toFixed(1)}%)`);
+        recommendations.push(
+          `Critical: ${metric.serviceName} retry budget nearly exhausted (${metric.current.budgetUtilizationPercent.toFixed(1)}%)`
+        );
       } else if (metric.current.budgetUtilizationPercent > 80) {
-        recommendations.push(`Warning: ${metric.serviceName} retry budget running low (${metric.current.budgetUtilizationPercent.toFixed(1)}%)`);
+        recommendations.push(
+          `Warning: ${metric.serviceName} retry budget running low (${metric.current.budgetUtilizationPercent.toFixed(1)}%)`
+        );
       }
 
       if (!metric.slo.overallCompliance) {
@@ -526,14 +561,19 @@ export class RetryBudgetMonitor extends EventEmitter {
       }
 
       if (metric.predictions.riskLevel === 'critical' || metric.predictions.riskLevel === 'high') {
-        recommendations.push(`Risk Alert: ${metric.serviceName} predicted to exhaust retry budget ${metric.predictions.budgetExhaustionTime ? `by ${metric.predictions.budgetExhaustionTime.toISOString()}` : 'soon'}`);
+        recommendations.push(
+          `Risk Alert: ${metric.serviceName} predicted to exhaust retry budget ${metric.predictions.budgetExhaustionTime ? `by ${metric.predictions.budgetExhaustionTime.toISOString()}` : 'soon'}`
+        );
       }
     }
 
     // Calculate trends
     const trends = {
-      budgetUtilizationTrend: this.calculateTrend(metrics, m => m.current.budgetUtilizationPercent),
-      retryRateTrend: this.calculateTrend(metrics, m => m.current.retryRatePercent),
+      budgetUtilizationTrend: this.calculateTrend(
+        metrics,
+        (m) => m.current.budgetUtilizationPercent
+      ),
+      retryRateTrend: this.calculateTrend(metrics, (m) => m.current.retryRatePercent),
       sloComplianceTrend: this.calculateSLOTrend(metrics),
     };
 
@@ -549,7 +589,7 @@ export class RetryBudgetMonitor extends EventEmitter {
         averageBudgetUtilization,
       },
       services: metrics,
-      alerts: alerts.map(a => ({
+      alerts: alerts.map((a) => ({
         serviceName: a.serviceName,
         type: a.type,
         severity: a.severity,
@@ -576,7 +616,9 @@ export class RetryBudgetMonitor extends EventEmitter {
         history.push(metrics);
 
         // Trim history based on retention
-        const maxSize = Math.floor(this.config.historyRetentionHours * 60 / (this.config.collectionIntervalMs / 60000));
+        const maxSize = Math.floor(
+          (this.config.historyRetentionHours * 60) / (this.config.collectionIntervalMs / 60000)
+        );
         if (history.length > maxSize) {
           history.splice(0, history.length - maxSize);
         }
@@ -587,7 +629,6 @@ export class RetryBudgetMonitor extends EventEmitter {
         // Emit metrics update
         this.emit('metrics_updated', { serviceName, metrics, timestamp: now });
       }
-
     } catch (error) {
       logger.error({ error }, 'Failed to collect retry budget metrics');
     }
@@ -596,7 +637,11 @@ export class RetryBudgetMonitor extends EventEmitter {
   /**
    * Calculate metrics for a specific service
    */
-  private calculateServiceMetrics(serviceName: string, budget: RetryBudgetConfig, now: Date): RetryBudgetMetrics {
+  private calculateServiceMetrics(
+    serviceName: string,
+    budget: RetryBudgetConfig,
+    now: Date
+  ): RetryBudgetMetrics {
     const retryHistory = this.retryHistory.get(serviceName) || [];
     const sloMetrics = this.sloMetrics.get(serviceName) || { successRates: [], responseTimes: [] };
 
@@ -604,27 +649,38 @@ export class RetryBudgetMonitor extends EventEmitter {
     const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
-    const retriesLastMinute = retryHistory.filter(e => e.timestamp >= oneMinuteAgo).reduce((sum, e) => sum + e.retryCount, 0);
-    const retriesLastHour = retryHistory.filter(e => e.timestamp >= oneHourAgo).reduce((sum, e) => sum + e.retryCount, 0);
+    const retriesLastMinute = retryHistory
+      .filter((e) => e.timestamp >= oneMinuteAgo)
+      .reduce((sum, e) => sum + e.retryCount, 0);
+    const retriesLastHour = retryHistory
+      .filter((e) => e.timestamp >= oneHourAgo)
+      .reduce((sum, e) => sum + e.retryCount, 0);
 
-    const totalCallsLastHour = retryHistory.filter(e => e.timestamp >= oneHourAgo).length;
-    const retryRatePercent = totalCallsLastHour > 0 ? (retriesLastHour / totalCallsLastHour) * 100 : 0;
+    const totalCallsLastHour = retryHistory.filter((e) => e.timestamp >= oneHourAgo).length;
+    const retryRatePercent =
+      totalCallsLastHour > 0 ? (retriesLastHour / totalCallsLastHour) * 100 : 0;
 
     const budgetRemainingMinute = Math.max(0, budget.maxRetriesPerMinute - retriesLastMinute);
     const budgetRemainingHour = Math.max(0, budget.maxRetriesPerHour - retriesLastHour);
-    const budgetUtilizationPercent = Math.min(100, (retriesLastHour / budget.maxRetriesPerHour) * 100);
+    const budgetUtilizationPercent = Math.min(
+      100,
+      (retriesLastHour / budget.maxRetriesPerHour) * 100
+    );
 
     // Get circuit breaker status
     const circuitStatus = circuitBreakerMonitor.getHealthStatus(budget.circuitBreakerName);
 
     // Calculate SLO compliance
     const sloMetricsWindow = sloMetrics.successRates.slice(-10); // Last 10 data points
-    const avgSuccessRate = sloMetricsWindow.length > 0
-      ? sloMetricsWindow.reduce((sum, rate) => sum + rate, 0) / sloMetricsWindow.length
-      : 100;
-    const avgResponseTime = sloMetrics.responseTimes.length > 0
-      ? sloMetrics.responseTimes.reduce((sum, time) => sum + time, 0) / sloMetrics.responseTimes.length
-      : 0;
+    const avgSuccessRate =
+      sloMetricsWindow.length > 0
+        ? sloMetricsWindow.reduce((sum, rate) => sum + rate, 0) / sloMetricsWindow.length
+        : 100;
+    const avgResponseTime =
+      sloMetrics.responseTimes.length > 0
+        ? sloMetrics.responseTimes.reduce((sum, time) => sum + time, 0) /
+          sloMetrics.responseTimes.length
+        : 0;
 
     const successRateCompliance = avgSuccessRate >= budget.sloTargetSuccessRate;
     const responseTimeCompliance = avgResponseTime <= budget.sloTargetResponseTime;
@@ -676,12 +732,17 @@ export class RetryBudgetMonitor extends EventEmitter {
     }
 
     // Calculate predictions
-    const predictions = this.calculatePredictions(serviceName, budget, retriesLastHour, retryRatePercent);
+    const predictions = this.calculatePredictions(
+      serviceName,
+      budget,
+      retriesLastHour,
+      retryRatePercent
+    );
 
     // Calculate performance metrics
-    const recentEvents = retryHistory.filter(e => e.timestamp >= oneHourAgo);
-    const responseTimes = recentEvents.map(e => e.responseTime).filter(time => time > 0);
-    const successCount = recentEvents.filter(e => e.success).length;
+    const recentEvents = retryHistory.filter((e) => e.timestamp >= oneHourAgo);
+    const responseTimes = recentEvents.map((e) => e.responseTime).filter((time) => time > 0);
+    const successCount = recentEvents.filter((e) => e.success).length;
     const totalOperations = recentEvents.length;
 
     // Helper function to calculate percentile
@@ -692,13 +753,15 @@ export class RetryBudgetMonitor extends EventEmitter {
       return sorted[Math.max(0, index)];
     };
 
-    const averageResponseTime = responseTimes.length > 0
-      ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
-      : 0;
+    const averageResponseTime =
+      responseTimes.length > 0
+        ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
+        : 0;
     const p95ResponseTime = calculatePercentile(responseTimes, 95);
     const p99ResponseTime = calculatePercentile(responseTimes, 99);
     const throughput = totalOperations / 3600; // operations per second over the last hour
-    const errorRate = totalOperations > 0 ? ((totalOperations - successCount) / totalOperations) * 100 : 0;
+    const errorRate =
+      totalOperations > 0 ? ((totalOperations - successCount) / totalOperations) * 100 : 0;
 
     return {
       serviceName,
@@ -719,25 +782,27 @@ export class RetryBudgetMonitor extends EventEmitter {
         budgetUtilizationPercent,
       },
       history: {
-        retriesPerMinute: this.getRetryTimeSeriesData(retryHistory, 60, e => e.retryCount),
-        retriesPerHour: this.getRetryTimeSeriesData(retryHistory, 3600, e => e.retryCount),
+        retriesPerMinute: this.getRetryTimeSeriesData(retryHistory, 60, (e) => e.retryCount),
+        retriesPerHour: this.getRetryTimeSeriesData(retryHistory, 3600, (e) => e.retryCount),
         retryRateHistory: this.calculateRetryRateHistory(retryHistory),
         successRateHistory: sloMetrics.successRates.slice(-20),
         responseTimeHistory: sloMetrics.responseTimes.slice(-20),
       },
-      circuitBreaker: circuitStatus ? {
-        state: circuitStatus.state,
-        healthStatus: circuitStatus.healthStatus,
-        failureRate: circuitStatus.metrics.failureRate,
-        consecutiveFailures: circuitStatus.metrics.consecutiveFailures,
-        lastStateChange: new Date(Date.now() - circuitStatus.metrics.timeSinceStateChange),
-      } : {
-        state: 'closed',
-        healthStatus: HealthStatus.HEALTHY,
-        failureRate: 0,
-        consecutiveFailures: 0,
-        lastStateChange: now,
-      },
+      circuitBreaker: circuitStatus
+        ? {
+            state: circuitStatus.state,
+            healthStatus: circuitStatus.healthStatus,
+            failureRate: circuitStatus.metrics.failureRate,
+            consecutiveFailures: circuitStatus.metrics.consecutiveFailures,
+            lastStateChange: new Date(Date.now() - circuitStatus.metrics.timeSinceStateChange),
+          }
+        : {
+            state: 'closed',
+            healthStatus: HealthStatus.HEALTHY,
+            failureRate: 0,
+            consecutiveFailures: 0,
+            lastStateChange: now,
+          },
       slo: {
         successRateCompliance,
         responseTimeCompliance,
@@ -849,14 +914,20 @@ export class RetryBudgetMonitor extends EventEmitter {
       if (hoursRemaining < 1) {
         predictions.budgetExhaustionTime = new Date(Date.now() + hoursRemaining * 60 * 60 * 1000);
         predictions.riskLevel = 'critical';
-        predictions.recommendedAdjustments.push(`Increase retry budget for ${serviceName} or reduce retry rate`);
+        predictions.recommendedAdjustments.push(
+          `Increase retry budget for ${serviceName} or reduce retry rate`
+        );
       } else if (hoursRemaining < 4) {
         predictions.budgetExhaustionTime = new Date(Date.now() + hoursRemaining * 60 * 60 * 1000);
         predictions.riskLevel = 'high';
-        predictions.recommendedAdjustments.push(`Monitor ${serviceName} closely - budget may be exhausted soon`);
+        predictions.recommendedAdjustments.push(
+          `Monitor ${serviceName} closely - budget may be exhausted soon`
+        );
       } else if (hoursRemaining < 8) {
         predictions.riskLevel = 'medium';
-        predictions.recommendedAdjustments.push(`Consider proactive adjustments for ${serviceName}`);
+        predictions.recommendedAdjustments.push(
+          `Consider proactive adjustments for ${serviceName}`
+        );
       }
     }
 
@@ -864,13 +935,17 @@ export class RetryBudgetMonitor extends EventEmitter {
     const circuitStatus = circuitBreakerMonitor.getHealthStatus(budget.circuitBreakerName);
     if (circuitStatus && (circuitStatus.isOpen || circuitStatus.isHalfOpen)) {
       predictions.riskLevel = predictions.riskLevel === 'critical' ? 'critical' : 'high';
-      predictions.recommendedAdjustments.push(`Circuit breaker ${circuitStatus.state} for ${budget.circuitBreakerName} may impact retry patterns`);
+      predictions.recommendedAdjustments.push(
+        `Circuit breaker ${circuitStatus.state} for ${budget.circuitBreakerName} may impact retry patterns`
+      );
     }
 
     // SLO violation predictions
     const metrics = this.budgetMetrics.get(serviceName);
     if (metrics && !metrics.slo.overallCompliance) {
-      predictions.recommendedAdjustments.push(`Address SLO violations for ${serviceName} to prevent service degradation`);
+      predictions.recommendedAdjustments.push(
+        `Address SLO violations for ${serviceName} to prevent service degradation`
+      );
     }
 
     return predictions;
@@ -895,7 +970,10 @@ export class RetryBudgetMonitor extends EventEmitter {
           metrics.predictions = updatedPredictions;
 
           // Emit prediction update if significant
-          if (updatedPredictions.riskLevel === 'critical' || updatedPredictions.riskLevel === 'high') {
+          if (
+            updatedPredictions.riskLevel === 'critical' ||
+            updatedPredictions.riskLevel === 'high'
+          ) {
             this.emit('prediction_alert', {
               serviceName,
               predictions: updatedPredictions,
@@ -1029,6 +1107,12 @@ export class RetryBudgetMonitor extends EventEmitter {
     });
 
     circuitBreakerMonitor.on('alert', (alert: unknown) => {
+      // Validate alert using type guard
+      if (!isCircuitBreakerAlert(alert)) {
+        logger.warn({ alert }, 'Received invalid circuit breaker alert format');
+        return;
+      }
+
       // Correlate circuit breaker alerts with retry budget
       for (const [serviceName, budget] of this.serviceBudgets) {
         if (budget.circuitBreakerName === alert.serviceName) {
@@ -1052,22 +1136,26 @@ export class RetryBudgetMonitor extends EventEmitter {
   /**
    * Get time series data from history
    */
-  private getTimeSeriesData<T>(history: Array<{ timestamp: Date } & Record<string, T>>, windowSeconds: number, extractor: (item: unknown) => T): T[] {
+  private getTimeSeriesData<T>(
+    history: Array<{ timestamp: Date } & Record<string, T>>,
+    windowSeconds: number,
+    extractor: (item: unknown) => T
+  ): T[] {
     const cutoff = new Date(Date.now() - windowSeconds * 1000);
-    return history
-      .filter(item => item.timestamp >= cutoff)
-      .map(extractor);
+    return history.filter((item) => item.timestamp >= cutoff).map(extractor);
   }
 
   /**
    * Get time series data from retry consumption events
    * Adapter function to transform RetryConsumptionEvent[] to the format expected by getTimeSeriesData
    */
-  private getRetryTimeSeriesData<T>(history: RetryConsumptionEvent[], windowSeconds: number, extractor: (item: RetryConsumptionEvent) => T): T[] {
+  private getRetryTimeSeriesData<T>(
+    history: RetryConsumptionEvent[],
+    windowSeconds: number,
+    extractor: (item: RetryConsumptionEvent) => T
+  ): T[] {
     const cutoff = new Date(Date.now() - windowSeconds * 1000);
-    return history
-      .filter(event => event.timestamp >= cutoff)
-      .map(extractor);
+    return history.filter((event) => event.timestamp >= cutoff).map(extractor);
   }
 
   /**
@@ -1078,17 +1166,18 @@ export class RetryBudgetMonitor extends EventEmitter {
     const windowSizeMs = 5 * 60 * 1000; // 5 minutes
 
     const now = Date.now();
-    for (let i = 0; i < 12; i++) { // Last hour in 5-minute windows
+    for (let i = 0; i < 12; i++) {
+      // Last hour in 5-minute windows
       const windowStart = now - (i + 1) * windowSizeMs;
       const windowEnd = now - i * windowSizeMs;
 
       const windowRetries = history
-        .filter(e => e.timestamp.getTime() >= windowStart && e.timestamp.getTime() < windowEnd)
+        .filter((e) => e.timestamp.getTime() >= windowStart && e.timestamp.getTime() < windowEnd)
         .reduce((sum, e) => sum + e.retryCount, 0);
 
-      const totalCalls = history
-        .filter(e => e.timestamp.getTime() >= windowStart && e.timestamp.getTime() < windowEnd)
-        .length;
+      const totalCalls = history.filter(
+        (e) => e.timestamp.getTime() >= windowStart && e.timestamp.getTime() < windowEnd
+      ).length;
 
       const retryRate = totalCalls > 0 ? (windowRetries / totalCalls) * 100 : 0;
       windows.unshift(retryRate);
@@ -1104,14 +1193,17 @@ export class RetryBudgetMonitor extends EventEmitter {
     if (values.length === 0) return 0;
 
     const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-    const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
+    const squaredDiffs = values.map((val) => Math.pow(val - mean, 2));
     return squaredDiffs.reduce((sum, val) => sum + val, 0) / values.length;
   }
 
   /**
    * Calculate trend direction from metrics
    */
-  private calculateTrend<T>(metrics: RetryBudgetMetrics[], extractor: (m: RetryBudgetMetrics) => T): 'increasing' | 'decreasing' | 'stable' {
+  private calculateTrend<T>(
+    metrics: RetryBudgetMetrics[],
+    extractor: (m: RetryBudgetMetrics) => T
+  ): 'increasing' | 'decreasing' | 'stable' {
     if (metrics.length < 3) return 'stable';
 
     const recent = metrics.slice(-3).map(extractor);
@@ -1132,7 +1224,7 @@ export class RetryBudgetMonitor extends EventEmitter {
     if (metrics.length < 3) return 'stable';
 
     const recent = metrics.slice(-3);
-    const complianceRates = recent.map(m => m.slo.overallCompliance ? 1 : 0);
+    const complianceRates = recent.map((m) => (m.slo.overallCompliance ? 1 : 0));
 
     const trend = complianceRates[2] - complianceRates[0];
     if (trend > 0.2) return 'improving';

@@ -1,6 +1,4 @@
-// @ts-nocheck
 // EMERGENCY ROLLBACK: Utility type guard compatibility issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * TTL Utilities for Knowledge Items
@@ -65,14 +63,14 @@ export function calculateExpirationDate(policy: TTLPolicy): Date | null {
  */
 export function getOrInheritTTLPolicy(item: KnowledgeItem): TTLPolicy {
   // Check if item already has TTL policy
-  if (item.data['ttl_policy'] && isValidTTLPolicy(item.data['ttl_policy'])) {
-    return item.data['ttl_policy'];
+  if (item.data['ttl_policy'] && isValidTTLPolicy(item.data['ttl_policy'] as string)) {
+    return item.data['ttl_policy'] as TTLPolicy;
   }
 
   // Check if item has explicit expires_at
   if (item.data['expires_at']) {
     // Convert expires_at to TTL policy if possible
-    const expiresDate = new Date(item.data['expires_at']);
+    const expiresDate = new Date(item.data['expires_at'] as string);
     const now = new Date();
     const daysUntilExpiration = (expiresDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000);
 
@@ -121,7 +119,7 @@ export function inheritTTLFromParent(parentItem: KnowledgeItem): {
 export function isItemExpired(item: KnowledgeItem): boolean {
   // Check explicit expires_at first
   if (item.data['expires_at']) {
-    return new Date() > new Date(item.data['expires_at']);
+    return new Date() > new Date(item.data['expires_at'] as string);
   }
 
   // Check TTL policy

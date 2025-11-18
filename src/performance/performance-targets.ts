@@ -1,6 +1,4 @@
-// @ts-nocheck
 // ULTIMATE FINAL EMERGENCY ROLLBACK: Remaining systematic type issues
-// TODO: Fix systematic type issues before removing @ts-nocheck
 
 /**
  * Performance Targets Configuration
@@ -60,7 +58,7 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: 'ms',
       type: 'latency',
       priority: 'critical',
-      enabled: true
+      enabled: true,
     },
     {
       name: 'store_latency_p99',
@@ -70,7 +68,7 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: 'ms',
       type: 'latency',
       priority: 'critical',
-      enabled: true
+      enabled: true,
     },
     {
       name: 'store_throughput',
@@ -80,7 +78,7 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: 'ops/s',
       type: 'throughput',
       priority: 'high',
-      enabled: true
+      enabled: true,
     },
     {
       name: 'store_error_rate',
@@ -90,8 +88,8 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: '%',
       type: 'error_rate',
       priority: 'critical',
-      enabled: true
-    }
+      enabled: true,
+    },
   ],
 
   search_retrieval: [
@@ -103,7 +101,7 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: 'ms',
       type: 'latency',
       priority: 'critical',
-      enabled: true
+      enabled: true,
     },
     {
       name: 'search_latency_p99',
@@ -113,7 +111,7 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: 'ms',
       type: 'latency',
       priority: 'critical',
-      enabled: true
+      enabled: true,
     },
     {
       name: 'search_throughput',
@@ -123,7 +121,7 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: 'ops/s',
       type: 'throughput',
       priority: 'high',
-      enabled: true
+      enabled: true,
     },
     {
       name: 'search_error_rate',
@@ -133,8 +131,8 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: '%',
       type: 'error_rate',
       priority: 'critical',
-      enabled: true
-    }
+      enabled: true,
+    },
   ],
 
   circuit_breaker: [
@@ -146,7 +144,7 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: 'ms',
       type: 'latency',
       priority: 'critical',
-      enabled: true
+      enabled: true,
     },
     {
       name: 'circuit_breaker_throughput',
@@ -156,8 +154,8 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: 'ops/s',
       type: 'throughput',
       priority: 'high',
-      enabled: true
-    }
+      enabled: true,
+    },
   ],
 
   health_checks: [
@@ -169,7 +167,7 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: 'ms',
       type: 'latency',
       priority: 'high',
-      enabled: true
+      enabled: true,
     },
     {
       name: 'health_check_throughput',
@@ -179,8 +177,8 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: 'ops/s',
       type: 'throughput',
       priority: 'medium',
-      enabled: true
-    }
+      enabled: true,
+    },
   ],
 
   memory_usage: [
@@ -192,7 +190,7 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: 'bytes',
       type: 'memory',
       priority: 'high',
-      enabled: true
+      enabled: true,
     },
     {
       name: 'memory_leak_detection',
@@ -202,9 +200,9 @@ export const PERFORMANCE_TARGETS: Record<string, PerformanceTarget[]> = {
       unit: 'bytes',
       type: 'memory',
       priority: 'medium',
-      enabled: true
-    }
-  ]
+      enabled: true,
+    },
+  ],
 };
 
 export const PERFORMANCE_TEST_CONFIGS: PerformanceTestConfig[] = [
@@ -220,8 +218,8 @@ export const PERFORMANCE_TEST_CONFIGS: PerformanceTestConfig[] = [
     parameters: {
       entityTypes: ['entity', 'observation', 'decision', 'task'],
       averageSize: 1024, // 1KB average entity size
-      sizeVariance: 0.3 // 30% variance
-    }
+      sizeVariance: 0.3, // 30% variance
+    },
   },
   {
     name: 'search_retrieval_performance',
@@ -235,8 +233,8 @@ export const PERFORMANCE_TEST_CONFIGS: PerformanceTestConfig[] = [
     parameters: {
       queryTypes: ['semantic', 'keyword', 'hybrid'],
       resultSize: 50, // average 50 results per query
-      searchComplexity: 'medium'
-    }
+      searchComplexity: 'medium',
+    },
   },
   {
     name: 'circuit_breaker_performance',
@@ -250,8 +248,8 @@ export const PERFORMANCE_TEST_CONFIGS: PerformanceTestConfig[] = [
     parameters: {
       failureRate: 0.1, // 10% failure rate for testing
       recoveryTime: 5000, // 5 seconds recovery
-      threshold: 5 // 5 failures before opening
-    }
+      threshold: 5, // 5 failures before opening
+    },
   },
   {
     name: 'health_check_performance',
@@ -264,8 +262,8 @@ export const PERFORMANCE_TEST_CONFIGS: PerformanceTestConfig[] = [
     categories: ['monitoring', 'health', 'ops'],
     parameters: {
       checkTypes: ['database', 'memory', 'circuit_breaker', 'api'],
-      checkInterval: 1000 // 1 second between checks
-    }
+      checkInterval: 1000, // 1 second between checks
+    },
   },
   {
     name: 'load_test_critical_operations',
@@ -275,15 +273,15 @@ export const PERFORMANCE_TEST_CONFIGS: PerformanceTestConfig[] = [
     timeout: 60000, // 60 seconds
     warmupIterations: 10,
     targets: [
-      ...PERFORMANCE_TARGETS.knowledge_storage.filter(t => t.priority === 'critical'),
-      ...PERFORMANCE_TARGETS.search_retrieval.filter(t => t.priority === 'critical')
+      ...PERFORMANCE_TARGETS.knowledge_storage.filter((t) => t.priority === 'critical'),
+      ...PERFORMANCE_TARGETS.search_retrieval.filter((t) => t.priority === 'critical'),
     ],
     categories: ['load', 'stress', 'critical'],
     parameters: {
       sustainedLoad: true,
       loadDuration: 30000, // 30 seconds of sustained load
-      rampUpTime: 5000 // 5 seconds ramp-up
-    }
+      rampUpTime: 5000, // 5 seconds ramp-up
+    },
   },
   {
     name: 'memory_usage_stress_test',
@@ -297,9 +295,9 @@ export const PERFORMANCE_TEST_CONFIGS: PerformanceTestConfig[] = [
     parameters: {
       memoryMonitorInterval: 1000, // 1 second
       leakDetectionThreshold: 50 * 1024 * 1024, // 50MB
-      gcForceInterval: 10000 // Force GC every 10 seconds
-    }
-  }
+      gcForceInterval: 10000, // Force GC every 10 seconds
+    },
+  },
 ];
 
 export class PerformanceTargetValidator {
@@ -337,13 +335,13 @@ export class PerformanceTargetValidator {
 
     let passed = true;
 
-    for (const target of targets.filter(t => t.enabled)) {
+    for (const target of targets.filter((t) => t.enabled)) {
       const actual = results[target.name];
       if (actual === undefined) {
         warnings.push({
           target,
           actual: 0,
-          deviation: 100
+          deviation: 100,
         });
         continue;
       }
@@ -355,16 +353,17 @@ export class PerformanceTargetValidator {
         failures.push({
           target,
           actual,
-          deviation
+          deviation,
         });
         passed = false;
       }
       // Check if result deviates significantly from target
-      else if (deviation > 20) { // 20% deviation threshold
+      else if (deviation > 20) {
+        // 20% deviation threshold
         warnings.push({
           target,
           actual,
-          deviation
+          deviation,
         });
       }
     }
@@ -372,18 +371,14 @@ export class PerformanceTargetValidator {
     return {
       passed,
       failures,
-      warnings
+      warnings,
     };
   }
 
   /**
    * Calculate deviation percentage from target
    */
-  private static calculateDeviation(
-    actual: number,
-    target: number,
-    type: string
-  ): number {
+  private static calculateDeviation(actual: number, target: number, type: string): number {
     if (target === 0) return 0;
 
     switch (type) {
@@ -445,7 +440,7 @@ export class PerformanceTargetValidator {
    * Get performance test configuration by name
    */
   static getTestConfig(name: string): PerformanceTestConfig | undefined {
-    return PERFORMANCE_TEST_CONFIGS.find(config => config.name === name);
+    return PERFORMANCE_TEST_CONFIGS.find((config) => config.name === name);
   }
 
   /**
@@ -459,8 +454,6 @@ export class PerformanceTargetValidator {
    * Get test configurations by category
    */
   static getTestConfigsByCategory(category: string): PerformanceTestConfig[] {
-    return PERFORMANCE_TEST_CONFIGS.filter(config =>
-      config.categories.includes(category)
-    );
+    return PERFORMANCE_TEST_CONFIGS.filter((config) => config.categories.includes(category));
   }
 }

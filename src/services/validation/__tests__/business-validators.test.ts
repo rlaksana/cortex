@@ -1,16 +1,11 @@
-// @ts-nocheck
-// EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
-// TODO: Implement systematic interface synchronization before removing @ts-nocheck
-
-
 /**
  * Comprehensive test suite for business validators
  * Tests all P5-T5.1 business rules and validation scenarios
  */
 
-import { beforeEach,describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { KnowledgeItem } from '../../../types/core-interfaces.js';
+import type { KnowledgeItem } from '../../../types/core-interfaces';
 import {
   createBusinessValidators,
   DDLValidator,
@@ -18,7 +13,7 @@ import {
   IncidentValidator,
   RiskValidator,
   TodoValidator,
-} from '../business-validators.js';
+} from '../business-validators';
 
 describe('Business Validators', () => {
   describe('DecisionValidator', () => {
