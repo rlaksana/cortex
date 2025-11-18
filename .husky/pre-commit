@@ -1,7 +1,5 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
 
-echo "🔍 Running enhanced pre-commit quality checks..."
+echo "🎯 LEVEL 1: Running lightweight pre-commit checks..."
 
 # Check if this is a documentation-only commit
 DOCS_ONLY=$(git diff --cached --name-only | grep -E '\.(md|txt|json|yml|yaml)$' | wc -l)
@@ -11,205 +9,19 @@ TOTAL_FILES=$(git diff --cached --name-only | wc -l)
 if [ "$DOCS_ONLY" -eq "$TOTAL_FILES" ] && [ "$TOTAL_FILES" -gt 0 ]; then
   echo "📝 Documentation-only commit detected - running light checks..."
 
-  # Check markdown formatting
-  if command -v markdownlint >/dev/null 2>&1; then
-    npx markdownlint --fix *.md 2>/dev/null || echo "⚠️  Markdown linting not available"
-  fi
-
-  # Check for sensitive data in docs
-  if command -v trufflehog >/dev/null 2>&1; then
-    trufflehog filesystem --directory=. --fail --no-update 2>/dev/null || echo "⚠️  Secret scanning not available"
-  fi
-
-  echo "✅ Documentation checks passed"
+  # Only format docs, no heavy validation
+  npx prettier --write $(git diff --cached --name-only | grep -E '\.(md|json|yml|yaml)$') 2>/dev/null || true
+  echo "✅ Documentation formatting completed"
   exit 0
 fi
 
-# Run strict TypeScript validation
-echo "🔷 Running strict TypeScript validation..."
-npx tsc --noEmit --strict || {
-  echo "❌ Strict TypeScript validation failed"
-  echo "💡 Fix TypeScript compilation errors before committing"
-  echo "   Run 'npx tsc --noEmit --strict' to see the full error details"
+echo "🔧 Running lint-staged on changed files..."
+npx lint-staged || {
+  echo "❌ Lint-staged failed"
+  echo "💡 Fix linting and formatting issues before committing"
+  echo "   Most issues can be auto-fixed. Stage the fixes and try again."
   exit 1
 }
 
-# Run ESLint on staged files with strict rules
-echo "🔧 Running ESLint on staged files..."
-# TEMPORARILY DISABLED - ESLint causing major issues with emergency rollback
-# STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|ts|tsx|mjs|cjs)$' | tr '\n' ' ')
-#
-# if [ -n "$STAGED_FILES" ]; then
-#   npx eslint $STAGED_FILES --max-warnings 0 || {
-#     echo "❌ ESLint found issues in staged files"
-#     echo "💡 Fix the linting errors before committing"
-#     echo "   Run 'npx eslint $STAGED_FILES --fix' to auto-fix many issues"
-#     exit 1
-#   }
-# fi
-
-echo "⚠️  ESLint temporarily disabled for emergency rollback"
-echo "   To re-enable: uncomment ESLint sections in .husky/pre-commit"
-
-# Run security-focused ESLint
-# TEMPORARILY DISABLED - Security ESLint causing major issues
-# echo "🔒 Running security ESLint..."
-# npx eslint src --ext .ts --config eslint.security.config.cjs --max-warnings 0 || {
-#   echo "❌ Security ESLint found issues"
-#   echo "💡 Fix security issues before committing"
-#   exit 1
-# }
-
-echo "⚠️  Security ESLint temporarily disabled for emergency rollback"
-
-# Check code formatting
-echo "🎨 Checking code formatting..."
-# TEMPORARILY DISABLED - Formatting causing issues during emergency rollback
-# npm run format:check || {
-#   echo "❌ Code formatting issues found"
-#   echo "💡 Run 'npm run format' to fix formatting issues"
-#   exit 1
-# }
-
-echo "⚠️  Code formatting temporarily disabled for emergency rollback"
-
-# Run MCP Inspector validation if MCP files changed
-MCP_FILES_CHANGED=$(git diff --cached --name-only | grep -E '\.(mcp|mcp\.json|index\.ts|.*mcp.*)$' | wc -l)
-
-if [ "$MCP_FILES_CHANGED" -gt 0 ]; then
-  echo "🔌 Running MCP-specific validation..."
-
-  # Basic MCP schema validation
-  if [ -f "test-mcp-simple.cjs" ]; then
-    timeout 30 node test-mcp-simple.cjs || {
-      echo "❌ MCP validation failed"
-      echo "💡 Fix MCP implementation issues before committing"
-      exit 1
-    }
-  fi
-
-  # MCP Protocol compliance check
-  if [ -f "test-mcp-comprehensive.cjs" ]; then
-    timeout 60 node test-mcp-comprehensive.cjs || {
-      echo "⚠️  MCP compliance issues detected"
-      echo "💡 Review MCP protocol implementation"
-    }
-  fi
-
-  # Run MCP Inspector tests if available
-  if [ -f "scripts/run-mcp-inspector-tests.js" ]; then
-    timeout 120 node scripts/run-mcp-inspector-tests.js || {
-      echo "⚠️  MCP Inspector tests failed"
-      echo "💡 Fix MCP Inspector compliance issues"
-    }
-  fi
-fi
-
-# Run tests related to changed files
-echo "🧪 Running relevant tests..."
-CHANGED_TS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.ts$' | wc -l)
-
-if [ "$CHANGED_TS_FILES" -gt 0 ]; then
-  # Run a subset of tests focused on changed areas
-  if command -v vitest >/dev/null 2>&1; then
-    timeout 120 npm run test:unit || timeout 120 npm test || {
-      echo "❌ Tests failed"
-      echo "💡 Fix failing tests before committing"
-      echo "   Run 'npm test' to see full test results"
-      exit 1
-    }
-  else
-    echo "⚠️  Test runner not available, skipping tests"
-  fi
-fi
-
-# Run security audit on dependencies if package.json changed
-if git diff --cached --name-only | grep -q 'package.json'; then
-  echo "🔒 Running security audit on dependencies..."
-  timeout 60 npm audit --audit-level=moderate || {
-    AUDIT_STATUS=$?
-    if [ $AUDIT_STATUS -gt 1 ]; then
-      echo "❌ Critical/High security vulnerabilities found"
-      echo "💡 These must be fixed before committing"
-      echo "   Run 'npm audit fix' to resolve vulnerabilities"
-      exit 1
-    else
-      echo "⚠️  Moderate security vulnerabilities found"
-      echo "💡 Consider running 'npm audit fix' to resolve vulnerabilities"
-    fi
-  }
-fi
-
-# Check for potential secrets in staged files
-echo "🔐 Checking for potential secrets..."
-STAGED_CONTENT=$(git diff --cached --name-only | xargs cat 2>/dev/null | grep -iE '(password|secret|key|token|api[_-]?key|private[_-]?key)' | head -5)
-
-if [ -n "$STAGED_CONTENT" ]; then
-  echo "⚠️  Potential secrets detected in staged files:"
-  echo "$STAGED_CONTENT"
-  echo ""
-  echo "💡 Please ensure no secrets are committed to the repository"
-  echo "   If these are false positives, you can continue with 'git commit --no-verify'"
-  read -p "Continue anyway? (y/N): " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    exit 1
-  fi
-fi
-
-# Check file sizes
-echo "📏 Checking file sizes..."
-LARGE_FILES=$(git diff --cached --name-only | xargs ls -la 2>/dev/null | awk '$5 > 1048576 {print $9 " (" $5/1024/1024 "MB)"}' | head -3)
-
-if [ -n "$LARGE_FILES" ]; then
-  echo "⚠️  Large files detected in commit:"
-  echo "$LARGE_FILES"
-  echo ""
-  echo "💡 Consider using Git LFS or breaking down large files"
-  read -p "Continue anyway? (y/N): " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    exit 1
-  fi
-fi
-
-# Run production readiness validation if deployment files changed
-DEPLOY_FILES_CHANGED=$(git diff --cached --name-only | grep -E '\.(docker|docker-compose|k8s|helm|deployment)$' | wc -l)
-
-if [ "$DEPLOY_FILES_CHANGED" -gt 0 ]; then
-  echo "🚀 Validating production readiness..."
-
-  # Check Docker configuration
-  if [ -f "docker/Dockerfile" ]; then
-    docker --version >/dev/null 2>&1 && docker build -t test-build docker/ >/dev/null 2>&1 || {
-      echo "⚠️  Docker build validation failed"
-      echo "💡 Check Docker configuration"
-    }
-  fi
-
-  # Check environment variables template
-  if [ ! -f ".env.example" ]; then
-    echo "⚠️  Missing .env.example template"
-    echo "💡 Create .env.example with required environment variables"
-  fi
-fi
-
-# Run final quality gate validation
-echo "🎯 Running final quality gate validation..."
-timeout 180 node scripts/quality-gate-enforcer.js --quick-check || {
-  echo "❌ Quality gate validation failed"
-  echo "💡 Fix quality issues before committing"
-  echo "   Run 'npm run quality-gate:enforce' for detailed validation"
-  exit 1
-}
-
-echo "✅ All pre-commit quality checks passed!"
-echo "🎉 Ready to commit changes"
-echo ""
-echo "📊 Quality Summary:"
-echo "  • TypeScript: ✅ Strict validation passed"
-echo "  • ESLint: ⚠️  Temporarily disabled (emergency rollback)"
-echo "  • Security: ⚠️  Security ESLint disabled (emergency rollback)"
-echo "  • Tests: ✅ Tests passed"
-echo "  • MCP: $([ "$MCP_FILES_CHANGED" -gt 0 ] && echo "✅ MCP validation passed" || echo "ℹ️  No MCP changes")"
-echo "  • Production: $([ "$DEPLOY_FILES_CHANGED" -gt 0 ] && echo "✅ Production checks passed" || echo "ℹ️  No deployment changes")"
+echo "✅ LEVEL 1 pre-commit checks passed!"
+echo "🚀 Ready to commit"

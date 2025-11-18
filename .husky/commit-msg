@@ -1,0 +1,48 @@
+
+echo "📝 LEVEL 2: Validating commit message format..."
+
+commit_regex='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,80}(\n\n((.+|\n)+))?([#][0-9]+)?$'
+
+if ! grep -qE "$commit_regex" "$1"; then
+    echo "❌ Invalid commit message format"
+    echo ""
+    echo "💡 Commit messages must follow Conventional Commits format:"
+    echo "   <type>(<scope>): <description>"
+    echo ""
+    echo "   Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+    echo "   Scope: optional, in parentheses"
+    echo "   Description: lowercase, max 80 characters"
+    echo "   Examples:"
+    echo "     feat(auth): add JWT token validation"
+    echo "     fix: resolve memory leak in database connection"
+    echo "     docs: update API documentation"
+    echo "     refactor: extract user service from auth module"
+    echo ""
+    echo "   Optional: Add issue number at end (#123)"
+    exit 1
+fi
+
+# Check description length (first line)
+description=$(head -n1 "$1" | sed 's/^[^(]*([^)]*)*: //')
+if [ ${#description} -gt 80 ]; then
+    echo "❌ Description too long (${#description} characters, max 80)"
+    echo "💡 Keep the first line under 80 characters"
+    exit 1
+fi
+
+# Check if description starts with lowercase
+if echo "$description" | grep -qE '^[A-Z]'; then
+    echo "❌ Description should start with lowercase"
+    echo "💡 Use lowercase for the description"
+    exit 1
+fi
+
+# Check for empty line after subject
+if [ "$(wc -l < "$1")" -gt 1 ] && ! sed -n '2p' "$1" | grep -q '^\s*$'; then
+    echo "❌ Missing blank line after subject"
+    echo "💡 Add a blank line between subject and body"
+    exit 1
+fi
+
+echo "✅ Commit message format is valid"
+echo "🚀 Ready to commit"
