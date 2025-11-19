@@ -1,11 +1,10 @@
-import { logger } from '@/utils/logger.js';
-
 import {
   type GraphTraversalResult,
   type TraversalOptions,
   traverseGraphWithExpansion,
 } from './graph-traversal.js';
 import type { MemoryFindResponse, SearchQuery, SearchResult } from '../types/core-interfaces.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Core Memory Find Implementation - Phase 3 Enhanced

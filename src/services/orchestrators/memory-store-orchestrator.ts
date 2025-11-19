@@ -1,10 +1,8 @@
-import { logger } from '@/utils/logger.js';
-
 import { ServiceAdapterBase } from '../../interfaces/service-adapter.js';
 import type {
   AuthContext,
-  BatchStatus,
   BatchStorageResult,
+  BatchStatus,
   IMemoryStoreOrchestrator,
   ItemResult,
   ServiceResponse,
@@ -24,6 +22,7 @@ import {
   validateMcpInputFormat,
 } from '../../utils/mcp-transform.js';
 import { createStoreObservability } from '../../utils/observability-helper.js';
+import { logger } from '../../utils/logger.js';
 import { ChunkingService } from '../chunking/chunking-service.js';
 import { EmbeddingService } from '../embeddings/embedding-service.js';
 import { storeDecision, updateDecision } from '../knowledge/decision.js';
@@ -200,7 +199,7 @@ export class MemoryStoreOrchestrator
   /**
    * Legacy implementation of storeItems (original method)
    */
-  private async storeItemsLegacy(items: unknown[], authContext?: AuthContext): Promise<unknown> {
+  private async storeItemsLegacy(items: unknown[], authContext?: AuthContext): Promise<any> {
     logger.info({ itemCount: items.length }, 'P5-T5.3: Starting batch knowledge item storage');
     const startTime = Date.now();
 

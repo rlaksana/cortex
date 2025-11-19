@@ -18,13 +18,8 @@ import type {
   InsightGenerationRequest,
 } from '../../../types/insight-interfaces.js';
 import type { ZAIChatRequest } from '../../../types/zai-interfaces.js';
-import {
-  safeGetArrayProperty,
-  safeGetNumberProperty,
-  safeGetStringProperty,
-} from '../../../utils/type-fixes.js';
+import { logger } from '../../../utils/logger.js';
 import type { ZAIClientService } from '../../ai/zai-client.service';
-import { logger } from '../../utils/logger.js';
 
 export interface RelationshipAnalysisOptions {
   confidence_threshold: number;
@@ -158,7 +153,7 @@ export class RelationshipAnalysisStrategy {
       };
 
       const response = await this.zaiClient.generateCompletion(zaiRequest);
-      return this.parseRelationshipResponse(response.data!, items, 'semantic');
+      return this.parseRelationshipResponse(response, items, 'semantic');
     } catch (error) {
       logger.error({ error }, 'Semantic relationship analysis failed');
       return [];
@@ -194,7 +189,7 @@ export class RelationshipAnalysisStrategy {
       };
 
       const response = await this.zaiClient.generateCompletion(zaiRequest);
-      return this.parseRelationshipResponse(response.data!, items, 'dependency');
+      return this.parseRelationshipResponse(response, items, 'dependency');
     } catch (error) {
       logger.error({ error }, 'Dependency relationship analysis failed');
       return [];
@@ -224,26 +219,23 @@ export class RelationshipAnalysisStrategy {
       const temporalSequences = this.findTemporalSequences(sortedItems);
 
       for (const cluster of temporalClusters) {
-        const clusterItems = (cluster as unknown).items || [];
-        const clusterDescription = safeGetStringProperty(cluster, 'description');
-
-        if (clusterItems.length >= 2) {
+        if (cluster.items.length >= 2) {
           const analysis: RelationshipAnalysis = {
             relationship_type: 'temporal',
-            relationship_name: `Temporal Cluster: ${clusterDescription}`,
+            relationship_name: `Temporal Cluster: ${cluster.description}`,
             description: `Items created in close temporal proximity suggesting related work or events`,
             confidence: 0.7,
-            strength: clusterItems.length / sortedItems.length,
-            source_items: clusterItems
-              .slice(0, Math.ceil(clusterItems.length / 2))
+            strength: cluster.items.length / sortedItems.length,
+            source_items: cluster.items
+              .slice(0, Math.ceil(cluster.items.length / 2))
               .map((item: KnowledgeItem) => ({
                 item_id: item.id,
                 item_type: item.kind,
                 role: 'cluster_member',
                 confidence: 0.7,
               })),
-            target_items: clusterItems
-              .slice(Math.ceil(clusterItems.length / 2))
+            target_items: cluster.items
+              .slice(Math.ceil(cluster.items.length / 2))
               .map((item: KnowledgeItem) => ({
                 item_id: item.id,
                 item_type: item.kind,
@@ -264,23 +256,20 @@ export class RelationshipAnalysisStrategy {
       }
 
       for (const sequence of temporalSequences) {
-        const sequenceItems = (sequence as unknown).items || [];
-        const sequenceDescription = safeGetStringProperty(sequence, 'description');
-
-        if (sequenceItems.length >= 2) {
+        if (sequence.items.length >= 2) {
           const analysis: RelationshipAnalysis = {
             relationship_type: 'temporal',
-            relationship_name: `Temporal Sequence: ${sequenceDescription}`,
+            relationship_name: `Temporal Sequence: ${sequence.description}`,
             description: `Sequential items suggesting workflow or progression`,
             confidence: 0.6,
-            strength: sequenceItems.length / sortedItems.length,
-            source_items: sequenceItems.slice(0, -1).map((item: KnowledgeItem) => ({
+            strength: sequence.items.length / sortedItems.length,
+            source_items: sequence.items.slice(0, -1).map((item: KnowledgeItem) => ({
               item_id: item.id,
               item_type: item.kind,
               role: 'predecessor',
               confidence: 0.6,
             })),
-            target_items: sequenceItems.slice(1).map((item: KnowledgeItem) => ({
+            target_items: sequence.items.slice(1).map((item: KnowledgeItem) => ({
               item_id: item.id,
               item_type: item.kind,
               role: 'successor',
@@ -335,7 +324,7 @@ export class RelationshipAnalysisStrategy {
       };
 
       const response = await this.zaiClient.generateCompletion(zaiRequest);
-      return this.parseRelationshipResponse(response.data!, items, 'causal');
+      return this.parseRelationshipResponse(response, items, 'causal');
     } catch (error) {
       logger.error({ error }, 'Causal relationship analysis failed');
       return [];
@@ -371,7 +360,7 @@ export class RelationshipAnalysisStrategy {
       };
 
       const response = await this.zaiClient.generateCompletion(zaiRequest);
-      return this.parseRelationshipResponse(response.data!, items, 'hierarchical');
+      return this.parseRelationshipResponse(response, items, 'hierarchical');
     } catch (error) {
       logger.error({ error }, 'Hierarchical relationship analysis failed');
       return [];
@@ -391,27 +380,23 @@ export class RelationshipAnalysisStrategy {
       const analyses: RelationshipAnalysis[] = [];
 
       for (const group of collaborativeGroups) {
-        const groupItems = (group as unknown).items || [];
-        const groupDescription = safeGetStringProperty(group, 'description');
-        const groupIndicators = (group as unknown).indicators || [];
-
-        if (groupItems.length >= 2) {
+        if (group.items.length >= 2) {
           const analysis: RelationshipAnalysis = {
             relationship_type: 'collaborative',
-            relationship_name: `Collaborative Group: ${groupDescription}`,
+            relationship_name: `Collaborative Group: ${group.description}`,
             description: `Items showing collaborative work or shared effort`,
             confidence: 0.8,
-            strength: groupItems.length / items.length,
-            source_items: groupItems
-              .slice(0, Math.ceil(groupItems.length / 2))
+            strength: group.items.length / items.length,
+            source_items: group.items
+              .slice(0, Math.ceil(group.items.length / 2))
               .map((item: KnowledgeItem) => ({
                 item_id: item.id,
                 item_type: item.kind,
                 role: 'collaborator',
                 confidence: 0.8,
               })),
-            target_items: groupItems
-              .slice(Math.ceil(groupItems.length / 2))
+            target_items: group.items
+              .slice(Math.ceil(group.items.length / 2))
               .map((item: KnowledgeItem) => ({
                 item_id: item.id,
                 item_type: item.kind,
@@ -422,7 +407,7 @@ export class RelationshipAnalysisStrategy {
             relationship_nature: 'strong',
             metadata: {
               analysis_method: 'collaboration_detection',
-              connection_indicators: groupIndicators,
+              connection_indicators: group.indicators,
               context_clues: ['shared_scope', 'joint_effort'],
               verification_status: 'direct',
             },
@@ -631,51 +616,39 @@ Return only the JSON response, no additional text.
       const analysis = JSON.parse(content);
       const relationships = analysis.relationships || [];
 
-      return relationships.map((rel: unknown) => {
-        const relName = safeGetStringProperty(rel, 'name');
-        const relDescription = safeGetStringProperty(rel, 'description');
-        const relConfidence = safeGetNumberProperty(rel, 'confidence', 0.5);
-        const relStrength = safeGetNumberProperty(rel, 'strength', 0.5);
-        const relDirection = safeGetStringProperty(rel, 'direction', 'bidirectional');
-        const relConnectionIndicators = safeGetArrayProperty(rel, 'connection_indicators') || [];
-        const relContextClues = safeGetArrayProperty(rel, 'context_clues') || [];
-        const sourceIndices = (rel as unknown).source_indices || [];
-        const targetIndices = (rel as unknown).target_indices || [];
-
-        return {
-          relationship_type: relationshipType,
-          relationship_name: relName,
-          description: relDescription,
-          confidence: relConfidence,
-          strength: relStrength,
-          source_items: sourceIndices.map((index: number) => {
-            const item = items[index - 1];
-            return {
-              item_id: item.id,
-              item_type: item.kind,
-              role: 'source',
-              confidence: relConfidence,
-            };
-          }),
-          target_items: targetIndices.map((index: number) => {
-            const item = items[index - 1];
-            return {
-              item_id: item.id,
-              item_type: item.kind,
-              role: 'target',
-              confidence: relConfidence,
-            };
-          }),
-          relationship_direction: relDirection as 'bidirectional' | 'unidirectional',
-          relationship_nature: this.mapStrengthToNature(relStrength),
-          metadata: {
-            analysis_method: 'zai_relationship_analysis',
-            connection_indicators: relConnectionIndicators,
-            context_clues: relContextClues,
-            verification_status: 'inferred',
-          },
-        };
-      });
+      return relationships.map((rel: unknown) => ({
+        relationship_type: relationshipType,
+        relationship_name: rel.name,
+        description: rel.description,
+        confidence: rel.confidence || 0.5,
+        strength: rel.strength || 0.5,
+        source_items: (rel.source_indices || []).map((index: number) => {
+          const item = items[index - 1];
+          return {
+            item_id: item.id,
+            item_type: item.kind,
+            role: 'source',
+            confidence: rel.confidence || 0.5,
+          };
+        }),
+        target_items: (rel.target_indices || []).map((index: number) => {
+          const item = items[index - 1];
+          return {
+            item_id: item.id,
+            item_type: item.kind,
+            role: 'target',
+            confidence: rel.confidence || 0.5,
+          };
+        }),
+        relationship_direction: rel.direction || 'bidirectional',
+        relationship_nature: this.mapStrengthToNature(rel.strength),
+        metadata: {
+          analysis_method: 'zai_relationship_analysis',
+          connection_indicators: rel.connection_indicators || [],
+          context_clues: rel.context_clues || [],
+          verification_status: 'inferred',
+        },
+      }));
     } catch (error) {
       logger.error({ error }, 'Failed to parse relationship response');
       return [];
@@ -776,9 +749,8 @@ Return only the JSON response, no additional text.
 
     // Group by common tags
     for (const item of items) {
-      const itemTags = (item.data as unknown).tags;
-      if (Array.isArray(itemTags)) {
-        for (const tag of itemTags) {
+      if (item.data && (item.data as unknown).tags) {
+        for (const tag of (item.data as unknown).tags) {
           if (!tagGroups.has(tag)) {
             tagGroups.set(tag, []);
           }
@@ -788,7 +760,7 @@ Return only the JSON response, no additional text.
     }
 
     // Create groups from scope and tag analysis
-    for (const [scope, scopeItems] of Array.from(scopeGroups.entries())) {
+    for (const [scope, scopeItems] of scopeGroups.entries()) {
       if (scopeItems.length >= 2) {
         groups.push({
           description: `Shared scope: ${scope}`,
@@ -798,7 +770,7 @@ Return only the JSON response, no additional text.
       }
     }
 
-    for (const [tag, tagItems] of Array.from(tagGroups.entries())) {
+    for (const [tag, tagItems] of tagGroups.entries()) {
       if (tagItems.length >= 2 && !scopeGroups.has(String(tagItems[0].scope))) {
         groups.push({
           description: `Shared tag: ${tag}`,

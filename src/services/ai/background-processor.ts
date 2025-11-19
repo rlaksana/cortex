@@ -577,22 +577,13 @@ export class BackgroundProcessorService extends EventEmitter {
           );
 
         case 'text_transformation':
-          return await this.executeTextTransformation(
-            job.payload as { text: string; transformation: string },
-            signal
-          );
+          return await this.executeTextTransformation(job.payload, signal);
 
         case 'summarization':
-          return await this.executeSummarization(
-            job.payload as { text: string; summaryLength: "medium" | "short" | "long" },
-            signal
-          );
+          return await this.executeSummarization(job.payload, signal);
 
         case 'classification':
-          return await this.executeClassification(
-            job.payload as { text: string; categories: string[] },
-            signal
-          );
+          return await this.executeClassification(job.payload, signal);
 
         default:
           throw new Error(`Unknown job type: ${job.type}`);

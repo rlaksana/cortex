@@ -34,8 +34,9 @@ import { EventEmitter } from 'node:events';
 import { setImmediate } from 'node:timers';
 import { resolve } from 'path';
 
-import { generateCorrelationId } from './correlation-id.js';
 import { logger } from './logger.js';
+
+import { generateCorrelationId } from './correlation-id.js';
 
 /**
  * File handle manager configuration

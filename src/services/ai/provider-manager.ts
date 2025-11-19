@@ -92,7 +92,7 @@ class OpenAIProvider implements AIProvider {
     };
   }
 
-  async getMetrics(): Promise<ZAIMetrics> {
+  getMetrics(): ZAIMetrics {
     // Return mock metrics for OpenAI provider
     return {
       timestamp: new Date(),
@@ -155,12 +155,8 @@ class ZAIProviderWrapper implements AIProvider {
     yield* streamGenerator;
   }
 
-  async getMetrics(): Promise<ZAIMetrics> {
-    const response = await this.client.getMetrics();
-    if (!response.success) {
-      throw new Error(response.error?.message || 'Failed to get metrics');
-    }
-    return response.data;
+  getMetrics(): ZAIMetrics {
+    return this.client.getMetrics();
   }
 
   reset(): void {
@@ -336,11 +332,11 @@ export class AIProviderManager {
   /**
    * Get metrics from all providers
    */
-  async getMetrics(): Promise<Record<string, ZAIMetrics>> {
+  getMetrics(): Record<string, ZAIMetrics> {
     const providerMetrics: Record<string, ZAIMetrics> = {};
 
     for (const [name, provider] of this.providers) {
-      providerMetrics[name] = await provider.getMetrics();
+      providerMetrics[name] = provider.getMetrics();
     }
 
     return providerMetrics;

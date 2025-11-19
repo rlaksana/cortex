@@ -29,55 +29,6 @@ export {
   validateConfig,
 } from './configuration-validators.js';
 
-// Response envelope system exports
-export {
-  createEnhancedResponseEnvelopeBuilder,
-  EnhancedResponseEnvelopeBuilder,
-  validateEnvelope,
-  validateOperationResponse,
-} from './enhanced-response-envelope-builder.js';
-export {
-  extractErrorData,
-  extractMemoryFindData,
-  extractMemoryStoreData,
-  extractPaginatedData,
-  extractStreamingData,
-  extractSuccessData,
-  extractSystemStatusData,
-  isErrorEnvelopeWithData,
-  isMemoryFindResponse,
-  isMemoryStoreResponse,
-  isPaginatedEnvelopeWithData,
-  isStreamingEnvelopeWithData,
-  isSuccessEnvelopeWithData,
-  isSystemStatusResponse,
-  safeExtractArray,
-  safeExtractObject,
-  safeGet,
-  SafeResponseProcessor,
-} from './enhanced-response-guards.js';
-export {
-  ErrorCode,
-  type ErrorEnvelope,
-  type PaginatedEnvelope,
-  type ResponseEnvelope,
-  type StreamingEnvelope,
-  type SuccessEnvelope,
-} from './types/response-envelope.types.js';
-export {
-  type ErrorEnvelopeSchema,
-  extractEnvelopeData,
-  extractEnvelopeError,
-  isResponseEnvelope,
-  type PaginatedEnvelopeSchema,
-  type ResponseEnvelopeSchema,
-  type StreamingEnvelopeSchema,
-  type SuccessEnvelopeSchema,
-  type UnifiedResponseMetaSchema,
-  validateResponseEnvelope,
-  validateResponseEnvelopeOrThrow,
-} from './response-envelope-schemas.js';
-
 // Export specific type guards (excluding duplicates)
 export {
   isArray,

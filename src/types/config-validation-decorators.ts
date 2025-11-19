@@ -7,10 +7,11 @@
 
 import {
   type ValidationContext,
-  type ValidationError,
-  type ValidationOptions,
   type ValidationResult,
-  type ValidationWarning} from './runtime-type-guard-framework';
+  type ValidationError,
+  type ValidationWarning,
+  type ValidationOptions
+} from './runtime-type-guard-framework';
 import { TypeDebugger } from './type-debug-helpers';
 
 import 'reflect-metadata';
@@ -256,8 +257,8 @@ export function IsString(options: StringValidationOptions = {}) {
 
         // Transform value if needed
         let stringValue = String(value);
-        if ((opts as unknown).trim) stringValue = stringValue.trim();
-        if ((opts as unknown).normalize) stringValue = stringValue.normalize();
+        if ((opts as any).trim) stringValue = stringValue.trim();
+        if ((opts as any).normalize) stringValue = stringValue.normalize();
 
         // Type check
         if (typeof stringValue !== 'string') {
@@ -272,42 +273,42 @@ export function IsString(options: StringValidationOptions = {}) {
         }
 
         // Length validations
-        if ((opts as unknown).minLength !== undefined && stringValue.length < (opts as unknown).minLength) {
+        if ((opts as any).minLength !== undefined && stringValue.length < (opts as any).minLength) {
           errors.push({
             code: 'MIN_LENGTH',
-            message: opts?.error || `String must be at least ${(opts as unknown).minLength} characters long`,
+            message: opts?.error || `String must be at least ${(opts as any).minLength} characters long`,
             path: context.path,
             value: stringValue,
-            expected: `length >= ${(opts as unknown).minLength}`,
+            expected: `length >= ${(opts as any).minLength}`,
             actual: `length = ${stringValue.length}`,
                       });
         }
 
-        if ((opts as unknown).maxLength !== undefined && stringValue.length > (opts as unknown).maxLength) {
+        if ((opts as any).maxLength !== undefined && stringValue.length > (opts as any).maxLength) {
           errors.push({
             code: 'MAX_LENGTH',
-            message: opts?.error || `String must be at most ${(opts as unknown).maxLength} characters long`,
+            message: opts?.error || `String must be at most ${(opts as any).maxLength} characters long`,
             path: context.path,
             value: stringValue,
-            expected: `length <= ${(opts as unknown).maxLength}`,
+            expected: `length <= ${(opts as any).maxLength}`,
             actual: `length = ${stringValue.length}`,
                       });
         }
 
         // Pattern validation
-        if ((opts as unknown).pattern && !(opts as unknown).pattern.test(stringValue)) {
+        if ((opts as any).pattern && !(opts as any).pattern.test(stringValue)) {
           errors.push({
             code: 'PATTERN_MISMATCH',
             message: opts?.error || 'String does not match required pattern',
             path: context.path,
             value: stringValue,
-            expected: `pattern: ${(opts as unknown).pattern.toString()}`,
+            expected: `pattern: ${(opts as any).pattern.toString()}`,
             actual: stringValue,
                       });
         }
 
         // Email validation
-        if ((opts as unknown).email) {
+        if ((opts as any).email) {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(stringValue)) {
             errors.push({
@@ -322,7 +323,7 @@ export function IsString(options: StringValidationOptions = {}) {
         }
 
         // URL validation
-        if ((opts as unknown).url) {
+        if ((opts as any).url) {
           try {
             new URL(stringValue);
           } catch {
@@ -338,7 +339,7 @@ export function IsString(options: StringValidationOptions = {}) {
         }
 
         // UUID validation
-        if ((opts as unknown).uuid) {
+        if ((opts as any).uuid) {
           const uuidRegex =
             /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
           if (!uuidRegex.test(stringValue)) {
@@ -847,7 +848,7 @@ export function ValidateClass(options: ClassValidationMetadata = {}) {
         if (metadata.validateOnConstruction) {
           const validationResult = this.validate();
           if (!validationResult.success) {
-            const errorMessages = validationResult?.errors.map((e) => e?.message).join(', ');
+            const errorMessages = validationResult?.errors.map((e) => e?.error).join(', ');
             throw new Error(`Validation failed for ${constructor.name}: ${errorMessages}`);
           }
         }
@@ -961,7 +962,7 @@ export class ValidatedConfig {
    */
   validate(groups: string[] = []): DecoratorValidationResult {
     // Default implementation - should be overridden by decorator
-    return { success: true, errors: [], warnings: [] };
+    return { success: true, errors: [] };
   }
 
   /**
@@ -969,7 +970,7 @@ export class ValidatedConfig {
    */
   validateProperty(propertyName: string, groups: string[] = []): DecoratorValidationResult {
     // Default implementation - should be overridden by decorator
-    return { success: true, errors: [], warnings: [] };
+    return { success: true, errors: [] };
   }
 
   /**
@@ -993,7 +994,7 @@ export class ValidatedConfig {
   toPlainObject<T = Record<string, unknown>>(): T {
     const validationResult = this.validate();
     if (!validationResult.success) {
-      const errorMessages = validationResult?.errors.map((e) => e?.message).join(', ');
+      const errorMessages = validationResult?.errors.map((e) => e?.error).join(', ');
       throw new Error(`Cannot export invalid configuration: ${errorMessages}`);
     }
 

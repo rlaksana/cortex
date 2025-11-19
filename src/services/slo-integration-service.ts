@@ -65,11 +65,11 @@ export class SLOIntegrationService extends EventEmitter {
 
     // Initialize services (will be properly injected in start method)
     this.services = {
-      sloService: null as any,
-      dashboardService: null as any,
-      reportingService: null as any,
-      breachDetectionService: null as any,
-      errorBudgetService: null as any,
+      sloService: null as unknown,
+      dashboardService: null as unknown,
+      reportingService: null as unknown,
+      breachDetectionService: null as unknown,
+      errorBudgetService: null as unknown,
     };
   }
 

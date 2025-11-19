@@ -378,7 +378,7 @@ export class CanaryConfigValidator {
           'invalid_initial_traffic',
           'Initial traffic percentage must be between 0 and 100',
           'initialTrafficPercentage',
-          config.initialTrafficPercentage as number,
+          config.initialTrafficPercentage,
           '0-100',
           ValidationCategory.SCHEMA
         )
@@ -472,14 +472,14 @@ export class CanaryConfigValidator {
 
     // Resource constraints validation
     if (context.resourceConstraints) {
-      this.validateResourceConstraints(config as unknown as Record<string, unknown>, context.resourceConstraints, errors, warnings);
+      this.validateResourceConstraints(config, context.resourceConstraints, errors, warnings);
     }
 
     // Security validation
-    this.validateCanaryDeploymentSecurity(config as unknown, context, errors, warnings);
+    this.validateCanaryDeploymentSecurity(config, context, errors, warnings);
 
     // Add best practice recommendations
-    this.addCanaryDeploymentBestPractices(config as unknown as Record<string, unknown>, info);
+    this.addCanaryDeploymentBestPractices(config, info);
 
     return this.createValidationResult(errors, warnings, info);
   }
@@ -525,7 +525,7 @@ export class CanaryConfigValidator {
     }
 
     // Thresholds validation
-    if (!config.thresholds || (config.thresholds as any[]).length === 0) {
+    if (!config.thresholds || config.thresholds.length === 0) {
       errors.push(
         this.createError(
           'no_thresholds',
@@ -569,7 +569,7 @@ export class CanaryConfigValidator {
     }
 
     // Add best practice recommendations
-    this.addHealthMonitorBestPractices(config as unknown as Record<string, unknown>, info);
+    this.addHealthMonitorBestPractices(config, info);
 
     return this.createValidationResult(errors, warnings, info);
   }
@@ -601,7 +601,7 @@ export class CanaryConfigValidator {
           'invalid_strategy',
           `Invalid rollback strategy. Must be one of: ${validStrategies.join(', ')}`,
           'strategy',
-          config.strategy as string,
+          config.strategy,
           validStrategies.join(', '),
           ValidationCategory.SCHEMA
         )
@@ -671,7 +671,7 @@ export class CanaryConfigValidator {
     }
 
     // Add best practice recommendations
-    this.addRollbackBestPractices(config as unknown as Record<string, unknown>, info);
+    this.addRollbackBestPractices(config, info);
 
     return this.createValidationResult(errors, warnings, info);
   }
@@ -704,7 +704,7 @@ export class CanaryConfigValidator {
           'invalid_strategy',
           `Invalid traffic strategy. Must be one of: ${validStrategies.join(', ')}`,
           'strategy',
-          config.strategy as string,
+          config.strategy,
           validStrategies.join(', '),
           ValidationCategory.SCHEMA
         )
@@ -759,7 +759,7 @@ export class CanaryConfigValidator {
     }
 
     // Add best practice recommendations
-    this.addTrafficRuleBestPractices(config as unknown as Record<string, unknown>, info);
+    this.addTrafficRuleBestPractices(config, info);
 
     return this.createValidationResult(errors, warnings, info);
   }
@@ -816,7 +816,7 @@ export class CanaryConfigValidator {
     }
 
     // Trigger conditions validation
-    if (!config.triggerConditions || (config.triggerConditions as any[]).length === 0) {
+    if (!config.triggerConditions || config.triggerConditions.length === 0) {
       errors.push(
         this.createError(
           'no_trigger_conditions',
@@ -844,7 +844,7 @@ export class CanaryConfigValidator {
     }
 
     // Add best practice recommendations
-    this.addKillSwitchBestPractices(config as unknown as Record<string, unknown>, info);
+    this.addKillSwitchBestPractices(config, info);
 
     return this.createValidationResult(errors, warnings, info);
   }
@@ -878,7 +878,7 @@ export class CanaryConfigValidator {
           'invalid_strategy',
           `Invalid strategy. Must be one of: ${validStrategies.join(', ')}`,
           'strategy',
-          config.strategy as string,
+          config.strategy,
           validStrategies.join(', '),
           ValidationCategory.SCHEMA
         )
@@ -967,7 +967,7 @@ export class CanaryConfigValidator {
     }
 
     // Add best practice recommendations
-    this.addFeatureFlagBestPractices(config as unknown as Record<string, unknown>, info);
+    this.addFeatureFlagBestPractices(config, info);
 
     return this.createValidationResult(errors, warnings, info);
   }
@@ -1288,13 +1288,13 @@ export class CanaryConfigValidator {
     config: Record<string, unknown>,
     info: ValidationInfo[]
   ): void {
-    if ((config.initialTrafficPercentage as number) > 10) {
+    if (config.initialTrafficPercentage > 10) {
       info.push(
         this.createInfo(
           'conservative_initial_traffic',
           'Consider starting with lower initial traffic percentage (1-5%) for safer rollouts',
           'initialTrafficPercentage',
-          config.initialTrafficPercentage as number,
+          config.initialTrafficPercentage,
           ValidationCategory.BEST_PRACTICE,
           true,
           'https://example.com/canary-best-practices'
@@ -1302,13 +1302,13 @@ export class CanaryConfigValidator {
       );
     }
 
-    if ((config.phases as any[]).length < 3) {
+    if (config.phases.length < 3) {
       info.push(
         this.createInfo(
           'more_phases_recommended',
           'Consider using more phases for gradual traffic increase and better monitoring',
           'phases.length',
-          (config.phases as any[]).length,
+          config.phases.length,
           ValidationCategory.BEST_PRACTICE,
           true
         )
@@ -1321,7 +1321,7 @@ export class CanaryConfigValidator {
           'auto_rollback_recommended',
           'Consider enabling auto-rollback for automatic failure recovery',
           'autoRollback',
-          config.autoRollback as any,
+          config.autoRollback,
           ValidationCategory.BEST_PRACTICE,
           true
         )
@@ -1349,13 +1349,13 @@ export class CanaryConfigValidator {
       );
     }
 
-    if ((config.thresholds as any[]).length < 3) {
+    if (config.thresholds.length < 3) {
       info.push(
         this.createInfo(
           'more_thresholds_recommended',
           'Consider defining more health thresholds for comprehensive monitoring',
           'thresholds.length',
-          (config.thresholds as any[]).length,
+          config.thresholds.length,
           ValidationCategory.BEST_PRACTICE,
           true
         )
@@ -1367,13 +1367,13 @@ export class CanaryConfigValidator {
    * Add rollback best practices
    */
   private addRollbackBestPractices(config: Record<string, unknown>, info: ValidationInfo[]): void {
-    if (!(config.safety as any).requireApproval) {
+    if (!config.safety.requireApproval) {
       info.push(
         this.createInfo(
           'approval_recommended',
           'Consider requiring approval for rollback operations in production',
           'safety.requireApproval',
-          (config.safety as any).requireApproval,
+          config.safety.requireApproval,
           ValidationCategory.BEST_PRACTICE,
           true
         )
@@ -1386,7 +1386,7 @@ export class CanaryConfigValidator {
           'gradual_rollback_recommended',
           'Consider using gradual or phased rollback for smoother transitions',
           'strategy',
-          config.strategy as string,
+          config.strategy,
           ValidationCategory.BEST_PRACTICE,
           true
         )
@@ -1401,26 +1401,26 @@ export class CanaryConfigValidator {
     config: Record<string, unknown>,
     info: ValidationInfo[]
   ): void {
-    if (!(config.sessionAffinity as any).enabled) {
+    if (!config.sessionAffinity.enabled) {
       info.push(
         this.createInfo(
           'session_affinity_recommended',
           'Consider enabling session affinity for consistent user experience',
           'sessionAffinity.enabled',
-          (config.sessionAffinity as any).enabled,
+          config.sessionAffinity.enabled,
           ValidationCategory.BEST_PRACTICE,
           true
         )
       );
     }
 
-    if (!(config.failover as any).enabled) {
+    if (!config.failover.enabled) {
       info.push(
         this.createInfo(
           'failover_recommended',
           'Consider enabling failover for better reliability',
           'failover.enabled',
-          (config.failover as any).enabled,
+          config.failover.enabled,
           ValidationCategory.BEST_PRACTICE,
           true
         )
@@ -1435,26 +1435,26 @@ export class CanaryConfigValidator {
     config: Record<string, unknown>,
     info: ValidationInfo[]
   ): void {
-    if (!(config.autoRecovery as any).enabled) {
+    if (!config.autoRecovery.enabled) {
       info.push(
         this.createInfo(
           'auto_recovery_recommended',
           'Consider enabling auto-recovery for automatic issue resolution',
           'autoRecovery.enabled',
-          (config.autoRecovery as any).enabled,
+          config.autoRecovery.enabled,
           ValidationCategory.BEST_PRACTICE,
           true
         )
       );
     }
 
-    if ((config.triggerConditions as any[]).length < 2) {
+    if (config.triggerConditions.length < 2) {
       info.push(
         this.createInfo(
           'more_triggers_recommended',
           'Consider defining multiple trigger conditions for comprehensive monitoring',
           'triggerConditions.length',
-          (config.triggerConditions as any[]).length,
+          config.triggerConditions.length,
           ValidationCategory.BEST_PRACTICE,
           true
         )
@@ -1526,16 +1526,16 @@ export class CanaryConfigValidator {
     for (const field of requiredFields) {
       if (
         !(field in config) ||
-        (config as unknown as Record<string, unknown>)[field] === undefined ||
-        (config as unknown as Record<string, unknown>)[field] === null ||
-        (config as unknown as Record<string, unknown>)[field] === ''
+        (config as Record<string, unknown>)[field] === undefined ||
+        (config as Record<string, unknown>)[field] === null ||
+        (config as Record<string, unknown>)[field] === ''
       ) {
         errors.push(
           this.createError(
             'required_field_missing',
             `Required field '${field}' is missing or empty`,
             field,
-            (config as unknown as Record<string, unknown>)[field],
+            (config as Record<string, unknown>)[field],
             'required value',
             ValidationCategory.SCHEMA
           )

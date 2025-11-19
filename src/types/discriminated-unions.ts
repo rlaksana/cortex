@@ -85,50 +85,46 @@ export function assertNever(value: never): never {
 /**
  * Type Guards
  */
-function hasKey<K extends PropertyKey>(value: unknown, key: K): value is Record<K, unknown> {
-  return !!value && typeof value === 'object' && key in value;
-}
-
 export function isZAIProvider(provider: unknown): provider is { type: 'zai' } {
-  return hasKey(provider, 'type') && (provider as Record<string, unknown>).type === 'zai';
+  return provider.type === 'zai';
 }
 
 export function isOpenAIProvider(provider: unknown): provider is { type: 'openai' } {
-  return hasKey(provider, 'type') && (provider as Record<string, unknown>).type === 'openai';
+  return provider.type === 'openai';
 }
 
 export function isAutoMode(mode: unknown): mode is { mode: 'auto' } {
-  return hasKey(mode, 'mode') && (mode as Record<string, unknown>).mode === 'auto';
+  return mode.mode === 'auto';
 }
 
 export function isFastMode(mode: unknown): mode is { mode: 'fast' } {
-  return hasKey(mode, 'mode') && (mode as Record<string, unknown>).mode === 'fast';
+  return mode.mode === 'fast';
 }
 
 export function isDeepMode(mode: unknown): mode is { mode: 'deep' } {
-  return hasKey(mode, 'mode') && (mode as Record<string, unknown>).mode === 'deep';
+  return mode.mode === 'deep';
 }
 
 export function isSemanticStrategy(strategy: unknown): strategy is { strategy: 'semantic' } {
-  return hasKey(strategy, 'strategy') && (strategy as Record<string, unknown>).strategy === 'semantic';
+  return strategy.strategy === 'semantic';
 }
 
 export function isKeywordStrategy(strategy: unknown): strategy is { strategy: 'keyword' } {
-  return hasKey(strategy, 'strategy') && (strategy as Record<string, unknown>).strategy === 'keyword';
+  return strategy.strategy === 'keyword';
 }
 
 export function isHybridStrategy(strategy: unknown): strategy is { strategy: 'hybrid' } {
-  return hasKey(strategy, 'strategy') && (strategy as Record<string, unknown>).strategy === 'hybrid';
+  return strategy.strategy === 'hybrid';
 }
 
 export function isHealthyStatus(status: unknown): status is { status: 'healthy' } {
-  return hasKey(status, 'status') && (status as Record<string, unknown>).status === 'healthy';
+  return status.status === 'healthy';
 }
 
 export function isDegradedStatus(status: unknown): status is { status: 'degraded' } {
-  return hasKey(status, 'status') && (status as Record<string, unknown>).status === 'degraded';
+  return status.status === 'degraded';
 }
 
 export function isUnhealthyStatus(status: unknown): status is { status: 'unhealthy' } {
-  return hasKey(status, 'status') && (status as Record<string, unknown>).status === 'unhealthy';
+  return status.status === 'unhealthy';
 }

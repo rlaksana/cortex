@@ -21,7 +21,6 @@
 // TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
 import { logger } from '@/utils/logger.js';
-import { safeGetProperty } from '@/utils/type-fixes.js';
 
 import { Environment } from '../../config/environment.js';
 import { QdrantAdapter } from '../adapters/qdrant-adapter.js';
@@ -37,7 +36,7 @@ import {
   UnsupportedDatabaseError,
 } from '../interfaces/database-factory.interface.js';
 import type { IVectorAdapter, VectorConfig } from '../interfaces/vector-adapter.interface.js';
-import { createVectorConfig, validateVectorConfig } from '../type-guards.js';
+import { isVectorConfig, validateVectorConfig, createVectorConfig } from '../type-guards.js';
 
 /**
  * Database factory implementation
@@ -277,8 +276,7 @@ export class DatabaseFactory implements IDatabaseFactory {
    * Get singleton instance of the database factory
    */
   static getInstance(): DatabaseFactory {
-    const instance = safeGetProperty(DatabaseFactory, '_instance', null);
-    if (!instance) {
+    if (!(DatabaseFactory as any)._instance) {
       (DatabaseFactory as any)._instance = new DatabaseFactory();
     }
     return (DatabaseFactory as any)._instance;

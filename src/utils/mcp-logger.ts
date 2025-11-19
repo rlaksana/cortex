@@ -51,7 +51,7 @@ class MCPSafeLogger {
       environment: this.baseContext.environment as string,
       msg,
       ...(correlationId && { correlation_id: correlationId }),
-      ...(obj && typeof obj === 'object' ? obj as Record<string, unknown> : {}),
+      ...(obj as unknown),
     };
 
     const logLine = `${JSON.stringify(logEntry)}\n`;

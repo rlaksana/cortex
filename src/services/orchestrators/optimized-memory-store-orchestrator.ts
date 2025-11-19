@@ -12,7 +12,7 @@
 import { logger } from '@/utils/logger.js';
 
 import { MemoryStoreOrchestrator } from './memory-store-orchestrator.js';
-import type { KnowledgeItem,MemoryStoreResponse } from '../../types/core-interfaces.js';
+import type { MemoryStoreResponse, KnowledgeItem } from '../../types/core-interfaces.js';
 import { memoryManager } from '../memory/memory-manager-service.js';
 
 /**

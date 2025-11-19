@@ -7,12 +7,12 @@
 
 import { QdrantClient } from '@qdrant/js-client-rest';
 
-import { asEnhancedQdrantClient, type EnhancedQdrantClient } from '@/types/database-extensions.js';
 import { logger } from '@/utils/logger.js';
 
 import { Environment } from '../config/environment.js';
+import { asEnhancedQdrantClient } from '@/types/database-extensions.js';
 
-let qdrantClient: EnhancedQdrantClient | null = null;
+let qdrantClient: QdrantClient | null = null;
 
 // Define proper types for knowledge operations
 export interface KnowledgeMethod<T = unknown> {
@@ -52,13 +52,13 @@ export interface KnowledgeData {
 /**
  * Get or create Qdrant client instance
  */
-export function getQdrantClient(): EnhancedQdrantClient {
+export function getQdrantClient(): QdrantClient {
   if (!qdrantClient) {
     const env = Environment.getInstance();
     const qdrantUrl = env.getRawConfig().QDRANT_URL || 'http://localhost:6333';
     const qdrantApiKey = env.getRawConfig().QDRANT_API_KEY;
 
-    const baseClient = new QdrantClient({
+    qdrantClient = new QdrantClient({
       url: qdrantUrl,
       ...(qdrantApiKey && { apiKey: qdrantApiKey }),
     });
@@ -67,11 +67,10 @@ export function getQdrantClient(): EnhancedQdrantClient {
 
     // Use enhanced client with proper typing if available
     try {
-      qdrantClient = asEnhancedQdrantClient(baseClient);
+      const enhancedClient = asEnhancedQdrantClient(qdrantClient);
+      Object.assign(qdrantClient, enhancedClient);
     } catch (error) {
       logger.warn('Failed to enhance Qdrant client, using base client', { error });
-      // Fallback to base client casted as enhanced (unsafe but necessary if enhancement fails)
-      qdrantClient = baseClient as EnhancedQdrantClient;
     }
   }
 
@@ -125,11 +124,17 @@ export const qdrant = {
   /**
    * Get the Qdrant client instance with enhanced typing
    */
-  getClient(): EnhancedQdrantClient {
-    return getQdrantClient();
+  getClient(): QdrantClient {
+    const client = getQdrantClient();
+    // Return enhanced client with proper typing
+    try {
+      return asEnhancedQdrantClient(client);
+    } catch (error) {
+      logger.warn('Failed to enhance client, returning base client', { error });
+      return client;
+    }
   },
 };
 
 // Export the client directly for backward compatibility
 export { getQdrantClient as qdrantClient };
-

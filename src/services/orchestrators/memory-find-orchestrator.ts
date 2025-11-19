@@ -1,6 +1,3 @@
-import { logger } from '@/utils/logger.js';
-
-import { qdrant } from '../../db/qdrant-client.js';
 import { ServiceAdapterBase } from '../../interfaces/service-adapter.js';
 import type {
   AuthContext,
@@ -8,13 +5,16 @@ import type {
   IMemoryFindOrchestrator,
   ServiceResponse,
 } from '../../interfaces/service-interfaces.js';
+import type { SearchResult, SearchQuery, MemoryFindResponse } from '../../types/core-interfaces.js';
+import { auditService } from '../../services/audit/audit-service.js';
+import { qdrant } from '../../db/qdrant-client.js';
 import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
 import { OperationType } from '../../monitoring/operation-types.js';
-import { auditService } from '../../services/audit/audit-service.js';
-import type { MemoryFindResponse,SearchQuery, SearchResult } from '../../types/core-interfaces.js';
 import { generateCorrelationId } from '../../utils/correlation-id.js';
 import { createFindObservability } from '../../utils/observability-helper.js';
+import { logger } from '../../utils/logger.js';
 import {
+  isDatabaseResult,
   isDatabaseRow,
   isDict,
   isString,
@@ -23,6 +23,7 @@ import {
 } from '../../utils/type-guards.js';
 import { enrichGraphNodes, type TraversalOptions, traverseGraph } from '../graph-traversal.js';
 import { type ResultRanker, resultRanker } from '../ranking/result-ranker.js';
+import { entityMatchingService } from '../search/entity-matching-service.js';
 import { type ParsedQuery, queryParser } from '../search/query-parser.js';
 import { searchService } from '../search/search-service.js';
 import {
@@ -432,7 +433,7 @@ export class MemoryFindOrchestrator
   /**
    * Legacy implementation of findItems (original method)
    */
-  private async findItemsLegacy(query: SearchQuery, authContext?: AuthContext): Promise<unknown> {
+  private async findItemsLegacy(query: SearchQuery, authContext?: AuthContext): Promise<any> {
     const startTime = Date.now();
     const correlationId = generateCorrelationId();
 

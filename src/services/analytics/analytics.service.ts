@@ -6,20 +6,20 @@
 
 import { ServiceAdapterBase } from '../../interfaces/service-adapter.js';
 import type {
-    CacheStats,
-    IAnalyticsService,
-    ServiceResponse,
+  CacheStats,
+  IAnalyticsService,
+  ServiceResponse,
 } from '../../interfaces/service-interfaces.js';
 import type {
-    AnalyticsFilter,
-    AnalyticsQuery,
-    AnalyticsReport,
-    KnowledgeAnalytics,
-    PerformanceAnalytics,
-    PredictiveAnalytics,
-    RelationshipAnalytics,
-    StorageAnalytics,
-    UserBehaviorAnalytics,
+  AnalyticsFilter,
+  AnalyticsQuery,
+  AnalyticsReport,
+  KnowledgeAnalytics,
+  PerformanceAnalytics,
+  PredictiveAnalytics,
+  RelationshipAnalytics,
+  StorageAnalytics,
+  UserBehaviorAnalytics,
 } from '../../types/core-interfaces.js';
 
 /**
@@ -43,7 +43,7 @@ export class AnalyticsService extends ServiceAdapterBase implements IAnalyticsSe
         const cacheKey = `knowledge:${JSON.stringify(filter)}`;
         const cached = this.getCached(cacheKey);
         if (cached) {
-          return cached as KnowledgeAnalytics;
+          return cached;
         }
 
         // Stub implementation
@@ -86,7 +86,7 @@ export class AnalyticsService extends ServiceAdapterBase implements IAnalyticsSe
         const cacheKey = `relationships:${JSON.stringify(filter)}`;
         const cached = this.getCached(cacheKey);
         if (cached) {
-          return cached as RelationshipAnalytics;
+          return cached;
         }
 
         // Stub implementation
@@ -127,7 +127,7 @@ export class AnalyticsService extends ServiceAdapterBase implements IAnalyticsSe
         const cacheKey = `performance:${JSON.stringify(filter)}`;
         const cached = this.getCached(cacheKey);
         if (cached) {
-          return cached as PerformanceAnalytics;
+          return cached;
         }
 
         // Stub implementation
@@ -173,7 +173,7 @@ export class AnalyticsService extends ServiceAdapterBase implements IAnalyticsSe
         const cacheKey = `user_behavior:${JSON.stringify(filter)}`;
         const cached = this.getCached(cacheKey);
         if (cached) {
-          return cached as UserBehaviorAnalytics;
+          return cached;
         }
 
         // Stub implementation
@@ -223,7 +223,7 @@ export class AnalyticsService extends ServiceAdapterBase implements IAnalyticsSe
         const cacheKey = `predictive:${JSON.stringify(filter)}`;
         const cached = this.getCached(cacheKey);
         if (cached) {
-          return cached as PredictiveAnalytics;
+          return cached;
         }
 
         // Stub implementation
@@ -279,7 +279,7 @@ export class AnalyticsService extends ServiceAdapterBase implements IAnalyticsSe
         const cacheKey = `storage:${JSON.stringify(filter)}`;
         const cached = this.getCached(cacheKey);
         if (cached) {
-          return cached as StorageAnalytics;
+          return cached;
         }
 
         // Stub implementation

@@ -10,7 +10,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { type SystemMetricsService, systemMetricsService } from '../system-metrics';
 
 // Mock the logger
-vi.mock('@/utils/logger.js', () => ({
+vi.mock('../../utils/logger.js', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),

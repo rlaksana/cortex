@@ -9,8 +9,8 @@
  * @version 1.0.0
  */
 
-import { assertType, isBoolean, isFunction,isNumber, isObject, isString } from './type-guards';
-import { type PointId } from '../types/database-generics';
+import { assertType, isString, isNumber, isBoolean, isObject, isArray, isFunction } from './type-guards';
+import { PointId } from '../types/database-generics';
 
 // ============================================================================
 // Basic Type Assertions

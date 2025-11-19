@@ -1,6 +1,6 @@
 /**
  * Comprehensive test suite for enhanced deduplication service
- * Tests public interface and merge strategies
+ * Tests all 5 merge strategies and scope window configuration
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -10,7 +10,7 @@ import type { KnowledgeItem } from '../../../types/core-interfaces';
 import { EnhancedDeduplicationService } from '../enhanced-deduplication-service';
 
 // Mock logger to avoid console output during tests
-vi.mock('../../utils/logger.js', () => ({
+vi.mock('../../../utils/logger.js', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -23,15 +23,8 @@ vi.mock('../../utils/logger.js', () => ({
 vi.mock('../../../db/qdrant-client.js', () => ({
   qdrant: {
     client: {
-      scroll: vi.fn().mockResolvedValue({
-        result: {
-          points: [],
-          next_page_offset: null,
-        },
-      }),
-      search: vi.fn().mockResolvedValue({
-        result: [],
-      }),
+      scroll: vi.fn(),
+      search: vi.fn(),
     },
   },
 }));
@@ -54,345 +47,566 @@ describe('Enhanced Deduplication Service', () => {
       prioritizeSameScope: true,
       timeBasedDeduplication: true,
       dedupeWindowDays: 7,
+      respectUpdateTimestamps: true,
+      enableAuditLogging: true,
+      preserveMergeHistory: true,
+      maxItemsToCheck: 10,
     };
 
     service = new EnhancedDeduplicationService(testConfig);
 
-    // Mock test items
+    // Create test items
     mockItems = [
       {
         id: 'item-1',
-        kind: 'test-item',
-        content: 'This is a test item for deduplication',
-        scope: {
-          org: 'test-org',
-          project: 'test-project',
-          branch: 'main',
-        },
+        kind: 'decision',
+        scope: { project: 'test-project', branch: 'main' },
         data: {
-          title: 'Test Item 1',
-          description: 'Description for test item 1',
+          title: 'Test Decision 1',
+          rationale: 'This is a test decision rationale',
+          content: 'Decision content for testing purposes',
         },
-        metadata: {
-          source: 'test',
-          version: 1,
-        },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: '2025-01-01T00:00:00Z',
+        updated_at: '2025-01-01T00:00:00Z',
       },
       {
         id: 'item-2',
-        kind: 'test-item',
-        content: 'This is another test item with similar content',
-        scope: {
-          org: 'test-org',
-          project: 'test-project',
-          branch: 'main',
-        },
+        kind: 'decision',
+        scope: { project: 'test-project', branch: 'main' },
         data: {
-          title: 'Test Item 2',
-          description: 'Description for test item 2',
+          title: 'Test Decision 2',
+          rationale: 'This is a different test decision rationale',
+          content: 'Different decision content for testing',
         },
-        metadata: {
-          source: 'test',
-          version: 1,
-        },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: '2025-01-02T00:00:00Z',
+        updated_at: '2025-01-02T00:00:00Z',
       },
-    ] as KnowledgeItem[];
+      {
+        id: 'item-3',
+        kind: 'incident',
+        scope: { project: 'test-project', branch: 'main' },
+        data: {
+          title: 'Test Incident',
+          severity: 'medium',
+          description: 'This is a test incident description',
+        },
+        created_at: '2025-01-03T00:00:00Z',
+        updated_at: '2025-01-03T00:00:00Z',
+      },
+    ];
   });
 
-  describe('Service Configuration', () => {
-    it('should initialize with default configuration', () => {
-      const defaultService = new EnhancedDeduplicationService();
-      const config = defaultService.getConfig();
-
-      expect(config.enabled).toBeDefined();
-      expect(config.contentSimilarityThreshold).toBeDefined();
-      expect(config.mergeStrategy).toBeDefined();
+  describe('Merge Strategy: skip', () => {
+    beforeEach(() => {
+      service.updateConfig({ mergeStrategy: 'skip' });
     });
 
-    it('should accept custom configuration', () => {
-      const customConfig: Partial<DeduplicationConfig> = {
-        enabled: false,
-        contentSimilarityThreshold: 0.9,
-        mergeStrategy: 'skip',
+    it('should skip duplicate items', async () => {
+      // Mock exact match
+      const mockExistingItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
       };
 
-      const customService = new EnhancedDeduplicationService(customConfig);
-      const config = customService.getConfig();
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(mockExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
-      expect(config.enabled).toBe(false);
-      expect(config.contentSimilarityThreshold).toBe(0.9);
-      expect(config.mergeStrategy).toBe('skip');
+      const results = await service.processItems([mockItems[0]]);
+
+      expect(results.results).toHaveLength(1);
+      expect(results.results[0].action).toBe('skipped');
+      expect(results.results[0].reason).toContain('skip');
     });
 
-    it('should update configuration at runtime', () => {
-      const newConfig: Partial<DeduplicationConfig> = {
-        mergeStrategy: 'prefer_newer',
-        contentSimilarityThreshold: 0.95,
+    it('should store non-duplicate items', async () => {
+      // Mock no matches
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+
+      const results = await service.processItems([mockItems[0]]);
+
+      expect(results.results).toHaveLength(1);
+      expect(results.results[0].action).toBe('stored');
+    });
+  });
+
+  describe('Merge Strategy: prefer_existing', () => {
+    beforeEach(() => {
+      service.updateConfig({ mergeStrategy: 'prefer_existing' });
+    });
+
+    it('should prefer existing items over new ones', async () => {
+      const mockExistingItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
       };
 
-      service.updateConfig(newConfig);
-      const config = service.getConfig();
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(mockExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
-      expect(config.mergeStrategy).toBe('prefer_newer');
-      expect(config.contentSimilarityThreshold).toBe(0.95);
+      const results = await service.processItems([mockItems[0]]);
+
+      expect(results.results).toHaveLength(1);
+      expect(results.results[0].action).toBe('skipped');
+      expect(results.results[0].reason).toContain('prefer_existing');
+      expect(results.results[0].existingId).toBe('existing-item-1');
     });
   });
 
-  describe('Item Processing', () => {
-    it('should process single item', async () => {
-      const result = await service.processItems([mockItems[0]]);
-
-      expect(result.results).toHaveLength(1);
-      expect(result.results[0]).toHaveProperty('action');
-      expect(result.results[0]).toHaveProperty('itemId');
-      expect(result).toHaveProperty('totalProcessed');
-      expect(result).toHaveProperty('totalDuplicates');
-      expect(result).toHaveProperty('processingTime');
+  describe('Merge Strategy: prefer_newer', () => {
+    beforeEach(() => {
+      service.updateConfig({ mergeStrategy: 'prefer_newer' });
     });
 
-    it('should process multiple items', async () => {
-      const result = await service.processItems(mockItems);
+    it('should update when new item is newer', async () => {
+      const oldExistingItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
+        created_at: '2024-12-01T00:00:00Z', // Older than new item
+        updated_at: '2024-12-01T00:00:00Z',
+      };
 
-      expect(result.results).toHaveLength(2);
-      expect(result.totalProcessed).toBe(2);
-      expect(result.processingTime).toBeGreaterThan(0);
+      const newItem = {
+        ...mockItems[0],
+        created_at: '2025-01-01T00:00:00Z', // Newer
+        updated_at: '2025-01-01T00:00:00Z',
+      };
+
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(oldExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+
+      const results = await service.processItems([newItem]);
+
+      expect(results.results).toHaveLength(1);
+      expect(results.results[0].action).toBe('updated');
+      expect(results.results[0].reason).toContain('Replaced existing item with newer version');
     });
 
-    it('should handle empty input', async () => {
-      const result = await service.processItems([]);
+    it('should skip when new item is older', async () => {
+      const existingItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
+        created_at: '2025-01-02T00:00:00Z', // Newer than new item
+        updated_at: '2025-01-02T00:00:00Z',
+      };
 
-      expect(result.results).toHaveLength(0);
-      expect(result.totalProcessed).toBe(0);
-      expect(result.totalDuplicates).toBe(0);
-    });
-  });
+      const oldNewItem = {
+        ...mockItems[0],
+        created_at: '2024-12-01T00:00:00Z', // Older
+        updated_at: '2024-12-01T00:00:00Z',
+      };
 
-  describe('Merge Strategies', () => {
-    describe('skip strategy', () => {
-      beforeEach(() => {
-        service.updateConfig({ mergeStrategy: 'skip' });
-      });
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
-      it('should be configured with skip strategy', () => {
-        const config = service.getConfig();
-        expect(config.mergeStrategy).toBe('skip');
-      });
+      const results = await service.processItems([oldNewItem]);
 
-      it('should process items with skip strategy', async () => {
-        const result = await service.processItems([mockItems[0]]);
-
-        expect(result.results[0]).toHaveProperty('action');
-        expect(['stored', 'skipped', 'merged', 'error']).toContain(result.results[0].action);
-      });
-    });
-
-    describe('prefer_existing strategy', () => {
-      beforeEach(() => {
-        service.updateConfig({ mergeStrategy: 'prefer_existing' });
-      });
-
-      it('should be configured with prefer_existing strategy', () => {
-        const config = service.getConfig();
-        expect(config.mergeStrategy).toBe('prefer_existing');
-      });
-
-      it('should process items with prefer_existing strategy', async () => {
-        const result = await service.processItems([mockItems[0]]);
-
-        expect(result.results[0]).toHaveProperty('action');
-        expect(['stored', 'skipped', 'merged', 'error']).toContain(result.results[0].action);
-      });
-    });
-
-    describe('prefer_newer strategy', () => {
-      beforeEach(() => {
-        service.updateConfig({ mergeStrategy: 'prefer_newer' });
-      });
-
-      it('should be configured with prefer_newer strategy', () => {
-        const config = service.getConfig();
-        expect(config.mergeStrategy).toBe('prefer_newer');
-      });
-
-      it('should process items with prefer_newer strategy', async () => {
-        const result = await service.processItems([mockItems[0]]);
-
-        expect(result.results[0]).toHaveProperty('action');
-        expect(['stored', 'skipped', 'merged', 'error']).toContain(result.results[0].action);
-      });
-    });
-
-    describe('combine strategy', () => {
-      beforeEach(() => {
-        service.updateConfig({ mergeStrategy: 'combine' });
-      });
-
-      it('should be configured with combine strategy', () => {
-        const config = service.getConfig();
-        expect(config.mergeStrategy).toBe('combine');
-      });
-
-      it('should process items with combine strategy', async () => {
-        const result = await service.processItems([mockItems[0]]);
-
-        expect(result.results[0]).toHaveProperty('action');
-        expect(['stored', 'skipped', 'merged', 'error']).toContain(result.results[0].action);
-      });
-    });
-
-    describe('intelligent strategy', () => {
-      beforeEach(() => {
-        service.updateConfig({ mergeStrategy: 'intelligent' });
-      });
-
-      it('should be configured with intelligent strategy', () => {
-        const config = service.getConfig();
-        expect(config.mergeStrategy).toBe('intelligent');
-      });
-
-      it('should process items with intelligent strategy', async () => {
-        const result = await service.processItems([mockItems[0]]);
-
-        expect(result.results[0]).toHaveProperty('action');
-        expect(['stored', 'skipped', 'merged', 'error']).toContain(result.results[0].action);
-      });
+      expect(results.results).toHaveLength(1);
+      expect(results.results[0].action).toBe('skipped');
+      expect(results.results[0].reason).toContain('Kept existing item (newer)');
     });
   });
 
-  describe('Configuration Options', () => {
-    it('should respect content similarity threshold', () => {
-      const threshold = 0.95;
-      service.updateConfig({ contentSimilarityThreshold: threshold });
-
-      const config = service.getConfig();
-      expect(config.contentSimilarityThreshold).toBe(threshold);
+  describe('Merge Strategy: combine', () => {
+    beforeEach(() => {
+      service.updateConfig({ mergeStrategy: 'combine' });
     });
 
-    it('should handle scope-only checking', () => {
-      service.updateConfig({ checkWithinScopeOnly: true });
+    it('should merge items with combine strategy', async () => {
+      const existingItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
+        data: {
+          title: 'Existing Title',
+          rationale: 'Existing rationale',
+          existingField: 'existing value',
+        },
+      };
 
-      const config = service.getConfig();
-      expect(config.checkWithinScopeOnly).toBe(true);
+      const newItem = {
+        ...mockItems[0],
+        data: {
+          title: 'New Title',
+          rationale: 'New rationale',
+          newField: 'new value',
+        },
+      };
+
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+
+      const results = await service.processItems([newItem]);
+
+      expect(results.results).toHaveLength(1);
+      expect(results.results[0].action).toBe('merged');
+      expect(results.results[0].reason).toContain('Combined items');
+      expect(results.results[0].mergeDetails?.strategy).toBe('combine');
+    });
+  });
+
+  describe('Merge Strategy: intelligent', () => {
+    beforeEach(() => {
+      service.updateConfig({ mergeStrategy: 'intelligent' });
     });
 
-    it('should handle cross-scope deduplication', () => {
-      service.updateConfig({ crossScopeDeduplication: true });
+    it('should intelligently decide to update newer items', async () => {
+      const oldExistingItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
+        created_at: '2024-12-01T00:00:00Z',
+        data: {
+          title: 'Short title',
+          content: 'Brief content',
+        },
+      };
 
-      const config = service.getConfig();
-      expect(config.crossScopeDeduplication).toBe(true);
+      const betterNewItem = {
+        ...mockItems[0],
+        created_at: '2025-01-01T00:00:00Z',
+        data: {
+          title: 'Much better and more descriptive title',
+          content: 'Comprehensive and detailed content with much more information',
+        },
+      };
+
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(oldExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+
+      const results = await service.processItems([betterNewItem]);
+
+      expect(results.results).toHaveLength(1);
+      expect(results.results[0].action).toBe('merged');
+      expect(results.results[0].reason).toContain('Intelligently merged');
+      expect(results.results[0].mergeDetails?.strategy).toBe('intelligent');
     });
 
-    it('should handle time-based deduplication', () => {
-      service.updateConfig({ timeBasedDeduplication: true, dedupeWindowDays: 30 });
+    it("should prefer existing when it's better", async () => {
+      const goodExistingItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
+        created_at: '2024-12-01T00:00:00Z',
+        data: {
+          title: 'Comprehensive and detailed title',
+          content: 'Extensive content with lots of details',
+        },
+      };
 
-      const config = service.getConfig();
-      expect(config.timeBasedDeduplication).toBe(true);
-      expect(config.dedupeWindowDays).toBe(30);
+      const poorNewItem = {
+        ...mockItems[0],
+        created_at: '2025-01-01T00:00:00Z',
+        data: {
+          title: 'Short',
+          content: 'Brief',
+        },
+      };
+
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(goodExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+
+      const results = await service.processItems([poorNewItem]);
+
+      expect(results.results).toHaveLength(1);
+      expect(results.results[0].action).toBe('skipped');
+      expect(results.results[0].reason).toContain('Existing item preferred');
+    });
+  });
+
+  describe('Scope Window Configuration', () => {
+    it('should respect scope matching', async () => {
+      service.updateConfig({ checkWithinScopeOnly: true, prioritizeSameScope: true });
+
+      const existingItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
+        scope: { project: 'test-project', branch: 'main' }, // Same scope
+      };
+
+      const newItem = {
+        ...mockItems[0],
+        scope: { project: 'test-project', branch: 'main' }, // Same scope
+      };
+
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+
+      const results = await service.processItems([newItem]);
+
+      expect(results.results).toHaveLength(1);
+      // Should find the match due to same scope
+      expect(results.results[0].existingId).toBe('existing-item-1');
+    });
+
+    it('should handle cross-scope deduplication', async () => {
+      service.updateConfig({
+        checkWithinScopeOnly: false,
+        crossScopeDeduplication: true,
+      });
+
+      const existingItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
+        scope: { project: 'different-project', branch: 'feature' }, // Different scope
+      };
+
+      const newItem = {
+        ...mockItems[0],
+        scope: { project: 'test-project', branch: 'main' }, // Different scope
+      };
+
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+
+      const results = await service.processItems([newItem]);
+
+      expect(results.results).toHaveLength(1);
+      // Should still find the match due to cross-scope deduplication
+      expect(results.results[0].existingId).toBe('existing-item-1');
+    });
+  });
+
+  describe('Time-based Deduplication', () => {
+    it('should respect deduplication window', async () => {
+      service.updateConfig({
+        timeBasedDeduplication: true,
+        dedupeWindowDays: 7,
+      });
+
+      const oldExistingItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
+        created_at: '2024-12-01T00:00:00Z', // More than 7 days ago
+        updated_at: '2024-12-01T00:00:00Z',
+      };
+
+      const newItem = {
+        ...mockItems[0],
+        created_at: '2025-01-08T00:00:00Z', // More than 7 days after existing
+        updated_at: '2025-01-08T00:00:00Z',
+      };
+
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(oldExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+
+      const results = await service.processItems([newItem]);
+
+      expect(results.results).toHaveLength(1);
+      // Should not be considered duplicate due to being outside deduplication window
+      expect(results.results[0].action).toBe('stored');
+    });
+
+    it('should allow deduplication within window', async () => {
+      service.updateConfig({
+        timeBasedDeduplication: true,
+        dedupeWindowDays: 7,
+      });
+
+      const recentExistingItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
+        created_at: '2025-01-05T00:00:00Z', // Within 7 days
+        updated_at: '2025-01-05T00:00:00Z',
+      };
+
+      const newItem = {
+        ...mockItems[0],
+        created_at: '2025-01-08T00:00:00Z', // Within 7 days of existing
+        updated_at: '2025-01-08T00:00:00Z',
+      };
+
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(recentExistingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+
+      const results = await service.processItems([newItem]);
+
+      expect(results.results).toHaveLength(1);
+      // Should be considered duplicate due to being within deduplication window
+      expect(results.results[0].existingId).toBe('existing-item-1');
+    });
+  });
+
+  describe('Content Similarity Threshold', () => {
+    it('should not deduplicate below similarity threshold', async () => {
+      service.updateConfig({ contentSimilarityThreshold: 0.9 });
+
+      const dissimilarItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
+        data: {
+          title: 'Completely Different Title',
+          content: 'Totally different content that should not match',
+        },
+      };
+
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([
+        {
+          item: dissimilarItem,
+          similarity: 0.8, // Below threshold
+          matchType: 'content' as const,
+        },
+      ]);
+
+      const results = await service.processItems([mockItems[0]]);
+
+      expect(results.results).toHaveLength(1);
+      expect(results.results[0].action).toBe('stored'); // Should store as new
+    });
+
+    it('should deduplicate above similarity threshold', async () => {
+      service.updateConfig({ contentSimilarityThreshold: 0.7 });
+
+      const similarItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
+        data: {
+          title: 'Test Decision 1',
+          content: 'Decision content for testing purposes',
+        },
+      };
+
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([
+        {
+          item: similarItem,
+          similarity: 0.8, // Above threshold
+          matchType: 'content' as const,
+        },
+      ]);
+
+      const results = await service.processItems([mockItems[0]]);
+
+      expect(results.results).toHaveLength(1);
+      expect(results.results[0].existingId).toBe('existing-item-1');
     });
   });
 
   describe('Audit Logging', () => {
-    it('should maintain audit log', async () => {
-      await service.processItems([mockItems[0]]);
+    it('should log audit entries when enabled', async () => {
+      service.updateConfig({ enableAuditLogging: true });
 
-      const auditLog = service.getAuditLog();
-      expect(Array.isArray(auditLog)).toBe(true);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+
+      const results = await service.processItems([mockItems[0]]);
+
+      expect(results.auditLog).toHaveLength(1);
+      expect(results.auditLog[0]).toHaveProperty('timestamp');
+      expect(results.auditLog[0]).toHaveProperty('itemId');
+      expect(results.auditLog[0]).toHaveProperty('action');
+      expect(results.auditLog[0]).toHaveProperty('similarityScore');
+      expect(results.auditLog[0]).toHaveProperty('strategy');
     });
 
-    it('should limit audit log size', async () => {
-      await service.processItems(mockItems);
+    it('should not log audit entries when disabled', async () => {
+      service.updateConfig({ enableAuditLogging: false });
 
-      const limitedLog = service.getAuditLog(1);
-      expect(limitedLog.length).toBeLessThanOrEqual(1);
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
+
+      const results = await service.processItems([mockItems[0]]);
+
+      expect(results.auditLog).toHaveLength(0);
+    });
+  });
+
+  describe('Configuration Management', () => {
+    it('should update configuration', () => {
+      const newConfig = {
+        mergeStrategy: 'skip' as const,
+        contentSimilarityThreshold: 0.9,
+        enableAuditLogging: false,
+      };
+
+      service.updateConfig(newConfig);
+      const updatedConfig = service.getConfig();
+
+      expect(updatedConfig.mergeStrategy).toBe('skip');
+      expect(updatedConfig.contentSimilarityThreshold).toBe(0.9);
+      expect(updatedConfig.enableAuditLogging).toBe(false);
     });
 
-    it('should clear audit log', async () => {
-      await service.processItems([mockItems[0]]);
-      service.clearAuditLog();
+    it('should get current configuration', () => {
+      const config = service.getConfig();
 
-      const auditLog = service.getAuditLog();
-      expect(auditLog.length).toBe(0);
+      expect(config).toHaveProperty('enabled');
+      expect(config).toHaveProperty('mergeStrategy');
+      expect(config).toHaveProperty('contentSimilarityThreshold');
+      expect(config).toHaveProperty('scopeFilters');
     });
   });
 
   describe('Performance Metrics', () => {
     it('should track performance metrics', async () => {
-      const result = await service.processItems(mockItems);
-      const metrics = service.getPerformanceMetrics();
-
-      expect(metrics).toHaveProperty('totalProcessed');
-      expect(metrics).toHaveProperty('totalDuplicates');
-      expect(metrics).toHaveProperty('averageProcessingTime');
-      expect(result.processingTime).toBeGreaterThan(0);
-    });
-
-    it('should update metrics after processing', async () => {
-      const initialMetrics = service.getPerformanceMetrics();
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(null);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
       await service.processItems(mockItems);
 
-      const updatedMetrics = service.getPerformanceMetrics();
-      expect(updatedMetrics.totalProcessed).toBeGreaterThan(initialMetrics.totalProcessed);
+      const metrics = service.getPerformanceMetrics();
+
+      expect(metrics.totalProcessed).toBe(mockItems.length);
+      expect(metrics).toHaveProperty('duplicatesFound');
+      expect(metrics).toHaveProperty('mergesPerformed');
+      expect(metrics).toHaveProperty('avgProcessingTime');
     });
   });
 
   describe('Error Handling', () => {
-    it('should handle malformed items gracefully', async () => {
-      const malformedItems = [
-        {
-          id: 'bad-item',
-          kind: '',
-          content: '',
-          scope: {},
-          data: {},
-        } as KnowledgeItem,
-      ];
+    it('should handle errors gracefully', async () => {
+      const error = new Error('Database error');
+      vi.spyOn(service as unknown, 'findExactMatch').mockRejectedValue(error);
 
-      const result = await service.processItems(malformedItems);
+      const results = await service.processItems([mockItems[0]]);
 
-      expect(result.results).toHaveLength(1);
-      expect(result.results[0].action).toBe('error' || result.results[0].action === 'stored');
+      expect(results.results).toHaveLength(1);
+      expect(results.results[0].action).toBe('skipped');
+      expect(results.results[0].reason).toContain('Error processing item');
     });
 
-    it('should handle missing required fields', async () => {
-      const incompleteItems = [
-        {
-          id: 'incomplete-item',
-          // Missing required fields
-        } as KnowledgeItem,
-      ];
+    it('should continue processing batch when individual items fail', async () => {
+      jest
+        .spyOn(service as unknown, 'findExactMatch')
+        .mockRejectedValueOnce(new Error('First item error'))
+        .mockResolvedValueOnce(null);
 
-      const result = await service.processItems(incompleteItems);
+      const results = await service.processItems(mockItems);
 
-      expect(result.results).toHaveLength(1);
-      // Should either process or handle as error
-      expect(['stored', 'error']).toContain(result.results[0].action);
+      expect(results.results).toHaveLength(mockItems.length);
+      expect(results.results[0].action).toBe('skipped'); // Failed item
+      expect(results.results[1].action).toBe('stored'); // Successful item
     });
   });
 
-  describe('Service State Management', () => {
-    it('should maintain consistent state', async () => {
-      const config1 = service.getConfig();
+  describe('Merge History', () => {
+    it('should preserve merge history when enabled', async () => {
+      service.updateConfig({
+        mergeStrategy: 'combine',
+        preserveMergeHistory: true,
+        maxMergeHistoryEntries: 5,
+      });
 
-      service.updateConfig({ mergeStrategy: 'combine' });
-      const config2 = service.getConfig();
+      const existingItem = {
+        ...mockItems[0],
+        id: 'existing-item-1',
+        metadata: {
+          merge_history: [
+            {
+              timestamp: '2025-01-01T00:00:00Z',
+              similarity: 0.9,
+              merged_from: 'item-abc',
+              strategy: 'combine',
+            },
+          ],
+        },
+      };
 
-      expect(config1.mergeStrategy).not.toBe(config2.mergeStrategy);
-      expect(config2.mergeStrategy).toBe('combine');
-    });
+      vi.spyOn(service as unknown, 'findExactMatch').mockResolvedValue(existingItem);
+      vi.spyOn(service as unknown, 'findContentMatches').mockResolvedValue([]);
 
-    it('should handle configuration validation', () => {
-      expect(() => {
-        service.updateConfig({ contentSimilarityThreshold: 1.5 }); // Invalid: > 1.0
-      }).not.toThrow();
+      const results = await service.processItems([mockItems[0]]);
 
-      expect(() => {
-        service.updateConfig({ contentSimilarityThreshold: -0.1 }); // Invalid: < 0
-      }).not.toThrow();
+      expect(results.results).toHaveLength(1);
+      expect(results.results[0].action).toBe('merged');
     });
   });
 });

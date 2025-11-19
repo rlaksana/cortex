@@ -1,6 +1,5 @@
-import { logger } from '@/utils/logger.js';
-
 import { coreMemoryFind } from './core-memory-find.js';
+import { logger } from '../utils/logger.js';
 import { type SanitizationLevel, sanitizeQuery } from '../utils/query-sanitizer.js';
 
 /**

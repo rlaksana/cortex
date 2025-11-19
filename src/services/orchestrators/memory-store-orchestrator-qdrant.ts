@@ -40,21 +40,16 @@
 
 import { createHash } from 'crypto';
 
-import { logger } from '@/utils/logger.js';
-
-import { IdempotentStoreService } from './idempotent-store-service.js';
-import { ConnectionError, type IDatabase } from '../../db/database-interface.js';
 import { ServiceAdapterBase } from '../../interfaces/service-adapter.js';
 import type {
   AuthContext,
-  BatchStatus,
   BatchStorageResult,
+  BatchStatus,
+  FindMetrics,
   IMemoryStoreOrchestrator,
   ItemResult,
   ServiceResponse,
 } from '../../interfaces/service-interfaces.js';
-import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
-import { OperationType } from '../../monitoring/operation-types.js';
 import type {
   AutonomousContext,
   BatchSummary,
@@ -63,7 +58,12 @@ import type {
   StoreError,
   StoreResult,
 } from '../../types/core-interfaces.js';
+import { IdempotentStoreService } from './idempotent-store-service.js';
+import { ConnectionError, type IDatabase } from '../../db/database-interface.js';
+import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
+import { OperationType } from '../../monitoring/operation-types.js';
 import { generateCorrelationId } from '../../utils/correlation-id.js';
+import { logger } from '../../utils/logger.js';
 import { createStoreObservability } from '../../utils/observability-helper.js';
 // import { auditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
 import { ChunkingService } from '../chunking/chunking-service.js';
@@ -293,7 +293,7 @@ export class MemoryStoreOrchestratorQdrant
    */
   private async checkRateLimits(context: StoreOperationContext): Promise<RateLimitResult> {
     return await this.rateLimiter.checkOrchestratorRateLimit(
-      context.authContext as unknown,
+      context.authContext as any,
       OperationType.MEMORY_STORE,
       0 // Will be updated with actual item count
     );
@@ -996,7 +996,7 @@ export class MemoryStoreOrchestratorQdrant
    * Convert search result to knowledge item
    */
   private searchResultToKnowledgeItem(result: unknown): KnowledgeItem {
-    const searchResult = result as unknown;
+    const searchResult = result as any;
     return {
       id: searchResult.id || '',
       kind: searchResult.kind || 'unknown',

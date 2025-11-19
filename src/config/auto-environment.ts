@@ -325,13 +325,9 @@ export class AutoEnvironmentConfig {
   private extractApiKeyFromContent(content: string): string | undefined {
     // Try JSON format
     try {
-      const json = JSON.parse(content) as Record<string, unknown>;
-      const openAIKey = json.OPENAI_API_KEY as string | undefined;
-      const apiKey = json.apiKey as string | undefined;
-      const openAIAltKey = json.openai_api_key as string | undefined;
-
-      if (openAIKey || apiKey || openAIAltKey) {
-        return openAIKey || apiKey || openAIAltKey;
+      const json = JSON.parse(content);
+      if (json.OPENAI_API_KEY || json.apiKey || json.openai_api_key) {
+        return json.OPENAI_API_KEY || json.apiKey || json.openai_api_key;
       }
     } catch {
       // Not JSON

@@ -177,7 +177,7 @@ describe('SearchErrorHandler', () => {
         const context = { operation: 'retry_test' };
 
         let attemptCount = 0;
-        const retryFunction = vi.fn(async () => {
+        const retryFunction = vi.fn(() => {
           attemptCount++;
           if (attemptCount < 3) {
             throw retryableError;
@@ -198,7 +198,7 @@ describe('SearchErrorHandler', () => {
         const persistentError = new Error('Persistent failure');
         const context = { operation: 'max_retry_test' };
 
-        const retryFunction = vi.fn(async () => {
+        const retryFunction = vi.fn(() => {
           throw persistentError;
         });
 
@@ -215,7 +215,7 @@ describe('SearchErrorHandler', () => {
         const nonRetryableError = new Error('Invalid format');
         const context = { operation: 'no_retry_test' };
 
-        const retryFunction = vi.fn(async () => {
+        const retryFunction = vi.fn(() => {
           throw nonRetryableError;
         });
 
@@ -271,7 +271,7 @@ describe('SearchErrorHandler', () => {
         // Mock the error handler to suggest fallback
         searchError.suggestedRecovery = RecoveryStrategy.FALLBACK;
 
-        const result = await errorHandler.attemptRecovery(searchError, () => Promise.resolve(), context);
+        const result = await errorHandler.attemptRecovery(searchError, () => {}, context);
 
         expect(result).toEqual({ fallback: true });
         expect(context.fallbackFunction).toHaveBeenCalled();
@@ -284,7 +284,7 @@ describe('SearchErrorHandler', () => {
         const searchError = await errorHandler.handleError(originalError, context);
         searchError.suggestedRecovery = RecoveryStrategy.FALLBACK;
 
-        const result = await errorHandler.attemptRecovery(searchError, () => Promise.resolve(), context);
+        const result = await errorHandler.attemptRecovery(searchError, () => {}, context);
 
         expect(result).toHaveProperty('results', []);
         expect(result).toHaveProperty('strategy', 'fallback');
@@ -304,7 +304,7 @@ describe('SearchErrorHandler', () => {
         const searchError = await errorHandler.handleError(originalError, context);
         searchError.suggestedRecovery = RecoveryStrategy.FALLBACK;
 
-        await expect(errorHandler.attemptRecovery(searchError, async () => {}, context)).rejects.toThrow(
+        await expect(errorHandler.attemptRecovery(searchError, () => {}, context)).rejects.toThrow(
           fallbackError
         );
 
@@ -323,11 +323,12 @@ describe('SearchErrorHandler', () => {
         const searchError = await errorHandler.handleError(originalError, context);
         searchError.suggestedRecovery = RecoveryStrategy.DEGRADE;
 
-        const result = await errorHandler.attemptRecovery(searchError, () => Promise.resolve(), context);
+        const result = await errorHandler.attemptRecovery(searchError, () => {}, context);
 
         expect(result).toEqual({
           degraded: true,
           simple: true,
+          degraded: true, // Added by degradation handler
           fallbackReason: originalError.message,
         });
         expect(context.degradeFunction).toHaveBeenCalled();
@@ -346,7 +347,7 @@ describe('SearchErrorHandler', () => {
         const searchError = await errorHandler.handleError(originalError, context);
         searchError.suggestedRecovery = RecoveryStrategy.DEGRADE;
 
-        const result = await errorHandler.attemptRecovery(searchError, () => Promise.resolve(), context);
+        const result = await errorHandler.attemptRecovery(searchError, () => {}, context);
 
         expect(result).toEqual({ basic_fallback: true });
         expect(context.degradeFunction).toHaveBeenCalled();
@@ -367,7 +368,7 @@ describe('SearchErrorHandler', () => {
           searchError.suggestedRecovery = RecoveryStrategy.CIRCUIT_BREAK;
 
           try {
-            await errorHandler.attemptRecovery(searchError, async () => {}, { operation: operationKey });
+            await errorHandler.attemptRecovery(searchError, () => {}, { operation: operationKey });
           } catch (error) {
             // Expected to throw circuit breaker error
           }
@@ -461,7 +462,7 @@ describe('SearchErrorHandler', () => {
       const context = { operation: 'recovery_metrics_test' };
 
       let attemptCount = 0;
-      const retryFunction = vi.fn(async () => {
+      const retryFunction = vi.fn(() => {
         attemptCount++;
         if (attemptCount < 2) {
           throw retryableError;
@@ -595,7 +596,7 @@ describe('SearchErrorHandler', () => {
 
       expect(searchErrors).toHaveLength(20);
       searchErrors.forEach((error, index) => {
-        expect((error as unknown as Error).message).toBe(`Concurrent error ${index}`);
+        expect((error as Error).message).toBe(`Concurrent error ${index}`);
         expect(error.code).toMatch(/^SRCH_[A-Z]{3}_[A-Z]_[a-z0-9]+$/);
       });
 
@@ -605,7 +606,7 @@ describe('SearchErrorHandler', () => {
 
     it('should handle concurrent recovery attempts', async () => {
       const retryableError = new Error('Concurrent retry test');
-      const retryFunction = vi.fn(async () => {
+      const retryFunction = vi.fn(() => {
         return { success: true, timestamp: Date.now() };
       });
 

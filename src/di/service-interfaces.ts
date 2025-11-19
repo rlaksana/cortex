@@ -10,16 +10,17 @@
  */
 
 import type { IDatabase } from '../db/database-interface.js';
-// Import canonical ServiceResponse from interfaces/service-interfaces to avoid duplication
-import type {
-  ServiceError as InterfaceServiceError,
-  ServiceMetadata as InterfaceServiceMetadata,
-  ServiceResponse as InterfaceServiceResponse} from '../interfaces/service-interfaces.js';
 import type {
   PerformanceBaseline,
   PerformanceReport,
   PerformanceThresholds,
 } from '../monitoring/performance-monitor.js';
+// Import canonical ServiceResponse from interfaces/service-interfaces to avoid duplication
+import type {
+  ServiceResponse as InterfaceServiceResponse,
+  ServiceError as InterfaceServiceError,
+  ServiceMetadata as InterfaceServiceMetadata
+} from '../interfaces/service-interfaces.js';
 
 // Re-export for backward compatibility
 export type ServiceResponse<T = unknown> = InterfaceServiceResponse<T>;
@@ -139,15 +140,16 @@ export interface IAuthService {
 
 // Import canonical authentication types from auth-types to avoid duplication
 import type {
-  AuthContext,
-  AuthenticatedRequest,
-  AuthScope,
   User as AuthUser,
-  UserRole} from '../types/auth-types.js';
+  UserRole,
+  AuthScope,
+  AuthContext,
+  AuthenticatedRequest
+} from '../types/auth-types.js';
 
 // Re-export for backward compatibility
 export type User = AuthUser;
-export type { AuthContext, AuthenticatedRequest, AuthScope,UserRole };
+export type { AuthContext, AuthenticatedRequest, UserRole, AuthScope };
 
 export interface AuthResult {
   success: boolean;

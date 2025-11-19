@@ -18,8 +18,8 @@ import type {
 } from './ttl-cleanup.interface.js';
 import type { IVectorAdapter } from '../../../db/interfaces/vector-adapter.interface.js';
 import type { KnowledgeItem } from '../../../types/core-interfaces.js';
+import { logger } from '../../../utils/logger.js';
 import { systemMetricsService } from '../../metrics/system-metrics.js';
-import { logger } from '../../utils/logger.js';
 
 // === Default Configuration ===
 

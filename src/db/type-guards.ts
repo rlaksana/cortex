@@ -5,9 +5,9 @@
  * to ensure type safety without unknown casting.
  */
 
-import type { DatabaseManagerConfig } from './database-manager.js';
-import type { DatabaseFactoryConfig } from './interfaces/database-factory.interface.js';
 import type { VectorConfig } from './interfaces/vector-adapter.interface.js';
+import type { DatabaseFactoryConfig } from './interfaces/database-factory.interface.js';
+import type { DatabaseManagerConfig } from './database-manager.js';
 
 /**
  * Type guard for VectorConfig

@@ -16,8 +16,6 @@
  * @since 2025
  */
 
-import { logger } from '@/utils/logger.js';
-
 import {
   circuitBreakerManager,
   type CircuitBreakerStats,
@@ -28,6 +26,7 @@ import type {
   ZAIMetrics,
   ZAIStreamChunk,
 } from '../../types/zai-interfaces.js';
+import { logger } from '../../utils/logger.js';
 
 // Helper functions for safe property access
 const num = (v: unknown, d = 0): number => Number((v as number | undefined) ?? d);
@@ -343,7 +342,7 @@ export class ZAIOptimizedClient {
         memoryEntry.accessCount++;
         memoryEntry.lastAccessed = Date.now();
         const entryObj = obj(memoryEntry, {} as Record<string, unknown>);
-  return (entryObj._data as ZAIChatResponse) || (entryObj.data as ZAIChatResponse);
+  return (entryObj._data as T) || (entryObj.data as T);
       }
     }
 
@@ -357,7 +356,7 @@ export class ZAIOptimizedClient {
             this.memoryCache.set(cacheKey, redisEntry);
           }
           const redisObj = obj(redisEntry, {} as Record<string, unknown>);
-  return (redisObj._data as ZAIChatResponse) || (redisObj.data as ZAIChatResponse);
+  return (redisObj._data as T) || (redisObj.data as T);
         }
       } catch (error) {
         logger.warn({ error, cacheKey }, 'Redis cache lookup failed');
@@ -912,7 +911,7 @@ export class ZAIOptimizedClient {
       rateLimitTokens: this.rateLimitTokens,
       circuitBreakerStatus:
         this.circuitBreaker && typeof obj(this.circuitBreaker, {} as Record<string, unknown>).getStats === 'function'
-          ? (obj(this.circuitBreaker, {} as Record<string, unknown>).getStats as () => unknown)() as ('open' | 'closed' | 'half-open') & CircuitBreakerStats
+          ? (obj(this.circuitBreaker, {} as Record<string, unknown>).getStats as () => unknown)()
           : undefined,
     };
   }

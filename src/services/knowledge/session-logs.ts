@@ -11,45 +11,28 @@
 
 // Import required modules
 import { logger } from '@/utils/logger.js';
-
+import {
+  hasPropertySimple,
+  safePropertyAccess,
+  isString,
+  isBoolean,
+  isObject,
+  isArray,
+  requirePropertyAccess,
+  isUnknown,
+  isDatabaseCriteria,
+  isIncidentResponse,
+  isReleaseResponse,
+  isRiskResponse,
+  isAssumptionResponse
+} from '../../utils/type-guards.js';
 import type {
+  DatabaseResponse,
   IncidentResponse,
-  ReleaseResponse} from '../../types/database.js';
-import {
-  hasArrayProperty,
-  hasBooleanProperty,
-  hasNumberProperty,
-  hasProperty,
-  hasStringProperty,
-  safeGetStringProperty
-} from '../../utils/type-fixes.js';
-import {
-  isRiskResponse} from '../../utils/type-guards.js';
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-// Helper function to safely check if a response has incident data structure
-function isIncidentResponse(response: unknown): response is IncidentResponse {
-  if (!response || typeof response !== 'object') return false;
-  const obj = response as Record<string, unknown>;
-  return hasProperty(obj, 'id') && hasProperty(obj, 'title') &&
-         hasProperty(obj, 'severity') && hasProperty(obj, 'impact');
-}
-
-// Helper function to safely check if a response has release data structure
-function isReleaseResponse(response: unknown): response is ReleaseResponse {
-  if (!response || typeof response !== 'object') return false;
-  const obj = response as Record<string, unknown>;
-  return hasProperty(obj, 'id') && hasProperty(obj, 'version') &&
-         hasProperty(obj, 'release_type');
-}
-
-// Helper function to check if value is a string
-function isString(value: unknown): value is string {
-  return typeof value === 'string';
-}
+  ReleaseResponse,
+  RiskResponse,
+  AssumptionResponse
+} from '../../types/database.js';
 
 // ============================================================================
 // INCIDENT LOG OPERATIONS
@@ -75,26 +58,19 @@ export async function storeIncident(data: unknown, scope: unknown = {}): Promise
   await db.initialize();
 
   // Safely extract required properties using type guards
-  if (!hasStringProperty(data, 'title') ||
-      !hasStringProperty(data, 'severity') ||
-      !hasStringProperty(data, 'impact') ||
-      !hasStringProperty(data, 'resolution_status')) {
-    throw new Error('Missing required properties for incident log');
-  }
-
-  const title = data.title;
-  const severity = data.severity;
-  const impact = data.impact;
-  const resolutionStatus = data.resolution_status;
+  const title = requirePropertyAccess(data, 'title', isString);
+  const severity = requirePropertyAccess(data, 'severity', isString);
+  const impact = requirePropertyAccess(data, 'impact', isString);
+  const resolutionStatus = requirePropertyAccess(data, 'resolution_status', isString);
 
   // Extract optional properties safely
-  const timeline = hasArrayProperty(data, 'timeline') ? data.timeline : [];
-  const rootCauseAnalysis = hasStringProperty(data, 'root_cause_analysis') ? data.root_cause_analysis : undefined;
-  const affectedServices = hasArrayProperty(data, 'affected_services') ? data.affected_services : [];
-  const businessImpact = hasStringProperty(data, 'business_impact') ? data.business_impact : undefined;
-  const recoveryActions = hasArrayProperty(data, 'recovery_actions') ? data.recovery_actions : [];
-  const followUpRequired = hasBooleanProperty(data, 'follow_up_required') ? data.follow_up_required : false;
-  const incidentCommander = hasStringProperty(data, 'incident_commander') ? data.incident_commander : undefined;
+  const timeline = safePropertyAccess(data, 'timeline', isArray, []);
+  const rootCauseAnalysis = safePropertyAccess(data, 'root_cause_analysis', isString, undefined);
+  const affectedServices = safePropertyAccess(data, 'affected_services', isArray, []);
+  const businessImpact = safePropertyAccess(data, 'business_impact', isString, undefined);
+  const recoveryActions = safePropertyAccess(data, 'recovery_actions', isArray, []);
+  const followUpRequired = safePropertyAccess(data, 'follow_up_required', isBoolean, false);
+  const incidentCommander = safePropertyAccess(data, 'incident_commander', isString);
 
   const result = await db.create('incidentLog', {
     title,
@@ -113,11 +89,8 @@ export async function storeIncident(data: unknown, scope: unknown = {}): Promise
     },
   });
 
-  const resultObj = result as Record<string, unknown>;
-  const incidentId = safeGetStringProperty(resultObj, 'id');
-
-  logger.info({ incidentId, severity }, 'Incident stored successfully');
-  return incidentId;
+  logger.info({ incidentId: result.id, severity }, 'Incident stored successfully');
+  return result.id;
 }
 
 export async function updateIncident(id: string, data: unknown): Promise<void> {
@@ -132,40 +105,40 @@ export async function updateIncident(id: string, data: unknown): Promise<void> {
   const dataObj = data as Record<string, unknown>;
   const updateData: Record<string, unknown> = {};
 
-  if (hasStringProperty(dataObj, 'title')) {
+  if (hasPropertySimple(dataObj, 'title') && isString(dataObj.title)) {
     updateData.title = dataObj.title;
   }
-  if (hasStringProperty(dataObj, 'severity')) {
+  if (hasPropertySimple(dataObj, 'severity') && isString(dataObj.severity)) {
     updateData.severity = dataObj.severity;
   }
-  if (hasStringProperty(dataObj, 'impact')) {
+  if (hasPropertySimple(dataObj, 'impact') && isString(dataObj.impact)) {
     updateData.impact = dataObj.impact;
   }
-  if (hasStringProperty(dataObj, 'resolution_status')) {
+  if (hasPropertySimple(dataObj, 'resolution_status') && isString(dataObj.resolution_status)) {
     updateData.resolution_status = dataObj.resolution_status;
   }
 
   // Note: Other fields are stored in tags due to schema limitations
   const tagUpdates: Record<string, unknown> = {};
-  if (hasArrayProperty(dataObj, 'timeline')) {
+  if (hasPropertySimple(dataObj, 'timeline')) {
     tagUpdates.timeline = dataObj.timeline;
   }
-  if (hasStringProperty(dataObj, 'root_cause_analysis')) {
+  if (hasPropertySimple(dataObj, 'root_cause_analysis') && isString(dataObj.root_cause_analysis)) {
     tagUpdates.root_cause_analysis = dataObj.root_cause_analysis;
   }
-  if (hasArrayProperty(dataObj, 'affected_services')) {
+  if (hasPropertySimple(dataObj, 'affected_services') && isArray(dataObj.affected_services, isString)) {
     tagUpdates.affected_services = dataObj.affected_services;
   }
-  if (hasArrayProperty(dataObj, 'business_impact')) {
+  if (hasPropertySimple(dataObj, 'business_impact') && isString(dataObj.business_impact)) {
     tagUpdates.business_impact = dataObj.business_impact;
   }
-  if (hasArrayProperty(dataObj, 'recovery_actions')) {
+  if (hasPropertySimple(dataObj, 'recovery_actions') && isArray(dataObj.recovery_actions, isString)) {
     tagUpdates.recovery_actions = dataObj.recovery_actions;
   }
-  if (hasBooleanProperty(dataObj, 'follow_up_required')) {
+  if (hasPropertySimple(dataObj, 'follow_up_required') && isBoolean(dataObj.follow_up_required)) {
     tagUpdates.follow_up_required = dataObj.follow_up_required;
   }
-  if (hasArrayProperty(dataObj, 'incident_commander')) {
+  if (hasPropertySimple(dataObj, 'incident_commander') && isString(dataObj.incident_commander)) {
     tagUpdates.incident_commander = dataObj.incident_commander;
   }
 
@@ -195,10 +168,10 @@ export async function findIncidents(criteria: unknown): Promise<unknown> {
 
   if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
     const criteriaObj = criteria as Record<string, unknown>;
-    if (hasStringProperty(criteriaObj, 'severity')) {
+    if (hasPropertySimple(criteriaObj, 'severity') && isString(criteriaObj.severity)) {
       whereClause.severity = criteriaObj.severity;
     }
-    if (hasStringProperty(criteriaObj, 'status')) {
+    if (hasPropertySimple(criteriaObj, 'status') && isString(criteriaObj.status)) {
       whereClause.resolution_status = criteriaObj.status;
     }
   }
@@ -210,10 +183,10 @@ export async function findIncidents(criteria: unknown): Promise<unknown> {
 
   if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
     const criteriaObj = criteria as Record<string, unknown>;
-    if (hasNumberProperty(criteriaObj, 'limit')) {
+    if (hasPropertySimple(criteriaObj, 'limit') && typeof criteriaObj.limit === 'number') {
       findOptions.take = criteriaObj.limit;
     }
-    if (hasNumberProperty(criteriaObj, 'offset')) {
+    if (hasPropertySimple(criteriaObj, 'offset') && typeof criteriaObj.offset === 'number') {
       findOptions.skip = criteriaObj.offset;
     }
   }
@@ -224,18 +197,15 @@ export async function findIncidents(criteria: unknown): Promise<unknown> {
     return [];
   }
 
-  return result.filter(isIncidentResponse).map((incident) => {
-    const incidentObj = incident as Record<string, unknown>;
-    return {
-      id: safeGetStringProperty(incidentObj, 'id'),
-      title: safeGetStringProperty(incidentObj, 'title'),
-      severity: safeGetStringProperty(incidentObj, 'severity'),
-      impact: safeGetStringProperty(incidentObj, 'impact', ''),
-      resolution_status: safeGetStringProperty(incidentObj, 'resolution_status', 'open'),
-      created_at: safeGetStringProperty(incidentObj, 'created_at'),
-      updated_at: safeGetStringProperty(incidentObj, 'updated_at'),
-    };
-  });
+  return result.filter(isIncidentResponse).map((incident) => ({
+    id: incident.id,
+    title: incident.title,
+    severity: incident.severity,
+    impact: incident.impact || '',
+    resolution_status: incident.resolution_status || 'open',
+    created_at: incident.created_at,
+    updated_at: incident.updated_at,
+  }));
 }
 
 // ============================================================================
@@ -272,38 +242,36 @@ export async function storeRelease(data: unknown, scope: unknown = {}): Promise<
 
   const createData: Record<string, unknown> = {};
 
-  if (hasStringProperty(dataObj, 'version')) {
+  if (hasPropertySimple(dataObj, 'version') && isString(dataObj.version)) {
     createData.version = dataObj.version;
   }
-  if (hasStringProperty(dataObj, 'release_type')) {
+  if (hasPropertySimple(dataObj, 'release_type') && isString(dataObj.release_type)) {
     createData.release_type = dataObj.release_type;
   }
-  if (hasStringProperty(dataObj, 'scope')) {
+  if (hasPropertySimple(dataObj, 'scope') && isString(dataObj.scope)) {
     createData.scope = dataObj.scope;
   }
-  if (hasStringProperty(dataObj, 'status')) {
+  if (hasPropertySimple(dataObj, 'status') && isString(dataObj.status)) {
     createData.status = dataObj.status;
   }
 
   createData.tags = {
     ...scopeObj,
-    release_date: hasStringProperty(dataObj, 'release_date') ? dataObj.release_date : undefined,
-    ticket_references: hasArrayProperty(dataObj, 'ticket_references') ? dataObj.ticket_references : [],
-    included_changes: hasArrayProperty(dataObj, 'included_changes') ? dataObj.included_changes : [],
-    deployment_strategy: hasStringProperty(dataObj, 'deployment_strategy') ? dataObj.deployment_strategy : undefined,
-    rollback_plan: hasStringProperty(dataObj, 'rollback_plan') ? dataObj.rollback_plan : undefined,
-    testing_status: hasStringProperty(dataObj, 'testing_status') ? dataObj.testing_status : undefined,
-    approvers: hasArrayProperty(dataObj, 'approvers') ? dataObj.approvers : [],
-    release_notes: hasStringProperty(dataObj, 'release_notes') ? dataObj.release_notes : undefined,
-    post_release_actions: hasArrayProperty(dataObj, 'post_release_actions') ? dataObj.post_release_actions : [],
+    release_date: hasPropertySimple(dataObj, 'release_date') ? dataObj.release_date : undefined,
+    ticket_references: hasPropertySimple(dataObj, 'ticket_references') && isArray(dataObj.ticket_references, isString) ? dataObj.ticket_references : [],
+    included_changes: hasPropertySimple(dataObj, 'included_changes') && isArray(dataObj.included_changes, isString) ? dataObj.included_changes : [],
+    deployment_strategy: hasPropertySimple(dataObj, 'deployment_strategy') ? dataObj.deployment_strategy : undefined,
+    rollback_plan: hasPropertySimple(dataObj, 'rollback_plan') ? dataObj.rollback_plan : undefined,
+    testing_status: hasPropertySimple(dataObj, 'testing_status') ? dataObj.testing_status : undefined,
+    approvers: hasPropertySimple(dataObj, 'approvers') && isArray(dataObj.approvers, isString) ? dataObj.approvers : [],
+    release_notes: hasPropertySimple(dataObj, 'release_notes') ? dataObj.release_notes : undefined,
+    post_release_actions: hasPropertySimple(dataObj, 'post_release_actions') && isArray(dataObj.post_release_actions, isString) ? dataObj.post_release_actions : [],
   };
 
   const result = await db.create('releaseLog', createData);
-  const resultObj = result as Record<string, unknown>;
-  const releaseId = safeGetStringProperty(resultObj, 'id');
 
-  logger.info({ releaseId, version: String(createData.version || 'unknown') }, 'Release stored successfully');
-  return releaseId;
+  logger.info({ releaseId: result.id, version: String(createData.version || 'unknown') }, 'Release stored successfully');
+  return result.id;
 }
 
 export async function updateRelease(id: string, data: unknown): Promise<void> {
@@ -320,16 +288,16 @@ export async function updateRelease(id: string, data: unknown): Promise<void> {
   const tagUpdates: Record<string, unknown> = {};
 
   // Handle direct fields (those that exist in the schema)
-  if (hasStringProperty(dataObj, 'version')) {
+  if (hasPropertySimple(dataObj, 'version') && isString(dataObj.version)) {
     updateData.version = dataObj.version;
   }
-  if (hasStringProperty(dataObj, 'release_type')) {
+  if (hasPropertySimple(dataObj, 'release_type') && isString(dataObj.release_type)) {
     updateData.release_type = dataObj.release_type;
   }
-  if (hasStringProperty(dataObj, 'scope')) {
+  if (hasPropertySimple(dataObj, 'scope') && isString(dataObj.scope)) {
     updateData.scope = dataObj.scope;
   }
-  if (hasStringProperty(dataObj, 'status')) {
+  if (hasPropertySimple(dataObj, 'status') && isString(dataObj.status)) {
     updateData.status = dataObj.status;
   }
 
@@ -347,7 +315,7 @@ export async function updateRelease(id: string, data: unknown): Promise<void> {
   ] as const;
 
   for (const field of tagFields) {
-    if (hasStringProperty(dataObj, field)) {
+    if (hasPropertySimple(dataObj, field)) {
       tagUpdates[field] = dataObj[field];
     }
   }
@@ -378,13 +346,13 @@ export async function findReleases(criteria: unknown): Promise<unknown> {
 
   if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
     const criteriaObj = criteria as Record<string, unknown>;
-    if (hasStringProperty(criteriaObj, 'version') && isString(criteriaObj.version)) {
+    if (hasPropertySimple(criteriaObj, 'version') && isString(criteriaObj.version)) {
       whereClause.version = {
         contains: criteriaObj.version,
         mode: 'insensitive',
       };
     }
-    if (hasStringProperty(criteriaObj, 'status') && isString(criteriaObj.status)) {
+    if (hasPropertySimple(criteriaObj, 'status') && isString(criteriaObj.status)) {
       whereClause.status = criteriaObj.status;
     }
   }
@@ -396,10 +364,10 @@ export async function findReleases(criteria: unknown): Promise<unknown> {
 
   if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
     const criteriaObj = criteria as Record<string, unknown>;
-    if (hasStringProperty(criteriaObj, 'limit') && typeof criteriaObj.limit === 'number') {
+    if (hasPropertySimple(criteriaObj, 'limit') && typeof criteriaObj.limit === 'number') {
       findOptions.take = criteriaObj.limit;
     }
-    if (hasStringProperty(criteriaObj, 'offset') && typeof criteriaObj.offset === 'number') {
+    if (hasPropertySimple(criteriaObj, 'offset') && typeof criteriaObj.offset === 'number') {
       findOptions.skip = criteriaObj.offset;
     }
   }
@@ -461,40 +429,38 @@ export async function storeRisk(data: unknown, scope: unknown = {}): Promise<str
 
   const createData: Record<string, unknown> = {};
 
-  if (hasStringProperty(dataObj, 'title')) {
+  if (hasPropertySimple(dataObj, 'title') && isString(dataObj.title)) {
     createData.title = dataObj.title;
   }
-  if (hasStringProperty(dataObj, 'category')) {
+  if (hasPropertySimple(dataObj, 'category') && isString(dataObj.category)) {
     createData.category = dataObj.category;
   }
-  if (hasStringProperty(dataObj, 'risk_level')) {
+  if (hasPropertySimple(dataObj, 'risk_level') && isString(dataObj.risk_level)) {
     createData.risk_level = dataObj.risk_level;
   }
-  if (hasStringProperty(dataObj, 'impact_description')) {
+  if (hasPropertySimple(dataObj, 'impact_description') && isString(dataObj.impact_description)) {
     createData.impact_description = dataObj.impact_description;
   }
-  if (hasStringProperty(dataObj, 'status')) {
+  if (hasPropertySimple(dataObj, 'status') && isString(dataObj.status)) {
     createData.status = dataObj.status;
   }
 
   createData.tags = {
     ...scopeObj,
-    probability: hasStringProperty(dataObj, 'probability') ? dataObj.probability : undefined,
-    trigger_events: hasArrayProperty(dataObj, 'trigger_events') ? dataObj.trigger_events : [],
-    mitigation_strategies: hasArrayProperty(dataObj, 'mitigation_strategies') ? dataObj.mitigation_strategies : [],
-    owner: hasStringProperty(dataObj, 'owner') ? dataObj.owner : null,
-    review_date: hasStringProperty(dataObj, 'review_date') ? dataObj.review_date : null,
-    related_decisions: hasArrayProperty(dataObj, 'related_decisions') ? dataObj.related_decisions : [],
-    monitoring_indicators: hasArrayProperty(dataObj, 'monitoring_indicators') ? dataObj.monitoring_indicators : [],
-    contingency_plans: hasArrayProperty(dataObj, 'contingency_plans') ? dataObj.contingency_plans : null,
+    probability: hasPropertySimple(dataObj, 'probability') ? dataObj.probability : undefined,
+    trigger_events: hasPropertySimple(dataObj, 'trigger_events') && isArray(dataObj.trigger_events, isString) ? dataObj.trigger_events : [],
+    mitigation_strategies: hasPropertySimple(dataObj, 'mitigation_strategies') && isArray(dataObj.mitigation_strategies, isString) ? dataObj.mitigation_strategies : [],
+    owner: hasPropertySimple(dataObj, 'owner') ? dataObj.owner : null,
+    review_date: hasPropertySimple(dataObj, 'review_date') ? dataObj.review_date : null,
+    related_decisions: hasPropertySimple(dataObj, 'related_decisions') && isArray(dataObj.related_decisions, isString) ? dataObj.related_decisions : [],
+    monitoring_indicators: hasPropertySimple(dataObj, 'monitoring_indicators') && isArray(dataObj.monitoring_indicators, isString) ? dataObj.monitoring_indicators : [],
+    contingency_plans: hasPropertySimple(dataObj, 'contingency_plans') ? dataObj.contingency_plans : null,
   };
 
   const result = await db.create('riskLog', createData);
-  const resultObj = result as Record<string, unknown>;
-  const riskId = safeGetStringProperty(resultObj, 'id');
 
-  logger.info({ riskId, level: String(createData.risk_level || 'unknown') }, 'Risk stored successfully');
-  return riskId;
+  logger.info({ riskId: result.id, level: String(createData.risk_level || 'unknown') }, 'Risk stored successfully');
+  return result.id;
 }
 
 export async function updateRisk(id: string, data: unknown): Promise<void> {
@@ -511,19 +477,19 @@ export async function updateRisk(id: string, data: unknown): Promise<void> {
   const tagUpdates: Record<string, unknown> = {};
 
   // Handle direct fields (those that exist in the schema)
-  if (hasStringProperty(dataObj, 'title')) {
+  if (hasPropertySimple(dataObj, 'title') && isString(dataObj.title)) {
     updateData.title = dataObj.title;
   }
-  if (hasStringProperty(dataObj, 'category')) {
+  if (hasPropertySimple(dataObj, 'category') && isString(dataObj.category)) {
     updateData.category = dataObj.category;
   }
-  if (hasArrayProperty(dataObj, 'risk_level')) {
+  if (hasPropertySimple(dataObj, 'risk_level') && isString(dataObj.risk_level)) {
     updateData.risk_level = dataObj.risk_level;
   }
-  if (hasArrayProperty(dataObj, 'impact_description')) {
+  if (hasPropertySimple(dataObj, 'impact_description') && isString(dataObj.impact_description)) {
     updateData.impact_description = dataObj.impact_description;
   }
-  if (hasStringProperty(dataObj, 'status')) {
+  if (hasPropertySimple(dataObj, 'status') && isString(dataObj.status)) {
     updateData.status = dataObj.status;
   }
 
@@ -540,7 +506,7 @@ export async function updateRisk(id: string, data: unknown): Promise<void> {
   ] as const;
 
   for (const field of tagFields) {
-    if (hasStringProperty(dataObj, field)) {
+    if (hasPropertySimple(dataObj, field)) {
       tagUpdates[field] = dataObj[field];
     }
   }
@@ -568,13 +534,13 @@ export async function findRisks(criteria: unknown): Promise<unknown> {
 
   if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
     const criteriaObj = criteria as Record<string, unknown>;
-    if (hasStringProperty(criteriaObj, 'category') && isString(criteriaObj.category)) {
+    if (hasPropertySimple(criteriaObj, 'category') && isString(criteriaObj.category)) {
       whereClause.category = criteriaObj.category;
     }
-    if (hasStringProperty(criteriaObj, 'level') && isString(criteriaObj.level)) {
+    if (hasPropertySimple(criteriaObj, 'level') && isString(criteriaObj.level)) {
       whereClause.risk_level = criteriaObj.level;
     }
-    if (hasStringProperty(criteriaObj, 'status') && isString(criteriaObj.status)) {
+    if (hasPropertySimple(criteriaObj, 'status') && isString(criteriaObj.status)) {
       whereClause.status = criteriaObj.status;
     }
   }
@@ -586,10 +552,10 @@ export async function findRisks(criteria: unknown): Promise<unknown> {
 
   if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
     const criteriaObj = criteria as Record<string, unknown>;
-    if (hasStringProperty(criteriaObj, 'limit') && typeof criteriaObj.limit === 'number') {
+    if (hasPropertySimple(criteriaObj, 'limit') && typeof criteriaObj.limit === 'number') {
       findOptions.take = criteriaObj.limit;
     }
-    if (hasStringProperty(criteriaObj, 'offset') && typeof criteriaObj.offset === 'number') {
+    if (hasPropertySimple(criteriaObj, 'offset') && typeof criteriaObj.offset === 'number') {
       findOptions.skip = criteriaObj.offset;
     }
   }
@@ -648,72 +614,65 @@ export async function storeAssumption(data: unknown, scope: unknown = {}): Promi
 
   const createData: Record<string, unknown> = {};
 
-  if (hasStringProperty(dataObj, 'title')) {
+  if (hasPropertySimple(dataObj, 'title') && isString(dataObj.title)) {
     createData.title = dataObj.title;
   }
-  if (hasStringProperty(dataObj, 'description')) {
+  if (hasPropertySimple(dataObj, 'description') && isString(dataObj.description)) {
     createData.description = dataObj.description;
   }
-  if (hasStringProperty(dataObj, 'category')) {
+  if (hasPropertySimple(dataObj, 'category') && isString(dataObj.category)) {
     createData.category = dataObj.category;
   }
-  if (hasStringProperty(dataObj, 'validation_status')) {
+  if (hasPropertySimple(dataObj, 'validation_status') && isString(dataObj.validation_status)) {
     createData.validation_status = dataObj.validation_status;
   }
-  if (hasStringProperty(dataObj, 'impact_if_invalid')) {
+  if (hasPropertySimple(dataObj, 'impact_if_invalid') && isString(dataObj.impact_if_invalid)) {
     createData.impact_if_invalid = dataObj.impact_if_invalid;
   }
 
   createData.tags = {
     ...scopeObj,
-    validation_criteria: hasArrayProperty(dataObj, 'validation_criteria') ? dataObj.validation_criteria : [],
-    validation_date: hasArrayProperty(dataObj, 'validation_date') ? dataObj.validation_date : null,
-    owner: hasArrayProperty(dataObj, 'owner') ? dataObj.owner : null,
-    related_assumptions: hasArrayProperty(dataObj, 'related_assumptions') ? dataObj.related_assumptions : [],
-    dependencies: hasArrayProperty(dataObj, 'dependencies') ? dataObj.dependencies : [],
-    monitoring_approach: hasArrayProperty(dataObj, 'monitoring_approach') ? dataObj.monitoring_approach : null,
-    review_frequency: hasArrayProperty(dataObj, 'review_frequency') ? dataObj.review_frequency : null,
+    validation_criteria: hasPropertySimple(dataObj, 'validation_criteria') && isArray(dataObj.validation_criteria, isString) ? dataObj.validation_criteria : [],
+    validation_date: hasPropertySimple(dataObj, 'validation_date') ? dataObj.validation_date : null,
+    owner: hasPropertySimple(dataObj, 'owner') ? dataObj.owner : null,
+    related_assumptions: hasPropertySimple(dataObj, 'related_assumptions') && isArray(dataObj.related_assumptions, isString) ? dataObj.related_assumptions : [],
+    dependencies: hasPropertySimple(dataObj, 'dependencies') && isArray(dataObj.dependencies, isString) ? dataObj.dependencies : [],
+    monitoring_approach: hasPropertySimple(dataObj, 'monitoring_approach') ? dataObj.monitoring_approach : null,
+    review_frequency: hasPropertySimple(dataObj, 'review_frequency') ? dataObj.review_frequency : null,
   };
 
   const result = await db.create('assumptionLog', createData);
-  const resultObj = result as Record<string, unknown>;
-  const assumptionId = safeGetStringProperty(resultObj, 'id');
 
   logger.info(
-    { assumptionId, status: String(createData.validation_status || 'unknown') },
+    { assumptionId: result.id, status: String(createData.validation_status || 'unknown') },
     'Assumption stored successfully'
   );
-  return assumptionId;
+  return result.id;
 }
 
 export async function updateAssumption(id: string, data: unknown): Promise<void> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
-  const db = new UnifiedDatabaseLayer();
-  await db.initialize();
+  const db = new (UnifiedDatabaseLayer as unknown)();
+  await (db as unknown).initialize();
 
-  if (!data || typeof data !== 'object' || Array.isArray(data)) {
-    throw new Error('Invalid assumption data provided');
-  }
-
-  const dataObj = data as Record<string, unknown>;
-  const updateData: Record<string, unknown> = {};
-  const tagUpdates: Record<string, unknown> = {};
+  const updateData: unknown = {};
+  const tagUpdates: unknown = {};
 
   // Handle direct fields (those that exist in the schema)
-  if (hasStringProperty(dataObj, 'title')) {
-    updateData.title = dataObj.title;
+  if (data.title !== undefined) {
+    updateData.title = data.title;
   }
-  if (hasStringProperty(dataObj, 'description')) {
-    updateData.description = dataObj.description;
+  if (data.description !== undefined) {
+    updateData.description = data.description;
   }
-  if (hasStringProperty(dataObj, 'category')) {
-    updateData.category = dataObj.category;
+  if (data.category !== undefined) {
+    updateData.category = data.category;
   }
-  if (hasStringProperty(dataObj, 'validation_status')) {
-    updateData.validation_status = dataObj.validation_status;
+  if (data.validation_status !== undefined) {
+    updateData.validation_status = data.validation_status;
   }
-  if (hasStringProperty(dataObj, 'impact_if_invalid')) {
-    updateData.impact_if_invalid = dataObj.impact_if_invalid;
+  if (data.impact_if_invalid !== undefined) {
+    updateData.impact_if_invalid = data.impact_if_invalid;
   }
 
   // Handle fields stored in tags JSON
@@ -752,54 +711,43 @@ export async function updateAssumption(id: string, data: unknown): Promise<void>
 
 export async function findAssumptions(criteria: unknown): Promise<unknown> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
-  const db = new UnifiedDatabaseLayer();
-  await db.initialize();
+  const db = new (UnifiedDatabaseLayer as unknown)();
+  await (db as unknown).initialize();
 
-  const whereClause: Record<string, unknown> = {};
+  const whereClause: unknown = {};
 
-  if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
-    const criteriaObj = criteria as Record<string, unknown>;
-    if (hasStringProperty(criteriaObj, 'category')) {
-      whereClause.category = criteriaObj.category;
-    }
-    if (hasStringProperty(criteriaObj, 'status')) {
-      whereClause.validation_status = criteriaObj.status;
-    }
+  if (criteria.category) {
+    whereClause.category = criteria.category;
+  }
+  if (criteria.status) {
+    whereClause.validation_status = criteria.status;
   }
 
-  const findOptions: Record<string, unknown> = {
+  const result = await (db as unknown).find('assumptionLog', {
     where: whereClause,
     orderBy: { updated_at: 'desc' },
-  };
-
-  if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
-    const criteriaObj = criteria as Record<string, unknown>;
-    if (hasNumberProperty(criteriaObj, 'limit')) {
-      (findOptions as unknown).take = criteriaObj.limit;
-    }
-    if (hasNumberProperty(criteriaObj, 'offset')) {
-      (findOptions as unknown).skip = criteriaObj.offset;
-    }
-  }
-
-  const result = await db.find('assumptionLog', findOptions) as Record<string, unknown>[];
-
-  if (!Array.isArray(result)) {
-    return [];
-  }
-
-  return result.map((assumption: unknown) => {
-    const assumptionObj = assumption as Record<string, unknown>;
-    return {
-      id: safeGetStringProperty(assumptionObj, 'id'),
-      title: safeGetStringProperty(assumptionObj, 'title'),
-      description: safeGetStringProperty(assumptionObj, 'description'),
-      category: safeGetStringProperty(assumptionObj, 'category'),
-      validation_status: safeGetStringProperty(assumptionObj, 'validation_status'),
-      created_at: safeGetStringProperty(assumptionObj, 'created_at'),
-      updated_at: safeGetStringProperty(assumptionObj, 'updated_at'),
-    };
+    take: criteria.limit,
+    skip: criteria.offset,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      category: true,
+      validation_status: true,
+      created_at: true,
+      updated_at: true,
+    },
   });
+
+  return result.map((assumption: unknown) => ({
+    id: assumption.id,
+    title: assumption.title,
+    description: assumption.description,
+    category: assumption.category,
+    validation_status: assumption.validation_status,
+    created_at: assumption.created_at,
+    updated_at: assumption.updated_at,
+  }));
 }
 
 // ============================================================================
@@ -818,8 +766,8 @@ export interface SessionLogEntry {
 
 export async function getSessionLogDashboard(criteria: unknown = {}): Promise<unknown> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
-  const db = new UnifiedDatabaseLayer();
-  await db.initialize();
+  const db = new (UnifiedDatabaseLayer as unknown)();
+  await (db as unknown).initialize();
 
   // Since we can't easily replicate the UNION ALL with Qdrant queries,
   // we'll return empty results for now
@@ -828,16 +776,13 @@ export async function getSessionLogDashboard(criteria: unknown = {}): Promise<un
   // For now, return empty results since $queryRawUnsafe is not supported
   const result: unknown[] = [];
 
-  return result.map((row: unknown) => {
-    const rowObj = row as Record<string, unknown>;
-    return {
-      type: safeGetStringProperty(rowObj, 'log_type') as 'incident' | 'release' | 'risk' | 'assumption',
-      id: safeGetStringProperty(rowObj, 'id'),
-      title: safeGetStringProperty(rowObj, 'title'),
-      status: safeGetStringProperty(rowObj, 'status'),
-      created_at: rowObj.created_at,
-      updated_at: rowObj.updated_at,
-      tags: rowObj.tags,
-    };
-  });
+  return result.map((row: unknown) => ({
+    type: row.log_type as 'incident' | 'release' | 'risk' | 'assumption',
+    id: row.id,
+    title: row.title,
+    status: row.status,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    tags: row.tags,
+  }));
 }

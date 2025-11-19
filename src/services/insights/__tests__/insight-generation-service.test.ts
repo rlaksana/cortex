@@ -5,7 +5,7 @@ import type { InsightGenerationRequest } from '../../../types/insight-interfaces
 import { InsightGenerationService } from '../insight-generation-service';
 
 // Mock dependencies
-vi.mock('../../utils/logger.js');
+vi.mock('../../../utils/logger.js');
 vi.mock('../../../config/environment.js');
 vi.mock('../metrics/system-metrics.js');
 

@@ -13,7 +13,7 @@ import type { ZAIPerformanceMonitor } from '../../../types/zai-interfaces.js';
 /**
  * Simple performance monitor implementation
  */
-import { ZAIError, ZAIErrorType } from '../../../types/zai-interfaces.js';
+import { ZAIError } from '../../../types/zai-interfaces.js';
 
 export class SimplePerformanceMonitor implements ZAIPerformanceMonitor {
   private activeRequests = new Map<string, number>();
@@ -219,7 +219,7 @@ export class SimplePerformanceMonitor implements ZAIPerformanceMonitor {
         this.recordError(
           new ZAIError(
             `Request ${requestId} timed out after ${maxAgeMs}ms`,
-            ZAIErrorType.TIMEOUT_ERROR
+            'TIMEOUT_ERROR' as unknown
           )
         );
       }

@@ -171,6 +171,3 @@ test-autonomous.cjs
 
 # Legacy development scripts
 scripts/legacy/.chroma/
-.chroma
-.serena
-.chroma

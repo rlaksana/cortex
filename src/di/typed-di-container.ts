@@ -8,6 +8,11 @@
 import { EventEmitter } from 'events';
 
 import {
+  isDisposable,
+  isDIContainerConfig
+} from '../utils/type-safe-access.js';
+
+import {
   DependencyResolutionError,
   type EnhancedServiceRegistration,
   type FactoryServiceRegistration,
@@ -20,9 +25,6 @@ import {
   type TypedServiceRegistration,
   type ValidationResult,
 } from '../factories/factory-types';
-import {
-  isDIContainerConfig,
-  isDisposable} from '../utils/type-safe-access.js';
 
 // Re-export ServiceLifetime and ServiceRegistrationError for external use
 export { ServiceLifetime, ServiceRegistrationError } from '../factories/factory-types';

@@ -28,7 +28,6 @@ import {
   type User,
   type UserRole,
 } from '../../types/auth-types.js';
-import { isUserEntity } from '../../types/entity-type-guards.js';
 import {
   AuthenticationError,
   ConfigurationError,
@@ -162,12 +161,6 @@ export class StandardizedAuthService {
         return null;
       }
 
-      // Validate user record type before accessing properties
-      if (!isUserEntity(userRecord)) {
-        logger.error({ username, userRecord }, 'Invalid user record structure from database');
-        throw new AuthenticationError('Invalid user data structure', 'Database error');
-      }
-
       // Check if user account is active
       if (!userRecord.is_active) {
         throw new AuthenticationError(
@@ -199,12 +192,12 @@ export class StandardizedAuthService {
         password_hash: userRecord.password_hash,
         role: userRecord.role as UserRole,
         is_active: userRecord.is_active,
-        created_at: userRecord.created_at, // Already a string in UserEntity
-        updated_at: userRecord.updated_at, // Already a string in UserEntity
+        created_at: userRecord.created_at.toISOString(),
+        updated_at: userRecord.updated_at.toISOString(),
       };
 
       if (userRecord.last_login) {
-        user.last_login = userRecord.last_login; // Already a string in UserEntity
+        user.last_login = userRecord.last_login.toISOString();
       }
 
       logger.info(

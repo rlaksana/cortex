@@ -18,10 +18,6 @@ import type {
   VectorFilter,
 } from './database-types-enhanced.js';
 
-type Mutable<T> = { -readonly [K in keyof T]: T[K] };
-type MutableQueryFilters = Partial<Mutable<QueryFilters>>;
-type MutableVectorFilter = Partial<Mutable<VectorFilter>>;
-
 // ============================================================================
 // Unified Filter Interface
 // ============================================================================
@@ -189,7 +185,7 @@ export class FilterAdapter {
     }
 
     // Assemble the legacy filter safely without unknown casting
-    const legacy: MutableQueryFilters = {};
+    const legacy: Partial<QueryFilters> = {};
 
     if (Object.keys(custom).length > 0) {
       legacy.custom = custom;
@@ -240,19 +236,19 @@ export class FilterAdapter {
     }
 
     // Assemble the vector filter using type assertions to bypass readonly
-    const vector: MutableVectorFilter = {};
+    const vector: VectorFilter = {} as VectorFilter;
 
     if (mustConditions.length > 0) {
-      vector.must = mustConditions;
+      (vector as unknown).must = mustConditions;
     }
     if (mustNotConditions.length > 0) {
-      vector.must_not = mustNotConditions;
+      (vector as unknown).must_not = mustNotConditions;
     }
     if (shouldConditions.length > 0) {
-      vector.should = shouldConditions;
+      (vector as unknown).should = shouldConditions;
     }
 
-    return vector as VectorFilter;
+    return vector;
   }
 
   private static mongoDBConditionToVector(condition: QueryFilter): FilterCondition[] {

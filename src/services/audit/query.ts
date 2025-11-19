@@ -1,7 +1,5 @@
-import { logger } from '@/utils/logger.js';
-
 import { getQdrantClient } from '../../db/qdrant.js';
-import { hasProperty, hasStringProperty, safeGetProperty,safeGetStringProperty } from '../../utils/type-fixes.js';
+import { logger } from '../../utils/logger.js';
 
 export interface AuditLogEntry {
   id: string;
@@ -60,7 +58,7 @@ export async function queryAuditLog(
 
   try {
     // Build Qdrant where clause
-    const whereClause: Record<string, unknown> = {};
+    const whereClause: unknown = {};
 
     if (filters.table_name) {
       whereClause.table_name = filters.table_name;
@@ -84,10 +82,9 @@ export async function queryAuditLog(
 
     // Handle date range filtering
     if (filters.since || filters.until) {
-      const dateFilter: Record<string, unknown> = {};
-      if (filters.since) dateFilter.gte = filters.since;
-      if (filters.until) dateFilter.lte = filters.until;
-      whereClause.created_at = dateFilter;
+      whereClause.created_at = {};
+      if (filters.since) whereClause.created_at.gte = filters.since;
+      if (filters.until) whereClause.created_at.lte = filters.until;
     }
 
     // Calculate pagination
@@ -95,12 +92,7 @@ export async function queryAuditLog(
 
     // Execute count and data queries in parallel
     const [totalResult, entriesResult] = await Promise.all([
-      // Use findMany with limit to simulate count - this is a temporary workaround
-      qdrant.eventAudit.findMany({
-        where: whereClause,
-        select: { id: true },
-        take: 10000, // Large number for counting
-      }).then(results => results.length),
+      qdrant.eventAudit.count({ where: whereClause }),
       qdrant.eventAudit.findMany({
         where: whereClause,
         orderBy: { [order_by]: order_dir.toLowerCase() as 'asc' | 'desc' },
@@ -131,26 +123,11 @@ export async function queryAuditLog(
       'Audit log query executed'
     );
 
-    // Map database field names to interface field names with type safety
-    const entries = entriesResult.map((entry: unknown): AuditLogEntry => {
-      if (!entry || typeof entry !== 'object') {
-        throw new Error('Invalid audit entry returned from database');
-      }
-
-      const entryRecord = entry as Record<string, unknown>;
-
-      return {
-        id: safeGetStringProperty(entryRecord, 'id', ''),
-        eventType: safeGetStringProperty(entryRecord, 'event_type', ''),
-        table_name: safeGetStringProperty(entryRecord, 'table_name', ''),
-        record_id: safeGetStringProperty(entryRecord, 'record_id', ''),
-        operation: safeGetStringProperty(entryRecord, 'operation', ''),
-        changed_by: safeGetStringProperty(entryRecord, 'changed_by', null) as string | null,
-        old_data: safeGetProperty(entryRecord, 'old_data', null) as Record<string, unknown> | null,
-        new_data: safeGetProperty(entryRecord, 'new_data', null) as Record<string, unknown> | null,
-        created_at: new Date(safeGetStringProperty(entryRecord, 'created_at', new Date().toISOString())),
-      };
-    });
+    // Map database field names to interface field names
+    const entries = entriesResult.map((entry: unknown) => ({
+      ...entry,
+      eventType: entry.event_type,
+    })) as AuditLogEntry[];
 
     return {
       entries,
@@ -251,26 +228,11 @@ export async function getRecentAuditActivity(
       'Retrieved recent audit activity'
     );
 
-    // Map database field names to interface field names with type safety
-    return entries.map((entry: unknown): AuditLogEntry => {
-      if (!entry || typeof entry !== 'object') {
-        throw new Error('Invalid audit entry returned from database');
-      }
-
-      const entryRecord = entry as Record<string, unknown>;
-
-      return {
-        id: safeGetStringProperty(entryRecord, 'id', ''),
-        eventType: safeGetStringProperty(entryRecord, 'event_type', ''),
-        table_name: safeGetStringProperty(entryRecord, 'table_name', ''),
-        record_id: safeGetStringProperty(entryRecord, 'record_id', ''),
-        operation: safeGetStringProperty(entryRecord, 'operation', ''),
-        changed_by: safeGetStringProperty(entryRecord, 'changed_by', null) as string | null,
-        old_data: safeGetProperty(entryRecord, 'old_data', null) as Record<string, unknown> | null,
-        new_data: safeGetProperty(entryRecord, 'new_data', null) as Record<string, unknown> | null,
-        created_at: new Date(safeGetStringProperty(entryRecord, 'created_at', new Date().toISOString())),
-      };
-    });
+    // Map database field names to interface field names
+    return entries.map((entry: unknown) => ({
+      ...entry,
+      eventType: entry.event_type,
+    })) as AuditLogEntry[];
   } catch (error) {
     logger.error(
       {
@@ -311,76 +273,44 @@ export async function getAuditStatistics(
       operationResult,
       actorResult
     ] = await Promise.all([
-      // Total events - use findMany as workaround for missing count
-      qdrant.eventAudit.findMany({
-        where: whereClause,
-        select: { id: true },
-        take: 10000,
-      }).then(results => results.length),
+      // Total events
+      qdrant.eventAudit.count({ where: whereClause }),
 
-      // Events by table name (entity type) - use findMany and aggregate
-      qdrant.eventAudit.findMany({
+      // Events by table name (entity type)
+      qdrant.eventAudit.groupBy({
+        by: ['table_name'],
         where: whereClause,
-        select: { table_name: true },
-        take: 10000,
-      }).then(results => {
-        const groups: Record<string, number> = {};
-        results.forEach(item => {
-          if (hasStringProperty(item, 'table_name')) {
-            const key = item.table_name;
-            groups[key] = (groups[key] || 0) + 1;
-          }
-        });
-        return Object.entries(groups).map(([table_name, _count]) => ({ table_name, _count }));
+        _count: true,
       }),
 
-      // Events by operation - use findMany and aggregate
-      qdrant.eventAudit.findMany({
+      // Events by operation
+      qdrant.eventAudit.groupBy({
+        by: ['operation'],
         where: whereClause,
-        select: { operation: true },
-        take: 10000,
-      }).then(results => {
-        const groups: Record<string, number> = {};
-        results.forEach(item => {
-          if (hasStringProperty(item, 'operation')) {
-            const key = item.operation;
-            groups[key] = (groups[key] || 0) + 1;
-          }
-        });
-        return Object.entries(groups).map(([operation, _count]) => ({ operation, _count }));
+        _count: true,
       }),
 
-      // Unique actors - use findMany and extract unique values
-      qdrant.eventAudit.findMany({
+      // Unique actors
+      qdrant.eventAudit.groupBy({
+        by: ['changed_by'],
         where: whereClause,
-        select: { changed_by: true },
-        take: 10000,
-      }).then(results => {
-        const uniqueActors = [...new Set(results.map(item =>
-          hasStringProperty(item, 'changed_by') ? item.changed_by : null
-        ).filter(Boolean))];
-        return uniqueActors.map(changed_by => ({ changed_by }));
       }),
     ]);
 
-    // Process results with type safety
+    // Process results
     const events_by_type: Record<string, number> = {};
     typeResult.forEach((item: unknown) => {
-      if (hasStringProperty(item, 'table_name') && hasProperty(item, '_count')) {
-        events_by_type[item.table_name] = (item as any)._count;
+      if (item.table_name) {
+        events_by_type[item.table_name] = item._count;
       }
     });
 
     const events_by_operation: Record<string, number> = {};
     operationResult.forEach((item: unknown) => {
-      if (hasStringProperty(item, 'operation') && hasProperty(item, '_count')) {
-        events_by_operation[item.operation] = (item as any)._count;
-      }
+      events_by_operation[item.operation] = item._count;
     });
 
-    const unique_actors = actorResult.filter((item: unknown) =>
-      hasProperty(item, 'changed_by') && (item as any).changed_by !== null
-    ).length;
+    const unique_actors = actorResult.filter((item: unknown) => item.changed_by !== null).length;
 
     const statistics = {
       total_events: totalResult,

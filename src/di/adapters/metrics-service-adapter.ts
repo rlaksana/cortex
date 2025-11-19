@@ -12,8 +12,8 @@
  */
 
 import { metricsService } from '../../monitoring/metrics-service.js';
-import type { OperationType } from '../../monitoring/operation-types.js';
 import type { IMetricsService } from '../service-interfaces.js';
+import type { OperationType } from '../../monitoring/operation-types.js';
 
 /**
  * Adapter for Metrics service

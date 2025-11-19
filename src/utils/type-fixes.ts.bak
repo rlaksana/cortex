@@ -1,0 +1,498 @@
+/**
+ * Common TypeScript Type Fix Utilities
+ *
+ * Provides utility functions and type guards to fix the most common
+ * TypeScript errors in the codebase, especially around unknown types.
+ */
+
+import type { JSONObject,JSONValue } from '../types/index.js';
+
+// ============================================================================
+// Basic Type Guards for Unknown Types
+// ============================================================================
+
+export function isObject(obj: unknown): obj is Record<string, unknown> {
+  return obj !== null && typeof obj === 'object' && !Array.isArray(obj);
+}
+
+export function hasProperty(obj: unknown, key: string): obj is Record<string, unknown> {
+  return obj !== null && typeof obj === 'object' && key in obj;
+}
+
+export function hasPropertyOfType<T extends string | number | boolean>(
+  obj: unknown,
+  key: string,
+  type: 'string' | 'number' | 'boolean'
+): obj is Record<string, T> {
+  if (!hasProperty(obj, key)) return false;
+  const value = (obj as Record<string, unknown>)[key];
+  return typeof value === type;
+}
+
+export function hasStringProperty(obj: unknown, key: string): obj is Record<string, string> {
+  return hasPropertyOfType(obj, key, 'string');
+}
+
+export function hasNumberProperty(obj: unknown, key: string): obj is Record<string, number> {
+  return hasPropertyOfType(obj, key, 'number');
+}
+
+export function hasBooleanProperty(obj: unknown, key: string): obj is Record<string, boolean> {
+  return hasPropertyOfType(obj, key, 'boolean');
+}
+
+export function hasArrayProperty(obj: unknown, key: string): obj is Record<string, unknown[]> {
+  if (!hasProperty(obj, key)) return false;
+  const value = (obj as Record<string, unknown>)[key];
+  return Array.isArray(value);
+}
+
+export function hasObjectProperty(obj: unknown, key: string): obj is Record<string, Record<string, unknown>> {
+  if (!hasProperty(obj, key)) return false;
+  const value = (obj as Record<string, unknown>)[key];
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+// ============================================================================
+// JSONValue Type Guards and Converters
+// ============================================================================
+
+export function isJSONValue(obj: unknown): obj is JSONValue {
+  return (
+    obj === null ||
+    typeof obj === 'string' ||
+    typeof obj === 'number' ||
+    typeof obj === 'boolean' ||
+    (Array.isArray(obj) && obj.every(isJSONValue)) ||
+    (typeof obj === 'object' && obj !== null && Object.values(obj).every(isJSONValue))
+  );
+}
+
+export function toJSONValue(obj: unknown): JSONValue {
+  if (isJSONValue(obj)) return obj;
+
+  // Convert unknown to JSONValue safely
+  if (obj === undefined) return null;
+  if (typeof obj === 'function') return null;
+  if (typeof obj === 'symbol') return null;
+
+  // For objects, try to convert each property
+  if (Array.isArray(obj)) {
+    return obj.map(toJSONValue);
+  }
+
+  if (typeof obj === 'object' && obj !== null) {
+    const result: Record<string, JSONValue> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = toJSONValue(value);
+    }
+    return result;
+  }
+
+  return obj as JSONValue;
+}
+
+// ============================================================================
+// Database Bridge Utilities for JSONValue vs Record<string, unknown> conflicts
+// ============================================================================
+
+/**
+ * Convert Record<string, unknown> to JSONObject safely
+ * This is the main bridge function for database layer type conflicts
+ */
+export function recordToJSONObject(record: Record<string, unknown>): JSONObject {
+  const result: JSONObject = {};
+  for (const [key, value] of Object.entries(record)) {
+    result[key] = toJSONValue(value);
+  }
+  return result;
+}
+
+/**
+ * Convert unknown to JSONObject with validation
+ */
+export function unknownToJSONObject(obj: unknown): JSONObject {
+  if (!obj || typeof obj !== 'object') {
+    return {};
+  }
+  return recordToJSONObject(obj as Record<string, unknown>);
+}
+
+/**
+ * Convert array of Records to JSONValue array
+ */
+export function recordsToJSONValues(records: Record<string, unknown>[]): JSONValue[] {
+  return records.map(recordToJSONObject);
+}
+
+/**
+ * Convert unknown array to JSONValue array safely
+ */
+export function unknownArrayToJSONValues(arr: unknown[]): JSONValue[] {
+  return arr.map(toJSONValue);
+}
+
+/**
+ * Convert KnowledgeItem data to JSONValue for database storage
+ */
+export function knowledgeDataToJSONValue(data: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(data);
+}
+
+/**
+ * Convert database result data to proper JSONValue type
+ */
+export function databaseResultToJSONValue(data: unknown): JSONValue {
+  if (Array.isArray(data)) {
+    return unknownArrayToJSONValues(data);
+  }
+  return toJSONValue(data);
+}
+
+// ============================================================================
+// Entity-specific Type Converters for Database Results
+// ============================================================================
+
+/**
+ * Convert SectionData to JSONValue for database operations
+ */
+export function sectionDataToJSONValue(sectionData: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(sectionData);
+}
+
+/**
+ * Convert RunbookData to JSONValue for database operations
+ */
+export function runbookDataToJSONValue(runbookData: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(runbookData);
+}
+
+/**
+ * Convert IssueData to JSONValue for database operations
+ */
+export function issueDataToJSONValue(issueData: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(issueData);
+}
+
+/**
+ * Convert DecisionData to JSONValue for database operations
+ */
+export function decisionDataToJSONValue(decisionData: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(decisionData);
+}
+
+/**
+ * Convert TodoData to JSONValue for database operations
+ */
+export function todoDataToJSONValue(todoData: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(todoData);
+}
+
+/**
+ * Convert IncidentData to JSONValue for database operations
+ */
+export function incidentDataToJSONValue(incidentData: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(incidentData);
+}
+
+/**
+ * Convert RiskData to JSONValue for database operations
+ */
+export function riskDataToJSONValue(riskData: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(riskData);
+}
+
+/**
+ * Convert ChangeData to JSONValue for database operations
+ */
+export function changeDataToJSONValue(changeData: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(changeData);
+}
+
+/**
+ * Convert ReleaseNoteData to JSONValue for database operations
+ */
+export function releaseNoteDataToJSONValue(releaseNoteData: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(releaseNoteData);
+}
+
+/**
+ * Convert PRContextData to JSONValue for database operations
+ */
+export function prContextDataToJSONValue(prContextData: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(prContextData);
+}
+
+/**
+ * Convert DDLData to JSONValue for database operations
+ */
+export function ddlDataToJSONValue(ddlData: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(ddlData);
+}
+
+/**
+ * Convert AssumptionData to JSONValue for database operations
+ */
+export function assumptionDataToJSONValue(assumptionData: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(assumptionData);
+}
+
+/**
+ * Convert ReleaseData to JSONValue for database operations
+ */
+export function releaseDataToJSONValue(releaseData: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(releaseData);
+}
+
+// ============================================================================
+// Batch Database Type Conversion Utilities
+// ============================================================================
+
+/**
+ * Batch convert entity rows with proper type casting
+ */
+export function convertEntityRows<T extends Record<string, unknown>>(
+  rows: unknown[],
+  entityConverter: (row: Record<string, unknown>) => Record<string, unknown>
+): T[] {
+  return rows
+    .filter((row): row is Record<string, unknown> => row !== null && typeof row === 'object')
+    .map(entityConverter) as T[];
+}
+
+/**
+ * Safe database result extraction with JSONValue conversion
+ */
+export function extractDatabaseResultsAsJSONValue(
+  results: unknown[],
+  validator: (obj: unknown) => boolean
+): JSONObject[] {
+  return results
+    .filter(validator)
+    .map((result) => recordToJSONObject(result as Record<string, unknown>));
+}
+
+/**
+ * Convert metadata objects consistently across the database layer
+ */
+export function metadataToJSONValue(metadata: Record<string, unknown> | undefined): JSONObject {
+  if (!metadata) return {};
+  return recordToJSONObject(metadata);
+}
+
+/**
+ * Convert scope objects consistently across the database layer
+ */
+export function scopeToJSONValue(scope: Record<string, unknown>): JSONObject {
+  return recordToJSONObject(scope);
+}
+
+// ============================================================================
+// Performance/Production Type Guards
+// ============================================================================
+
+export function hasPerformanceMetrics(obj: unknown): obj is {
+  success: boolean;
+  duration: number;
+  memoryUsage?: unknown;
+  [key: string]: unknown;
+} {
+  return (
+    hasBooleanProperty(obj, 'success') &&
+    hasNumberProperty(obj, 'duration')
+  );
+}
+
+export function hasProductionConfig(obj: unknown): obj is {
+  helmetEnabled?: boolean;
+  rateLimitEnabled?: boolean;
+  enabled?: boolean;
+  enableMetrics?: boolean;
+  [key: string]: unknown;
+} {
+  return (
+    typeof obj === 'object' && obj !== null &&
+    (
+      hasBooleanProperty(obj, 'helmetEnabled') ||
+      hasBooleanProperty(obj, 'rateLimitEnabled') ||
+      hasBooleanProperty(obj, 'enabled') ||
+      hasBooleanProperty(obj, 'enableMetrics')
+    )
+  );
+}
+
+export function hasProductionServices(obj: unknown): obj is {
+  qdrantPool?: unknown;
+  zaiClient?: unknown;
+  performanceMonitor?: unknown;
+  loadTest?: unknown;
+  [key: string]: unknown;
+} {
+  return typeof obj === 'object' && obj !== null;
+}
+
+export function hasSLOMetrics(obj: unknown): obj is {
+  sloCompliance?: unknown;
+  enabled?: boolean;
+  healthy?: boolean;
+  status?: string;
+  [key: string]: unknown;
+} {
+  return (
+    typeof obj === 'object' && obj !== null &&
+    (hasProperty(obj, 'sloCompliance') || hasBooleanProperty(obj, 'enabled'))
+  );
+}
+
+// ============================================================================
+// Test Data Type Guards
+// ============================================================================
+
+export function hasTestData(obj: unknown): obj is {
+  nested?: unknown;
+  value?: unknown;
+  self?: unknown;
+  [key: string]: unknown;
+} {
+  return typeof obj === 'object' && obj !== null;
+}
+
+// ============================================================================
+// Resource Pool Type Fix
+// ============================================================================
+
+export function fixResourcePoolConversion<T, TConfig>(
+  pool: unknown
+): { on: (event: string, listener: (event: unknown) => void) => void } {
+  // Convert pool to expected type safely
+  return {
+    on: (event: string, listener: (event: unknown) => void) => {
+      if (pool && typeof (pool as any).on === 'function') {
+        (pool as any).on(event, listener);
+      }
+    }
+  };
+}
+
+// ============================================================================
+// Schema Validator Type Fixes
+// ============================================================================
+
+export function createServiceConfig(): Record<string, JSONValue> {
+  return {
+    service: 'unknown',
+    sprint: 'unknown',
+    tenant: 'unknown',
+    environment: 'unknown',
+  };
+}
+
+export function fixServiceConfig(obj: unknown): Record<string, JSONValue> {
+  if (!obj || typeof obj !== 'object') {
+    return createServiceConfig();
+  }
+
+  return toJSONValue(obj) as Record<string, JSONValue>;
+}
+
+// ============================================================================
+// Generic Property Access Helpers
+// ============================================================================
+
+export function safeGetProperty<T = unknown>(
+  obj: unknown,
+  key: string,
+  defaultValue: T
+): T {
+  if (!hasProperty(obj, key)) return defaultValue;
+  const value = (obj as Record<string, unknown>)[key];
+  return (value as T) ?? defaultValue;
+}
+
+export function safeGetStringProperty(
+  obj: unknown,
+  key: string,
+  defaultValue: string = ''
+): string {
+  if (!hasStringProperty(obj, key)) return defaultValue;
+  return (obj as Record<string, string>)[key];
+}
+
+export function safeGetNumberProperty(
+  obj: unknown,
+  key: string,
+  defaultValue: number = 0
+): number {
+  if (!hasNumberProperty(obj, key)) return defaultValue;
+  return (obj as Record<string, number>)[key];
+}
+
+export function safeGetBooleanProperty(
+  obj: unknown,
+  key: string,
+  defaultValue: boolean = false
+): boolean {
+  if (!hasBooleanProperty(obj, key)) return defaultValue;
+  return (obj as Record<string, boolean>)[key];
+}
+
+export function safeGetArrayProperty<T = unknown>(
+  obj: unknown,
+  key: string,
+  defaultValue: T[] = []
+): T[] {
+  if (!hasArrayProperty(obj, key)) return defaultValue;
+  return (obj as Record<string, unknown[]>)[key].filter((item): item is T => item !== undefined) as T[];
+}
+
+// ============================================================================
+// Batch Type Fix Utilities
+// ============================================================================
+
+export class TypeFixBatch {
+  /**
+   * Fix all unknown property access in a batch operation
+   */
+  static fixUnknownProperties<T extends Record<string, unknown>>(
+    obj: unknown,
+    propertyMap: Record<string, (value: unknown) => T[keyof T]>
+  ): T {
+    if (!obj || typeof obj !== 'object') {
+      return {} as T;
+    }
+
+    const result = {} as T;
+    const source = obj as Record<string, unknown>;
+
+    for (const [key, transformer] of Object.entries(propertyMap)) {
+      if (key in source) {
+        (result as unknown)[key] = transformer(source[key]);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Safely extract multiple properties from unknown object
+   */
+  static extractProperties<T extends Record<string, unknown>>(
+    obj: unknown,
+    keys: (keyof T)[]
+  ): Partial<T> {
+    if (!obj || typeof obj !== 'object') {
+      return {};
+    }
+
+    const result = {} as Partial<T>;
+    const source = obj as Record<string, unknown>;
+
+    for (const key of keys) {
+      if (key in source) {
+        (result as unknown)[key] = source[key as string];
+      }
+    }
+
+    return result;
+  }
+}

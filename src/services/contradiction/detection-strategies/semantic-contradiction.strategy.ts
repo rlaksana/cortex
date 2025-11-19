@@ -12,12 +12,11 @@
 
 import { randomUUID } from 'crypto';
 
-import { logger } from '@/utils/logger.js';
-
 import type {
-    ContradictionResult,
-    KnowledgeItem,
+  ContradictionResult,
+  KnowledgeItem,
 } from '../../../types/contradiction-detector.interface';
+import { logger } from '../../../utils/logger.js';
 import { zaiClientService } from '../../ai/zai-client.service';
 
 /**
@@ -149,11 +148,7 @@ export class SemanticContradictionStrategy {
         maxTokens: this.config.max_tokens,
       });
 
-      if (!response.success || !response.data) {
-        throw new Error('Failed to generate completion');
-      }
-
-      return JSON.parse(response.data.choices[0].message.content) as SemanticAnalysisResult;
+      return JSON.parse(response.choices[0].message.content) as SemanticAnalysisResult;
     } catch (error) {
       logger.error({ error, item1Id: item1.id, item2Id: item2.id }, 'ZAI semantic analysis failed');
       throw error;

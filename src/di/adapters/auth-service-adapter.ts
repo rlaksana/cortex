@@ -10,11 +10,13 @@
  */
 
 import { type AuthService } from '../../services/auth/auth-service.js';
-import { UserRole } from '../../types/auth-types.js';
-import { isUserEntity } from '../../types/entity-type-guards.js';
-import {safeGetStringProperty } from '../../utils/type-fixes.js';
-import { hasPropertySimple, isObject } from '../../utils/type-guards.js';
 import type { IAuthService } from '../service-interfaces.js';
+import { hasPropertySimple, isObject } from '../../utils/type-guards.js';
+import { asUser } from '../../utils/type-conversion.js';
+import { UserRole } from '../../types/auth-types.js';
+import {
+  safeExtractUserProperties
+} from '../../utils/type-safe-access.js';
 
 /**
  * Adapter for Auth service
@@ -95,28 +97,16 @@ export class AuthServiceAdapter implements IAuthService {
    */
   async generateToken(user: import('../service-interfaces.js').User): Promise<string> {
     try {
-      // Validate user input with proper type guard
-      const userObj = user as unknown;
-      if (!isUserEntity(userObj)) {
+      // Create a temporary session and generate access token
+      // Convert user to the expected type for createSession
+      const convertedUser = user as any; // Cast to any to handle interface differences
+      if (!convertedUser) {
         throw new Error('Invalid user data provided');
       }
 
-      // Convert UserEntity to User interface for compatibility
-      const userInterface = {
-        id: userObj.id,
-        username: userObj.username,
-        email: userObj.email,
-        role: userObj.role as UserRole,
-        is_active: userObj.is_active,
-        created_at: userObj.created_at,
-        updated_at: userObj.updated_at,
-        last_login: userObj.last_login,
-        password_hash: userObj.password_hash
-      } as import('../service-interfaces.js').User;
-
-      const session = this.authService.createSession(userInterface, '127.0.0.1', 'adapter');
-      const scopes = this.authService.getUserScopes(userInterface);
-      return this.authService.generateAccessToken(userInterface, session.id, scopes);
+      const session = this.authService.createSession(convertedUser, '127.0.0.1', 'adapter');
+      const scopes = this.authService.getUserScopes(convertedUser);
+      return this.authService.generateAccessToken(convertedUser, session.id, scopes);
     } catch (error) {
       throw new Error(`Failed to generate token: ${(error as Error).message}`);
     }
@@ -171,12 +161,12 @@ export class AuthServiceAdapter implements IAuthService {
       const tokenInfo = await this.authService.verifyRefreshToken(refreshToken);
       if (tokenInfo && typeof tokenInfo === 'object' && 'sub' in tokenInfo) {
         // Note: AuthService doesn't have getUserById method, so we reconstruct user from token payload
-        const payload = tokenInfo as unknown;
+        const payload = tokenInfo as any;
         const user = {
-          id: safeGetStringProperty(payload, 'sub'),
-          email: safeGetStringProperty(payload, 'email'),
-          username: safeGetStringProperty(payload, 'username', 'unknown'),
-          role: safeGetStringProperty(payload, 'role', UserRole._USER),
+          id: String(payload.sub),
+          email: payload.email || '',
+          username: payload.username || 'unknown',
+          role: payload.role || UserRole._USER,
           is_active: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),

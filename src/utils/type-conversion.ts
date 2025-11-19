@@ -8,9 +8,9 @@
  * @version 1.0.0
  */
 
+import { PointId, CollectionId, TransactionId, SessionId, QueryId } from '../types/database-generics';
 import type { DatabaseConfig } from '../db/database-interface.js';
 import type { ConnectionConfig } from '../types/database.js';
-import { type CollectionId, type PointId, type QueryId,type SessionId, type TransactionId } from '../types/database-generics';
 
 // Local type definition for QueuedRequest since it doesn't exist in pool-interfaces
 export interface QueuedRequest<T = unknown> {
@@ -232,33 +232,33 @@ export function asPerformanceMetric(value: unknown): {
     return null;
   }
 
-  // Build valid metric object with proper typing
-  const result: any = {
+  // Build valid metric object
+  const result = {
     timestamp: metric.timestamp,
     operation: metric.operation,
     duration: metric.duration,
     itemCount: metric.itemCount,
     throughput: metric.throughput,
     success: metric.success,
-  };
+  } as const;
 
   // Optional fields
   if (typeof metric.operationType === 'string') {
-    result.operationType = metric.operationType;
+    (result as any).operationType = metric.operationType;
   }
 
   if (
     metric.resourceUsage &&
     typeof metric.resourceUsage === 'object' &&
     !Array.isArray(metric.resourceUsage) &&
-    typeof (metric.resourceUsage as Record<string, unknown>).cpu === 'number' &&
-    typeof (metric.resourceUsage as Record<string, unknown>).memory === 'number'
+    typeof (metric.resourceUsage as any).cpu === 'number' &&
+    typeof (metric.resourceUsage as any).memory === 'number'
   ) {
-    result.resourceUsage = metric.resourceUsage;
+    (result as any).resourceUsage = metric.resourceUsage;
   }
 
   if (metric.metadata && typeof metric.metadata === 'object' && !Array.isArray(metric.metadata)) {
-    result.metadata = metric.metadata;
+    (result as any).metadata = metric.metadata;
   }
 
   return result;
@@ -293,33 +293,33 @@ export function asUser(value: unknown): {
     return null;
   }
 
-  // Build valid user object with proper typing
-  const result: any = {
+  // Build valid user object
+  const result = {
     id: user.id,
-  };
+  } as const;
 
   // Optional fields
   const optionalStringFields = ['email', 'username', 'createdAt', 'updatedAt'];
   for (const field of optionalStringFields) {
     if (typeof user[field] === 'string') {
-      result[field] = user[field];
+      (result as any)[field] = user[field];
     }
   }
 
   if (Array.isArray(user.roles) && user.roles.every(role => typeof role === 'string')) {
-    result.roles = user.roles;
+    (result as any).roles = user.roles;
   }
 
   if (Array.isArray(user.permissions) && user.permissions.every(perm => typeof perm === 'string')) {
-    result.permissions = user.permissions;
+    (result as any).permissions = user.permissions;
   }
 
   if (typeof user.isActive === 'boolean') {
-    result.isActive = user.isActive;
+    (result as any).isActive = user.isActive;
   }
 
   if (user.metadata && typeof user.metadata === 'object' && !Array.isArray(user.metadata)) {
-    result.metadata = user.metadata;
+    (result as any).metadata = user.metadata;
   }
 
   return result;
@@ -362,10 +362,10 @@ export function asSearchQuery(value: unknown): {
     return null;
   }
 
-  // Build valid query object with proper typing
-  const result: any = {
+  // Build valid query object
+  const result = {
     query: query.query,
-  };
+  } as const;
 
   // Optional fields with validation
   if (
@@ -387,7 +387,7 @@ export function asSearchQuery(value: unknown): {
     }
 
     if (Object.keys(validScope).length > 0) {
-      result.scope = validScope;
+      (result as any).scope = validScope;
     }
   }
 
@@ -395,41 +395,41 @@ export function asSearchQuery(value: unknown): {
     Array.isArray(query.types) &&
     query.types.every(type => typeof type === 'string')
   ) {
-    result.types = query.types;
+    (result as any).types = query.types;
   }
 
   if (typeof query.kind === 'string') {
-    result.kind = query.kind;
+    (result as any).kind = query.kind;
   }
 
   if (
     typeof query.mode === 'string' &&
     ['auto', 'fast', 'deep'].includes(query.mode)
   ) {
-    result.mode = query.mode;
+    (result as any).mode = query.mode;
   }
 
   if (typeof query.limit === 'number' && query.limit > 0) {
-    result.limit = query.limit;
+    (result as any).limit = query.limit;
   }
 
   if (typeof query.top_k === 'number' && query.top_k > 0) {
-    result.top_k = query.top_k;
+    (result as any).top_k = query.top_k;
   }
 
   if (
     typeof query.expand === 'string' &&
     ['relations', 'parents', 'children', 'none'].includes(query.expand)
   ) {
-    result.expand = query.expand;
+    (result as any).expand = query.expand;
   }
 
   // These fields can be any type
   if ('text' in query) {
-    result.text = query.text;
+    (result as any).text = query.text;
   }
   if ('filters' in query) {
-    result.filters = query.filters;
+    (result as any).filters = query.filters;
   }
 
   return result;
@@ -612,7 +612,7 @@ export function asOperationType(value: unknown): 'read' | 'write' | 'search' | '
 
   const validOperations = ['read', 'write', 'search', 'delete', 'batch', 'maintenance', 'health_check'] as const;
 
-  return validOperations.includes(value as any) ? (value as any) : null;
+  return validOperations.includes(value as any) ? value as any : null;
 }
 
 // ============================================================================
@@ -766,7 +766,7 @@ export function batchConvert<T, R>(
     }
 
     // This should never be reached, but TypeScript needs it
-    return undefined as unknown;
+    return undefined as any;
   }).filter(item => item !== undefined) as R[];
 }
 

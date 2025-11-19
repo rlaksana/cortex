@@ -11,12 +11,9 @@
 
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
-import { zaiConfigManager } from '@/config/zai-config.js';
-import type { ZAIChatRequest, ZAIJobType } from '@/types/zai-interfaces.js';
-import { aiOrchestratorService } from '../ai-orchestrator.service.js';
-import { backgroundProcessorService } from '../background-processor.service.js';
-import { zaiServicesManager } from '../index.js';
-import { zaiClientService } from '../zai-client.service.js';
+import { zaiConfigManager } from '../../config/zai-config';
+import type { ZAIChatRequest, ZAIChatResponse, ZAIJobType } from '../../types/zai-interfaces';
+import { zaiClientService, zaiServicesManager } from '../index';
 
 // Helper functions for safe property access in tests
 const num = (v: unknown, d = 0): number => Number((v as number | undefined) ?? d);
@@ -155,8 +152,8 @@ describe('ZAI Integration Tests', () => {
       expect(status.uptime).toBeGreaterThan(0);
     });
 
-    test('should get orchestrator metrics', async () => {
-      const metrics = await aiOrchestratorService.getMetrics();
+    test('should get orchestrator metrics', () => {
+      const metrics = aiOrchestratorService.getMetrics();
       expect(metrics).toBeDefined();
       expect(metrics.orchestrator).toBeDefined();
       expect(metrics.providers).toBeDefined();
@@ -195,31 +192,13 @@ describe('ZAI Integration Tests', () => {
       expect(status.memoryUsage).toBeDefined();
     });
 
-    test('should get processor metrics', async () => {
-      const metrics = await zaiServicesManager.getMetrics(); // Get comprehensive metrics from manager
-
-      // System metrics
-      const system = metrics.system as any;
-      expect(system.memoryUsage).toBeDefined();
-      expect(system.memoryUsage.rss).toBeGreaterThan(0);
-      expect(system.cpuUsage).toBeDefined();
-      expect(system.uptime).toBeGreaterThan(0);
-
-      // ZAI metrics
-      expect(metrics.zai).toBeDefined();
-      expect(metrics.zai.totalRequests).toBeDefined();
-
-      // Orchestrator metrics
-      const orchestrator = metrics.orchestrator as any;
-      expect(orchestrator.totalRequests).toBeDefined();
-      expect(orchestrator.providers).toBeDefined();
-
-      // Background processor metrics
-      const processor = metrics.backgroundProcessor as any;
-      expect(processor.totalProcessed).toBeDefined();
-      expect(processor.queueSize).toBeDefined();
-      expect(processor.activeJobs).toBeDefined();
-      expect(processor.uptime).toBeDefined(); // Access uptime from processor metrics
+    test('should get processor metrics', () => {
+      const metrics = backgroundProcessorService.getMetrics();
+      expect(metrics).toBeDefined();
+      expect(metrics.processor).toBeDefined();
+      expect(metrics.queue).toBeDefined();
+      expect(metrics.workers).toBeDefined();
+      expect(metrics.performance).toBeDefined();
     });
 
     test('should submit background job', async () => {
@@ -258,15 +237,15 @@ describe('ZAI Integration Tests', () => {
       expect(health.metrics).toBeDefined();
     });
 
-    test('should get comprehensive metrics', async () => {
-      const metrics = await zaiServicesManager.getMetrics();
+    test('should get comprehensive metrics', () => {
+      const metrics = zaiServicesManager.getMetrics();
       expect(metrics).toBeDefined();
       expect(metrics.config).toBeDefined();
       expect(metrics.zai).toBeDefined();
       expect(metrics.orchestrator).toBeDefined();
       expect(metrics.backgroundProcessor).toBeDefined();
       expect(metrics.system).toBeDefined();
-      expect((metrics.system as any).ready).toBe(true);
+      expect(metrics.system.ready).toBe(true);
     });
 
     test('should submit job through manager', async () => {
@@ -332,24 +311,20 @@ describe('ZAI Integration Tests', () => {
       expect(health.backgroundProcessor.status.uptime).toBeGreaterThan(0);
 
       // Check memory usage
-      // Check memory usage
-      const metrics = await zaiServicesManager.getMetrics();
-      const system = metrics.system as any;
-      expect(system.memoryUsage.used).toBeGreaterThan(0);
-      expect(system.memoryUsage.total).toBeGreaterThan(0);
-      expect(system.memoryUsage.percentage).toBeGreaterThanOrEqual(0);
-      expect(system.memoryUsage.percentage).toBeLessThanOrEqual(100);
+      const metrics = zaiServicesManager.getMetrics();
+      expect(metrics.system.memoryUsage.used).toBeGreaterThan(0);
+      expect(metrics.system.memoryUsage.total).toBeGreaterThan(0);
+      expect(metrics.system.memoryUsage.percentage).toBeGreaterThanOrEqual(0);
+      expect(metrics.system.memoryUsage.percentage).toBeLessThanOrEqual(100);
     });
 
-    test('should maintain queue performance', async () => {
-      const processorMetrics = await backgroundProcessorService.getMetrics() as any;
+    test('should maintain queue performance', () => {
+      const processorMetrics = backgroundProcessorService.getMetrics();
 
-      const total = processorMetrics.totalProcessed + processorMetrics.totalFailed;
-      const successRate = total > 0 ? processorMetrics.totalProcessed / total : 1;
-
-      expect(successRate).toBeGreaterThanOrEqual(0);
-      expect(successRate).toBeLessThanOrEqual(1);
-      expect(processorMetrics.averageProcessingTime).toBeGreaterThanOrEqual(0);
+      expect(processorMetrics.performance.successRate).toBeGreaterThanOrEqual(0);
+      expect(processorMetrics.performance.successRate).toBeLessThanOrEqual(1);
+      expect(processorMetrics.performance.averageProcessingTime).toBeGreaterThanOrEqual(0);
+      expect(processorMetrics.performance.throughput).toBeGreaterThanOrEqual(0);
     });
   });
 
@@ -386,10 +361,23 @@ describe('ZAI Integration Tests', () => {
       }
 
       // 4. Check final metrics
-      const finalMetrics = await zaiServicesManager.getMetrics();
-      expect((finalMetrics.backgroundProcessor as any).totalProcessed).toBeGreaterThanOrEqual(0);
+      const finalMetrics = zaiServicesManager.getMetrics();
+      expect(finalMetrics.backgroundProcessor.processor.totalJobsProcessed).toBeGreaterThanOrEqual(
+        0
+      );
     });
   });
 });
 
+// Import services for testing
+let zaiClientService: unknown;
+let aiOrchestratorService: unknown;
+let backgroundProcessorService: unknown;
 
+// Lazy import to avoid circular dependencies
+beforeAll(async () => {
+  const services = await import('../index');
+  zaiClientService = services.zaiClientService;
+  aiOrchestratorService = services.aiOrchestratorService;
+  backgroundProcessorService = services.backgroundProcessorService;
+});

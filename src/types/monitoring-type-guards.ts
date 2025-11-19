@@ -5,14 +5,15 @@
  * helping to prevent property access errors and ensure type safety.
  */
 
-import type { TypedMetric } from './metrics-types.js';
 import type {
   Alert,
   EnhancedAlert,
+  PerformanceMetric,
   EnhancedPerformanceMetric,
-  LoggableData,
-  PerformanceMetric} from './monitoring-types.js';
-import { AlertSeverity } from '../monitoring/alert-management-service.js';
+  LoggableData
+} from './monitoring-types.js';
+import type { AlertSeverity } from '../monitoring/alert-management-service.js';
+import type { TypedMetric } from './metrics-types.js';
 
 // ============================================================================
 // Alert Type Guards
@@ -42,22 +43,9 @@ export function isAlert(obj: unknown): obj is Alert {
  */
 export function isEnhancedAlert(obj: unknown): obj is EnhancedAlert {
   return (
-    obj !== null &&
-    typeof obj === 'object' &&
-    'id' in obj &&
-    'type' in obj &&
-    'severity' in obj &&
-    'status' in obj &&
-    'title' in obj &&
+    isAlert(obj) &&
     'message' in obj &&
-    'timestamp' in obj &&
-    typeof (obj as EnhancedAlert).id === 'string' &&
-    typeof (obj as EnhancedAlert).type === 'string' &&
-    typeof (obj as EnhancedAlert).severity === 'string' &&
-    typeof (obj as EnhancedAlert).status === 'string' &&
-    typeof (obj as EnhancedAlert).title === 'string' &&
-    typeof (obj as EnhancedAlert).message === 'string' &&
-    (typeof (obj as EnhancedAlert).timestamp === 'string' || (obj as EnhancedAlert).timestamp instanceof Date)
+    typeof (obj as EnhancedAlert).message === 'string'
   );
 }
 
@@ -159,21 +147,21 @@ export function isTypedMetric(obj: unknown): obj is TypedMetric {
  * Type guard to check if metric has resource usage data
  */
 export function hasResourceUsage(metric: PerformanceMetric | EnhancedPerformanceMetric): metric is PerformanceMetric & { resourceUsage: { cpu: number; memory: number; disk: number; network: number } } {
-  return 'resourceUsage' in metric && typeof (metric as unknown).resourceUsage === 'object';
+  return 'resourceUsage' in metric && typeof (metric as any).resourceUsage === 'object';
 }
 
 /**
  * Type guard to check if metric has error information
  */
 export function hasError(metric: PerformanceMetric | EnhancedPerformanceMetric): metric is PerformanceMetric & { error: string } {
-  return 'error' in metric && typeof (metric as unknown).error === 'string';
+  return 'error' in metric && typeof (metric as any).error === 'string';
 }
 
 /**
  * Type guard to check if metric has throughput data
  */
 export function hasThroughput(metric: PerformanceMetric | EnhancedPerformanceMetric): metric is PerformanceMetric & { throughput: number } {
-  return 'throughput' in metric && typeof (metric as unknown).throughput === 'number';
+  return 'throughput' in metric && typeof (metric as any).throughput === 'number';
 }
 
 // ============================================================================
@@ -284,22 +272,11 @@ export function getMetricTimestamp(metric: PerformanceMetric | EnhancedPerforman
  * Safely get value from metric with fallback
  */
 export function getMetricValue(metric: PerformanceMetric | EnhancedPerformanceMetric | TypedMetric): number {
-  let value: unknown;
-
-  if (isTypedMetric(metric)) {
-    value = metric.value;
-  } else if (isEnhancedPerformanceMetric(metric)) {
-    value = metric.value;
-  } else {
-    // PerformanceMetric does not have a 'value' property, return 0 as a fallback
-    return 0;
+  if (typeof metric.value === 'number') {
+    return metric.value;
   }
-
-  if (typeof value === 'number') {
-    return value;
-  }
-  if (typeof value === 'string') {
-    const parsed = parseFloat(value);
+  if (typeof metric.value === 'string') {
+    const parsed = parseFloat(metric.value);
     return isNaN(parsed) ? 0 : parsed;
   }
   return 0;

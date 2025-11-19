@@ -381,7 +381,7 @@ export class QdrantConfigBuilder {
  * Type-safe configuration merger
  */
 export function mergeConfigs<T extends JSONObject>(base: T, ...configs: Partial<T>[]): T {
-  return configs.reduce((merged, config) => ({ ...merged, ...config } as T), { ...base } as T);
+  return configs.reduce((merged, config) => ({ ...merged, ...config }), { ...base });
 }
 
 /**
@@ -398,11 +398,11 @@ export function deepMergeConfigs<T extends JSONObject>(base: T, ...configs: Part
       if (isJSONObject(result[typedKey]) && isJSONObject(value)) {
         result[typedKey] = deepMergeConfigs(result[typedKey] as JSONObject, value as JSONObject) as T[Extract<keyof T, string>];
       } else {
-        (result as unknown)[typedKey] = value;
+        (result as any)[typedKey] = value;
       }
     }
 
-    return result as T;
+    return result;
   }, { ...base });
 }
 

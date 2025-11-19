@@ -9,7 +9,7 @@ import type { InsightTypeUnion } from '../../../types/insight-interfaces';
 import { insightGenerationGuardrails } from '../insight-guardrails';
 
 // Mock logger to avoid console output during tests
-vi.mock('../../utils/logger.js', () => ({
+vi.mock('../../../utils/logger.js', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -393,7 +393,7 @@ describe('Insight Generation Guardrails', () => {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 31); // 31 days ago
 
       // Access private method for testing via type assertion
-      (insightGenerationGuardrails as unknown).provenanceStore.forEach((_provenance: unknown, _id: unknown) => {
+      (insightGenerationGuardrails as any).provenanceStore.forEach((_provenance: any, _id: any) => {
         _provenance.generation_timestamp = thirtyDaysAgo.toISOString();
       });
 
@@ -422,7 +422,7 @@ describe('Insight Generation Guardrails', () => {
 
       const insight = mockInsights[0];
       // Access private method for testing via type assertion
-      const estimatedTokens = (guardrailsApproximate as unknown).estimateTokens(insight);
+      const estimatedTokens = (guardrailsApproximate as any).estimateTokens(insight);
 
       expect(estimatedTokens).toBeGreaterThan(0);
       expect(typeof estimatedTokens).toBe('number');
@@ -435,7 +435,7 @@ describe('Insight Generation Guardrails', () => {
 
       const insight = mockInsights[0];
       // Access private method for testing via type assertion
-      const estimatedTokens = (guardrailsExact as unknown).estimateTokens(insight);
+      const estimatedTokens = (guardrailsExact as any).estimateTokens(insight);
 
       expect(estimatedTokens).toBeGreaterThan(0);
       expect(typeof estimatedTokens).toBe('number');

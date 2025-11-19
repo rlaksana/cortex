@@ -4,23 +4,29 @@
 import * as crypto from 'crypto';
 
 import { logger } from '@/utils/logger.js';
+import {
+  type AuditEventRecord,
+  isAuditEventRecord,
+  isAuditEventRecords,
+  safeAuditEventAccess,
+} from '../utils/database-type-guards.js';
 
 import {
-  type QdrantDatabaseConfig,
   QdrantOnlyDatabaseLayer as UnifiedDatabaseLayer,
+  type QdrantDatabaseConfig,
 } from './unified-database-layer-v2.js';
 import { getKeyVaultService } from '../services/security/key-vault-service.js';
 import {
   AuditCategory,
   AuditEventType,
-  type AuditMetadata,
   AuditOperation,
-  type AuditResult,
   AuditSource,
-  type AuditValidationResult,
+  AuditValidationResult,
+  type AuditMetadata,
+  type AuditResult,
   type ComplianceInfo,
-  createTypedAuditEvent,
   type GeographicInfo,
+  createTypedAuditEvent,
   SensitivityLevel,
   type TypedAuditEvent,
   type TypedAuditFilter,
@@ -28,10 +34,6 @@ import {
   type TypedAuditQueryResult,
   validateAuditEvent,
 } from '../types/audit-types.js';
-import {
-  type AuditEventRecord,
-  safeAuditEventAccess,
-} from '../utils/database-type-guards.js';
 
 /**
  * Audit Logging System

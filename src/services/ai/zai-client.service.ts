@@ -11,8 +11,6 @@
 
 import { randomUUID } from 'crypto';
 
-import { logger } from '@/utils/logger.js';
-
 import { InMemoryCache } from './utils/in-memory-cache.js';
 import { SimplePerformanceMonitor } from './utils/performance-monitor.js';
 import { SimpleRateLimiter } from './utils/rate-limiter.js';
@@ -39,6 +37,7 @@ import type {
   ZAIStreamChunk,
 } from '../../types/zai-interfaces.js';
 import { ZAIError, ZAIErrorType } from '../../types/zai-interfaces.js';
+import { logger } from '../../utils/logger.js';
 
 /**
  * Production-ready ZAI client service
@@ -53,6 +52,7 @@ export class ZAIClientService extends ServiceAdapterBase implements IZAIClientSe
   private metrics: ZAIMetrics;
   private lastHealthCheck = 0;
   private healthCheckInterval = 60000; // 1 minute
+  private readonly startTime = Date.now();
 
   constructor(config?: ZAIConfig) {
     super('ZAIClientService');
@@ -269,8 +269,59 @@ export class ZAIClientService extends ServiceAdapterBase implements IZAIClientSe
       errorRate: this.metrics.errorRate,
       circuitBreakerState: this.circuitBreaker.state,
       consecutiveFailures: this.circuitBreaker.failureCount,
-      uptime: now - this.startTime, // Use base class startTime
+      uptime: now - this.startTime,
     };
+  }
+
+  /**
+   * Get service metrics
+   */
+  getMetrics(): ZAIMetrics {
+    return { ...this.metrics };
+  }
+
+  /**
+   * Reset metrics
+   */
+  reset(): void {
+    this.metrics = {
+      timestamp: new Date(),
+      totalRequests: 0,
+      successfulRequests: 0,
+      failedRequests: 0,
+      averageResponseTime: 0,
+      p95ResponseTime: 0,
+      p99ResponseTime: 0,
+      totalTokensUsed: 0,
+      totalCost: 0,
+      cacheHitRate: 0,
+      errorRate: 0,
+      uptime: 0,
+      lastReset: Date.now(),
+      // Compatibility properties
+      requestCount: 0,
+      successCount: 0,
+      errorCount: 0,
+      throughput: 0,
+      circuitBreakerStatus: 'closed' as const,
+      tokensUsed: 0,
+      cost: 0,
+    };
+    this.performanceMonitor.reset();
+  }
+
+  /**
+   * Add event listener
+   */
+  addEventListener(listener: ZAIEventListener): void {
+    this.eventListeners.add(listener);
+  }
+
+  /**
+   * Remove event listener
+   */
+  removeEventListener(listener: ZAIEventListener): void {
+    this.eventListeners.delete(listener);
   }
 
   /**
@@ -598,7 +649,7 @@ export class ZAIClientService extends ServiceAdapterBase implements IZAIClientSe
   /**
    * Reset metrics
    */
-  override async reset(): Promise<ServiceResponse<void>> {
+  async reset(): Promise<ServiceResponse<void>> {
     return this.executeOperation(
       async () => {
         this.metrics = {
@@ -615,14 +666,6 @@ export class ZAIClientService extends ServiceAdapterBase implements IZAIClientSe
           errorRate: 0,
           uptime: 0,
           lastReset: Date.now(),
-          // Compatibility properties
-          requestCount: 0,
-          successCount: 0,
-          errorCount: 0,
-          throughput: 0,
-          circuitBreakerStatus: 'closed' as const,
-          tokensUsed: 0,
-          cost: 0,
         };
       },
       'reset',
@@ -639,7 +682,6 @@ export class ZAIClientService extends ServiceAdapterBase implements IZAIClientSe
       return {
         success: true,
         metadata: {
-          serviceName: this.serviceName,
           processingTimeMs: 0,
           source: this.serviceName,
         },
@@ -654,7 +696,6 @@ export class ZAIClientService extends ServiceAdapterBase implements IZAIClientSe
           retryable: false,
         },
         metadata: {
-          serviceName: this.serviceName,
           processingTimeMs: 0,
           source: this.serviceName,
         },
@@ -671,7 +712,6 @@ export class ZAIClientService extends ServiceAdapterBase implements IZAIClientSe
       return {
         success: true,
         metadata: {
-          serviceName: this.serviceName,
           processingTimeMs: 0,
           source: this.serviceName,
         },
@@ -686,7 +726,6 @@ export class ZAIClientService extends ServiceAdapterBase implements IZAIClientSe
           retryable: false,
         },
         metadata: {
-          serviceName: this.serviceName,
           processingTimeMs: 0,
           source: this.serviceName,
         },
@@ -697,7 +736,7 @@ export class ZAIClientService extends ServiceAdapterBase implements IZAIClientSe
   /**
    * Health check implementation for ZAI service
    */
-  override async healthCheck(): Promise<ServiceResponse<{ status: 'healthy' | 'unhealthy' }>> {
+  async healthCheck(): Promise<ServiceResponse<{ status: 'healthy' | 'unhealthy' }>> {
     return this.executeOperation(async () => {
       const now = Date.now();
 
@@ -737,4 +776,3 @@ export const zaiClientService = new ZAIClientService();
  * Export service class for testing
  */
 export { ZAIClientService as ZAIClient };
-

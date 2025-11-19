@@ -26,8 +26,8 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 import { logger } from '@/utils/logger.js';
 
 import type { VectorConfig } from './interfaces/vector-adapter.interface.js';
-import { createQdrantHealthProbe, type QdrantHealthStatus } from './qdrant-health-probe.js';
 import { getQdrantNestedConfig } from './type-guards.js';
+import { createQdrantHealthProbe, type QdrantHealthStatus } from './qdrant-health-probe.js';
 
 export interface CollectionConfig {
   name: string;
@@ -209,15 +209,12 @@ export class QdrantBootstrap {
         type: 'qdrant' as const,
         url: primaryUrl,
         apiKey: primaryApiKey,
-        size: config.size || 1536,
-        embeddingModel: config.embeddingModel || 'text-embedding-3-small',
-        batchSize: config.batchSize || 10,
         qdrant: {
           url: primaryUrl,
           apiKey: primaryApiKey,
           timeout: qdrantConfig.timeout || 30000,
         },
-      });
+      } as any);
 
       // Add HA nodes to health probe
       if (haConfig?.enabled) {
@@ -227,15 +224,12 @@ export class QdrantBootstrap {
               type: 'qdrant' as const,
               url: node.url,
               apiKey: node.apiKey,
-              size: config.size || 1536,
-              embeddingModel: config.embeddingModel || 'text-embedding-3-small',
-              batchSize: config.batchSize || 10,
               qdrant: {
                 url: node.url,
                 apiKey: node.apiKey,
                 timeout: 30000,
               },
-            });
+            } as any);
           }
         }
       }

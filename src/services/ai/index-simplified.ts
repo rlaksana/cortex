@@ -18,7 +18,6 @@ import type {
   ZAIChatRequest,
   ZAIChatResponse,
   ZAIHealthCheckResponse,
-  ZAIJobType,
 } from '../../types/zai-interfaces.js';
 
 /**
@@ -250,7 +249,7 @@ export class SimplifiedZAIServicesManager {
       throw new Error('Simplified ZAI services not initialized');
     }
 
-    return await simplifiedBackgroundProcessorService.submitJob(type as ZAIJobType, payload, options);
+    return await simplifiedBackgroundProcessorService.submitJob(type, payload, options);
   }
 
   /**

@@ -1,11 +1,10 @@
-import { logger } from '@/utils/logger.js';
-
 import { type CoreFindParams, coreMemoryFind } from './core-memory-find.js';
 import {
   searchStrategyManager,
   type SearchStrategyType,
 } from './search/search-strategy-manager.js';
 import type { MemoryFindResponse, SearchQuery } from '../types/core-interfaces.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Main entry point for memory find operations - Phase 3 Enhanced

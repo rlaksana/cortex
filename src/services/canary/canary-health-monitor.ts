@@ -9,32 +9,17 @@
  * - Health trend analysis
  * - Automated alerting and notifications
  * - Integration with existing health check services
- * - Type-safe configuration and metrics collection
  *
  * @author Cortex Team
- * @version 2.1.0
+ * @version 2.0.0
  * @since 2025
  */
 
 import { EventEmitter } from 'events';
 
-import { logger } from '@/utils/logger.js';
-
 import { metricsService } from '../../monitoring/metrics-service.js';
-// Import type-safe metrics collection
-// Import type-safe branded types
-import {
-  type AlertId,
-  createTimestampFromDate,
-  type DeploymentId,
-  type HealthStatus as BrandedHealthStatus,
-  type MetricName,
-  type Timestamp,
-} from '../../types/branded-types.js';
-// Import constraint validation
-import { AlertSeverity } from '../../types/unified-health-interfaces.js';
-// Import runtime validation
-import {runtimeConfigValidator } from '../../validation/runtime-config-validator.js';
+import { AlertSeverity, HealthStatus } from '../../types/unified-health-interfaces.js';
+import { logger } from '../../utils/logger.js';
 
 // ============================================================================
 // Types and Interfaces
@@ -66,10 +51,10 @@ export interface HealthThreshold {
 }
 
 /**
- * Canary health configuration with type-safe branded types
+ * Canary health configuration
  */
 export interface CanaryHealthConfig {
-  deploymentId: DeploymentId;
+  deploymentId: string;
   serviceName: string;
   stableVersion: string;
   canaryVersion: string;
@@ -106,7 +91,7 @@ export interface CanaryHealthConfig {
 
   // Metadata
   createdBy?: string;
-  createdAt: Timestamp;
+  createdAt: Date;
   tags?: string[];
 }
 
@@ -132,11 +117,11 @@ export interface AutoRollbackThreshold {
 }
 
 /**
- * Health metrics snapshot with type-safe branded types
+ * Health metrics snapshot
  */
 export interface HealthMetricsSnapshot {
-  timestamp: Timestamp;
-  deploymentId: DeploymentId;
+  timestamp: Date;
+  deploymentId: string;
 
   // Service metrics
   stable: ServiceHealthMetrics;
@@ -147,7 +132,7 @@ export interface HealthMetricsSnapshot {
 
   // Overall health assessment
   overall: {
-    status: BrandedHealthStatus;
+    status: HealthStatus;
     score: number;
     issues: HealthIssue[];
     recommendations: string[];
@@ -204,7 +189,7 @@ export interface ComparisonMetrics {
 }
 
 /**
- * Health issue identified during monitoring with type-safe branded types
+ * Health issue identified during monitoring
  */
 export interface HealthIssue {
   id: string;
@@ -214,11 +199,11 @@ export interface HealthIssue {
   value: number;
   threshold: number;
   description: string;
-  firstDetected: Timestamp;
-  lastDetected: Timestamp;
+  firstDetected: Date;
+  lastDetected: Date;
   occurrences: number;
   resolved: boolean;
-  resolvedAt?: Timestamp;
+  resolvedAt?: Date;
 }
 
 /**
@@ -241,21 +226,21 @@ export interface TrendDataPoint {
 }
 
 /**
- * Health alert with type-safe branded types
+ * Health alert
  */
 export interface HealthAlert {
-  id: AlertId;
-  deploymentId: DeploymentId;
+  id: string;
+  deploymentId: string;
   severity: AlertSeverity;
   title: string;
   message: string;
-  metrics: Record<MetricName, number>;
-  timestamp: Timestamp;
+  metrics: Record<string, number>;
+  timestamp: Date;
   acknowledged: boolean;
   acknowledgedBy?: string;
-  acknowledgedAt?: Timestamp;
+  acknowledgedAt?: Date;
   resolved: boolean;
-  resolvedAt?: Timestamp;
+  resolvedAt?: Date;
   escalationLevel: number;
 }
 
@@ -297,43 +282,26 @@ export class CanaryHealthMonitor extends EventEmitter {
   // ============================================================================
 
   /**
-   * Create health monitoring configuration for a deployment with runtime validation
+   * Create health monitoring configuration for a deployment
    */
-  async createConfig(config: Omit<CanaryHealthConfig, 'createdAt'>): Promise<CanaryHealthConfig> {
-    // Validate configuration using runtime validator
-    const validationResult = await runtimeConfigValidator.validateCanaryHealth(
-      config,
-      {
-        validationMode: 'strict',
-        environment: process.env.NODE_ENV || 'development',
-      }
-    );
-
-    if (!validationResult.isValid) {
-      const errorMessages = validationResult.errors.map(e => `${e.code}: ${e.message}`);
-      throw new Error(`Invalid canary health configuration: ${errorMessages.join(', ')}`);
-    }
-
-    // Use sanitized value if available
-    const validatedConfig = validationResult.sanitizedValue || config;
-
+  createConfig(config: Omit<CanaryHealthConfig, 'createdAt'>): CanaryHealthConfig {
     const newConfig: CanaryHealthConfig = {
-      ...validatedConfig,
-      createdAt: createTimestampFromDate(new Date()),
+      ...config,
+      createdAt: new Date(),
     };
 
-    this.configs.set(String(newConfig.deploymentId), newConfig);
+    this.configs.set(config.deploymentId, newConfig);
 
     // Initialize storage
-    this.metricsHistory.set(String(newConfig.deploymentId), []);
-    this.activeAlerts.set(String(newConfig.deploymentId), []);
-    this.healthIssues.set(String(newConfig.deploymentId), []);
+    this.metricsHistory.set(config.deploymentId, []);
+    this.activeAlerts.set(config.deploymentId, []);
+    this.healthIssues.set(config.deploymentId, []);
 
     logger.info('Canary health monitoring configuration created', {
-      deploymentId: String(newConfig.deploymentId),
-      serviceName: newConfig.serviceName,
-      stableVersion: newConfig.stableVersion,
-      canaryVersion: newConfig.canaryVersion,
+      deploymentId: config.deploymentId,
+      serviceName: config.serviceName,
+      stableVersion: config.stableVersion,
+      canaryVersion: config.canaryVersion,
     });
 
     this.emit('configCreated', newConfig);

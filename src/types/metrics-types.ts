@@ -9,8 +9,9 @@
  * @since 2025
  */
 
-import type { AlertThreshold } from './slo-interfaces.js';
+import { type LoggableData } from './monitoring-types.js';
 import { type OperationType } from '../monitoring/operation-types.js';
+import type { AlertThreshold } from './slo-interfaces.js';
 
 // ============================================================================
 // Core Metric Types

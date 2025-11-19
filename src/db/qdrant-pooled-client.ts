@@ -18,7 +18,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 
 import { logger } from '@/utils/logger.js';
-import { safeGetNumberProperty } from '@/utils/type-fixes.js';
+import { type QdrantClientConfig, type DatabasePoolStats, isQdrantClientConfig } from '../types/database-types-enhanced.js';
 
 import {
   type DatabaseConnection,
@@ -33,6 +33,7 @@ import {
   type CircuitBreakerStats,
 } from '../services/circuit-breaker.service';
 import type { PoolId, ResourceId } from '../types/pool-interfaces.js';
+import { asPoolConfig, asReadonlyRecord, asQueuedRequestUnknown } from '../utils/type-conversion.js';
 
 /**
  * Typed Qdrant connection wrapper
@@ -633,15 +634,15 @@ export class QdrantPooledClient {
         minConnections: this.config.minConnections,
         maxConnections: this.config.maxConnections,
         acquireTimeout: this.config.connectionTimeout,
-        idleTimeout: safeGetNumberProperty(this.config, 'idleTimeout', 300000),
+        idleTimeout: (this.config as any).idleTimeout || 300000,
         healthCheckInterval: this.config.healthCheckInterval,
         maxRetries: this.config.maxRetries,
         retryDelay: this.config.retryDelay,
         enableMetrics: this.config.enableMetrics,
         enableHealthChecks: true,
-        connectionFactory: connectionFactory as unknown,
-        connectionValidator: connectionValidator as unknown,
-        connectionDestroyer: connectionDestroyer as unknown,
+        connectionFactory: connectionFactory as any,
+        connectionValidator: connectionValidator as any,
+        connectionDestroyer: connectionDestroyer as any,
         databaseConfig: databaseConfig as DatabaseConnectionConfig,
         validationInterval: 60000,
         connectionTimeout: this.config.connectionTimeout,
@@ -649,7 +650,7 @@ export class QdrantPooledClient {
         maxLifetime: 3600000, // 1 hour
       };
 
-      this.connectionPool = new DatabaseConnectionPool<QdrantConnection>(poolConfig as any);
+      this.connectionPool = new DatabaseConnectionPool<QdrantConnection>(poolConfig);
 
       // Initialize the pool
       await this.connectionPool.initialize();

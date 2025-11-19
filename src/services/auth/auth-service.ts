@@ -8,7 +8,7 @@ import * as crypto from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 
-import { logger } from '@/utils/logger.js';
+import { logger } from '../../utils/logger.js';
 
 import { qdrant } from '../../db/qdrant-client.js';
 import { AsyncErrorHandler, ServiceErrorHandler } from '../../middleware/error-middleware.js';
@@ -140,7 +140,7 @@ export class AuthService {
         // Fetch user from database
         const userRecord: DatabaseUser | null = await AsyncErrorHandler.retry(
           () =>
-            (qdrant.getClient().user as any).findUnique({
+            (qdrant.getClient().user as unknown).findUnique({
               where: { username },
               select: {
                 id: true,
@@ -187,7 +187,7 @@ export class AuthService {
         // Update last login timestamp
         await AsyncErrorHandler.retry(
           () =>
-            (qdrant.getClient().user as any).update({
+            (qdrant.getClient().user as unknown).update({
               where: { id: userRecord.id },
               data: { last_login: new Date() },
             }),
@@ -1048,62 +1048,62 @@ export class AuthService {
       }
 
       // Check if API key has expired
-      if ((apiKeyRecord as any).expires_at && new Date() > (apiKeyRecord as any).expires_at) {
-        logger.warn({ keyId, expiresAt: (apiKeyRecord as any).expires_at }, 'API key has expired');
+      if (apiKeyRecord.expires_at && new Date() > apiKeyRecord.expires_at) {
+        logger.warn({ keyId, expiresAt: apiKeyRecord.expires_at }, 'API key has expired');
         return null;
       }
 
       // Check if user is active
-      if (!(apiKeyRecord as any).user.is_active) {
-        logger.warn({ keyId, userId: (apiKeyRecord as any).user.id }, 'User account is inactive');
+      if (!apiKeyRecord.user.is_active) {
+        logger.warn({ keyId, userId: apiKeyRecord.user.id }, 'User account is inactive');
         return null;
       }
 
       // Verify the API key hash
-      const isValidKey = await this.verifyApiKey(apiKey, (apiKeyRecord as any).key_hash);
+      const isValidKey = await this.verifyApiKey(apiKey, apiKeyRecord.key_hash);
       if (!isValidKey) {
         logger.warn({ keyId }, 'API key hash verification failed');
         return null;
       }
 
       // Parse scopes from JSON
-      const scopes: AuthScope[] = Array.isArray((apiKeyRecord as any).scopes)
-        ? ((apiKeyRecord as any).scopes as AuthScope[])
+      const scopes: AuthScope[] = Array.isArray(apiKeyRecord.scopes)
+        ? (apiKeyRecord.scopes as AuthScope[])
         : [];
 
       // Update last used timestamp
-      await (qdrant.getClient().apiKey as any).updateMany({
-        where: { id: (apiKeyRecord as any).id },
+      await qdrant.getClient().apiKey.update({
+        where: { id: apiKeyRecord.id },
         data: { last_used: new Date() },
       });
 
       // Convert database user to User interface
       const user: User = {
-        id: (apiKeyRecord as any).user.id,
-        username: (apiKeyRecord as any).user.username,
-        email: (apiKeyRecord as any).user.email,
+        id: apiKeyRecord.user.id,
+        username: apiKeyRecord.user.username,
+        email: apiKeyRecord.user.email,
         password_hash: '', // Not included for security
-        role: (apiKeyRecord as any).user.role as UserRole,
-        is_active: (apiKeyRecord as any).user.is_active,
-        created_at: (apiKeyRecord as any).user.created_at.toISOString(),
-        updated_at: (apiKeyRecord as any).user.updated_at.toISOString(),
-        last_login: (apiKeyRecord as any).user.last_login?.toISOString(),
+        role: apiKeyRecord.user.role as UserRole,
+        is_active: apiKeyRecord.user.is_active,
+        created_at: apiKeyRecord.user.created_at.toISOString(),
+        updated_at: apiKeyRecord.user.updated_at.toISOString(),
+        last_login: apiKeyRecord.user.last_login?.toISOString(),
       };
 
       // Convert database API key to ApiKey interface
       const apiKeyInfo: ApiKey = {
-        id: (apiKeyRecord as any).id,
-        key_id: (apiKeyRecord as any).key_id,
-        key_hash: (apiKeyRecord as any).key_hash,
-        user_id: (apiKeyRecord as any).user_id,
-        name: (apiKeyRecord as any).name,
-        description: (apiKeyRecord as any).description || undefined,
+        id: apiKeyRecord.id,
+        key_id: apiKeyRecord.key_id,
+        key_hash: apiKeyRecord.key_hash,
+        user_id: apiKeyRecord.user_id,
+        name: apiKeyRecord.name,
+        description: apiKeyRecord.description || undefined,
         scopes,
-        is_active: (apiKeyRecord as any).is_active,
-        expires_at: (apiKeyRecord as any).expires_at?.toISOString(),
-        created_at: (apiKeyRecord as any).created_at.toISOString(),
-        last_used: (apiKeyRecord as any).last_used?.toISOString(),
-        updated_at: (apiKeyRecord as any).updated_at.toISOString(),
+        is_active: apiKeyRecord.is_active,
+        expires_at: apiKeyRecord.expires_at?.toISOString(),
+        created_at: apiKeyRecord.created_at.toISOString(),
+        last_used: apiKeyRecord.last_used?.toISOString(),
+        updated_at: apiKeyRecord.updated_at.toISOString(),
       };
 
       logger.info(
@@ -1111,7 +1111,7 @@ export class AuthService {
           keyId,
           userId: user.id,
           scopes: scopes.length,
-          lastUsed: (apiKeyRecord as any).last_used,
+          lastUsed: apiKeyRecord.last_used,
         },
         'API key validated successfully'
       );
@@ -1165,10 +1165,10 @@ export class AuthService {
     try {
       const whereClause: unknown = { key_id: keyId };
       if (userId) {
-        (whereClause as any).user_id = userId;
+        whereClause.user_id = userId;
       }
 
-      const result = await (qdrant.getClient().apiKey as any).updateMany({
+      const result = await qdrant.getClient().apiKey.updateMany({
         where: whereClause,
         data: { is_active: false },
       });
@@ -1211,7 +1211,7 @@ export class AuthService {
         orderBy: { created_at: 'desc' },
       });
 
-      return apiKeys.map((key: any) => ({
+      return apiKeys.map((key: unknown) => ({
         id: key.id,
         key_id: key.key_id,
         key_hash: key.key_hash,
@@ -1323,7 +1323,7 @@ export class AuthService {
   // Token refresh
   async refreshToken(refreshToken: string): Promise<AuthToken> {
     const decoded = this.verifyRefreshToken(refreshToken);
-    const session = this.getSession((decoded as any).session_id);
+    const session = this.getSession(decoded.session_id);
 
     if (!session || !session.is_active) {
       throw new Error('SESSION_EXPIRED');
@@ -1341,7 +1341,7 @@ export class AuthService {
 
     // Create new tokens
     const user: User = {
-      id: (decoded as any).sub,
+      id: decoded.sub,
       username: '', // Will be populated from database
       email: '',
       password_hash: '',
@@ -1460,13 +1460,13 @@ export class AuthService {
       let syncCount = 0;
 
       for (const revocation of recentRevocations) {
-        const revocationTime = (revocation as any).revoked_at.getTime();
+        const revocationTime = revocation.revoked_at.getTime();
 
         // Only add if not already cached or if our cache is older
-        const cached = this.tokenBlacklistCache.get((revocation as any).jti);
+        const cached = this.tokenBlacklistCache.get(revocation.jti);
         if (!cached || cached.timestamp < revocationTime) {
-          this.tokenBlacklist.add((revocation as any).jti);
-          this.tokenBlacklistCache.set((revocation as any).jti, {
+          this.tokenBlacklist.add(revocation.jti);
+          this.tokenBlacklistCache.set(revocation.jti, {
             revoked: true,
             timestamp: revocationTime,
           });
@@ -1508,7 +1508,7 @@ export class AuthService {
    */
   private async updateInstanceHeartbeat(): Promise<void> {
     try {
-      await (qdrant.getClient().authInstance as any).upsert({
+      await qdrant.getClient().authInstance.upsert({
         where: { instance_id: this.distributedSync.instanceId },
         update: {
           last_heartbeat: new Date(),

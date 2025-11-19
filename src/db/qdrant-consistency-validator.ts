@@ -17,8 +17,7 @@
 import { type QdrantClient } from '@qdrant/js-client-rest';
 
 import { logger } from '@/utils/logger.js';
-
-import { type AutoRepairResult, type ConsistencyIssue, isConsistencyIssue } from '../types/database-types-enhanced.js';
+import { type ConsistencyIssue, type AutoRepairResult, isConsistencyIssue } from '../types/database-types-enhanced.js';
 
 /**
  * Validation configuration

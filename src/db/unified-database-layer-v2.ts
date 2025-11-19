@@ -19,9 +19,6 @@
  * @since 2025
  */
 
-import { logger } from '@/utils/logger.js';
-import { isObject,safeGetProperty } from '@/utils/type-fixes.js';
-
 import { QdrantAdapter } from './adapters/qdrant-adapter.js';
 import type {
   DeleteOptions,
@@ -39,6 +36,7 @@ import type {
   StoreResult,
 } from '../types/core-interfaces.js';
 import { unwrapDatabaseResult } from '../utils/database-result-unwrapper.js';
+import { logger } from '../utils/logger.js';
 import { createFindObservability } from '../utils/observability-helper.js';
 import { asPointIdArray } from '../utils/type-conversion.js';
 
@@ -397,24 +395,22 @@ export class QdrantOnlyDatabaseLayer {
       const result = await this.search(searchQuery, searchOptions);
 
       // Transform results back to expected format
-      return (result.results || result.items || []).map((item: unknown) => {
-        if (!isObject(item)) return { id: 'unknown' };
-
-        const metadata = safeGetProperty(item, 'metadata', {});
+      return (result.results || result.items || []).map((item: any) => {
+        const metadata = item.metadata || {};
         return {
-          id: safeGetProperty(item, 'id', 'unknown'),
+          id: item.id,
           ...metadata,
           // Map nested fields for audit compatibility
-          event_type: safeGetProperty(metadata, 'event_type', undefined),
-          table_name: safeGetProperty(metadata, 'table_name', undefined),
-          record_id: safeGetProperty(metadata, 'record_id', undefined),
-          operation: safeGetProperty(metadata, 'operation', undefined),
-          old_data: safeGetProperty(metadata, 'old_data', undefined),
-          new_data: safeGetProperty(metadata, 'new_data', undefined),
-          changed_by: safeGetProperty(metadata, 'changed_by', undefined),
-          tags: safeGetProperty(metadata, 'tags', undefined),
-          metadata: safeGetProperty(metadata, 'metadata', undefined),
-          changed_at: safeGetProperty(metadata, 'changed_at', undefined) || safeGetProperty(item, 'timestamp', undefined),
+          event_type: metadata.event_type,
+          table_name: metadata.table_name,
+          record_id: metadata.record_id,
+          operation: metadata.operation,
+          old_data: metadata.old_data,
+          new_data: metadata.new_data,
+          changed_by: metadata.changed_by,
+          tags: metadata.tags,
+          metadata: metadata.metadata,
+          changed_at: metadata.changed_at || item.timestamp,
         };
       });
     } catch (error) {
@@ -444,7 +440,7 @@ export class QdrantOnlyDatabaseLayer {
       const result = await this.adapter.findExpiredItems(options);
       const unwrappedResult = unwrapDatabaseResult(result, { operation: 'findExpired', options });
       // Check if the result is already an array or has items property
-      return Array.isArray(unwrappedResult) ? unwrappedResult : safeGetProperty(unwrappedResult, 'items', []);
+      return Array.isArray(unwrappedResult) ? unwrappedResult : (unwrappedResult as any).items || [];
     } catch (error) {
       logger.error('Failed to find expired items', error);
       throw error;

@@ -22,16 +22,16 @@
 // EMERGENCY ROLLBACK: Catastrophic TypeScript errors from parallel batch removal
 // TODO: Implement systematic interface synchronization before removing @ts-nocheck
 
-import { logger } from '@/utils/logger.js';
-import {safeGetStringProperty } from '@/utils/type-fixes.js';
+import { logger } from '../utils/logger.js';
 
 import { createDatabase, DatabaseFactory } from './database-factory.js';
 import type { IDatabase } from './database-interface.js';
+import type { KnowledgeItem, SearchQuery } from '../types/core-interfaces.js';
 import {
   circuitBreakerManager,
   type CircuitBreakerStats,
 } from '../services/circuit-breaker.service.js';
-import type { KnowledgeItem, SearchQuery } from '../types/core-interfaces.js';
+import { asSearchQuery, batchConvert } from '../utils/type-conversion.js';
 
 export interface DatabaseManagerConfig {
   qdrant: {
@@ -225,12 +225,12 @@ export class DatabaseManager {
     try {
       return await this.circuitBreaker.execute(async () => {
         const result = await this.database!.search(query as SearchQuery, options);
-        this.logCircuitBreakerEvent('search_success', { queryType: safeGetStringProperty(query, 'type', 'unknown') });
+        this.logCircuitBreakerEvent('search_success', { queryType: (query as any)?.type || 'unknown' });
         return result;
       }, 'database_search');
     } catch (error) {
       logger.error({ error, query }, 'Database search operation failed');
-      this.logCircuitBreakerEvent('search_failure', error, { queryType: safeGetStringProperty(query, 'type', 'unknown') });
+      this.logCircuitBreakerEvent('search_failure', error, { queryType: (query as any)?.type || 'unknown' });
       throw error;
     }
   }
@@ -357,7 +357,7 @@ export class DatabaseManager {
         failureRate: circuitStats.failureRate,
         totalCalls: circuitStats.totalCalls,
         averageResponseTime: circuitStats.averageResponseTime,
-        error: safeGetStringProperty(error, 'message', String(error)),
+        error: (error as any)?.message || error,
         metadata,
       },
       `Circuit breaker event: ${event}`
