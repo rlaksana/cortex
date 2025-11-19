@@ -171,3 +171,21 @@ test-autonomous.cjs
 
 # Legacy development scripts
 scripts/legacy/.chroma/
+
+# Development and cache files
+.cache/
+.eslintcache
+build_output*.txt
+
+# Serena memory files (development-only)
+.serena/memories/
+*.bak
+
+# Implementation documents (development-only)
+IMPLEMENTATION_TACTICS_*.md
+
+# Temporary development files
+temp/
+tmp/
+*.tmp
+*.temp
