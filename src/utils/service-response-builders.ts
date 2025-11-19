@@ -9,7 +9,7 @@
  * @since 2025
  */
 
-import type { ServiceResponse, ServiceError, ServiceMetadata } from '../interfaces/service-interfaces.js';
+import type { ServiceMetadata,ServiceResponse } from '../interfaces/service-interfaces.js';
 
 /**
  * Response builder for creating standardized ServiceResponse objects

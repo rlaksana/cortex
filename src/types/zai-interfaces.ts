@@ -247,7 +247,7 @@ export interface AIProvider {
   isAvailable(): Promise<boolean>;
   generateCompletion(request: ZAIChatRequest): Promise<ZAIChatResponse>;
   generateStreamingCompletion(request: ZAIChatRequest): AsyncGenerator<ZAIStreamChunk>;
-  getMetrics(): ZAIMetrics;
+  getMetrics(): Promise<ZAIMetrics>;
   reset(): void;
 }
 

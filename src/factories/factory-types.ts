@@ -22,7 +22,7 @@ export interface TypedServiceRegistration<T> {
   readonly token: ServiceId<T> | symbol | (new (...args: any[]) => T);
   readonly implementation: new (...args: any[]) => T;
   readonly lifetime: ServiceLifetime;
-  readonly dependencies?: ReadonlyArray<ServiceId<any> | symbol | (new (...args: any[]) => unknown)>;
+  readonly dependencies?: ReadonlyArray<ServiceId<unknown> | symbol | (new (...args: any[]) => unknown)>;
 }
 
 // Factory service registration
@@ -30,7 +30,7 @@ export interface FactoryServiceRegistration<T> {
   readonly token: ServiceId<T> | symbol | (new (...args: any[]) => T);
   readonly factory: (container: TypedDIContainer) => T | Promise<T>;
   readonly lifetime: ServiceLifetime;
-  readonly dependencies?: ReadonlyArray<ServiceId<any> | symbol | (new (...args: any[]) => unknown)>;
+  readonly dependencies?: ReadonlyArray<ServiceId<unknown> | symbol | (new (...args: any[]) => unknown)>;
 }
 
 // Instance service registration
@@ -69,14 +69,14 @@ export interface TypedDIContainer {
     token: ServiceId<T> | symbol | (new (...args: any[]) => T),
     implementation: new (...args: any[]) => T,
     lifetime?: ServiceLifetime,
-    dependencies?: ReadonlyArray<ServiceId<any> | symbol | (new (...args: any[]) => unknown)>
+    dependencies?: ReadonlyArray<ServiceId<unknown> | symbol | (new (...args: any[]) => unknown)>
   ): void;
 
   registerFactory<T>(
     token: ServiceId<T> | symbol | (new (...args: any[]) => T),
     factory: (container: TypedDIContainer) => T | Promise<T>,
     lifetime?: ServiceLifetime,
-    dependencies?: ReadonlyArray<ServiceId<any> | symbol | (new (...args: any[]) => unknown)>
+    dependencies?: ReadonlyArray<ServiceId<unknown> | symbol | (new (...args: any[]) => unknown)>
   ): void;
 
   registerInstance<T>(

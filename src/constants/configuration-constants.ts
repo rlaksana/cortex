@@ -583,7 +583,7 @@ export function validatePassword(password: string): {
   }
 
   // Check for character patterns
-  for (const { name, pattern, description } of PASSWORD_VALIDATION_PATTERNS.patterns) {
+  for (const { pattern, description } of PASSWORD_VALIDATION_PATTERNS.patterns) {
     if (!pattern.test(password)) {
       warnings.push(description);
     }

@@ -24,11 +24,12 @@ import {
 import {
   type Dict,
   isJSONValue,
-  type JSONValue,
   type JSONArray,
+  type JSONValue,
   type MutableDict,
   toJSONValue,
 } from '../types/base-types.js';
+import { hasBooleanProperty, hasObjectProperty } from '../utils/type-fixes.js';
 
 // ============================================================================
 // Legacy Schema Types (Pre-Enhancement)
@@ -330,10 +331,10 @@ class SchemaMigrator {
             const existingScope = legacyItem.scope as Dict<unknown>;
             migratedItem.scope = {
               ...existingScope,
-              service: (existingScope as Dict<unknown>).service || undefined,
-              sprint: (existingScope as Dict<unknown>).sprint || undefined,
-              tenant: (existingScope as Dict<unknown>).tenant || undefined,
-              environment: (existingScope as Dict<unknown>).environment || undefined,
+              service: (existingScope.service as string) || undefined,
+              sprint: (existingScope.sprint as string) || undefined,
+              tenant: (existingScope.tenant as string) || undefined,
+              environment: (existingScope.environment as string) || undefined,
             };
             notes.push('Enhanced scope fields for item compatibility');
           }
@@ -418,10 +419,10 @@ class SchemaMigrator {
       const existingScope = input.scope as Dict<unknown>;
       migrated.scope = {
         ...existingScope,
-        service: (existingScope as Dict<unknown>).service || undefined,
-        sprint: (existingScope as Dict<unknown>).sprint || undefined,
-        tenant: (existingScope as Dict<unknown>).tenant || undefined,
-        environment: (existingScope as Dict<unknown>).environment || undefined,
+        service: (existingScope.service as string) || undefined,
+        sprint: (existingScope.sprint as string) || undefined,
+        tenant: (existingScope.tenant as string) || undefined,
+        environment: (existingScope.environment as string) || undefined,
       };
       notes.push('Enhanced scope fields');
     }
@@ -454,10 +455,10 @@ class SchemaMigrator {
       const existingScope = input.scope as Dict<unknown>;
       migrated.scope = {
         ...existingScope,
-        service: (existingScope as Dict<unknown>).service || undefined,
-        sprint: (existingScope as Dict<unknown>).sprint || undefined,
-        tenant: (existingScope as Dict<unknown>).tenant || undefined,
-        environment: (existingScope as Dict<unknown>).environment || undefined,
+        service: (existingScope.service as string) || undefined,
+        sprint: (existingScope.sprint as string) || undefined,
+        tenant: (existingScope.tenant as string) || undefined,
+        environment: (existingScope.environment as string) || undefined,
       };
       notes.push('Enhanced scope fields');
     }
@@ -721,8 +722,9 @@ export class SchemaValidator {
     // Validate deduplication settings consistency
     if (
       data.deduplication &&
-      typeof data.deduplication === 'object' &&
-      (data.deduplication as unknown).enabled
+      hasObjectProperty(data, 'deduplication') &&
+      hasBooleanProperty(data.deduplication, 'enabled') &&
+      data.deduplication.enabled
     ) {
       const deduplication = data.deduplication as Dict<JSONValue>;
       if (deduplication.cross_scope_deduplication && deduplication.check_within_scope_only) {
@@ -741,11 +743,9 @@ export class SchemaValidator {
       data.items.forEach((item: unknown, index: number) => {
         if (
           item &&
-          typeof item === 'object' &&
-          (item as unknown).ttl_config &&
-          typeof (item as unknown).ttl_config === 'object'
+          hasObjectProperty(item, 'ttl_config')
         ) {
-          const ttlConfig = (item as unknown).ttl_config as Dict<JSONValue>;
+          const ttlConfig = item.ttl_config as Dict<JSONValue>;
           if (ttlConfig.expires_at && typeof ttlConfig.expires_at === 'string') {
             const expiryDate = new Date(ttlConfig.expires_at);
             if (expiryDate <= new Date()) {

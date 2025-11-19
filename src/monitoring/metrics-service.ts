@@ -18,19 +18,20 @@ import { OperationType } from './operation-types.js';
 import { performanceCollector } from './performance-collector.js';
 import {
   type AlertSeverity,
+  AlertState,
   createDefaultCollectorConfig,
   createTypedMetric,
   isTypedMetricQuery,
   type MetricsCollectorConfig,
   type MetricValidationResult,
   OutputFormat,
+  TrendDirection,
   type TypedMetric,
   type TypedMetricAlert,
   type TypedMetricQuery,
   type TypedMetricQueryResult,
   type TypedMetricSeries,
   validateTypedMetric,
-  AlertState,
 } from '../types/metrics-types.js';
 import type {
   HistoricalMetrics,
@@ -590,8 +591,6 @@ export class MetricsService extends EventEmitter {
     const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
     const volatility = Math.sqrt(variance) / mean;
 
-    const { TrendDirection } = require('../types/metrics-types.js');
-
     if (volatility > 0.3) return TrendDirection.VOLATILE;
     if (change > 0.05) return TrendDirection.INCREASING;
     if (change < -0.05) return TrendDirection.DECREASING;
@@ -719,7 +718,7 @@ export class MetricsService extends EventEmitter {
   private aggregateDataPoints(dataPoints: import('../types/metrics-types.js').TypedMetricDataPoint[], aggregation: unknown): import('../types/metrics-types.js').TypedMetricDataPoint[] {
     // Simplified aggregation - in production would implement windowed aggregation
     const agg = aggregation as { function?: string; field?: string; direction?: string };
-    const { TypedMetricDataPoint } = require('../types/metrics-types.js');
+    // TypedMetricDataPoint is already imported at the top of the file
 
     if (agg.function === 'avg' && dataPoints.length > 0) {
       const numericValues = dataPoints

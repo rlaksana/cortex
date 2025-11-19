@@ -18,9 +18,8 @@
 
 import { EventEmitter } from 'events';
 
-import { safeGetProperty } from '@/utils/type-safe-access.js';
-
 import { logger } from '@/utils/logger.js';
+import { safeGetProperty } from '@/utils/type-safe-access.js';
 
 import { type Alert, type EscalationPolicy } from './alert-management-service.js';
 

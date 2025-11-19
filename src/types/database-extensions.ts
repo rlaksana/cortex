@@ -4,11 +4,12 @@
 // Provides missing type definitions for unknown-typed database objects
 
 import type { QdrantClient } from '@qdrant/js-client-rest';
+
 import type {
-  PerformanceMetric,
   Alert,
-  IncidentDeclaration,
   BackupConfig,
+  IncidentDeclaration,
+  PerformanceMetric,
 } from './monitoring-types.js';
 
 /**
@@ -28,27 +29,42 @@ export interface EnhancedQdrantClient extends QdrantClient {
   user: {
     findMany: (filter?: unknown) => Promise<unknown[]>;
     findOne: (id: string) => Promise<unknown>;
+    findUnique: (filter: unknown) => Promise<unknown>;
+    findFirst: (filter: unknown) => Promise<unknown>;
     create: (data: unknown) => Promise<unknown>;
     update: (id: string, data: unknown) => Promise<unknown>;
+    updateMany: (filter: unknown, data: unknown) => Promise<{ count: number; }>;
     delete: (id: string) => Promise<boolean>;
+    deleteMany: (filter: unknown) => Promise<{ count: number; }>;
+    count: (filter?: unknown) => Promise<number>;
   };
 
   // API key management
   apiKey: {
     findMany: (filter?: unknown) => Promise<unknown[]>;
     findOne: (id: string) => Promise<unknown>;
+    findUnique: (filter: unknown) => Promise<unknown>;
+    findFirst: (filter: unknown) => Promise<unknown>;
     create: (data: unknown) => Promise<unknown>;
     update: (id: string, data: unknown) => Promise<unknown>;
+    updateMany: (filter: unknown, data: unknown) => Promise<{ count: number; }>;
     delete: (id: string) => Promise<boolean>;
+    deleteMany: (filter: unknown) => Promise<{ count: number; }>;
+    count: (filter?: unknown) => Promise<number>;
   };
 
   // Token revocation management
   tokenRevocationList: {
     findMany: (filter?: unknown) => Promise<unknown[]>;
     findOne: (id: string) => Promise<unknown>;
+    findUnique: (filter: unknown) => Promise<unknown>;
+    findFirst: (filter: unknown) => Promise<unknown>;
     create: (data: unknown) => Promise<unknown>;
     update: (id: string, data: unknown) => Promise<unknown>;
+    updateMany: (filter: unknown, data: unknown) => Promise<{ count: number; }>;
     delete: (id: string) => Promise<boolean>;
+    deleteMany: (filter: unknown) => Promise<{ count: number; }>;
+    count: (filter?: unknown) => Promise<number>;
   };
 
   // Security event tracking
@@ -264,9 +280,9 @@ export function isEnhancedOperationResult<T = unknown>(
 ): obj is EnhancedOperationResult<T> {
   return typeof obj === 'object' &&
          obj !== null &&
-         typeof (obj as any).success === 'boolean' &&
-         (typeof (obj as any).data !== 'undefined' ||
-          typeof (obj as any).error !== 'undefined');
+         typeof (obj as unknown).success === 'boolean' &&
+         (typeof (obj as unknown).data !== 'undefined' ||
+          typeof (obj as unknown).error !== 'undefined');
 }
 
 /**
@@ -289,23 +305,38 @@ export function asEnhancedQdrantClient(client: unknown): EnhancedQdrantClient {
     user: {
       findMany: async () => [],
       findOne: async () => null,
+      findUnique: async () => null,
+      findFirst: async () => null,
       create: async () => null,
       update: async () => null,
+      updateMany: async () => ({ count: 0 }),
       delete: async () => null,
+      deleteMany: async () => ({ count: 0 }),
+      count: async () => 0,
     },
     apiKey: {
       findMany: async () => [],
       findOne: async () => null,
+      findUnique: async () => null,
+      findFirst: async () => null,
       create: async () => null,
       update: async () => null,
+      updateMany: async () => ({ count: 0 }),
       delete: async () => null,
+      deleteMany: async () => ({ count: 0 }),
+      count: async () => 0,
     },
     tokenRevocationList: {
       findMany: async () => [],
       findOne: async () => null,
+      findUnique: async () => null,
+      findFirst: async () => null,
       create: async () => null,
       update: async () => null,
+      updateMany: async () => ({ count: 0 }),
       delete: async () => null,
+      deleteMany: async () => ({ count: 0 }),
+      count: async () => 0,
     },
     securityEvent: {
       findMany: async () => [],

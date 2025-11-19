@@ -9,14 +9,11 @@
  * @since 2025
  */
 
+import { logger } from './logger.js';
+import { ServiceResponseValidator } from './service-response-builders.js';
 import type {
   IBaseService,
-  IMemoryFindOrchestrator,
-  IMemoryStoreOrchestrator,
-  ServiceResponse,
 } from '../interfaces/service-interfaces.js';
-import { ServiceResponseValidator, TypeValidators } from './service-response-builders.js';
-import { logger } from './logger.js';
 
 /**
  * Service integration validation result
@@ -128,7 +125,7 @@ export class ServiceIntegrationValidator {
     const requiredMethods = this.getRequiredMethods(serviceType);
 
     for (const methodName of requiredMethods) {
-      if (!(service as any)[methodName] || typeof (service as any)[methodName] !== 'function') {
+      if (!(service as unknown)[methodName] || typeof (service as unknown)[methodName] !== 'function') {
         result.errors.push(`Missing required method: ${methodName}`);
       }
     }
@@ -171,11 +168,11 @@ export class ServiceIntegrationValidator {
   ): Promise<void> {
     // Test method signatures and return types
     const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(service))
-      .filter(name => name !== 'constructor' && typeof (service as any)[name] === 'function');
+      .filter(name => name !== 'constructor' && typeof (service as unknown)[name] === 'function');
 
     for (const methodName of methods) {
       try {
-        const method = (service as any)[methodName];
+        const method = (service as unknown)[methodName];
 
         // Skip private methods
         if (methodName.startsWith('_')) {
@@ -204,9 +201,9 @@ export class ServiceIntegrationValidator {
     const testableMethods = ['healthCheck', 'getStatus'];
 
     for (const methodName of testableMethods) {
-      if (typeof (service as any)[methodName] === 'function') {
+      if (typeof (service as unknown)[methodName] === 'function') {
         try {
-          const response = await (service as any)[methodName]();
+          const response = await (service as unknown)[methodName]();
 
           if (response && !ServiceResponseValidator.isValid(response)) {
             result.errors.push(`Method ${methodName} returns invalid response format`);

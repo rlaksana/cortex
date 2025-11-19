@@ -11,6 +11,8 @@
  * @since 2025
  */
 
+import { safeGetNumberProperty } from '@/utils/type-fixes.js';
+
 import { type MemoryFindOrchestrator } from '../../services/orchestrators/memory-find-orchestrator.js';
 import type {
   KnowledgeItem,
@@ -18,7 +20,7 @@ import type {
   SearchQuery,
   SearchResult,
 } from '../../types/core-interfaces.js';
-import type { IMemoryFindOrchestrator, ServiceResponse, ValidationResult, ServiceStatus } from '../service-interfaces.js';
+import type { IMemoryFindOrchestrator, ServiceResponse, ServiceStatus,ValidationResult } from '../service-interfaces.js';
 
 /**
  * Adapter for Memory Find Orchestrator service
@@ -48,7 +50,7 @@ export class MemoryFindOrchestratorAdapter implements IMemoryFindOrchestrator {
         autonomous_context: {
           search_mode_used: query.mode || 'auto',
           results_found: searchResults.length,
-          confidence_average: searchResults.reduce((sum: number, item: any) => sum + (item.confidence_score || 0), 0) / Math.max(searchResults.length, 1),
+          confidence_average: searchResults.reduce((sum: number, item: unknown) => sum + safeGetNumberProperty(item, 'confidence_score', 0), 0) / Math.max(searchResults.length, 1),
           user_message_suggestion: `Found ${searchResults.length} results for "${query.query}"`
         },
         observability: {
@@ -57,7 +59,7 @@ export class MemoryFindOrchestratorAdapter implements IMemoryFindOrchestrator {
           vector_used: true,
           degraded: false,
           execution_time_ms: Date.now(),
-          confidence_average: searchResults.reduce((sum: number, item: any) => sum + (item.confidence_score || 0), 0) / Math.max(searchResults.length, 1),
+          confidence_average: searchResults.reduce((sum: number, item: unknown) => sum + safeGetNumberProperty(item, 'confidence_score', 0), 0) / Math.max(searchResults.length, 1),
           search_id: `search_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         },
         meta: {
@@ -67,7 +69,7 @@ export class MemoryFindOrchestratorAdapter implements IMemoryFindOrchestrator {
           degraded: false,
           source: 'cortex_memory',
           execution_time_ms: Date.now(),
-          confidence_score: searchResults.reduce((sum: number, item: any) => sum + (item.confidence_score || 0), 0) / Math.max(searchResults.length, 1),
+          confidence_score: searchResults.reduce((sum: number, item: unknown) => sum + safeGetNumberProperty(item, 'confidence_score', 0), 0) / Math.max(searchResults.length, 1),
 
           // Truncation metadata
           truncated: false

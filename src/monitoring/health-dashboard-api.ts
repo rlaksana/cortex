@@ -627,31 +627,31 @@ export class HealthDashboardAPIHandler {
   /**
    * Setup Express routes
    */
-  setupRoutes(app: any): void {
-    const router = app && typeof app.use === 'function' ? app : app;
+  setupRoutes(app: unknown): void {
+    const router = app && typeof (app as any).use === 'function' ? app : app;
 
     // Apply middleware
     if (this.config.enableCors) {
-      router.use(this.config.basePath, this.corsMiddleware());
+      (router as any).use(this.config.basePath, this.corsMiddleware());
     }
 
     if (this.config.enableAuth) {
-      router.use(this.config.basePath, this.authMiddleware());
+      (router as any).use(this.config.basePath, this.authMiddleware());
     }
 
     if (this.config.rateLimiting.enabled) {
-      router.use(this.config.basePath, this.rateLimitMiddleware());
+      (router as any).use(this.config.basePath, this.rateLimitMiddleware());
     }
 
     // Define routes
-    router.get(`${this.config.basePath}/summary`, this.getDashboardSummary.bind(this));
-    router.get(`${this.config.basePath}/realtime`, this.getRealTimeHealth.bind(this));
-    router.get(`${this.config.basePath}/historical`, this.getHistoricalHealth.bind(this));
-    router.get(`${this.config.basePath}/alerts`, this.getAlerts.bind(this));
-    router.get(`${this.config.basePath}/export`, this.exportHealthData.bind(this));
+    (router as any).get(`${this.config.basePath}/summary`, this.getDashboardSummary.bind(this));
+    (router as any).get(`${this.config.basePath}/realtime`, this.getRealTimeHealth.bind(this));
+    (router as any).get(`${this.config.basePath}/historical`, this.getHistoricalHealth.bind(this));
+    (router as any).get(`${this.config.basePath}/alerts`, this.getAlerts.bind(this));
+    (router as any).get(`${this.config.basePath}/export`, this.exportHealthData.bind(this));
 
     // Health check for the API itself
-    router.get(`${this.config.basePath}/health`, (req: Request, res: Response) => {
+    (router as any).get(`${this.config.basePath}/health`, (req: Request, res: Response) => {
       this.sendResponse(
         res,
         200,

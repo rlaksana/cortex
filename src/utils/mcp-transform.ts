@@ -9,7 +9,7 @@
  */
 
 import * as crypto from 'crypto';
-import type { ContentBlock } from '@modelcontextprotocol/sdk/types.js';
+
 
 // Define KnowledgeItem interface to match index.ts requirements
 interface KnowledgeItem {

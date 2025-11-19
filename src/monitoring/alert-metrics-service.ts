@@ -20,9 +20,9 @@
 import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
+import { hasArrayProperty,hasNumberProperty, hasObjectProperty, safeGetProperty } from '@/utils/property-access-guards.js';
 
 import { type AlertAction, AlertSeverity } from './alert-management-service.js';
-import { safeGetProperty, hasProperty, hasStringProperty, hasNumberProperty, hasObjectProperty, hasArrayProperty } from '@/utils/property-access-guards.js';
 
 // ============================================================================
 // Alert Metrics Interfaces

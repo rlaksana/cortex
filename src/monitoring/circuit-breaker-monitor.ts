@@ -14,13 +14,13 @@
 import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
-import { isCircuitBreakerData } from '../types/database-types-enhanced.js';
-import { safeGetProperty, hasProperty, hasStringProperty, hasNumberProperty } from '@/utils/property-access-guards.js';
+import { safeGetProperty } from '@/utils/property-access-guards.js';
 
 import {
   circuitBreakerManager,
   type CircuitBreakerStats,
 } from '../services/circuit-breaker.service.js';
+import { isCircuitBreakerData } from '../types/database-types-enhanced.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**

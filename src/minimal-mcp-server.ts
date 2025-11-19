@@ -9,7 +9,7 @@
  * and implements the basic JSON-RPC protocol directly.
  */
 
-import { safeGetProperty, hasProperty, hasStringProperty, hasNumberProperty, hasObjectProperty, hasArrayProperty } from '@/utils/property-access-guards.js';
+import { hasArrayProperty,hasNumberProperty, hasObjectProperty, hasStringProperty, safeGetProperty } from '@/utils/property-access-guards.js';
 
 interface MCPRequest {
   jsonrpc: '2.0';

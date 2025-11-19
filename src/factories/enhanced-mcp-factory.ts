@@ -7,22 +7,20 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 import {
-  isMcpServerWithTools,
-  safeExtractErrorDetails
-} from '../utils/type-safe-access.js';
-
-import {
+  type ConnectionTestResult,
   createFactoryId,
   createServiceId,
   DependencyResolutionError,
-  FactoryId,
-  ServiceId,
+  type FactoryId,
+  type ServiceId,
   ServiceRegistrationError,
-  TypedDIContainer,
-  TypedFactory,
-  ValidationResult,
-  ConnectionTestResult,
+  type TypedDIContainer,
+  type TypedFactory,
+  type ValidationResult,
 } from './factory-types';
+import {
+  isMcpServerWithTools
+} from '../utils/type-safe-access.js';
 
 // Error codes enum since ErrorCode is not available in the SDK
 export enum ErrorCode {

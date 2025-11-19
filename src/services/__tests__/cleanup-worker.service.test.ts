@@ -14,15 +14,61 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { logger } from '@/utils/logger';
 
 import { CleanupWorkerService } from '../cleanup-worker.service';
+import type { ExpiryWorkerResult } from '../expiry-worker.js';
 
 // Mock dependencies
-vi.mock('../../utils/logger.js');
+vi.mock('@/utils/logger.js');
 vi.mock('../memory-find.js');
 vi.mock('../memory-store.js');
 vi.mock('../expiry-worker.js');
 vi.mock('../metrics/system-metrics.js');
 
 const mockLogger = logger as ReturnType<typeof vi.mocked<typeof logger>>;
+
+const DEFAULT_EXPIRY_WORKER_RESULT: ExpiryWorkerResult = {
+  deleted_counts: {
+    decision: 0,
+    entity: 0,
+    relation: 0,
+    todo: 0,
+  },
+  total_deleted: 0,
+  total_processed: 0,
+  total_skipped: 0,
+  duration_ms: 0,
+  metrics: {
+    ttl_deletes_total: 0,
+    ttl_skips_total: 0,
+    ttl_errors_total: 0,
+    processing_rate_per_second: 0,
+    batch_count: 0,
+    average_batch_size: 0,
+  },
+  policy_enforcement: {
+    policies_applied: {},
+    permanent_items_preserved: 0,
+    extensions_granted: 0,
+  },
+};
+
+const buildExpiryWorkerResult = (
+  overrides: Partial<ExpiryWorkerResult> = {}
+): ExpiryWorkerResult => ({
+  ...DEFAULT_EXPIRY_WORKER_RESULT,
+  ...overrides,
+  deleted_counts: {
+    ...DEFAULT_EXPIRY_WORKER_RESULT.deleted_counts,
+    ...overrides.deleted_counts,
+  },
+  metrics: {
+    ...DEFAULT_EXPIRY_WORKER_RESULT.metrics,
+    ...overrides.metrics,
+  },
+  policy_enforcement: {
+    ...DEFAULT_EXPIRY_WORKER_RESULT.policy_enforcement,
+    ...overrides.policy_enforcement,
+  },
+});
 
 describe('CleanupWorkerService', () => {
   let cleanupWorker: CleanupWorkerService;
@@ -101,16 +147,43 @@ describe('CleanupWorkerService', () => {
           { id: '1', kind: 'entity', data: {} },
           { id: '2', kind: 'relation', data: {} },
         ],
+        total_count: 2,
+        autonomous_context: {
+          search_mode_used: 'fast',
+          results_found: 2,
+          confidence_average: 0.9,
+          user_message_suggestion: 'consider refining search',
+        },
+        observability: {
+          source: 'cortex_memory',
+          strategy: 'fast',
+          vector_used: false,
+          degraded: false,
+          execution_time_ms: 50,
+          confidence_average: 0.9,
+          search_id: 'mock-search-id-123',
+        },
+        meta: {
+          strategy: 'fast',
+          vector_used: false,
+          degraded: false,
+          source: 'cortex_memory',
+          execution_time_ms: 50,
+          confidence_score: 0.9,
+          truncated: false,
+        },
       });
 
       const mockExpiryWorker = await import('../expiry-worker.js');
       const mockRunExpiryWorker = vi.mocked(await import('../expiry-worker.js')).runExpiryWorker as ReturnType<typeof vi.fn>;
-      mockRunExpiryWorker.mockResolvedValue({
-        total_processed: 5,
-        total_deleted: 0,
-        deleted_counts: { entity: 2, relation: 1 },
-        duration_ms: 100,
-      });
+      mockRunExpiryWorker.mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: 5,
+          total_deleted: 0,
+          deleted_counts: { entity: 2, relation: 1 },
+          duration_ms: 100,
+        })
+      );
 
       const report = await cleanupWorker.runCleanup({
         dry_run: true,
@@ -126,12 +199,14 @@ describe('CleanupWorkerService', () => {
 
     it('should identify expired items in dry run mode', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
-        total_processed: 10,
-        total_deleted: 0,
-        deleted_counts: { entity: 5, relation: 3, todo: 2 },
-        duration_ms: 150,
-      });
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: 10,
+          total_deleted: 0,
+          deleted_counts: { entity: 5, relation: 3, todo: 2 },
+          duration_ms: 150,
+        })
+      );
 
       const report = await cleanupWorker.runCleanup({
         dry_run: true,
@@ -240,12 +315,14 @@ describe('CleanupWorkerService', () => {
   describe('Metrics Tracking', () => {
     it('should track cleanup_deleted_total metric', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
-        total_processed: 20,
-        total_deleted: 15,
-        deleted_counts: { entity: 8, relation: 4, todo: 3 },
-        duration_ms: 200,
-      });
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: 20,
+          total_deleted: 15,
+          deleted_counts: { entity: 8, relation: 4, todo: 3 },
+          duration_ms: 200,
+        })
+      );
 
       const report = await cleanupWorker.runCleanup({
         dry_run: false,
@@ -259,12 +336,14 @@ describe('CleanupWorkerService', () => {
 
     it('should track cleanup_dryrun_total metric', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
-        total_processed: 25,
-        total_deleted: 0,
-        deleted_counts: {},
-        duration_ms: 100,
-      });
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: 25,
+          total_deleted: 0,
+          deleted_counts: {},
+          duration_ms: 100,
+        })
+      );
 
       const report = await cleanupWorker.runCleanup({
         dry_run: true,
@@ -278,12 +357,14 @@ describe('CleanupWorkerService', () => {
 
     it('should track cleanup_by_type breakdown', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
-        total_processed: 30,
-        total_deleted: 25,
-        deleted_counts: { entity: 10, relation: 8, todo: 4, decision: 3 },
-        duration_ms: 300,
-      });
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: 30,
+          total_deleted: 25,
+          deleted_counts: { entity: 10, relation: 8, todo: 4, decision: 3 },
+          duration_ms: 300,
+        })
+      );
 
       const report = await cleanupWorker.runCleanup({
         dry_run: false,
@@ -301,12 +382,14 @@ describe('CleanupWorkerService', () => {
 
     it('should track cleanup_duration for each operation', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
-        total_processed: 10,
-        total_deleted: 8,
-        deleted_counts: { entity: 5, relation: 3 },
-        duration_ms: 150,
-      });
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: 10,
+          total_deleted: 8,
+          deleted_counts: { entity: 5, relation: 3 },
+          duration_ms: 150,
+        })
+      );
 
       const report = await cleanupWorker.runCleanup({
         dry_run: false,
@@ -320,12 +403,14 @@ describe('CleanupWorkerService', () => {
 
     it('should track performance metrics', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
-        total_processed: 50,
-        total_deleted: 40,
-        deleted_counts: { entity: 20, relation: 15, todo: 5 },
-        duration_ms: 500,
-      });
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: 50,
+          total_deleted: 40,
+          deleted_counts: { entity: 20, relation: 15, todo: 5 },
+          duration_ms: 500,
+        })
+      );
 
       const report = await cleanupWorker.runCleanup({
         dry_run: false,
@@ -360,14 +445,17 @@ describe('CleanupWorkerService', () => {
 
     it('should continue with other operations if one fails', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      (mockExpiryWorker.runExpiryWorker as jest.Mock)
+      const mockedRunExpiryWorker = vi.mocked(mockExpiryWorker.runExpiryWorker);
+      mockedRunExpiryWorker
         .mockRejectedValueOnce(new Error('Expiry worker failed'))
-        .mockResolvedValueOnce({
-          total_processed: 10,
-          total_deleted: 8,
-          deleted_counts: { entity: 5, relation: 3 },
-          duration_ms: 100,
-        });
+        .mockResolvedValueOnce(
+          buildExpiryWorkerResult({
+            total_processed: 10,
+            total_deleted: 8,
+            deleted_counts: { entity: 5, relation: 3 },
+            duration_ms: 100,
+          })
+        );
 
       const report = await cleanupWorker.runCleanup({
         dry_run: false,
@@ -401,12 +489,14 @@ describe('CleanupWorkerService', () => {
   describe('Operation History and Statistics', () => {
     it('should maintain operation history', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
-        total_processed: 5,
-        total_deleted: 3,
-        deleted_counts: { entity: 2, relation: 1 },
-        duration_ms: 50,
-      });
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: 5,
+          total_deleted: 3,
+          deleted_counts: { entity: 2, relation: 1 },
+          duration_ms: 50,
+        })
+      );
 
       // Run multiple operations
       await cleanupWorker.runCleanup({
@@ -429,12 +519,14 @@ describe('CleanupWorkerService', () => {
 
     it('should limit operation history size', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
-        total_processed: 1,
-        total_deleted: 1,
-        deleted_counts: { entity: 1 },
-        duration_ms: 10,
-      });
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: 1,
+          total_deleted: 1,
+          deleted_counts: { entity: 1 },
+          duration_ms: 10,
+        })
+      );
 
       // Run multiple operations
       for (let i = 0; i < 15; i++) {
@@ -451,12 +543,14 @@ describe('CleanupWorkerService', () => {
 
     it('should calculate cleanup statistics', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
-        total_processed: 10,
-        total_deleted: 8,
-        deleted_counts: { entity: 5, relation: 3 },
-        duration_ms: 200,
-      });
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: 10,
+          total_deleted: 8,
+          deleted_counts: { entity: 5, relation: 3 },
+          duration_ms: 200,
+        })
+      );
 
       // Run multiple operations with different timestamps
       const now = new Date();
@@ -494,11 +588,18 @@ describe('CleanupWorkerService', () => {
     it('should handle large item counts efficiently', async () => {
       const largeItemCount = 10000;
       const mockExpiryWorker = await import('../expiry-worker.js');
-      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
-        total_processed: largeItemCount,
-        total_deleted: largeItemCount - 1000,
-        deleted_counts: { entity: 4000, relation: 3000, todo: 1500, decision: 500 },
-        duration_ms: 2000,
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: largeItemCount,
+          total_deleted: largeItemCount - 1000,
+          deleted_counts: { entity: 4000, relation: 3000, todo: 1500, decision: 500 },
+          duration_ms: 2000,
+        })
+      );
+
+      cleanupWorker.updateConfig({
+        batch_size: 1000,
+        max_batches: 20,
       });
 
       const startTime = Date.now();
@@ -506,8 +607,6 @@ describe('CleanupWorkerService', () => {
         dry_run: false,
         operations: ['expired'],
         require_confirmation: false,
-        batch_size: 1000,
-        max_batches: 20,
       });
       const duration = Date.now() - startTime;
 
@@ -518,12 +617,14 @@ describe('CleanupWorkerService', () => {
 
     it('should maintain performance with multiple concurrent operations', async () => {
       const mockExpiryWorker = await import('../expiry-worker.js');
-      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
-        total_processed: 100,
-        total_deleted: 80,
-        deleted_counts: { entity: 40, relation: 25, todo: 15 },
-        duration_ms: 100,
-      });
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: 100,
+          total_deleted: 80,
+          deleted_counts: { entity: 40, relation: 25, todo: 15 },
+          duration_ms: 100,
+        })
+      );
 
       // Run multiple operations concurrently
       const promises = [];
@@ -555,16 +656,58 @@ describe('CleanupWorkerService', () => {
     it('should apply scope filters to operations', async () => {
       const mockMemoryFind = await import('../memory-find.js');
       vi.mocked(mockMemoryFind.memoryFind).mockResolvedValue({
+        results: [],
         items: [
-          { id: '1', kind: 'entity', scope: { project: 'test-project' }, data: {} },
-          { id: '2', kind: 'relation', scope: { project: 'test-project' }, data: {} },
+          {
+            id: '1',
+            kind: 'entity',
+            scope: { project: 'test-project' },
+            data: {},
+            created_at: new Date().toISOString(),
+            confidence_score: 0.9,
+            match_type: 'exact',
+          },
+          {
+            id: '2',
+            kind: 'relation',
+            scope: { project: 'test-project' },
+            data: {},
+            created_at: new Date().toISOString(),
+            confidence_score: 0.85,
+            match_type: 'exact',
+          },
         ],
+        total_count: 2,
+        autonomous_context: {
+          search_mode_used: 'fast',
+          results_found: 2,
+          confidence_average: 0.87,
+          user_message_suggestion: 'Consider broadening your search terms.',
+        },
+        meta: {
+          source: 'cortex_memory',
+          strategy: 'deep',
+          vector_used: true,
+          degraded: false,
+          execution_time_ms: 120,
+          confidence_score: 0.87, // Corrected to confidence_score
+          truncated: false,
+        },
+        observability: {
+          source: 'cortex_memory',
+          strategy: 'fast',
+          vector_used: true,
+          degraded: false,
+          execution_time_ms: 120,
+          confidence_average: 0.87,
+          search_id: 'mock-search-id-123',
+        },
       });
 
       const report = await cleanupWorker.runCleanup({
         dry_run: true,
         operations: ['orphaned'],
-        cleanup_scope_filters: {
+        scope_filters: {
           project: 'test-project',
           org: 'test-org',
         },
@@ -594,18 +737,47 @@ describe('CleanupWorkerService', () => {
 
       const mockMemoryStore = await import('../memory-store.js');
       vi.mocked(mockMemoryStore.memoryStore).mockResolvedValue({
-        stored: [],
-        errors: [],
-        summary: { total: 0, stored: 0, skipped_dedupe: 0 },
-      });
+                stored: [],
+                errors: [],
+                summary: { total: 0, stored: 0, skipped_dedupe: 0, business_rule_blocked: 0 },
+                items: [],
+                autonomous_context: {
+                  action_performed: 'created',
+                  similar_items_checked: 0,
+                  duplicates_found: 0,
+                  contradictions_detected: false,
+                  recommendation: 'Test recommendation',
+                  reasoning: 'Test reasoning',
+                  user_message_suggestion: 'Test suggestion',
+                },
+                observability: {
+                  source: 'cortex_memory',
+                  strategy: 'autonomous_deduplication',
+                  vector_used: false,
+                  degraded: false,
+                  execution_time_ms: 0,
+                  confidence_score: 0,
+                },
+                meta: {
+                  strategy: 'fast',
+                  vector_used: false,
+                  degraded: false,
+                  source: 'cortex_memory',
+                  execution_time_ms: 0,
+                  confidence_score: 0,
+                  truncated: false,
+                },
+              });
 
       const mockExpiryWorker = await import('../expiry-worker.js');
-      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
-        total_processed: 5,
-        total_deleted: 5,
-        deleted_counts: { entity: 3, relation: 2 },
-        duration_ms: 100,
-      });
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: 5,
+          total_deleted: 5,
+          deleted_counts: { entity: 3, relation: 2 },
+          duration_ms: 100,
+        })
+      );
 
       const report = await worker.runCleanup({
         dry_run: false,
@@ -626,12 +798,14 @@ describe('CleanupWorkerService', () => {
       vi.mocked(mockSystemMetrics.systemMetricsService.updateMetrics).mockImplementation(mockUpdateMetrics);
 
       const mockExpiryWorker = await import('../expiry-worker.js');
-      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue({
-        total_processed: 10,
-        total_deleted: 8,
-        deleted_counts: { entity: 5, relation: 3 },
-        duration_ms: 150,
-      });
+      vi.mocked(mockExpiryWorker.runExpiryWorker).mockResolvedValue(
+        buildExpiryWorkerResult({
+          total_processed: 10,
+          total_deleted: 8,
+          deleted_counts: { entity: 5, relation: 3 },
+          duration_ms: 150,
+        })
+      );
 
       await cleanupWorker.runCleanup({
         dry_run: false,

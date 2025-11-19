@@ -15,7 +15,6 @@ import { EventEmitter } from 'events';
 import { type Request, type Response } from 'express';
 
 import { logger } from '@/utils/logger.js';
-import { isCircuitBreakerData } from '../types/database-types-enhanced.js';
 
 import {
   type CircuitBreakerHealthStatus,
@@ -23,6 +22,7 @@ import {
 } from './circuit-breaker-monitor.js';
 import { type RetryBudgetMetrics, retryBudgetMonitor } from './retry-budget-monitor.js';
 import { type GrafanaDashboardData, retryMetricsExporter } from './retry-metrics-exporter.js';
+import { isCircuitBreakerData } from '../types/database-types-enhanced.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 type Risk = 'low' | 'medium' | 'high' | 'critical';

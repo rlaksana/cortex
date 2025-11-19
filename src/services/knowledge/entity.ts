@@ -11,13 +11,6 @@
 import { createHash } from 'crypto';
 
 import { KnowledgeServiceAdapter } from '../../interfaces/service-adapter.js';
-import {
-  hasPropertySimple,
-  isString,
-  isObject,
-  isUnknown
-} from '../../utils/type-guards.js';
-import type { KnowledgeItem, Scope } from '../../types/core-interfaces.js';
 import type {
   EntityData,
   EntityFilters,
@@ -26,7 +19,10 @@ import type {
   SearchOptions,
   ServiceResponse,
 } from '../../interfaces/service-interfaces.js';
-import type { EntityResponse } from '../../types/database.js';
+import type { KnowledgeItem, Scope } from '../../types/core-interfaces.js';
+import {hasProperty, hasStringProperty } from '../../utils/type-fixes.js';
+import { isObject } from '../../utils/type-guards.js';
+import { TypedDatabaseResultExtractor } from '../../utils/typed-database-helpers.js';
 
 /**
  * Entity Service Class - Implements standardized IEntityService interface
@@ -67,11 +63,9 @@ export class EntityService
           deleted_at: null,
         });
 
-        if (Array.isArray(existingByHash) && existingByHash.length > 0) {
-          const firstResult = existingByHash[0];
-          if (firstResult && hasPropertySimple(firstResult, 'id') && isString((firstResult as Record<string, unknown>).id)) {
-            return { id: (firstResult as Record<string, unknown>).id as string };
-          }
+        const existingHashId = TypedDatabaseResultExtractor.getFirstId(existingByHash);
+        if (existingHashId) {
+          return { id: existingHashId };
         }
 
         // Check for existing entity with same (entity_type, name) - update case
@@ -91,30 +85,32 @@ export class EntityService
           updated_at: new Date().toISOString(),
         };
 
-        if (Array.isArray(existingByName) && existingByName.length > 0) {
-          const firstExisting = existingByName[0];
-          if (firstExisting && hasPropertySimple(firstExisting, 'id') && isString((firstExisting as Record<string, unknown>).id)) {
-            const existingId = (firstExisting as Record<string, unknown>).id as string;
-            // Update existing entity using store method
-            const knowledgeItem: KnowledgeItem = {
-              id: existingId,
-              kind: 'entity',
-              content: JSON.stringify(entityRecord),
-              data: entityRecord,
-              scope: entityScope,
-              created_at: hasPropertySimple(firstExisting, 'created_at')
-                ? (firstExisting as Record<string, unknown>).created_at as string
-                : new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            };
-            await db.store([knowledgeItem]);
-            return { id: existingId };
-          }
+        const existingNameId = TypedDatabaseResultExtractor.getFirstId(existingByName);
+        if (existingNameId) {
+          const existingId = existingNameId;
+          const firstExisting = TypedDatabaseResultExtractor.getFirstId(existingByName)
+            ? existingByName.find(isDatabaseRecordWithId)
+            : null;
+
+          // Update existing entity using store method
+          const knowledgeItem: KnowledgeItem = {
+            id: existingId,
+            kind: 'entity',
+            content: JSON.stringify(entityRecord),
+            data: entityRecord,
+            scope: entityScope,
+            created_at: (firstExisting && hasProperty(firstExisting, 'created_at'))
+              ? (firstExisting as Record<string, unknown>).created_at as string
+              : new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          await db.store([knowledgeItem]);
+          return { id: existingId };
         }
 
         // Create new entity
         const result = await db.create('knowledge_entity', entityRecord);
-        if (result && hasPropertySimple(result, 'id') && isString((result as Record<string, unknown>).id)) {
+        if (result && hasProperty(result, 'id') && hasStringProperty(result, 'id')) {
           return { id: (result as Record<string, unknown>).id as string };
         }
         throw new Error('Failed to create entity - invalid response from database');
@@ -165,7 +161,7 @@ export class EntityService
       }
 
       const entity = results[0];
-      if (!entity || !hasPropertySimple(entity, 'id') || !isString((entity as Record<string, unknown>).id)) {
+      if (!entity || !hasProperty(entity, 'id') || !hasStringProperty(entity, 'id')) {
         throw new Error(`Invalid entity data received`);
       }
 
@@ -174,13 +170,13 @@ export class EntityService
         id: entityRecord.id as string,
         kind: 'entity',
         data: {
-          entity_type: hasPropertySimple(entity, 'entity_type') && isString(entityRecord.entity_type) ? entityRecord.entity_type : '',
-          name: hasPropertySimple(entity, 'name') && isString(entityRecord.name) ? entityRecord.name : '',
-          data: hasPropertySimple(entity, 'data') ? entityRecord.data : {},
+          entity_type: hasProperty(entity, 'entity_type') && hasStringProperty(entityRecord, 'entity_type') ? entityRecord.entity_type : '',
+          name: hasProperty(entity, 'name') && hasStringProperty(entityRecord, 'name') ? entityRecord.name : '',
+          data: hasProperty(entity, 'data') ? entityRecord.data : {},
         },
-        scope: hasPropertySimple(entity, 'scope') && isObject(entityRecord.scope) ? entityRecord.scope : {},
-        created_at: hasPropertySimple(entity, 'created_at') ? entityRecord.created_at : new Date().toISOString(),
-        updated_at: hasPropertySimple(entity, 'updated_at') ? entityRecord.updated_at : new Date().toISOString(),
+        scope: hasProperty(entity, 'scope') && isObject(entityRecord.scope) ? entityRecord.scope : {},
+        created_at: hasProperty(entity, 'created_at') ? entityRecord.created_at : new Date().toISOString(),
+        updated_at: hasProperty(entity, 'updated_at') ? entityRecord.updated_at : new Date().toISOString(),
       } as KnowledgeItem;
     });
   }
@@ -209,7 +205,7 @@ export class EntityService
         }
 
         const firstExisting = existing[0];
-        if (!firstExisting || !hasPropertySimple(firstExisting, 'id') || !isString(firstExisting.id)) {
+        if (!firstExisting || !hasProperty(firstExisting, 'id') || !hasStringProperty(firstExisting.id)) {
           throw new Error(`Invalid entity data received`);
         }
 
@@ -217,7 +213,7 @@ export class EntityService
         const updatedEntity = {
           ...firstExisting,
           ...entityData,
-          scope: entityScope || (hasPropertySimple(firstExisting, 'scope') ? firstExisting.scope : {}),
+          scope: entityScope || (hasProperty(firstExisting, 'scope') ? firstExisting.scope : {}),
           updated_at: new Date().toISOString(),
         };
 
@@ -254,7 +250,7 @@ export class EntityService
       }
 
       const firstExisting = existing[0];
-      if (!firstExisting || !hasPropertySimple(firstExisting, 'id') || !isString(firstExisting.id)) {
+      if (!firstExisting || !hasProperty(firstExisting, 'id') || !hasStringProperty(firstExisting.id)) {
         return { deleted: false };
       }
 
@@ -270,8 +266,8 @@ export class EntityService
         kind: 'entity',
         content: JSON.stringify(updatedEntity),
         data: updatedEntity,
-        scope: hasPropertySimple(firstExisting, 'scope') ? firstExisting.scope : {},
-        created_at: hasPropertySimple(firstExisting, 'created_at') ? firstExisting.created_at : new Date().toISOString(),
+        scope: hasProperty(firstExisting, 'scope') ? firstExisting.scope : {},
+        created_at: hasProperty(firstExisting, 'created_at') ? firstExisting.created_at : new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
 
@@ -328,23 +324,23 @@ export class EntityService
           });
 
           return searchResults.map((result) => {
-        if (!hasPropertySimple(result, 'id') || !isString(result.id)) {
+        if (!hasProperty(result, 'id') || !hasStringProperty(result.id)) {
           return null;
         }
         return {
           id: result.id,
           kind: 'entity',
           data: {
-            entity_type: hasPropertySimple(result, 'entity_type') && isString(result.entity_type) ? result.entity_type : '',
-            name: hasPropertySimple(result, 'name') && isString(result.name) ? result.name : '',
-            data: hasPropertySimple(result, 'data') ? result.data : {},
+            entity_type: hasProperty(result, 'entity_type') && hasStringProperty(result.entity_type) ? result.entity_type : '',
+            name: hasProperty(result, 'name') && hasStringProperty(result.name) ? result.name : '',
+            data: hasProperty(result, 'data') ? result.data : {},
           },
-          scope: hasPropertySimple(result, 'scope') && isObject(result.scope) ? result.scope : {},
-          created_at: hasPropertySimple(result, 'created_at') ? result.created_at : new Date().toISOString(),
-          updated_at: hasPropertySimple(result, 'updated_at') ? result.updated_at : new Date().toISOString(),
-          rank: hasPropertySimple(result, 'rank') ? result.rank : undefined,
-          score: hasPropertySimple(result, 'score') ? result.score : undefined,
-          highlight: hasPropertySimple(result, 'highlight') ? result.highlight : undefined,
+          scope: hasProperty(result, 'scope') && isObject(result.scope) ? result.scope : {},
+          created_at: hasProperty(result, 'created_at') ? result.created_at : new Date().toISOString(),
+          updated_at: hasProperty(result, 'updated_at') ? result.updated_at : new Date().toISOString(),
+          rank: hasProperty(result, 'rank') ? result.rank : undefined,
+          score: hasProperty(result, 'score') ? result.score : undefined,
+          highlight: hasProperty(result, 'highlight') ? result.highlight : undefined,
         };
       }).filter((result): result is NonNullable<typeof result> => result !== null);
         } else {
@@ -359,20 +355,20 @@ export class EntityService
           }
 
           return results.map((entity) => {
-            if (!hasPropertySimple(entity, 'id') || !isString(entity.id)) {
+            if (!hasProperty(entity, 'id') || !hasStringProperty(entity.id)) {
               return null;
             }
             return {
               id: entity.id,
               kind: 'entity',
               data: {
-                entity_type: hasPropertySimple(entity, 'entity_type') && isString(entity.entity_type) ? entity.entity_type : '',
-                name: hasPropertySimple(entity, 'name') && isString(entity.name) ? entity.name : '',
-                data: hasPropertySimple(entity, 'data') ? entity.data : {},
+                entity_type: hasProperty(entity, 'entity_type') && hasStringProperty(entity.entity_type) ? entity.entity_type : '',
+                name: hasProperty(entity, 'name') && hasStringProperty(entity.name) ? entity.name : '',
+                data: hasProperty(entity, 'data') ? entity.data : {},
               },
-              scope: hasPropertySimple(entity, 'scope') && isObject(entity.scope) ? entity.scope : {},
-              created_at: hasPropertySimple(entity, 'created_at') ? entity.created_at : new Date().toISOString(),
-              updated_at: hasPropertySimple(entity, 'updated_at') ? entity.updated_at : new Date().toISOString(),
+              scope: hasProperty(entity, 'scope') && isObject(entity.scope) ? entity.scope : {},
+              created_at: hasProperty(entity, 'created_at') ? entity.created_at : new Date().toISOString(),
+              updated_at: hasProperty(entity, 'updated_at') ? entity.updated_at : new Date().toISOString(),
             };
           }).filter((result): result is NonNullable<typeof result> => result !== null);
         }
@@ -463,7 +459,9 @@ export class EntityService
           });
         }
 
-        const count = await db.count('knowledge_entity', whereConditions);
+        // Use findMany with limit to simulate count - temporary workaround
+        const results = await db.find('knowledge_entity', whereConditions, { take: 10000 });
+        const count = Array.isArray(results) ? results.length : 0;
         return { count };
       },
       'count',

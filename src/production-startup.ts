@@ -11,9 +11,11 @@
  * @version 2.0.1
  */
 
+import { createChildLogger, type SimpleLogger } from '@/utils/logger.js';
+
 import { productionConfig } from './config/production-config.js';
 import { ProductionEnvironmentValidator } from './config/production-validator.js';
-import { ProductionLogger } from './monitoring/production-logger.js';
+import { hasBooleanProperty,hasProductionConfig } from './utils/type-fixes.js';
 
 export interface StartupOptions {
   skipValidation?: boolean;
@@ -33,11 +35,11 @@ export interface StartupResult {
 }
 
 export class ProductionStartup {
-  private logger: ProductionLogger;
+  private logger: SimpleLogger;
   private startTime: number;
 
   constructor() {
-    this.logger = new ProductionLogger('production-startup');
+    this.logger = createChildLogger({ component: 'production-startup' });
     this.startTime = Date.now();
   }
 
@@ -352,20 +354,30 @@ export class ProductionStartup {
       report.push('');
     }
 
-    if (result.configuration) {
+    if (result.configuration && hasProductionConfig(result.configuration)) {
       report.push('## Configuration Summary:');
-      report.push(
-        `- Security: ${result.configuration.security?.helmetEnabled ? 'Enabled' : 'Disabled'}`
-      );
-      report.push(
-        `- Rate Limiting: ${result.configuration.security?.rateLimitEnabled ? 'Enabled' : 'Disabled'}`
-      );
-      report.push(
-        `- Health Checks: ${result.configuration.health?.enabled ? 'Enabled' : 'Disabled'}`
-      );
-      report.push(
-        `- Metrics: ${result.configuration.performance?.enableMetrics ? 'Enabled' : 'Disabled'}`
-      );
+      const config = result.configuration;
+
+      // Security settings
+      const helmetEnabled = config.security && hasBooleanProperty(config.security, 'helmetEnabled')
+        ? config.security.helmetEnabled
+        : false;
+      const rateLimitEnabled = config.security && hasBooleanProperty(config.security, 'rateLimitEnabled')
+        ? config.security.rateLimitEnabled
+        : false;
+
+      // Health and performance settings
+      const healthEnabled = config.health && hasBooleanProperty(config.health, 'enabled')
+        ? config.health.enabled
+        : false;
+      const metricsEnabled = config.performance && hasBooleanProperty(config.performance, 'enableMetrics')
+        ? config.performance.enableMetrics
+        : false;
+
+      report.push(`- Security: ${helmetEnabled ? 'Enabled' : 'Disabled'}`);
+      report.push(`- Rate Limiting: ${rateLimitEnabled ? 'Enabled' : 'Disabled'}`);
+      report.push(`- Health Checks: ${healthEnabled ? 'Enabled' : 'Disabled'}`);
+      report.push(`- Metrics: ${metricsEnabled ? 'Enabled' : 'Disabled'}`);
       report.push('');
     }
 

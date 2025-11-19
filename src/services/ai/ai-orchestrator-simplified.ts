@@ -36,7 +36,21 @@ export class SimplifiedAIOrchestratorService {
 
   constructor(config?: AIOrchestratorConfig) {
     this.config = config || zaiConfigManager.getOrchestratorConfig();
-    this.providerManager = new AIProviderManager(this.config);
+
+    // Transform config to match AIProviderManager expectations
+    const providerManagerConfig = {
+      primaryProvider: this.config.primaryProvider,
+      fallbackProvider: this.config.fallbackProvider,
+      providerConfigs: {
+        zai: {
+          model: this.config.providerConfigs.zai.model,
+          ...(this.config.providerConfigs.zai as unknown as Record<string, unknown>)
+        } as { model: string; [key: string]: unknown },
+        openai: this.config.providerConfigs.openai as { model?: string; [key: string]: unknown } || {}
+      }
+    };
+
+    this.providerManager = new AIProviderManager(providerManagerConfig);
 
     // Start health monitoring if enabled
     if (this.config.healthCheckInterval > 0) {

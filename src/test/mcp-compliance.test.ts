@@ -6,12 +6,14 @@
  * Updated for MCP SDK v1.22.0 compatibility.
  */
 
+import { describe, test, expect } from 'vitest';
+
 import {
   createToolResponse,
   errorToMCPResponse,
   MCPErrorCode,
   validateToolInput,
-} from '../utils/mcp-compliance';
+} from '../utils/mcp-compliance.js';
 import type { ContentBlock } from '@modelcontextprotocol/sdk/types.js';
 
 describe('MCP 2025 Compliance Tests', () => {
@@ -109,7 +111,7 @@ describe('MCP 2025 Compliance Tests', () => {
 
       expect(response.jsonrpc).toBe('2.0');
       expect(response.id).toBe('test-id');
-      expect(response.error.code).toBe(MCPErrorCode.INTERNAL_ERROR);
+      expect(response.error.code).toBe(MCPErrorCode._INTERNAL_ERROR);
       expect((response.error as unknown).message).toBe('Test error');
       expect(response.error.data).toBeDefined();
     });
@@ -118,14 +120,14 @@ describe('MCP 2025 Compliance Tests', () => {
       const error = new Error('validation failed');
       const response = errorToMCPResponse(error);
 
-      expect(response.error.code).toBe(MCPErrorCode.VALIDATION_ERROR);
+      expect(response.error.code).toBe(MCPErrorCode._VALIDATION_ERROR);
     });
 
     test('Should classify database errors correctly', () => {
       const error = new Error('database connection failed');
       const response = errorToMCPResponse(error);
 
-      expect(response.error.code).toBe(MCPErrorCode.DATABASE_ERROR);
+      expect(response.error.code).toBe(MCPErrorCode._DATABASE_ERROR);
     });
   });
 });

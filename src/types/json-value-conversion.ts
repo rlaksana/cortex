@@ -180,7 +180,8 @@ export interface JSONConversionProgress {
 export type TypeConverter = (
   value: unknown,
   path: string,
-  options: JSONConversionOptions
+  options: JSONConversionOptions,
+  stats: JSONConversionStats
 ) => JSONConversionResult;
 
 // ============================================================================
@@ -316,18 +317,7 @@ export class JSONConverter {
         original: value,
         warnings: [],
         errors: [error],
-        stats: {
-          ...stats,
-          totalProcessed: 0,
-          successfulConversions: 0,
-          failedConversions: 0,
-          warningsGenerated: 0,
-          circularReferences: 0,
-          maxDepth: 0,
-          durationMs: 0,
-          inputSizeBytes: 0,
-          outputSizeBytes: 0,
-        },
+        stats, // Re-introduced stats
       };
     }
 
@@ -354,18 +344,7 @@ export class JSONConverter {
             original: value,
             warnings: [],
             errors: [error],
-            stats: {
-              ...stats,
-              totalProcessed: 0,
-              successfulConversions: 0,
-              failedConversions: 0,
-              warningsGenerated: 0,
-              circularReferences: 0,
-              maxDepth: 0,
-              durationMs: 0,
-              inputSizeBytes: 0,
-              outputSizeBytes: 0,
-            },
+            stats, // Re-introduced stats
           };
         } else if (options.circularRefStrategy === 'replace') {
           return {
@@ -382,18 +361,7 @@ export class JSONConverter {
               },
             ],
             errors: [],
-            stats: {
-              ...stats,
-              totalProcessed: 0,
-              successfulConversions: 0,
-              failedConversions: 0,
-              warningsGenerated: 0,
-              circularReferences: 0,
-              maxDepth: 0,
-              durationMs: 0,
-              inputSizeBytes: 0,
-              outputSizeBytes: 0,
-            },
+            stats, // Re-introduced stats
           };
         } else {
           // Ignore strategy
@@ -411,18 +379,7 @@ export class JSONConverter {
               },
             ],
             errors: [],
-            stats: {
-              ...stats,
-              totalProcessed: 0,
-              successfulConversions: 0,
-              failedConversions: 0,
-              warningsGenerated: 0,
-              circularReferences: 0,
-              maxDepth: 0,
-              durationMs: 0,
-              inputSizeBytes: 0,
-              outputSizeBytes: 0,
-            },
+            stats, // Re-introduced stats
           };
         }
       }
@@ -439,75 +396,40 @@ export class JSONConverter {
         original: value,
         warnings: [],
         errors: [],
-        stats: {
-          ...stats,
-          totalProcessed: 0,
-          successfulConversions: 0,
-          failedConversions: 0,
-          warningsGenerated: 0,
-          circularReferences: 0,
-          maxDepth: 0,
-          durationMs: 0,
-          inputSizeBytes: 0,
-          outputSizeBytes: 0,
-        },
+        stats, // Re-introduced stats
       };
     }
 
-    if (value === undefined) {
-      if (options.preserveUndefined) {
-        stats.successfulConversions++;
-        return {
-          value: null,
-          success: true,
-          original: value,
-          warnings: [
-            {
-              code: 'TYPE_COERCION',
-              message: `Undefined value converted to null at path: ${path}`,
-              path,
-              value,
-              suggestion: 'Consider filtering out undefined values before conversion',
-            },
-          ],
-          errors: [],
-          stats: {
-            ...stats,
-            totalProcessed: 0,
-            successfulConversions: 0,
-            failedConversions: 0,
-            warningsGenerated: 0,
-            circularReferences: 0,
-            maxDepth: 0,
-            durationMs: 0,
-            inputSizeBytes: 0,
-            outputSizeBytes: 0,
-          },
-        };
-      } else {
-        stats.successfulConversions++;
-        return {
-          value: null,
-          success: true,
-          original: value,
-          warnings: [],
-          errors: [],
-          stats: {
-            ...stats,
-            totalProcessed: 0,
-            successfulConversions: 0,
-            failedConversions: 0,
-            warningsGenerated: 0,
-            circularReferences: 0,
-            maxDepth: 0,
-            durationMs: 0,
-            inputSizeBytes: 0,
-            outputSizeBytes: 0,
-          },
-        };
-      }
-    }
-
+        if (value === undefined) {
+          stats.successfulConversions++; // Still a successful conversion if undefined is handled
+          if (options.preserveUndefined) {
+            return {
+              value: null,
+              success: true,
+              original: value,
+              warnings: [
+                {
+                  code: 'TYPE_COERCION',
+                  message: `Undefined value converted to null at path: ${path}`,
+                  path,
+                  value,
+                  suggestion: 'Consider filtering out undefined values before conversion',
+                },
+              ],
+              errors: [],
+              stats,
+            };
+          } else {
+            return {
+              value: null,
+              success: true,
+              original: value,
+              warnings: [],
+              errors: [],
+              stats,
+            };
+          }
+        }
     // Handle primitives
     if (this.isJSONPrimitive(value)) {
       stats.successfulConversions++;
@@ -517,18 +439,7 @@ export class JSONConverter {
         original: value,
         warnings: [],
         errors: [],
-        stats: {
-          ...stats,
-          totalProcessed: 0,
-          successfulConversions: 0,
-          failedConversions: 0,
-          warningsGenerated: 0,
-          circularReferences: 0,
-          maxDepth: 0,
-          durationMs: 0,
-          inputSizeBytes: 0,
-          outputSizeBytes: 0,
-        },
+        stats, // Re-introduced stats
       };
     }
 
@@ -543,8 +454,8 @@ export class JSONConverter {
     }
 
     // Handle special types
-    const specialResult = this.convertSpecialTypes(value, path, options);
-    if (specialResult) {
+    const specialResult = this.convertSpecialTypes(value, path, options, stats); // Pass stats
+    if (specialResult !== null) { // Explicitly check for non-null
       stats.successfulConversions++;
       return specialResult;
     }
@@ -567,18 +478,7 @@ export class JSONConverter {
       original: value,
       warnings: [],
       errors: [error],
-      stats: {
-        ...stats,
-        totalProcessed: 0,
-        successfulConversions: 0,
-        failedConversions: 0,
-        warningsGenerated: 0,
-        circularReferences: 0,
-        maxDepth: 0,
-        durationMs: 0,
-        inputSizeBytes: 0,
-        outputSizeBytes: 0,
-      },
+      stats, // Re-introduced stats
     };
   }
 
@@ -630,18 +530,7 @@ export class JSONConverter {
       original: array,
       warnings: arrayWarnings,
       errors: arrayErrors,
-      stats: {
-        ...stats,
-        totalProcessed: 0,
-        successfulConversions: 0,
-        failedConversions: 0,
-        warningsGenerated: 0,
-        circularReferences: 0,
-        maxDepth: 0,
-        durationMs: 0,
-        inputSizeBytes: 0,
-        outputSizeBytes: 0,
-      },
+      stats,
     };
   }
 
@@ -712,7 +601,7 @@ export class JSONConverter {
         // Check for custom converters
         if (options.customConverters.has(propertyKey)) {
           const converter = options.customConverters.get(propertyKey)!;
-          const customResult = converter(propertyValue, propertyPath, options);
+          const customResult = converter(propertyValue, propertyPath, options, stats);
 
           if (customResult.success) {
             result[propertyKey] = customResult.value;
@@ -763,18 +652,7 @@ export class JSONConverter {
       original: obj,
       warnings: objectWarnings,
       errors: objectErrors,
-      stats: {
-        ...stats,
-        totalProcessed: 0,
-        successfulConversions: 0,
-        failedConversions: 0,
-        warningsGenerated: 0,
-        circularReferences: 0,
-        maxDepth: 0,
-        durationMs: 0,
-        inputSizeBytes: 0,
-        outputSizeBytes: 0,
-      },
+      stats,
     };
   }
 
@@ -784,7 +662,8 @@ export class JSONConverter {
   private convertSpecialTypes(
     value: unknown,
     path: string,
-    options: Required<JSONConversionOptions>
+    options: Required<JSONConversionOptions>,
+    stats: JSONConversionStats // Added stats parameter
   ): JSONConversionResult | null {
     // Date objects
     if (value instanceof Date) {
@@ -805,17 +684,7 @@ export class JSONConverter {
             },
           ],
           errors: [],
-          stats: {
-            totalProcessed: 0,
-            successfulConversions: 0,
-            failedConversions: 0,
-            warningsGenerated: 0,
-            circularReferences: 0,
-            maxDepth: 0,
-            durationMs: 0,
-            inputSizeBytes: 0,
-            outputSizeBytes: 0,
-          },
+          stats, // Include stats here
         };
       }
     }
@@ -839,17 +708,7 @@ export class JSONConverter {
             },
           ],
           errors: [],
-          stats: {
-            totalProcessed: 0,
-            successfulConversions: 0,
-            failedConversions: 0,
-            warningsGenerated: 0,
-            circularReferences: 0,
-            maxDepth: 0,
-            durationMs: 0,
-            inputSizeBytes: 0,
-            outputSizeBytes: 0,
-          },
+          stats, // Include stats here
         };
       }
     }
@@ -873,17 +732,7 @@ export class JSONConverter {
             },
           ],
           errors: [],
-          stats: {
-            totalProcessed: 0,
-            successfulConversions: 0,
-            failedConversions: 0,
-            warningsGenerated: 0,
-            circularReferences: 0,
-            maxDepth: 0,
-            durationMs: 0,
-            inputSizeBytes: 0,
-            outputSizeBytes: 0,
-          },
+          stats, // Include stats here
         };
       }
     }
@@ -906,17 +755,7 @@ export class JSONConverter {
           },
         ],
         errors: [],
-        stats: {
-          totalProcessed: 0,
-          successfulConversions: 0,
-          failedConversions: 0,
-          warningsGenerated: 0,
-          circularReferences: 0,
-          maxDepth: 0,
-          durationMs: 0,
-          inputSizeBytes: 0,
-          outputSizeBytes: 0,
-        },
+        stats, // Include stats here
       };
     }
 
@@ -938,17 +777,7 @@ export class JSONConverter {
           },
         ],
         errors: [],
-        stats: {
-          totalProcessed: 0,
-          successfulConversions: 0,
-          failedConversions: 0,
-          warningsGenerated: 0,
-          circularReferences: 0,
-          maxDepth: 0,
-          durationMs: 0,
-          inputSizeBytes: 0,
-          outputSizeBytes: 0,
-        },
+        stats, // Include stats here
       };
     }
 
@@ -974,17 +803,7 @@ export class JSONConverter {
           },
         ],
         errors: [],
-        stats: {
-          totalProcessed: 0,
-          successfulConversions: 0,
-          failedConversions: 0,
-          warningsGenerated: 0,
-          circularReferences: 0,
-          maxDepth: 0,
-          durationMs: 0,
-          inputSizeBytes: 0,
-          outputSizeBytes: 0,
-        },
+        stats, // Include stats here
       };
     }
 
@@ -1006,17 +825,7 @@ export class JSONConverter {
           },
         ],
         errors: [],
-        stats: {
-          totalProcessed: 0,
-          successfulConversions: 0,
-          failedConversions: 0,
-          warningsGenerated: 0,
-          circularReferences: 0,
-          maxDepth: 0,
-          durationMs: 0,
-          inputSizeBytes: 0,
-          outputSizeBytes: 0,
-        },
+        stats, // Include stats here
       };
     }
 
@@ -1071,17 +880,7 @@ export const dateConverter: TypeConverter = (value, path, options) => {
           recoverable: false,
         },
       ],
-      stats: {
-        totalProcessed: 0,
-        successfulConversions: 0,
-        failedConversions: 0,
-        warningsGenerated: 0,
-        circularReferences: 0,
-        maxDepth: 0,
-        durationMs: 0,
-        inputSizeBytes: 0,
-        outputSizeBytes: 0,
-      },
+      stats, // Include stats here
     };
   }
 
@@ -1101,24 +900,14 @@ export const dateConverter: TypeConverter = (value, path, options) => {
       },
     ],
     errors: [],
-    stats: {
-      totalProcessed: 0,
-      successfulConversions: 0,
-      failedConversions: 0,
-      warningsGenerated: 0,
-      circularReferences: 0,
-      maxDepth: 0,
-      durationMs: 0,
-      inputSizeBytes: 0,
-      outputSizeBytes: 0,
-    },
+    stats, // Include stats here
   };
 };
 
 /**
  * Type converter for BigInt objects
  */
-export const bigIntConverter: TypeConverter = (value, path) => {
+export const bigIntConverter: TypeConverter = (value, path, options, stats) => {
   if (typeof value !== 'bigint') {
     return {
       value: null,
@@ -1134,17 +923,7 @@ export const bigIntConverter: TypeConverter = (value, path) => {
           recoverable: false,
         },
       ],
-      stats: {
-        totalProcessed: 0,
-        successfulConversions: 0,
-        failedConversions: 0,
-        warningsGenerated: 0,
-        circularReferences: 0,
-        maxDepth: 0,
-        durationMs: 0,
-        inputSizeBytes: 0,
-        outputSizeBytes: 0,
-      },
+      stats, // Include stats here
     };
   }
 
@@ -1164,24 +943,14 @@ export const bigIntConverter: TypeConverter = (value, path) => {
       },
     ],
     errors: [],
-    stats: {
-      totalProcessed: 0,
-      successfulConversions: 0,
-      failedConversions: 0,
-      warningsGenerated: 0,
-      circularReferences: 0,
-      maxDepth: 0,
-      durationMs: 0,
-      inputSizeBytes: 0,
-      outputSizeBytes: 0,
-    },
+    stats, // Include stats here
   };
 };
 
 /**
  * Type converter for Error objects
  */
-export const errorConverter: TypeConverter = (value, path) => {
+export const errorConverter: TypeConverter = (value, path, options, stats) => {
   if (!(value instanceof Error)) {
     return {
       value: null,
@@ -1197,17 +966,7 @@ export const errorConverter: TypeConverter = (value, path) => {
           recoverable: false,
         },
       ],
-      stats: {
-        totalProcessed: 0,
-        successfulConversions: 0,
-        failedConversions: 0,
-        warningsGenerated: 0,
-        circularReferences: 0,
-        maxDepth: 0,
-        durationMs: 0,
-        inputSizeBytes: 0,
-        outputSizeBytes: 0,
-      },
+      stats, // Include stats here
     };
   }
 
@@ -1231,17 +990,7 @@ export const errorConverter: TypeConverter = (value, path) => {
       },
     ],
     errors: [],
-    stats: {
-      totalProcessed: 0,
-      successfulConversions: 0,
-      failedConversions: 0,
-      warningsGenerated: 0,
-      circularReferences: 0,
-      maxDepth: 0,
-      durationMs: 0,
-      inputSizeBytes: 0,
-      outputSizeBytes: 0,
-    },
+    stats, // Include stats here
   };
 };
 

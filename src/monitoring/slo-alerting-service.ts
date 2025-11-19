@@ -12,8 +12,8 @@ import { EventEmitter } from 'events';
 
 import { metricsService } from './metrics-service.js';
 import { sloTracingService } from './slo-tracing-service.js';
-import { AlertSeverity } from '../types/unified-health-interfaces.js';
 import type { NotificationChannel } from '../types/slo-interfaces.js';
+import { AlertSeverity } from '../types/unified-health-interfaces.js';
 
 // ============================================================================
 // Alert Rule Definitions

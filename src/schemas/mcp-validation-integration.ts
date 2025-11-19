@@ -1,5 +1,3 @@
-// LAST ABSOLUTE FINAL EMERGENCY ROLLBACK: Complete the systematic rollback
-
 /**
  * MCP Validation Integration Layer
  *
@@ -7,7 +5,7 @@
  * This layer ensures consistent validation across all MCP tool inputs/outputs while
  * maintaining backward compatibility with existing implementations.
  *
- * @version 2.0.0 - T20 Implementation
+ * @version 2.0.0 - Enhanced Type Safety Implementation
  */
 
 import { logger } from '@/utils/logger.js';
@@ -18,7 +16,113 @@ import type {
   ValidationResult,
 } from './unified-knowledge-validator.js';
 import { mcpToolValidator } from '../services/validation/enhanced-validation-service.js';
-import type { Dict } from '../types/index.js';
+import type { Dict, JSONObject } from '../types/index.js';
+
+// ============================================================================
+// Typed Response Interfaces
+// ============================================================================
+
+export interface MemoryStoreResponse {
+  success: boolean;
+  stored?: number;
+  total?: number;
+  stored_items?: unknown[];
+  errors?: unknown[];
+  [key: string]: unknown; // Changed from JSONValue to unknown for compatibility
+}
+
+export interface MemoryFindResponse {
+  results?: unknown[];
+  items?: unknown[];
+  total_count?: number;
+  took?: number;
+  facets?: Record<string, unknown>;
+  [key: string]: unknown; // Changed from JSONValue to unknown for compatibility
+}
+
+export interface SystemStatusResponse {
+  status: string;
+  operation: string;
+  timestamp?: string;
+  uptime?: number;
+  version?: string;
+  [key: string]: unknown; // Changed from JSONValue to unknown for compatibility
+}
+
+// ============================================================================
+// Type Guard Functions for JSONValue
+// ============================================================================
+
+export function isJSONObject(obj: unknown): obj is JSONObject {
+  return obj !== null && typeof obj === 'object' && !Array.isArray(obj);
+}
+
+export function hasItems(obj: unknown): obj is { items: unknown[]; [key: string]: unknown } {
+  if (!isJSONObject(obj)) return false;
+  const o = obj as Record<string, unknown>;
+  return Array.isArray(o.items);
+}
+
+export function hasQuery(obj: unknown): obj is { query: unknown; [key: string]: unknown } {
+  if (!isJSONObject(obj)) return false;
+  const o = obj as Record<string, unknown>;
+  return typeof o.query === 'string' || typeof o.query === 'object';
+}
+
+export function isMemoryStoreResponse(obj: unknown): obj is MemoryStoreResponse {
+  if (!isJSONObject(obj)) return false;
+
+  const response = obj as Record<string, unknown>;
+
+  // Check success field
+  if (typeof response.success !== 'boolean') return false;
+
+  // Check optional fields
+  if (response.stored !== undefined && typeof response.stored !== 'number') return false;
+  if (response.total !== undefined && typeof response.total !== 'number') return false;
+  if (response.stored_items !== undefined && !Array.isArray(response.stored_items)) return false;
+  if (response.errors !== undefined && !Array.isArray(response.errors)) return false;
+
+  return true;
+}
+
+export function isMemoryFindResponse(obj: unknown): obj is MemoryFindResponse {
+  if (!isJSONObject(obj)) return false;
+
+  const response = obj as Record<string, unknown>;
+
+  // Must have either results or items
+  if (response.results === undefined && response.items === undefined) return false;
+
+  // Check array fields
+  if (response.results !== undefined && !Array.isArray(response.results)) return false;
+  if (response.items !== undefined && !Array.isArray(response.items)) return false;
+  if (response.total_count !== undefined && typeof response.total_count !== 'number') return false;
+  if (response.took !== undefined && typeof response.took !== 'number') return false;
+
+  return true;
+}
+
+export function isSystemStatusResponse(obj: unknown): obj is SystemStatusResponse {
+  if (!isJSONObject(obj)) return false;
+
+  const response = obj as Record<string, unknown>;
+
+  // Check required fields
+  if (typeof response.status !== 'string') return false;
+  if (typeof response.operation !== 'string') return false;
+
+  // Check optional fields
+  if (response.timestamp !== undefined && typeof response.timestamp !== 'string') return false;
+  if (response.uptime !== undefined && typeof response.uptime !== 'number') return false;
+  if (response.version !== undefined && typeof response.version !== 'string') return false;
+
+  return true;
+}
+
+export function hasOperation(obj: unknown): obj is { operation: string; [key: string]: unknown } {
+  return isJSONObject(obj) && typeof obj.operation === 'string';
+}
 
 // ============================================================================
 // Typed MCP Interfaces
@@ -66,7 +170,7 @@ export interface MemoryFindInput extends MCPToolInput {
 // MCP Input Validation Wrappers
 // ============================================================================
 
-export interface MCPValidationResult<T = JSONValue> {
+export interface MCPValidationResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: {
@@ -92,6 +196,11 @@ export async function validateMemoryStoreInput(
   const startTime = Date.now();
 
   try {
+    // Use type guard to safely access items property
+    if (!hasItems(input)) {
+      throw new Error('Invalid input: missing or invalid items array');
+    }
+
     logger.debug({ input: { itemCount: input.items?.length } }, 'Validating memory store input');
 
     const result = await mcpToolValidator.validateMemoryStoreTool(input);
@@ -157,6 +266,11 @@ export async function validateMemoryFindInput(
   const startTime = Date.now();
 
   try {
+    // Use type guard to safely access query property
+    if (!hasQuery(input)) {
+      throw new Error('Invalid input: missing or invalid query');
+    }
+
     logger.debug(
       { input: { query: input.query, limit: input.limit } },
       'Validating memory find input'
@@ -225,6 +339,11 @@ export async function validateSystemStatusInput(
   const startTime = Date.now();
 
   try {
+    // Use type guard to safely access operation property
+    if (!hasOperation(input)) {
+      throw new Error('Invalid input: missing or invalid operation field');
+    }
+
     logger.debug({ input: { operation: input.operation } }, 'Validating system status input');
 
     const result = await mcpToolValidator.validateSystemStatusTool(input);
@@ -298,7 +417,10 @@ export async function validateAndTransformItemsEnhanced(items: JSONValue[]): Pro
     logger.debug({ itemCount: items.length }, 'Validating and transforming MCP items');
 
     // Step 1: Validate input format using unified validator
-    const validationResult = await validateMemoryStoreInput({ items });
+    const validationResult = await validateMemoryStoreInput({
+      tool: 'memory_store',
+      parameters: { items: items as Array<{ kind: string; content: string; scope?: Record<string, string>; metadata?: Record<string, JSONValue>; }> }
+    });
 
     if (!validationResult.success) {
       const errorMessage = validationResult.error?.message || 'Unknown validation error';
@@ -307,7 +429,7 @@ export async function validateAndTransformItemsEnhanced(items: JSONValue[]): Pro
 
     // Step 2: Transform MCP input to internal format (existing logic)
     const { transformMcpInputToKnowledgeItems } = await import('../utils/mcp-transform.js');
-    const transformedItems = transformMcpInputToKnowledgeItems(items);
+    const transformedItems = transformMcpInputToKnowledgeItems(items as JSONValue[]);
 
     // Step 3: Perform additional validation on transformed items
     const detailedValidationPromises = transformedItems.map(async (item, index) => {
@@ -367,7 +489,7 @@ export async function validateAndTransformItemsEnhanced(items: JSONValue[]): Pro
     logger.debug(metadata, 'MCP items validation and transformation completed');
 
     return {
-      items: transformedItems,
+      items: transformedItems as JSONValue[],
       warnings: allWarnings,
       metadata,
     };
@@ -390,7 +512,7 @@ export async function validateAndTransformItemsEnhanced(items: JSONValue[]): Pro
       const transformedItems = transformMcpInputToKnowledgeItems(items);
 
       return {
-        items: transformedItems,
+        items: transformedItems as JSONValue[],
         warnings: [
           `Validation fallback activated: ${error instanceof Error ? error.message : 'Unknown error'}`,
         ],
@@ -491,30 +613,13 @@ export function validateAndFormatMCPResponse(
  * Validate memory store response structure
  */
 function validateMemoryStoreResponse(response: JSONValue, warnings: string[]): boolean {
-  if (typeof response !== 'object' || response === null) {
+  if (!isMemoryStoreResponse(response)) {
     return false;
   }
 
   // Check required fields
-  if (response.success === undefined || typeof response.success !== 'boolean') {
-    warnings.push('Missing or invalid success field');
-  }
-
-  if (response.stored !== undefined && typeof response.stored !== 'number') {
-    warnings.push('Invalid stored field type, should be number');
-  }
-
-  if (response.total !== undefined && typeof response.total !== 'number') {
-    warnings.push('Invalid total field type, should be number');
-  }
-
-  // Validate array fields
-  if (response.stored_items !== undefined && !Array.isArray(response.stored_items)) {
-    warnings.push('Invalid stored_items field type, should be array');
-  }
-
-  if (response.errors !== undefined && !Array.isArray(response.errors)) {
-    warnings.push('Invalid errors field type, should be array');
+  if (response.success === undefined) {
+    warnings.push('Missing success field');
   }
 
   return true;
@@ -524,26 +629,13 @@ function validateMemoryStoreResponse(response: JSONValue, warnings: string[]): b
  * Validate memory find response structure
  */
 function validateMemoryFindResponse(response: JSONValue, warnings: string[]): boolean {
-  if (typeof response !== 'object' || response === null) {
+  if (!isMemoryFindResponse(response)) {
     return false;
   }
 
   // Check required fields
   if (response.results === undefined && response.items === undefined) {
     warnings.push('Missing results or items field');
-  }
-
-  // Validate array fields
-  if (response.results !== undefined && !Array.isArray(response.results)) {
-    warnings.push('Invalid results field type, should be array');
-  }
-
-  if (response.items !== undefined && !Array.isArray(response.items)) {
-    warnings.push('Invalid items field type, should be array');
-  }
-
-  if (response.total_count !== undefined && typeof response.total_count !== 'number') {
-    warnings.push('Invalid total_count field type, should be number');
   }
 
   return true;
@@ -553,19 +645,11 @@ function validateMemoryFindResponse(response: JSONValue, warnings: string[]): bo
  * Validate system status response structure
  */
 function validateSystemStatusResponse(response: JSONValue, warnings: string[]): boolean {
-  if (typeof response !== 'object' || response === null) {
+  if (!isSystemStatusResponse(response)) {
     return false;
   }
 
-  // Check required fields
-  if (response.status === undefined || typeof response.status !== 'string') {
-    warnings.push('Missing or invalid status field');
-  }
-
-  if (response.operation === undefined || typeof response.operation !== 'string') {
-    warnings.push('Missing or invalid operation field');
-  }
-
+  // Type guards already validate required fields
   return true;
 }
 

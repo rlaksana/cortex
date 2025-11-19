@@ -23,6 +23,7 @@
 import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
+import { fixResourcePoolConversion } from '@/utils/type-fixes.js';
 
 import type {
   AcquireOptions,
@@ -1054,18 +1055,16 @@ export class TypedPoolManager implements IPoolManager {
     this.pools.set(pool.poolId, pool);
 
     // Forward pool events to manager listeners if pool is an EventEmitter
-    const eventPool = pool as { on: (event: string, listener: (event: PoolEvent<TResource>) => void) => void };
+    const eventPool = fixResourcePoolConversion(pool);
     if (typeof eventPool.on === 'function') {
-      eventPool.on('resource_created', (event: PoolEvent<TResource>) => this.forwardEvent(event));
-      eventPool.on('resource_acquired', (event: PoolEvent<TResource>) => this.forwardEvent(event));
-      eventPool.on('resource_released', (event: PoolEvent<TResource>) => this.forwardEvent(event));
-      eventPool.on('resource_destroyed', (event: PoolEvent<TResource>) => this.forwardEvent(event));
-      eventPool.on('resource_error', (event: PoolEvent<TResource>) => this.forwardEvent(event));
-      eventPool.on('health_check_completed', (event: PoolEvent<TResource>) =>
-        this.forwardEvent(event)
-      );
-      eventPool.on('pool_initialized', (event: PoolEvent<TResource>) => this.forwardEvent(event));
-      eventPool.on('pool_closed', (event: PoolEvent<TResource>) => this.forwardEvent(event));
+      eventPool.on('resource_created', (event: unknown) => this.forwardEvent(event as PoolEvent<TResource>));
+      eventPool.on('resource_acquired', (event: unknown) => this.forwardEvent(event as PoolEvent<TResource>));
+      eventPool.on('resource_released', (event: unknown) => this.forwardEvent(event as PoolEvent<TResource>));
+      eventPool.on('resource_destroyed', (event: unknown) => this.forwardEvent(event as PoolEvent<TResource>));
+      eventPool.on('resource_error', (event: unknown) => this.forwardEvent(event as PoolEvent<TResource>));
+      eventPool.on('health_check_completed', (event: unknown) => this.forwardEvent(event as PoolEvent<TResource>));
+      eventPool.on('pool_initialized', (event: unknown) => this.forwardEvent(event as PoolEvent<TResource>));
+      eventPool.on('pool_closed', (event: unknown) => this.forwardEvent(event as PoolEvent<TResource>));
     }
   }
 

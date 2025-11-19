@@ -17,6 +17,12 @@ import {
   type VerificationOptions,
   verifyContentSimilarity,
 } from '../utils/content-similarity-verifier.js';
+import {
+  hasProperty,
+  safeGetBooleanProperty,
+  safeGetNumberProperty,
+  safeGetStringProperty,
+} from '../utils/type-fixes.js';
 
 export interface DocumentWithChunks {
   parent: KnowledgeItem;
@@ -107,10 +113,11 @@ export async function getDocumentWithChunks(
 
     // Step 6: Verify content similarity if requested
     let similarity_analysis: SimilarityAnalysis | undefined;
-    if (verify_similarity && parent.data?.original_content) {
+    const originalContent = safeGetStringProperty(parent.data, 'original_content');
+    if (verify_similarity && originalContent) {
       try {
         similarity_analysis = await verifyContentSimilarity(
-          parent.data?.original_content || '',
+          originalContent,
           reassembled_content,
           similarity_options
         );
@@ -199,7 +206,8 @@ export async function getDocumentByParentId(
 
     // Extract parent information from the first chunk
     const firstChunk = chunks[0];
-    if (!firstChunk.data?.original_content_hash) {
+    const originalContentHash = safeGetStringProperty(firstChunk.data, 'original_content_hash');
+    if (!originalContentHash) {
       logger.warn({ parentId }, 'Chunks do not contain expected parent metadata');
       return null;
     }
@@ -256,8 +264,8 @@ function buildChunkSearchQuery(docId: string, parentKind: string, _scope?: unkno
  */
 function sortChunksByPosition(chunks: KnowledgeItem[]): KnowledgeItem[] {
   return chunks.sort((a, b) => {
-    const aIndex = a.data?.chunk_index ?? 0;
-    const bIndex = b.data?.chunk_index ?? 0;
+    const aIndex = safeGetNumberProperty(a.data, 'chunk_index', 0);
+    const bIndex = safeGetNumberProperty(b.data, 'chunk_index', 0);
     return aIndex - bIndex;
   });
 }
@@ -274,18 +282,24 @@ function reassembleContent(chunks: KnowledgeItem[], preserveMarkers: boolean): s
   // Sort chunks deterministically by reassembly order, chunk_index, or reassembly_key
   const sortedChunks = [...chunks].sort((a, b) => {
     // Priority 1: Use reassembly_order if available
-    if (a.data?.reassembly_order !== undefined && b.data?.reassembly_order !== undefined) {
-      return a.data.reassembly_order - b.data.reassembly_order;
+    const aReassemblyOrder = safeGetNumberProperty(a.data, 'reassembly_order');
+    const bReassemblyOrder = safeGetNumberProperty(b.data, 'reassembly_order');
+    if (aReassemblyOrder !== undefined && bReassemblyOrder !== undefined) {
+      return aReassemblyOrder - bReassemblyOrder;
     }
 
     // Priority 2: Use chunk_index
-    if (a.data?.chunk_index !== undefined && b.data?.chunk_index !== undefined) {
-      return a.data.chunk_index - b.data.chunk_index;
+    const aChunkIndex = safeGetNumberProperty(a.data, 'chunk_index');
+    const bChunkIndex = safeGetNumberProperty(b.data, 'chunk_index');
+    if (aChunkIndex !== undefined && bChunkIndex !== undefined) {
+      return aChunkIndex - bChunkIndex;
     }
 
     // Priority 3: Use reassembly_key for deterministic ordering
-    if (a.data?.reassembly_key && b.data?.reassembly_key) {
-      return a.data.reassembly_key.localeCompare(b.data.reassembly_key);
+    const aReassemblyKey = safeGetStringProperty(a.data, 'reassembly_key');
+    const bReassemblyKey = safeGetStringProperty(b.data, 'reassembly_key');
+    if (aReassemblyKey && bReassemblyKey) {
+      return aReassemblyKey.localeCompare(bReassemblyKey);
     }
 
     // Fallback: Sort by ID (not ideal but deterministic)
@@ -301,16 +315,18 @@ function reassembleContent(chunks: KnowledgeItem[], preserveMarkers: boolean): s
     let chunkContent = '';
 
     // Extract content from various possible fields
-    if (chunk.data?.content) {
-      chunkContent = chunk.data.content;
+    const dataContent = safeGetStringProperty(chunk.data, 'content');
+    if (dataContent) {
+      chunkContent = dataContent;
     } else if (chunk.content) {
       chunkContent = chunk.content;
     } else {
       // Try other common content fields
       const contentFields = ['body_text', 'body_md', 'description', 'rationale'];
       for (const field of contentFields) {
-        if (chunk.data?.[field] && typeof chunk.data[field] === 'string') {
-          chunkContent = chunk.data[field];
+        const fieldContent = safeGetStringProperty(chunk.data, field);
+        if (fieldContent) {
+          chunkContent = fieldContent;
           break;
         }
       }
@@ -326,20 +342,22 @@ function reassembleContent(chunks: KnowledgeItem[], preserveMarkers: boolean): s
       chunkContent = cleanChunkContentWithOverlapDetection(chunkContent, lastEndPos, i === 0);
 
       // Check for overlap using chunk boundaries if available
-      if (chunk.data?.chunk_start_pos !== undefined && chunk.data?.chunk_end_pos !== undefined) {
-        if (chunk.data.chunk_start_pos < lastEndPos) {
+      const chunkStartPos = safeGetNumberProperty(chunk.data, 'chunk_start_pos');
+      const chunkEndPos = safeGetNumberProperty(chunk.data, 'chunk_end_pos');
+      if (chunkStartPos !== undefined && chunkEndPos !== undefined) {
+        if (chunkStartPos < lastEndPos) {
           overlapDetected = true;
           logger.debug(
             {
               chunkId: chunk.id,
-              chunkStart: chunk.data.chunk_start_pos,
+              chunkStart: chunkStartPos,
               lastEndPos,
-              overlap: lastEndPos - chunk.data.chunk_start_pos,
+              overlap: lastEndPos - chunkStartPos,
             },
             'Detected chunk overlap during reassembly'
           );
         }
-        lastEndPos = chunk.data.chunk_end_pos;
+        lastEndPos = chunkEndPos;
       }
     }
 
@@ -445,11 +463,11 @@ function extractChunkingMetadata(
 
   return {
     total_chunks: chunks.length,
-    original_length: parentMetadata.original_length || firstChunkData.original_length || 0,
-    chunk_size: parentMetadata.chunk_size || 1200,
-    overlap_size: parentMetadata.overlap_size || 200,
-    semantic_analysis_enabled: parentMetadata.semantic_analysis_enabled || false,
-    processing_timestamp: parentMetadata.processing_timestamp || new Date().toISOString(),
+    original_length: safeGetNumberProperty(parentMetadata, 'original_length') || safeGetNumberProperty(firstChunkData, 'original_length', 0),
+    chunk_size: safeGetNumberProperty(parentMetadata, 'chunk_size', 1200),
+    overlap_size: safeGetNumberProperty(parentMetadata, 'overlap_size', 200),
+    semantic_analysis_enabled: safeGetBooleanProperty(parentMetadata, 'semantic_analysis_enabled', false),
+    processing_timestamp: safeGetStringProperty(parentMetadata, 'processing_timestamp') || new Date().toISOString(),
   };
 }
 
@@ -458,16 +476,18 @@ function extractChunkingMetadata(
  */
 function createSyntheticParent(firstChunk: KnowledgeItem, chunks: KnowledgeItem[]): KnowledgeItem {
   const chunkData = firstChunk.data || {};
+  const parentId = safeGetStringProperty(chunkData, 'parent_id');
+  const originalLength = safeGetNumberProperty(chunkData, 'original_length', 0);
 
   return {
-    id: chunkData.parent_id || `synthetic-parent-${firstChunk.id}`,
+    id: parentId || `synthetic-parent-${firstChunk.id}`,
     kind: firstChunk.kind,
     scope: firstChunk.scope,
     data: {
       is_chunk: false,
       is_synthetic_parent: true,
       total_chunks: chunks.length,
-      original_length: chunkData.original_length || 0,
+      original_length: originalLength,
       content: `Synthetic parent for ${chunks.length} chunks`,
       ...chunkData,
     },
@@ -551,7 +571,7 @@ export async function verifyDocumentReassembly(docId: string): Promise<{
 
     // Check for missing chunks
     const expectedIndices = Array.from({ length: totalExpected }, (_, i) => i);
-    const foundIndices = chunks.map((chunk) => chunk.data?.chunk_index ?? 0);
+    const foundIndices = chunks.map((chunk) => safeGetNumberProperty(chunk.data, 'chunk_index', 0));
     const missingChunks = expectedIndices.filter((index) => !foundIndices.includes(index));
 
     // Check for duplicate chunks
@@ -573,15 +593,15 @@ export async function verifyDocumentReassembly(docId: string): Promise<{
     let integrityScore = 0;
 
     const parentMetadata = result.parent.metadata?.chunking_info;
-    if (parentMetadata?.original_content_hash) {
+    const originalContentHashFromMetadata = safeGetStringProperty(parentMetadata, 'original_content_hash');
+    if (originalContentHashFromMetadata) {
       const combinedContent = result.reassembled_content;
       const { createHash } = await import('crypto');
       const recomputedHash = createHash('sha256').update(combinedContent).digest('hex');
 
       // ENHANCED: More precise hash verification with normalization
-      const normalizedOriginal = await normalizeContentForHashing(
-        result.parent.data?.original_content || ''
-      );
+      const originalContentFromParent = safeGetStringProperty(result.parent.data, 'original_content', '');
+      const normalizedOriginal = await normalizeContentForHashing(originalContentFromParent);
       const normalizedReassembled = await normalizeContentForHashing(combinedContent);
 
       const originalHash = createHash('sha256').update(normalizedOriginal).digest('hex');
@@ -661,17 +681,20 @@ async function verifyChunkHashes(chunks: KnowledgeItem[]): Promise<boolean> {
     const { createHash } = await import('crypto');
 
     for (const chunk of chunks) {
-      if (chunk.data?.content && chunk.data?.chunk_hash) {
-        const expectedHash = chunk.data.chunk_hash;
-        const actualHash = createHash('sha256').update(chunk.data.content).digest('hex');
+      const content = safeGetStringProperty(chunk.data, 'content');
+      const chunkHash = safeGetStringProperty(chunk.data, 'chunk_hash');
+      const chunkIndex = safeGetNumberProperty(chunk.data, 'chunk_index');
 
-        if (expectedHash !== actualHash) {
+      if (content && chunkHash) {
+        const actualHash = createHash('sha256').update(content).digest('hex');
+
+        if (chunkHash !== actualHash) {
           logger.warn(
             {
               chunkId: chunk.id,
-              expectedHash,
+              expectedHash: chunkHash,
               actualHash,
-              chunkIndex: chunk.data.chunk_index,
+              chunkIndex,
             },
             'Chunk hash verification failed'
           );
@@ -693,18 +716,22 @@ async function verifyChunkHashes(chunks: KnowledgeItem[]): Promise<boolean> {
 function verifyReassemblyKeys(chunks: KnowledgeItem[]): Promise<boolean> {
   try {
     for (const chunk of chunks) {
-      if (chunk.data?.reassembly_key && chunk.data?.chunk_hash && chunk.data?.parent_id) {
-        const expectedKey = chunk.data.reassembly_key;
-        const keyData = `${chunk.data.parent_id}:${chunk.data.chunk_index}:${chunk.data.chunk_hash}`;
+      const reassemblyKey = safeGetStringProperty(chunk.data, 'reassembly_key');
+      const chunkHash = safeGetStringProperty(chunk.data, 'chunk_hash');
+      const parentId = safeGetStringProperty(chunk.data, 'parent_id');
+      const chunkIndex = safeGetNumberProperty(chunk.data, 'chunk_index');
+
+      if (reassemblyKey && chunkHash && parentId) {
+        const keyData = `${parentId}:${chunkIndex}:${chunkHash}`;
         const actualKey = createHash('sha256').update(keyData).digest('hex').substring(0, 16);
 
-        if (expectedKey !== actualKey) {
+        if (reassemblyKey !== actualKey) {
           logger.warn(
             {
               chunkId: chunk.id,
-              expectedKey,
+              expectedKey: reassemblyKey,
               actualKey,
-              chunkIndex: chunk.data.chunk_index,
+              chunkIndex,
             },
             'Reassembly key verification failed'
           );
@@ -727,13 +754,13 @@ function verifyDeterministicOrder(chunks: KnowledgeItem[]): boolean {
   try {
     // Sort chunks by various deterministic fields and verify consistency
     const byChunkIndex = [...chunks].sort(
-      (a, b) => (a.data?.chunk_index ?? 0) - (b.data?.chunk_index ?? 0)
+      (a, b) => safeGetNumberProperty(a.data, 'chunk_index', 0) - safeGetNumberProperty(b.data, 'chunk_index', 0)
     );
     const byReassemblyOrder = [...chunks].sort(
-      (a, b) => (a.data?.reassembly_order ?? 0) - (b.data?.reassembly_order ?? 0)
+      (a, b) => safeGetNumberProperty(a.data, 'reassembly_order', 0) - safeGetNumberProperty(b.data, 'reassembly_order', 0)
     );
     const byReassemblyKey = [...chunks].sort((a, b) =>
-      (a.data?.reassembly_key || '').localeCompare(b.data?.reassembly_key || '')
+      safeGetStringProperty(a.data, 'reassembly_key', '').localeCompare(safeGetStringProperty(b.data, 'reassembly_key', ''))
     );
 
     // Verify all sorts produce the same order
@@ -771,18 +798,27 @@ function calculateBoundaryAccuracy(chunks: KnowledgeItem[]): number {
     let totalBoundaries = 0;
 
     for (const chunk of chunks) {
+      const chunkStartPos = safeGetNumberProperty(chunk.data, 'chunk_start_pos');
+      const chunkEndPos = safeGetNumberProperty(chunk.data, 'chunk_end_pos');
+
+      // Check if metadata has the required nested structure
+      const hasReassemblyValidation =
+        hasProperty(chunk.metadata, 'chunking_info') &&
+        hasProperty(chunk.metadata!.chunking_info, 'reassembly_validation') &&
+        hasProperty(chunk.metadata!.chunking_info!.reassembly_validation, 'start_boundary') &&
+        hasProperty(chunk.metadata!.chunking_info!.reassembly_validation, 'end_boundary');
+
       if (
-        chunk.data?.chunk_start_pos !== undefined &&
-        chunk.data?.chunk_end_pos !== undefined &&
-        chunk.metadata?.chunking_info?.reassembly_validation?.start_boundary !== undefined &&
-        chunk.metadata?.chunking_info?.reassembly_validation?.end_boundary !== undefined
+        chunkStartPos !== undefined &&
+        chunkEndPos !== undefined &&
+        hasReassemblyValidation
       ) {
         totalBoundaries++;
 
-        const expectedStart = chunk.metadata.chunking_info.reassembly_validation.start_boundary;
-        const expectedEnd = chunk.metadata.chunking_info.reassembly_validation.end_boundary;
-        const actualStart = chunk.data.chunk_start_pos;
-        const actualEnd = chunk.data.chunk_end_pos;
+        const expectedStart = safeGetNumberProperty((chunk.metadata!.chunking_info as unknown).reassembly_validation, 'start_boundary');
+        const expectedEnd = safeGetNumberProperty((chunk.metadata!.chunking_info as unknown).reassembly_validation, 'end_boundary');
+        const actualStart = chunkStartPos;
+        const actualEnd = chunkEndPos;
 
         // Allow small tolerance for boundary matching
         const startTolerance = 50;
@@ -810,13 +846,13 @@ function calculateBoundaryAccuracy(chunks: KnowledgeItem[]): number {
 function calculateOrderCorrectness(chunks: KnowledgeItem[], totalExpected: number): number {
   try {
     const sortedChunks = [...chunks].sort(
-      (a, b) => (a.data?.chunk_index ?? 0) - (b.data?.chunk_index ?? 0)
+      (a, b) => safeGetNumberProperty(a.data, 'chunk_index', 0) - safeGetNumberProperty(b.data, 'chunk_index', 0)
     );
 
     let correctOrder = 0;
     for (let i = 0; i < sortedChunks.length; i++) {
       const chunk = sortedChunks[i];
-      const expectedIndex = chunk.data?.chunk_index;
+      const expectedIndex = safeGetNumberProperty(chunk.data, 'chunk_index');
 
       if (expectedIndex !== undefined && expectedIndex === i) {
         correctOrder++;
@@ -840,12 +876,16 @@ function calculateOverlapHandling(chunks: KnowledgeItem[]): number {
 
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
+      const chunkOverlap = safeGetNumberProperty(chunk.data, 'chunk_overlap');
 
-      if (chunk.data?.chunk_overlap && chunk.data?.chunk_overlap > 0) {
+      if (chunkOverlap && chunkOverlap > 0) {
         chunksWithOverlap++;
 
         // Check if the chunk has proper overlap handling metadata
-        if (chunk.metadata?.chunking_info?.has_context !== undefined) {
+        if (
+          hasProperty(chunk.metadata, 'chunking_info') &&
+          hasProperty(chunk.metadata!.chunking_info, 'has_context')
+        ) {
           goodOverlapHandling++;
         }
       }

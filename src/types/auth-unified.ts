@@ -213,7 +213,7 @@ export function isAuthContext(value: unknown): value is AuthContext {
 
   // At least one identifier should be present
   const hasUserId = typeof ctx.userId === 'string';
-  const hasUser = ctx.user && typeof ctx.user === 'object' && typeof (ctx.user as any).id === 'string';
+  const hasUser = ctx.user && typeof ctx.user === 'object' && typeof (ctx.user as unknown).id === 'string';
 
   return hasUserId || hasUser;
 }

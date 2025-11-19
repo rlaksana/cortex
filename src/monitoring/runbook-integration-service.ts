@@ -18,7 +18,7 @@
 
 import { EventEmitter } from 'events';
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 import { type Alert } from './alert-management-service.js';
 import { AlertSeverity } from '../types/unified-health-interfaces.js';

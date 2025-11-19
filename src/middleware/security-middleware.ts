@@ -11,7 +11,7 @@ import helmet from 'helmet';
 import { z, type ZodSchema } from 'zod';
 
 import { logger } from '@/utils/logger.js';
-import { safeGetProperty, hasProperty, hasStringProperty, hasObjectProperty } from '@/utils/property-access-guards.js';
+import { safeGetProperty } from '@/utils/property-access-guards.js';
 
 export interface SecurityConfig {
   enableRateLimit?: boolean;
@@ -264,7 +264,7 @@ export class SecurityMiddleware {
         return value;
       };
 
-          req.body = sanitize(req.body) as any;
+          req.body = sanitize(req.body) as unknown;
       req.query = sanitize(req.query) as any;
       req.params = sanitize(req.params) as any;
 

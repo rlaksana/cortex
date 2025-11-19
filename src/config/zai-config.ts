@@ -198,7 +198,7 @@ export class ZAIConfigManager {
   /**
    * Load AI orchestrator configuration
    */
-  private async loadOrchestratorConfig(): Promise<void> {
+  private loadOrchestratorConfig(): void {
     const primaryProvider =
       (process.env['ZAI_PRIMARY_PROVIDER'] as unknown) ||
       DEFAULT_ORCHESTRATOR_CONFIG.primaryProvider;
@@ -235,7 +235,7 @@ export class ZAIConfigManager {
   /**
    * Load background processor configuration
    */
-  private async loadBackgroundProcessorConfig(): Promise<void> {
+  private loadBackgroundProcessorConfig(): void {
     this.backgroundProcessorConfig = {
       ...DEFAULT_BACKGROUND_PROCESSOR_CONFIG,
       maxConcurrency: parseInt(
@@ -388,7 +388,7 @@ export class ZAIConfigManager {
     if (!this.orchestratorConfig) {
       throw new Error('AI orchestrator configuration is not loaded. Call loadConfig() first.');
     }
-    return JSON.parse(JSON.stringify(this.orchestratorConfig)); // Deep copy to prevent modification
+    return JSON.parse(JSON.stringify(this.orchestratorConfig)) as AIOrchestratorConfig; // Deep copy to prevent modification
   }
 
   /**
@@ -418,7 +418,7 @@ export class ZAIConfigManager {
   /**
    * Update configuration (for runtime updates)
    */
-  async updateConfig(updates: Partial<ZAIConfig>): Promise<void> {
+  updateConfig(updates: Partial<ZAIConfig>): void {
     if (!this.config) {
       throw new Error('ZAI configuration is not loaded. Call loadConfig() first.');
     }
@@ -434,7 +434,7 @@ export class ZAIConfigManager {
   /**
    * Update orchestrator configuration (for runtime updates)
    */
-  async updateOrchestratorConfig(updates: Partial<AIOrchestratorConfig>): Promise<void> {
+  updateOrchestratorConfig(updates: Partial<AIOrchestratorConfig>): void {
     if (!this.orchestratorConfig) {
       throw new Error('AI orchestrator configuration is not loaded. Call loadConfig() first.');
     }

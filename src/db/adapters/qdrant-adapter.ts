@@ -24,6 +24,8 @@ import * as crypto from 'crypto';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAI } from 'openai';
 
+import { logger } from '@/utils/logger.js';
+
 import type { ExpiryTimeLabel } from '../../constants/expiry-times.js';
 import {
   circuitBreakerManager,
@@ -59,40 +61,19 @@ import type {
   Transaction,
   TransactionOptions,
 } from '../../types/database-generics.js';
+import {
+  hasShould,
+  isFailedDatabaseResult,
+  isQdrantMetricsResponse,
+  isVectorConfig} from '../../utils/database-type-guards.js';
 import { calculateItemExpiry } from '../../utils/expiry-utils.js';
-import { logger } from '../../utils/logger.js';
 import {
   createFindObservability,
   createStoreObservability,
 } from '../../utils/observability-helper.js';
 import {
-  hasPropertySimple,
-  safePropertyAccess,
   isString,
-  isNumber,
-  isObject,
-  hasMessage,
-  isErrorLike
-} from '../../utils/type-guards.js';
-import {
-  isDatabaseResult,
-  isSuccessfulDatabaseResult,
-  isFailedDatabaseResult,
-  unwrapDatabaseResult,
-  unwrapDatabaseResultAsArray,
-  isQdrantPoint,
-  isQdrantSearchResponse,
-  isQdrantMetricsResponse,
-  isMemoryFindResponse,
-  isVectorConfig,
-  hasShould,
-  hasScoreThreshold,
-  hasWithVector,
-  hasTitleAndName,
-  hasDescriptionAndContent,
-  safeErrorProperty,
-  safeQdrantPointAccess
-} from '../../utils/database-type-guards.js';
+  safePropertyAccess} from '../../utils/type-guards.js';
 
 // Search mode type definition
 type SearchMode = 'auto' | 'deep' | 'fast';
@@ -1054,7 +1035,7 @@ export class QdrantAdapter implements IVectorAdapter {
         limit,
         score_threshold,
         with_payload: ['kind', 'scope', 'data', 'created_at', 'content'],
-        filter: searchFilter as any,
+        filter: searchFilter as unknown,
       });
 
       return this.createSuccessResult(

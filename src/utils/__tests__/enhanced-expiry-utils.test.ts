@@ -23,12 +23,12 @@ import { enhancedExpiryUtils } from '../enhanced-expiry-utils';
 
 describe('Enhanced Expiry Utils', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date('2025-01-01T12:00:00.000Z'));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2025-01-01T12:00:00.000Z'));
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe('Expiry Calculation', () => {
@@ -227,6 +227,9 @@ describe('Enhanced Expiry Utils', () => {
       const futureItem = {
         id: 'future-item',
         kind: 'entity',
+        scope: {
+          project: 'test-project'
+        },
         data: {},
         expiry_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       };
@@ -242,6 +245,9 @@ describe('Enhanced Expiry Utils', () => {
       const expiredItem = {
         id: 'expired-item',
         kind: 'entity',
+        scope: {
+          project: 'test-project'
+        },
         data: {},
         expiry_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
       };
@@ -257,6 +263,9 @@ describe('Enhanced Expiry Utils', () => {
       const recentlyExpiredItem = {
         id: 'recently-expired',
         kind: 'entity',
+        scope: {
+          project: 'test-project'
+        },
         data: {},
         expiry_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
       };
@@ -272,6 +281,9 @@ describe('Enhanced Expiry Utils', () => {
       const itemWithoutExpiry = {
         id: 'no-expiry',
         kind: 'entity',
+        scope: {
+          project: 'test-project'
+        },
         data: {},
       };
 
@@ -286,6 +298,9 @@ describe('Enhanced Expiry Utils', () => {
       const itemWithInvalidExpiry = {
         id: 'invalid-expiry',
         kind: 'entity',
+        scope: {
+          project: 'test-project'
+        },
         data: {},
         expiry_at: 'invalid-date',
       };
@@ -300,6 +315,9 @@ describe('Enhanced Expiry Utils', () => {
       const permanentItem = {
         id: 'permanent-item',
         kind: 'entity',
+        scope: {
+          project: 'test-project'
+        },
         data: {},
         expiry_at: '9999-12-31T23:59:59.999Z',
       };
@@ -317,6 +335,9 @@ describe('Enhanced Expiry Utils', () => {
       const futureItem = {
         id: 'future-item',
         kind: 'entity',
+        scope: {
+          project: 'test-project'
+        },
         data: {},
         expiry_at: new Date(
           Date.now() + 2 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000 + 45 * 60 * 1000
@@ -337,6 +358,9 @@ describe('Enhanced Expiry Utils', () => {
       const expiredItem = {
         id: 'expired-item',
         kind: 'entity',
+        scope: {
+          project: 'test-project'
+        },
         data: {},
         expiry_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(), // 1 hour ago
       };
@@ -355,6 +379,9 @@ describe('Enhanced Expiry Utils', () => {
       const itemWithoutExpiry = {
         id: 'no-expiry',
         kind: 'entity',
+        scope: {
+          project: 'test-project'
+        },
         data: {},
       };
 
@@ -383,6 +410,9 @@ describe('Enhanced Expiry Utils', () => {
         const item = {
           id: 'test-item',
           kind: 'entity',
+          scope: {
+            project: 'test-project'
+          },
           data: {},
           expiry_at: new Date(Date.now() + duration).toISOString(),
         };
@@ -498,6 +528,9 @@ describe('Enhanced Expiry Utils', () => {
       const itemWithNestedExpiry = {
         id: 'nested-expiry',
         kind: 'entity',
+        scope: {
+          project: 'test-project'
+        },
         data: {
           expiry_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         },

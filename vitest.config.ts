@@ -47,6 +47,8 @@ export default defineConfig({
       'tests/contract/**/*.test.ts',
       'tests/validation/**/*.test.ts',
       'tests/**/*.spec.ts',
+      'src/**/__tests__/*.test.ts',
+      'src/**/*.test.ts',
     ],
     exclude: ['tests/e2e/**', 'node_modules', 'dist/', 'coverage/', '**/*.d.ts'],
     transformMode: {

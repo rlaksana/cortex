@@ -9,7 +9,6 @@
  * @since 2025
  */
 
-import { EventEmitter } from 'node:events';
 
 import { AuditServiceAdapter } from './adapters/audit-service-adapter.js';
 import { AuthServiceAdapter } from './adapters/auth-service-adapter.js';
@@ -23,7 +22,9 @@ import { MemoryFindOrchestratorAdapter } from './adapters/memory-find-orchestrat
 import { MemoryStoreOrchestratorAdapter } from './adapters/memory-store-orchestrator-adapter.js';
 import { MetricsServiceAdapter } from './adapters/metrics-service-adapter.js';
 import { DIContainer, ServiceLifetime } from './di-container.js';
+import { EventBus } from './event-bus.js';
 import type {
+  CacheStats,
   IAuditService,
   IAuthService,
   ICacheService,
@@ -40,15 +41,9 @@ import type {
   IMetricsService,
   IPerformanceMonitor,
   IValidationService,
-  CacheStats,
 } from './service-interfaces.js';
 import { ServiceTokens } from './service-interfaces.js';
 import { ConfigService } from './services/config-service.js';
-import {
-  isConfigService,
-  isDisposable,
-  isDIContainerConfig
-} from '../utils/type-safe-access.js';
 import { LoggerService } from './services/logger-service.js';
 import { DatabaseManager } from '../db/database-manager.js';
 import { AuthService } from '../services/auth/auth-service.js';
@@ -60,7 +55,9 @@ import { MemoryFindOrchestrator } from '../services/orchestrators/memory-find-or
 // Import existing implementations to be wrapped
 import { MemoryStoreOrchestrator } from '../services/orchestrators/memory-store-orchestrator.js';
 import { performanceMonitor } from '../utils/performance-monitor.js';
-import { EventBus } from './event-bus.js';
+import {
+  isConfigService
+} from '../utils/type-safe-access.js';
 
 /**
  * Service registry for configuring dependency injection

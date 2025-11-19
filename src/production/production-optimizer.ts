@@ -19,6 +19,8 @@
 
 import { EventEmitter } from 'events';
 
+import { logger } from '@/utils/logger.js';
+
 import { DEFAULT_POOL_CONFIG, QdrantPooledClient } from '../db/qdrant-pooled-client.js';
 import {
   DEFAULT_BENCHMARK_CONFIGS,
@@ -30,7 +32,7 @@ import {
   type LoadTestConfig,
   LoadTestFramework,
 } from '../testing/load-testing/load-test-framework.js';
-import { logger } from '../utils/logger.js';
+import { hasBooleanProperty, hasProperty, hasSLOMetrics, hasStringProperty } from '../utils/type-fixes.js';
 
 /**
  * Production optimizer configuration
@@ -307,25 +309,41 @@ export class ProductionOptimizer extends EventEmitter {
     performanceMonitor?: unknown;
     loadTest?: unknown;
   }> {
-    const stats: unknown = {};
+    const stats: Record<string, unknown> = {};
 
     if (this.qdrantPool) {
-      stats.qdrantPool = this.qdrantPool.getStats();
+      try {
+        stats.qdrantPool = this.qdrantPool.getStats();
+      } catch (error) {
+        stats.qdrantPool = { error: 'Failed to get stats' };
+      }
     }
 
     if (this.zaiClient) {
-      stats.zaiClient = this.zaiClient.getStats();
+      try {
+        stats.zaiClient = this.zaiClient.getStats();
+      } catch (error) {
+        stats.zaiClient = { error: 'Failed to get stats' };
+      }
     }
 
     if (this.performanceBenchmarks) {
-      stats.performanceMonitor = {
-        sloStatus: this.performanceBenchmarks.getSLOStatus(),
-        activeAlerts: this.performanceBenchmarks.getActiveAlerts(),
-      };
+      try {
+        stats.performanceMonitor = {
+          sloStatus: this.performanceBenchmarks.getSLOStatus(),
+          activeAlerts: this.performanceBenchmarks.getActiveAlerts(),
+        };
+      } catch (error) {
+        stats.performanceMonitor = { error: 'Failed to get performance stats' };
+      }
     }
 
     if (this.loadTestFramework) {
-      stats.loadTest = this.loadTestFramework.getStatus();
+      try {
+        stats.loadTest = this.loadTestFramework.getStatus();
+      } catch (error) {
+        stats.loadTest = { error: 'Failed to get load test status' };
+      }
     }
 
     return stats;
@@ -656,8 +674,23 @@ export class ProductionOptimizer extends EventEmitter {
    * Update SLO compliance
    */
   private updateSLOCompliance(): void {
+    if (!hasSLOMetrics(this.status.metrics)) {
+      this.status.sloCompliance = {
+        overall: false,
+        responseTime: false,
+        errorRate: false,
+        availability: false,
+      };
+      return;
+    }
+
     const metrics = this.status.metrics;
     const targets = this.config.sloTargets;
+
+    // Safely access sloCompliance property
+    if (!hasProperty(this.status, 'sloCompliance')) {
+      (this.status as any).sloCompliance = {};
+    }
 
     this.status.sloCompliance = {
       overall: true,
@@ -674,18 +707,28 @@ export class ProductionOptimizer extends EventEmitter {
    */
   private updateStatusFromLoadTest(results: unknown): void {
     // Update status based on load test results
-    const sloCompliance = results.sloCompliance;
+    if (!results || typeof results !== 'object') {
+      this.status.components.loadTesting = 'failed';
+      return;
+    }
+
+    const resultsObj = results as Record<string, unknown>;
+    const sloCompliance = hasSLOMetrics(resultsObj.sloCompliance)
+      ? resultsObj.sloCompliance
+      : { overall: false, slos: {} };
 
     if (sloCompliance.overall) {
       this.status.components.loadTesting = 'completed';
     } else {
       this.status.components.loadTesting = 'failed';
       // Add recommendations based on failures
-      Object.entries(sloCompliance.slos).forEach(([slo, compliant]: [string, unknown]) => {
-        if (!compliant) {
-          this.status.recommendations.push(`Improve ${slo} to meet production requirements`);
-        }
-      });
+      if (sloCompliance.slos && typeof sloCompliance.slos === 'object') {
+        Object.entries(sloCompliance.slos).forEach(([slo, compliant]: [string, unknown]) => {
+          if (!compliant) {
+            this.status.recommendations.push(`Improve ${slo} to meet production requirements`);
+          }
+        });
+      }
     }
   }
 
@@ -705,7 +748,9 @@ export class ProductionOptimizer extends EventEmitter {
 
     // Component-specific recommendations
     Object.entries(components).forEach(([name, component]: [string, unknown]) => {
-      if (component.enabled && !component.healthy) {
+      if (hasBooleanProperty(component, 'enabled') && component.enabled &&
+          hasBooleanProperty(component, 'healthy') && !component.healthy &&
+          hasStringProperty(component, 'status')) {
         recommendations.push(`Fix ${name} component: current status is ${component.status}`);
       }
     });

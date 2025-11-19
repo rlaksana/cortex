@@ -19,19 +19,13 @@ import {
   type TypedAuditEvent,
   type TypedAuditQueryOptions,
 } from '../../types/audit-types.js';
-import type { IAuditService } from '../service-interfaces.js';
 import {
-  hasPropertySimple,
-  safePropertyAccess,
-  isString,
-  isNumber,
   isBoolean,
-  isDate
-} from '../../utils/type-guards.js';
-import {
-  isAuditEvent,
-  safeExtractAuditEventProperties
-} from '../../utils/type-safe-access.js';
+  isDate,
+  isNumber,
+  isString,
+  safePropertyAccess} from '../../utils/type-guards.js';
+import type { IAuditService } from '../service-interfaces.js';
 
 /**
  * Typed audit log data interface

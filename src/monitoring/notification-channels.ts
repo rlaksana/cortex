@@ -17,7 +17,7 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import { safeObjectAccess, safeIsObject, safeGetProperty } from '@/utils/type-safe-access.js';
+import { safeGetProperty,safeIsObject, safeObjectAccess } from '@/utils/type-safe-access.js';
 
 import { type Alert } from './alert-management-service.js';
 

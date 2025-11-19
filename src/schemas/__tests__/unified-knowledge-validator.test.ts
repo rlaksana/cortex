@@ -918,10 +918,10 @@ describe('UnifiedKnowledgeTypeValidator', () => {
 
       // Create a 12-level deep object
       for (let i = 0; i < 12; i++) {
-        current.nested = {};
-        current = current.nested;
+        (current as any).nested = {};
+        current = (current as any).nested;
       }
-      current.value = 'deep value';
+      (current as any).value = 'deep value';
 
       const entity = {
         kind: 'entity',
@@ -949,7 +949,7 @@ describe('UnifiedKnowledgeTypeValidator', () => {
   describe('Error Handling', () => {
     it('should handle circular references gracefully', async () => {
       const circularObject: unknown = { name: 'test' };
-      circularObject.self = circularObject;
+      (circularObject as any).self = circularObject;
 
       const entity = {
         kind: 'entity',

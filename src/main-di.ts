@@ -38,20 +38,16 @@ import { serviceLocator } from './di/service-locator.js';
 import { createServiceRegistry } from './di/service-registry.js';
 // Import schemas and types
 import { ALL_JSON_SCHEMAS } from './schemas/json-schemas.js';
-
 // Import safe property access utilities
 import {
-  safeExtractEventData,
+  isMemoryFoundEventData,
+  isMemoryStoredEventData,
   safeExtractDataProperty,
+  safeExtractEventData,
   safeExtractItemsArray,
   safeExtractResultsArray,
-  safeExtractSearchTime,
   safeExtractResultsCount,
-  createItemCountResponse,
-  isMemoryStoredEventData,
-  isMemoryFoundEventData,
-  isSystemStatusEventData
-} from './utils/type-safe-access.js';
+  safeExtractSearchTime} from './utils/type-safe-access.js';
 
 // Helper functions for safe property access
 const num = (v: unknown, d = 0): number => Number((v as number | undefined) ?? d);

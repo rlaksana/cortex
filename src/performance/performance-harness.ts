@@ -18,6 +18,39 @@ import {
   PerformanceTargetValidator,
   type PerformanceTestConfig,
 } from './performance-targets.js';
+import { hasNumberProperty, hasObjectProperty,hasPerformanceMetrics, hasProperty } from '../utils/type-fixes.js';
+
+// Type guard for test results structure
+interface TestResult {
+  config: { name: string };
+  validation: { passed: boolean };
+  results: {
+    metrics: {
+      latencies: { p95: number; p99: number };
+      throughput: number;
+      errorRate: number;
+    };
+  };
+}
+
+function hasTestResultStructure(obj: unknown): obj is TestResult {
+  if (!obj || typeof obj !== 'object') return false;
+  const o = obj as Record<string, unknown>;
+
+  return (
+    hasObjectProperty(o, 'config') &&
+    hasProperty(o.config, 'name') &&
+    hasObjectProperty(o, 'validation') &&
+    hasProperty(o.validation, 'passed') &&
+    hasObjectProperty(o, 'results') &&
+    hasObjectProperty(o.results, 'metrics') &&
+    hasObjectProperty(o.results.metrics, 'latencies') &&
+    hasNumberProperty(o.results.metrics.latencies, 'p95') &&
+    hasNumberProperty(o.results.metrics.latencies, 'p99') &&
+    hasNumberProperty(o.results.metrics, 'throughput') &&
+    hasNumberProperty(o.results.metrics, 'errorRate')
+  );
+}
 // Define PerformanceMetrics interface needed for the performance module
 export interface PerformanceMetrics {
   /** Latency percentiles */
@@ -763,8 +796,12 @@ export class PerformanceHarness {
    * Calculate performance metrics
    */
   private calculateMetrics(iterations: unknown[]): PerformanceMetrics {
-    const successful = iterations.filter((i) => i.success);
-    const durations = successful.map((i) => i.duration).sort((a, b) => a - b);
+    // Filter for successful iterations with proper type guards
+    const successful = iterations.filter(hasPerformanceMetrics);
+    const durations = successful
+      .filter((i) => hasNumberProperty(i, 'duration'))
+      .map((i) => i.duration)
+      .sort((a, b) => a - b);
 
     if (durations.length === 0) {
       return {
@@ -779,13 +816,26 @@ export class PerformanceHarness {
     const p95 = this.percentile(durations, 95);
     const p99 = this.percentile(durations, 99);
 
-    const memoryUsages = iterations.map((i) => i.memoryUsage.end.rss);
-    const peakMemory = Math.max(...memoryUsages);
-    const averageMemory = memoryUsages.reduce((sum, val) => sum + val, 0) / memoryUsages.length;
+    // Extract memory usage with proper type guards
+    const memoryUsages = iterations
+      .filter((i) => hasObjectProperty(i, 'memoryUsage'))
+      .map((i) => {
+        const memUsage = i.memoryUsage;
+        if (hasObjectProperty(memUsage, 'end') && hasNumberProperty(memUsage.end, 'rss')) {
+          return memUsage.end.rss;
+        }
+        return 0;
+      })
+      .filter((val): val is number => val > 0);
 
-    const totalDuration = iterations.reduce((sum, i) => sum + i.duration, 0);
+    const peakMemory = memoryUsages.length > 0 ? Math.max(...memoryUsages) : 0;
+    const averageMemory = memoryUsages.length > 0
+      ? memoryUsages.reduce((sum, val) => sum + val, 0) / memoryUsages.length
+      : 0;
+
+    const totalDuration = durations.reduce((sum, val) => sum + val, 0);
     const totalOperations = successful.length; // Each successful iteration counts as one operation
-    const throughput = (totalOperations * 1000) / totalDuration;
+    const throughput = totalDuration > 0 ? (totalOperations * 1000) / totalDuration : 0;
 
     return {
       latencies: {
@@ -796,7 +846,7 @@ export class PerformanceHarness {
         max: durations[durations.length - 1],
       },
       throughput,
-      errorRate: ((iterations.length - successful.length) / iterations.length) * 100,
+      errorRate: iterations.length > 0 ? ((iterations.length - successful.length) / iterations.length) * 100 : 0,
       memoryUsage: {
         peak: peakMemory,
         average: averageMemory,
@@ -906,11 +956,12 @@ export class PerformanceHarness {
    */
   private setupGCMonitoring(): void {
     // Simple GC monitoring - in production would use more sophisticated approach
-    const originalGC = global.gc;
-    if (originalGC) {
-      (global as unknown).gc = (): void => {
+    const globalObj = global as Record<string, unknown>;
+    const originalGC = globalObj.gc;
+    if (typeof originalGC === 'function') {
+      globalObj.gc = (): void => {
         const start = performance.now();
-        originalGC();
+        (originalGC as () => void)();
         const end = performance.now();
         this.gcStats.collections++;
         this.gcStats.duration += end - start;
@@ -978,15 +1029,16 @@ export class PerformanceHarness {
 
     // JSON summary for CI
     const summaryPath = join(this.outputDir, `performance-summary-${timestamp}.json`);
+    const validResults = results.filter(hasTestResultStructure);
     const summary = {
       testId: this.testId,
       timestamp: new Date().toISOString(),
       summary: {
         totalTests: results.length,
-        passedTests: results.filter((r) => r.validation.passed).length,
-        failedTests: results.filter((r) => !r.validation.passed).length,
+        passedTests: validResults.filter((r) => r.validation.passed).length,
+        failedTests: validResults.filter((r) => !r.validation.passed).length,
       },
-      results: results.map((r) => ({
+      results: validResults.map((r) => ({
         name: r.config.name,
         passed: r.validation.passed,
         metrics: {
@@ -1023,8 +1075,36 @@ export class PerformanceHarness {
    * Compare results with baseline
    */
   private compareResults(current: PerformanceTestResult, baseline: unknown): PerformanceRegression {
-    const details = [];
+    const details: {
+      metric: string;
+      baseline: number;
+      current: number;
+      change: number;
+      changePercentage: number;
+      significance: 'major' | 'minor' | 'negligible';
+    }[] = [];
     let detected = false;
+
+    // Validate current result structure
+    if (!hasTestResultStructure(current) || !hasTestResultStructure(baseline)) {
+      return {
+        testName: current.config.name,
+        detected: false,
+        details: [{
+          metric: 'structure_validation',
+          baseline: 0,
+          current: 0,
+          change: 0,
+          changePercentage: 0,
+          significance: 'negligible' as const,
+        }],
+        impact: {
+          severity: 'low' as const,
+          affectedOperations: ['comparison'],
+          recommendations: ['Fix result structure format'],
+        },
+      };
+    }
 
     // Compare key metrics
     const metrics = [

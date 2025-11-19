@@ -19,6 +19,8 @@
 
 import * as crypto from 'crypto';
 
+import { logger } from '@/utils/logger.js';
+
 import { QdrantAdapter } from './adapters/qdrant-adapter.js';
 import type { DatabaseMetrics, IDatabase } from './database-interface.js';
 import type { IVectorAdapter, VectorConfig } from './interfaces/vector-adapter.interface.js';
@@ -33,7 +35,6 @@ import {
   unwrapDatabaseResult,
 } from '../utils/database-result-unwrapper.js';
 import { ValidationError } from '../utils/error-handler.js';
-import { logger } from '../utils/logger.js';
 import { createFindObservability } from '../utils/observability-helper.js';
 
 type SupportedDistanceMetric = 'Cosine' | 'Euclid' | 'Dot' | 'Manhattan';

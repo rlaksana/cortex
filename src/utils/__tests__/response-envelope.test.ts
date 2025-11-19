@@ -70,7 +70,7 @@ describe('ResponseEnvelopeBuilder', () => {
     expect(envelope.success).toBe(false);
     expect(envelope.data).toBe(null);
     expect(envelope.error.code).toBe(ErrorCode.VALIDATION_FAILED);
-    expect((envelope.error as unknown).message).toBe('Test error message');
+    expect(envelope.error.message).toBe('Test error message');
     expect(envelope.error.type).toBe('ValidationError');
     expect(envelope.error.details).toEqual({ field: 'test' });
     expect(envelope.error.retryable).toBe(false);
@@ -290,7 +290,7 @@ describe('ResponseProcessor', () => {
 
     const result = ResponseProcessor.process(envelope, {
       onSuccess: () => 'Success processed',
-      onError: (error) => `Error: ${(error as Error).message}`,
+      onError: (error) => `Error: ${error.message}`,
       onUnknown: () => 'Unknown processed',
     });
 
@@ -350,7 +350,7 @@ describe('ResponseMatcher', () => {
 
     const result = createResponseMatcher(envelope)
       .onSuccess((data) => `Success: ${JSON.stringify(data)}`)
-      .onError((error) => `Error: ${(error as Error).message}`)
+      .onError((error) => `Error: ${error.message}`)
       .otherwise(() => 'Unknown');
 
     expect(result).toBe('Error: Test error');

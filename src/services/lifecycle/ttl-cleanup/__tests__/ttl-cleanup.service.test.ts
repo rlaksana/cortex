@@ -18,11 +18,11 @@ import { describe, it, expect, beforeEach, afterEach, vi, type MockedFunction } 
 
 import { TTLCleanupService } from '../ttl-cleanup.service';
 import type { ITTLCleanupService, TTLCleanupConfig, ExpiredItem } from '../ttl-cleanup.interface';
-import type { IVectorAdapter } from '../../../db/interfaces/vector-adapter.interface';
+import type { IVectorAdapter } from '../../../../../db/interfaces/vector-adapter.interface';
 import type { KnowledgeItem } from '../../../types/core-interfaces';
 
 // Mock dependencies
-vi.mock('../../../utils/logger.js', () => ({
+vi.mock('../../utils/logger.js', () => ({
   logger: {
     debug: vi.fn(),
     info: vi.fn(),

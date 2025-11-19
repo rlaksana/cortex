@@ -21,11 +21,11 @@
  */
 
 import { logger } from '@/utils/logger.js';
-import type { SearchQuery } from './types/core-interfaces.js';
 import { safeGetProperty } from '@/utils/property-access-guards.js';
 
 import { MemoryFindOrchestrator } from './services/orchestrators/memory-find-orchestrator.js';
 import { MemoryStoreOrchestrator } from './services/orchestrators/memory-store-orchestrator.js';
+import type { SearchQuery } from './types/core-interfaces.js';
 
 export interface MemoryStoreManagerConfig {
   qdrant: {

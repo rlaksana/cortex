@@ -20,8 +20,8 @@ import type {
   TrendInsight,
 } from '../../../types/insight-interfaces.js';
 import type { ZAIChatRequest } from '../../../types/zai-interfaces.js';
-import { logger } from '../../../utils/logger.js';
 import type { ZAIClientService } from '../../ai/zai-client.service';
+import { logger } from '../../utils/logger.js';
 
 export interface AnomalyDetectionOptions {
   confidence_threshold: number;

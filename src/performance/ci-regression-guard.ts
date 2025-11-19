@@ -11,7 +11,7 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 
-import type { PerformanceTestResult, PerformanceRegression } from './performance-harness.js';
+import type { PerformanceRegression,PerformanceTestResult } from './performance-harness.js';
 import type { PerformanceTestConfig } from './performance-targets.js';
 
 export interface RegressionGuardConfig {

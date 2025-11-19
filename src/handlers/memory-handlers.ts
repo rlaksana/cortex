@@ -17,23 +17,16 @@ import { changeLoggerService } from '../services/logging/change-logger.js';
 import { MemoryFindOrchestrator } from '../services/orchestrators/memory-find-orchestrator.js';
 import { MemoryStoreOrchestrator } from '../services/orchestrators/memory-store-orchestrator.js';
 import {
-  createMcpResponse
-} from '../types/unified-response.interface.js';
-import {
   type ErrorEnvelope,
   type SuccessEnvelope,
 } from '../types/response-envelope.types.js';
+import {
+  createMcpResponse
+} from '../types/unified-response.interface.js';
 import { performanceMonitor } from '../utils/performance-monitor.js';
 import { createResponseEnvelopeBuilder } from '../utils/response-envelope-builder.js';
 import { validateOperationResponseOrThrow } from '../utils/response-envelope-validator.js';
-import {
-  hasPropertySimple,
-  safePropertyAccess,
-  isObject,
-  isArray,
-  isString,
-  requirePropertyAccess
-} from '../utils/type-guards.js';
+
 
 /**
  * Memory store request arguments

@@ -13,7 +13,7 @@
  * @since 2025
  */
 
-import { createResponseMeta, type UnifiedToolResponse } from '../types/unified-response.interface';
+import { createResponseMeta, type SearchStrategy,type UnifiedToolResponse } from '../types/unified-response.interface';
 
 /**
  * Response builder context
@@ -177,7 +177,7 @@ export class ResponseBuilder {
         },
       },
       meta: createResponseMeta({
-        strategy: data.strategy as string,
+        strategy: data.strategy as SearchStrategy,
         vector_used: Boolean(metrics.vectorUsed),
         degraded: Boolean(metrics.degraded),
         source: 'cortex_memory',

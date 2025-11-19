@@ -48,8 +48,8 @@ export {
   type TrendAnalysis,
 } from './retry-trend-analyzer.js';
 
-import { retryMonitoringIntegration } from './retry-monitoring-integration.js';
 import { type RetryBudgetConfig } from './retry-budget-monitor.js';
+import { retryMonitoringIntegration } from './retry-monitoring-integration.js';
 
 /**
  * Service registration options for retry budget monitoring

@@ -9,8 +9,8 @@ import { type NextFunction, type Request, type Response } from 'express';
 
 import { logger } from '@/utils/logger.js';
 
-import { performanceCollector } from './performance-collector.js';
 import { OperationType } from './operation-types.js';
+import { performanceCollector } from './performance-collector.js';
 
 export interface PerformanceMiddlewareOptions {
   trackRequestBody?: boolean;

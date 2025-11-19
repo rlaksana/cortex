@@ -23,6 +23,12 @@ export interface UploadedFile {
   buffer: Buffer;
 }
 
+export interface EndpointMetrics {
+  requests: number;
+  averageResponseTime: number;
+  errorRate: number;
+}
+
 export interface ApiUser {
   id: string;
   username: string;
@@ -44,7 +50,7 @@ export class ApiService {
     failedRequests: number;
     averageResponseTime: number;
     requestsPerSecond: number;
-    endpointMetrics: Record<string, unknown>;
+    endpointMetrics: Record<string, EndpointMetrics>;
     errorRates: Record<string, number>;
     statusCodes: Record<string, number>;
   };
@@ -206,7 +212,7 @@ export class ApiService {
     failedRequests: number;
     averageResponseTime: number;
     requestsPerSecond: number;
-    endpointMetrics: Record<string, unknown>;
+    endpointMetrics: Record<string, EndpointMetrics>;
     errorRates: Record<string, number>;
     statusCodes: Record<string, number>;
   } {

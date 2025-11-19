@@ -15,6 +15,7 @@ import {
   type AuthScope,
   type SecurityAuditLog,
   type User,
+  type UserRole,
 } from '../../types/auth-types.js';
 
 export interface CreateApiKeyRequest {
@@ -246,7 +247,7 @@ export class ApiKeyService {
         username: 'api-user',
         email: 'api-user@cortex.local',
         password_hash: '',
-        role: 'user' as unknown,
+        role: 'user' as UserRole,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

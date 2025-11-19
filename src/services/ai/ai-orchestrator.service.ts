@@ -11,6 +11,8 @@
 
 import { randomUUID } from 'crypto';
 
+import { logger } from '@/utils/logger.js';
+
 import { type ZAIClientService, zaiClientService } from './zai-client.service';
 import { zaiConfigManager } from '../../config/zai-config.js';
 import type {
@@ -24,7 +26,6 @@ import type {
   ZAIServiceStatus,
   ZAIStreamChunk,
 } from '../../types/zai-interfaces.js';
-import { logger } from '../../utils/logger.js';
 import { embeddingService } from '../embeddings/embedding-service.js';
 
 /**
@@ -95,7 +96,7 @@ class OpenAIProvider implements AIProvider {
     };
   }
 
-  getMetrics(): ZAIMetrics {
+  async getMetrics(): Promise<ZAIMetrics> {
     // Return mock metrics for OpenAI provider
     return {
       timestamp: new Date(),
@@ -158,8 +159,12 @@ class ZAIProviderWrapper implements AIProvider {
     yield* streamGenerator;
   }
 
-  getMetrics(): ZAIMetrics {
-    return this.client.getMetrics();
+  async getMetrics(): Promise<ZAIMetrics> {
+    const response = await this.client.getMetrics();
+    if (!response.success) {
+      throw new Error(response.error?.message || 'Failed to get metrics');
+    }
+    return response.data;
   }
 
   reset(): void {
@@ -355,14 +360,14 @@ export class AIOrchestratorService {
   /**
    * Get comprehensive metrics
    */
-  getMetrics(): {
+  async getMetrics(): Promise<{
     orchestrator: unknown;
     providers: Record<string, ZAIMetrics>;
-  } {
+  }> {
     const providerMetrics: Record<string, ZAIMetrics> = {};
 
     for (const [name, provider] of this.providers) {
-      providerMetrics[name] = provider.getMetrics();
+      providerMetrics[name] = await provider.getMetrics();
     }
 
     return {
@@ -583,7 +588,7 @@ export class AIOrchestratorService {
   private async getProviderStatus(provider: AIProvider): Promise<ZAIServiceStatus> {
     try {
       const isAvailable = await provider.isAvailable();
-      const metrics = provider.getMetrics();
+      const metrics = await provider.getMetrics();
 
       return {
         status: isAvailable ? 'healthy' : 'down',

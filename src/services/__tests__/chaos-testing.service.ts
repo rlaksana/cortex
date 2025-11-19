@@ -24,6 +24,13 @@ import { BaseError, ErrorCategory, ErrorCode, ErrorSeverity } from '../../utils/
 import { retryPolicyManager } from '../../utils/retry-policy.js';
 import { sliSloMonitorService } from '../metrics/sli-slo-monitor.js';
 import { systemMetricsService } from '../metrics/system-metrics.js';
+import {
+  hasProperty,
+  hasNumberProperty,
+  safeGetNumberProperty,
+  safeGetStringProperty,
+  hasObjectProperty
+} from '../../utils/type-fixes.js';
 
 // === Type Definitions ===
 
@@ -156,6 +163,16 @@ export interface SafetyCheck {
   triggered_at?: number;
 }
 
+export interface BaselineMetrics {
+  availability: number;
+  latency_p95: number;
+  error_rate: number;
+  throughput: number;
+  cpu_usage: number;
+  memory_usage: number;
+  disk_usage?: number;
+}
+
 export interface ChaosTestSuite {
   id: string;
   name: string;
@@ -175,7 +192,14 @@ export class ChaosTestingService {
   private experimentHistory: ChaosExperiment[] = [];
   private chaosEnabled: boolean = false;
   private emergencyStop: boolean = false;
-  private baselineMetrics: unknown = {};
+  private baselineMetrics: BaselineMetrics = {
+    availability: 100,
+    latency_p95: 100,
+    error_rate: 0,
+    throughput: 10,
+    cpu_usage: 20,
+    memory_usage: 30,
+  };
 
   private readonly DEFAULT_EXPERIMENTS: Partial<ChaosExperiment>[] = [
     {
@@ -803,28 +827,44 @@ export class ChaosTestingService {
     const metrics = experiment.metrics;
 
     // Calculate impacts relative to baseline
-    metrics.availability_impact = this.baselineMetrics.availability - currentMetrics.availability;
+    const metricsTyped = currentMetrics as {
+      availability: number;
+      latency_p95: number;
+      error_rate: number;
+      throughput: number;
+      cpu_usage?: number;
+      memory_usage?: number;
+      disk_usage?: number;
+    };
+
+    metrics.availability_impact = this.baselineMetrics.availability - metricsTyped.availability;
     metrics.latency_impact =
-      ((currentMetrics.latency_p95 - this.baselineMetrics.latency_p95) /
+      ((metricsTyped.latency_p95 - this.baselineMetrics.latency_p95) /
         this.baselineMetrics.latency_p95) *
       100;
-    metrics.error_rate_impact = currentMetrics.error_rate - this.baselineMetrics.error_rate;
+    metrics.error_rate_impact = metricsTyped.error_rate - this.baselineMetrics.error_rate;
     metrics.throughput_impact =
-      ((currentMetrics.throughput - this.baselineMetrics.throughput) /
+      ((metricsTyped.throughput - this.baselineMetrics.throughput) /
         this.baselineMetrics.throughput) *
       100;
 
     // Store system metrics
-    metrics.cpu_usage.push(currentMetrics.cpu_usage);
-    metrics.memory_usage.push(currentMetrics.memory_usage);
-    metrics.disk_usage.push(currentMetrics.disk_usage);
+    if (metricsTyped.cpu_usage !== undefined) {
+      metrics.cpu_usage.push(metricsTyped.cpu_usage);
+    }
+    if (metricsTyped.memory_usage !== undefined) {
+      metrics.memory_usage.push(metricsTyped.memory_usage);
+    }
+    if (metricsTyped.disk_usage !== undefined) {
+      metrics.disk_usage.push(metricsTyped.disk_usage);
+    }
 
     // Update request counts (simulated)
     const requestCount = Math.floor(Math.random() * 100);
     metrics.requests_total += requestCount;
-    metrics.requests_successful += Math.floor(requestCount * (currentMetrics.availability / 100));
+    metrics.requests_successful += Math.floor(requestCount * (metricsTyped.availability / 100));
     metrics.requests_failed +=
-      requestCount - Math.floor(requestCount * (currentMetrics.availability / 100));
+      requestCount - Math.floor(requestCount * (metricsTyped.availability / 100));
     metrics.requests_timed_out += Math.floor(requestCount * 0.05); // 5% timeout rate
   }
 
@@ -832,7 +872,12 @@ export class ChaosTestingService {
    * Check safety conditions
    */
   private checkSafetyConditions(metrics: unknown): boolean {
-    return metrics.availability < 50 || metrics.error_rate > 70 || metrics.latency_p95 > 10000;
+    const metricsTyped = metrics as {
+      availability: number;
+      error_rate: number;
+      latency_p95: number;
+    };
+    return metricsTyped.availability < 50 || metricsTyped.error_rate > 70 || metricsTyped.latency_p95 > 10000;
   }
 
   /**
@@ -934,7 +979,7 @@ export class ChaosTestingService {
       throw new Error(`Default experiment '${experimentName}' not found`);
     }
 
-    const experiment = this.createExperiment(experimentTemplate as unknown, createdBy);
+    const experiment = this.createExperiment(experimentTemplate as Omit<ChaosExperiment, "metrics" | "status" | "id" | "created_at" | "rollback_actions" | "safety_checks" | "created_by">, createdBy);
     this.activeExperiments.set(experiment.id, experiment);
 
     return await this.executeExperiment(experiment.id);
@@ -999,9 +1044,12 @@ export class ChaosTestingService {
     active_experiments: number;
     completed_experiments: number;
     system_health: 'healthy' | 'degraded' | 'critical';
-    baseline_metrics: unknown;
+    baseline_metrics: BaselineMetrics;
   } {
-    const currentMetrics = this.collectCurrentMetrics();
+    const currentMetrics = this.collectCurrentMetrics() as {
+      availability: number;
+      error_rate: number;
+    };
     let systemHealth: 'healthy' | 'degraded' | 'critical' = 'healthy';
 
     if (currentMetrics.availability < 90 || currentMetrics.error_rate > 10) {
@@ -1057,7 +1105,10 @@ export class ChaosTestingService {
   /**
    * Format experiments as CSV
    */
-  private formatExperimentsAsCSV(data: unknown): string {
+  private formatExperimentsAsCSV(data: {
+    timestamp: number;
+    experiments: any[];
+  }): string {
     const headers = [
       'timestamp',
       'experiment_id',
@@ -1072,7 +1123,7 @@ export class ChaosTestingService {
     ];
     const rows = [headers.join(',')];
 
-    data.experiments.forEach((exp: unknown) => {
+    data.experiments.forEach((exp: any) => {
       rows.push(
         [
           data.timestamp,

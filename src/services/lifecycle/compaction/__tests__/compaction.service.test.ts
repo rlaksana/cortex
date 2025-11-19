@@ -24,11 +24,11 @@ import type {
   DuplicateGroup,
   ReferenceAnalysis,
 } from '../compaction.interface';
-import type { IVectorAdapter } from '../../../db/interfaces/vector-adapter.interface';
+import type { IVectorAdapter } from '../../../../../db/interfaces/vector-adapter.interface';
 import type { KnowledgeItem } from '../../../types/core-interfaces';
 
 // Mock dependencies
-vi.mock('../../../utils/logger.js', () => ({
+vi.mock('../../utils/logger.js', () => ({
   logger: {
     debug: vi.fn(),
     info: vi.fn(),

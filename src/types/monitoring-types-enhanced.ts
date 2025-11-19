@@ -400,7 +400,6 @@ export interface PanelOptions {
   readonly max?: number;
   readonly thresholds?: readonly Threshold[];
   readonly colors?: readonly string[];
-  readonly [key: string]: JSONValue;
 }
 
 export interface Threshold {
@@ -468,7 +467,6 @@ export interface CollectorConfig {
   readonly authentication?: CollectorAuth;
   readonly headers?: Dict<string>;
   readonly queries?: readonly string[];
-  readonly [key: string]: JSONValue;
 }
 
 export interface CollectorAuth {
@@ -539,7 +537,6 @@ export interface ChartOptions {
   readonly yAxis?: ChartAxis;
   readonly legend?: boolean;
   readonly colors?: readonly string[];
-  readonly [key: string]: JSONValue;
 }
 
 export interface ChartAxis {

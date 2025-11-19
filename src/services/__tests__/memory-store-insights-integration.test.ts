@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { environment } from '../../config/environment';
+import type { PatternInsight } from '../../types/insight-interfaces.js';
 import { insightGenerationService } from '../insights/insight-generation-service';
 import { memoryStore } from '../memory-store';
 
 // Mock dependencies
-vi.mock('../../utils/logger.js');
+vi.mock('@/utils/logger.js');
 vi.mock('../../config/environment.js');
 vi.mock('../orchestrators/memory-store-orchestrator.js');
 vi.mock('../truncation/truncation-service.js');
@@ -183,34 +184,34 @@ describe('Memory Store with Insights Integration', () => {
     // Mock insight service
     mockInsightService.generateInsights.mockResolvedValue({
       insights: [
-        {
-          id: 'insight-1',
-          type: 'patterns',
-          title: 'Pattern: Test content appears frequently',
-          description: 'The term "test" appears across multiple items',
-          confidence: 0.8,
-          priority: 1,
-          item_ids: ['item-1', 'item-2'],
-          scope: { project: 'test' },
-          metadata: {
-            generated_at: new Date().toISOString(),
-            generated_by: 'insight-generation-service',
-            processing_time_ms: 50,
-            data_sources: ['text_content'],
-            tags: ['pattern', 'keyword'],
-          },
-          actionable: false,
-          category: 'pattern' as const,
-          pattern_data: {
-            pattern_type: 'keyword_frequency',
-            frequency: 2,
-            occurrences: [
-              { item_id: 'item-1', context: 'Test content 1', confidence: 0.8 },
-              { item_id: 'item-2', context: 'Test content 2', confidence: 0.8 },
-            ],
-            strength: 1.0,
-          },
-        },
+          {
+            id: 'insight-1',
+            type: 'patterns',
+            title: 'Pattern: Test content appears frequently',
+            description: 'The term "test" appears across multiple items',
+            confidence: 0.8,
+            priority: 1,
+            item_ids: ['item-1', 'item-2'],
+            scope: { project: 'test' },
+            metadata: {
+              generated_at: new Date().toISOString(),
+              generated_by: 'insight-generation-service',
+              processing_time_ms: 50,
+              data_sources: ['text_content'],
+              tags: ['pattern', 'keyword'],
+            },
+            actionable: false,
+            category: 'pattern',
+            pattern_data: {
+              pattern_type: 'keyword_frequency',
+              frequency: 2,
+              occurrences: [
+                { item_id: 'item-1', context: 'Test content 1', confidence: 0.8 },
+                { item_id: 'item-2', context: 'Test content 2', confidence: 0.8 },
+              ],
+              strength: 1.0,
+            },
+          } as PatternInsight,
       ],
       metadata: {
         total_insights: 1,

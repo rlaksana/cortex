@@ -13,6 +13,7 @@
  */
 
 import { logger } from '@/utils/logger.js';
+import { safeGetBooleanProperty, safeGetNumberProperty, safeGetProperty, safeGetStringProperty } from '@/utils/type-fixes.js';
 
 import { type MemoryStoreOrchestrator } from '../../services/orchestrators/memory-store-orchestrator.js';
 import {
@@ -51,21 +52,21 @@ export class MemoryStoreOrchestratorAdapter implements IMemoryStoreOrchestrator 
       const memoryStoreResponse: MemoryStoreResponse = {
         items: batchResult.data.items.map((item, index) => ({
           input_index: index,
-          status: (item as any).success ? 'stored' : 'validation_error',
+          status: safeGetBooleanProperty(item, 'success') ? 'stored' : 'validation_error',
           kind: 'unknown',
-          id: (item as any).id,
-          reason: item.error || undefined,
-          error_code: item.error ? 'STORAGE_ERROR' : undefined
+          id: safeGetProperty(item, 'id', 'unknown'),
+          reason: safeGetProperty(item, 'error', undefined),
+          error_code: safeGetProperty(item, 'error', undefined) ? 'STORAGE_ERROR' : undefined
         })),
         summary: {
-          total: batchResult.data.summary.total,
-          stored: (batchResult.data.summary as any).successful || (batchResult.data.summary as any).stored || 0,
-          skipped_dedupe: (batchResult.data.summary as any).skipped || 0,
+          total: safeGetNumberProperty(batchResult.data.summary, 'total', 0),
+          stored: safeGetNumberProperty(batchResult.data.summary, 'successful', 0) || safeGetNumberProperty(batchResult.data.summary, 'stored', 0),
+          skipped_dedupe: safeGetNumberProperty(batchResult.data.summary, 'skipped', 0),
           business_rule_blocked: 0,
-          validation_error: (batchResult.data.summary as any).failed || 0
+          validation_error: safeGetNumberProperty(batchResult.data.summary, 'failed', 0)
         },
-        stored: (batchResult.data as any).stored || [],
-        errors: (batchResult.data as any).errors || [],
+        stored: safeGetProperty(batchResult.data, 'stored', []),
+        errors: safeGetProperty(batchResult.data, 'errors', []),
         autonomous_context: {
           action_performed: 'batch' as const,
           similar_items_checked: 0,
@@ -112,7 +113,7 @@ export class MemoryStoreOrchestratorAdapter implements IMemoryStoreOrchestrator 
         metadata: {
           serviceName: 'memory-store-adapter',
           processingTimeMs: batchResult.metadata?.processingTimeMs || 0,
-          requestId: (batchResult.metadata as any)?.execution_id,
+          requestId: safeGetStringProperty(batchResult.metadata, 'execution_id'),
           source: 'memory-store-adapter',
           version: '2.0.0'
         }
@@ -159,21 +160,21 @@ export class MemoryStoreOrchestratorAdapter implements IMemoryStoreOrchestrator 
       const memoryStoreResponse: MemoryStoreResponse = {
         items: batchResult.data.items.map((item, index) => ({
           input_index: index,
-          status: (item as any).success ? 'stored' : 'validation_error',
+          status: safeGetBooleanProperty(item, 'success') ? 'stored' : 'validation_error',
           kind: 'unknown',
-          id: (item as any).id,
-          reason: item.error || undefined,
-          error_code: item.error ? 'STORAGE_ERROR' : undefined
+          id: safeGetProperty(item, 'id', 'unknown'),
+          reason: safeGetProperty(item, 'error', undefined),
+          error_code: safeGetProperty(item, 'error', undefined) ? 'STORAGE_ERROR' : undefined
         })),
         summary: {
-          total: batchResult.data.summary.total,
-          stored: (batchResult.data.summary as any).successful || (batchResult.data.summary as any).stored || 0,
-          skipped_dedupe: (batchResult.data.summary as any).skipped || 0,
+          total: safeGetNumberProperty(batchResult.data.summary, 'total', 0),
+          stored: safeGetNumberProperty(batchResult.data.summary, 'successful', 0) || safeGetNumberProperty(batchResult.data.summary, 'stored', 0),
+          skipped_dedupe: safeGetNumberProperty(batchResult.data.summary, 'skipped', 0),
           business_rule_blocked: 0,
-          validation_error: (batchResult.data.summary as any).failed || 0
+          validation_error: safeGetNumberProperty(batchResult.data.summary, 'failed', 0)
         },
-        stored: (batchResult.data as any).stored || [],
-        errors: (batchResult.data as any).errors || [],
+        stored: safeGetProperty(batchResult.data, 'stored', []),
+        errors: safeGetProperty(batchResult.data, 'errors', []),
         autonomous_context: {
           action_performed: 'batch' as const,
           similar_items_checked: 0,
@@ -220,7 +221,7 @@ export class MemoryStoreOrchestratorAdapter implements IMemoryStoreOrchestrator 
         metadata: {
           serviceName: 'memory-store-adapter',
           processingTimeMs: batchResult.metadata?.processingTimeMs || 0,
-          requestId: (batchResult.metadata as any)?.execution_id,
+          requestId: safeGetStringProperty(batchResult.metadata, 'execution_id'),
           source: 'memory-store-adapter',
           version: '2.0.0'
         }
@@ -338,21 +339,21 @@ export class MemoryStoreOrchestratorAdapter implements IMemoryStoreOrchestrator 
       const memoryStoreResponse: MemoryStoreResponse = {
         items: batchResult.data.items.map((item, index) => ({
           input_index: index,
-          status: (item as any).success ? 'stored' : 'validation_error',
+          status: safeGetBooleanProperty(item, 'success') ? 'stored' : 'validation_error',
           kind: 'unknown',
-          id: (item as any).id,
-          reason: item.error || undefined,
-          error_code: item.error ? 'STORAGE_ERROR' : undefined
+          id: safeGetProperty(item, 'id', 'unknown'),
+          reason: safeGetProperty(item, 'error', undefined),
+          error_code: safeGetProperty(item, 'error', undefined) ? 'STORAGE_ERROR' : undefined
         })),
         summary: {
-          total: batchResult.data.summary.total,
-          stored: (batchResult.data.summary as any).successful || (batchResult.data.summary as any).stored || 0,
-          skipped_dedupe: (batchResult.data.summary as any).skipped || 0,
+          total: safeGetNumberProperty(batchResult.data.summary, 'total', 0),
+          stored: safeGetNumberProperty(batchResult.data.summary, 'successful', 0) || safeGetNumberProperty(batchResult.data.summary, 'stored', 0),
+          skipped_dedupe: safeGetNumberProperty(batchResult.data.summary, 'skipped', 0),
           business_rule_blocked: 0,
-          validation_error: (batchResult.data.summary as any).failed || 0
+          validation_error: safeGetNumberProperty(batchResult.data.summary, 'failed', 0)
         },
-        stored: (batchResult.data as any).stored || [],
-        errors: (batchResult.data as any).errors || [],
+        stored: safeGetProperty(batchResult.data, 'stored', []),
+        errors: safeGetProperty(batchResult.data, 'errors', []),
         autonomous_context: {
           action_performed: 'batch' as const,
           similar_items_checked: 0,
@@ -399,7 +400,7 @@ export class MemoryStoreOrchestratorAdapter implements IMemoryStoreOrchestrator 
         metadata: {
           serviceName: 'memory-store-adapter',
           processingTimeMs: batchResult.metadata?.processingTimeMs || 0,
-          requestId: (batchResult.metadata as any)?.execution_id,
+          requestId: safeGetStringProperty(batchResult.metadata, 'execution_id'),
           source: 'memory-store-adapter',
           version: '2.0.0'
         }
@@ -442,21 +443,21 @@ export class MemoryStoreOrchestratorAdapter implements IMemoryStoreOrchestrator 
     return {
       items: batchResult.data.items.map((item, index) => ({
         input_index: index,
-        status: (item as any).success ? 'stored' : 'validation_error',
+        status: safeGetBooleanProperty(item, 'success') ? 'stored' : 'validation_error',
         kind: 'unknown',
-        id: (item as any).id,
-        reason: item.error || undefined,
-        error_code: item.error ? 'STORAGE_ERROR' : undefined
+        id: safeGetProperty(item, 'id', 'unknown'),
+        reason: safeGetProperty(item, 'error', undefined),
+        error_code: safeGetProperty(item, 'error', undefined) ? 'STORAGE_ERROR' : undefined
       })),
       summary: {
-        total: batchResult.data.summary.total,
-        stored: (batchResult.data.summary as any).successful || (batchResult.data.summary as any).stored || 0,
-        skipped_dedupe: (batchResult.data.summary as any).skipped || 0,
+        total: safeGetNumberProperty(batchResult.data.summary, 'total', 0),
+        stored: safeGetNumberProperty(batchResult.data.summary, 'successful', 0) || safeGetNumberProperty(batchResult.data.summary, 'stored', 0),
+        skipped_dedupe: safeGetNumberProperty(batchResult.data.summary, 'skipped', 0),
         business_rule_blocked: 0,
-        validation_error: (batchResult.data.summary as any).failed || 0
+        validation_error: safeGetNumberProperty(batchResult.data.summary, 'failed', 0)
       },
-      stored: (batchResult.data as any).stored || [],
-      errors: (batchResult.data as any).errors || [],
+      stored: safeGetProperty(batchResult.data, 'stored', []),
+      errors: safeGetProperty(batchResult.data, 'errors', []),
       autonomous_context: {
         action_performed: 'batch' as const,
         similar_items_checked: 0,

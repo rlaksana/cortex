@@ -393,7 +393,7 @@ export class PerformanceDashboard {
         'p99',
         'successRate',
       ];
-      const summaries = data.summaries as any[];
+      const summaries = data.summaries as unknown[];
       const rows = summaries?.map((s: any) => [
         s.operation,
         s.count,

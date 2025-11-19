@@ -24,17 +24,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import type { ContentBlock } from '@modelcontextprotocol/sdk/types.js';
 
 import { McpBaseError, McpErrorFactory, McpToolTimeoutError } from '@/types/mcp-error-types.js';
 // MCP Error handling imports
 import { generateCorrelationId } from '@/utils/correlation-id.js';
 import { McpResponseBuilder } from '@/utils/mcp-response-builders.js';
-import {
-  isValidationObject,
-  safeExtractErrorDetails,
-  safeExtractMcpArgs
-} from './utils/type-safe-access.js';
 
 import { autoEnvironment } from './config/auto-environment.js';
 import { EnhancedDIContainer } from './di/enhanced-di-container';
@@ -46,6 +40,9 @@ import {
   validateServerConfig,
 } from './factories/factory-type-guards';
 import type { TypedDIContainer } from './factories/factory-types';
+import {
+  safeExtractErrorDetails
+} from './utils/type-safe-access.js';
 
 // Enhanced logger with configurable output and complete type safety
 export interface LoggerConfig {

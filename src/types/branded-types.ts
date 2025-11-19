@@ -98,6 +98,55 @@ export interface TagValueBrand {
   readonly __brand: 'TagValue';
 }
 
+/**
+ * Type brand marker for timestamps
+ */
+export interface TimestampBrand {
+  readonly __brand: 'Timestamp';
+}
+
+/**
+ * Type brand marker for deployment IDs
+ */
+export interface DeploymentIdBrand {
+  readonly __brand: 'DeploymentId';
+}
+
+/**
+ * Type brand marker for health status
+ */
+export interface HealthStatusBrand {
+  readonly __brand: 'HealthStatus';
+}
+
+/**
+ * Type brand marker for canary phase IDs
+ */
+export interface CanaryPhaseIdBrand {
+  readonly __brand: 'CanaryPhaseId';
+}
+
+/**
+ * Type brand marker for alert IDs
+ */
+export interface AlertIdBrand {
+  readonly __brand: 'AlertId';
+}
+
+/**
+ * Type brand marker for traffic percentages
+ */
+export interface TrafficPercentageBrand {
+  readonly __brand: 'TrafficPercentage';
+}
+
+/**
+ * Type brand marker for threshold values
+ */
+export interface ThresholdValueBrand {
+  readonly __brand: 'ThresholdValue';
+}
+
 // ============================================================================
 // Configuration-Specific Branded Types
 // ============================================================================
@@ -161,6 +210,41 @@ export type TagKey = Brand<string, TagKeyBrand>;
  * Safe tag value
  */
 export type TagValue = Brand<string, TagValueBrand>;
+
+/**
+ * Safe timestamp (ISO 8601 string)
+ */
+export type Timestamp = Brand<string, TimestampBrand>;
+
+/**
+ * Safe deployment ID
+ */
+export type DeploymentId = Brand<string, DeploymentIdBrand>;
+
+/**
+ * Safe health status
+ */
+export type HealthStatus = Brand<string, HealthStatusBrand>;
+
+/**
+ * Safe canary phase ID
+ */
+export type CanaryPhaseId = Brand<string, CanaryPhaseIdBrand>;
+
+/**
+ * Safe alert ID
+ */
+export type AlertId = Brand<string, AlertIdBrand>;
+
+/**
+ * Safe traffic percentage
+ */
+export type TrafficPercentage = Brand<number, TrafficPercentageBrand>;
+
+/**
+ * Safe threshold value
+ */
+export type ThresholdValue = Brand<number, ThresholdValueBrand>;
 
 // ============================================================================
 // Generic Branded Type Utilities
@@ -938,3 +1022,336 @@ export function safeBrandedCast<T, B>(
 ): Brand<T, B> | null {
   return validator(value) ? (value as Brand<T, B>) : null;
 }
+
+// ============================================================================
+// Timestamp Type Utilities
+// ============================================================================
+
+/**
+ * ISO 8601 timestamp pattern
+ */
+const TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?([+-]\d{2}:\d{2})?$/;
+
+/**
+ * Validate ISO 8601 timestamp
+ */
+export function isValidTimestamp(timestamp: string): boolean {
+  if (!TIMESTAMP_PATTERN.test(timestamp)) {
+    return false;
+  }
+  const date = new Date(timestamp);
+  return !isNaN(date.getTime());
+}
+
+/**
+ * Create a safe timestamp
+ */
+export function createTimestamp(timestamp: string): Timestamp {
+  if (!isValidTimestamp(timestamp)) {
+    throw new Error(`Invalid timestamp: ${timestamp}. Must be a valid ISO 8601 string`);
+  }
+  return timestamp as Timestamp;
+}
+
+/**
+ * Create timestamp from Date object
+ */
+export function createTimestampFromDate(date: Date): Timestamp {
+  const timestamp = date.toISOString();
+  return timestamp as Timestamp;
+}
+
+/**
+ * Type guard for timestamp
+ */
+export function isTimestamp(value: unknown): value is Timestamp {
+  return typeof value === 'string' && isValidTimestamp(value);
+}
+
+// ============================================================================
+// Deployment ID Type Utilities
+// ============================================================================
+
+/**
+ * Deployment ID pattern (UUID-like format)
+ */
+const DEPLOYMENT_ID_PATTERN = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+
+/**
+ * Validate deployment ID
+ */
+export function isValidDeploymentId(id: string): boolean {
+  return DEPLOYMENT_ID_PATTERN.test(id);
+}
+
+/**
+ * Create a safe deployment ID
+ */
+export function createDeploymentId(id: string): DeploymentId {
+  if (!isValidDeploymentId(id)) {
+    throw new Error(`Invalid deployment ID: ${id}. Must be a valid UUID`);
+  }
+  return id as DeploymentId;
+}
+
+/**
+ * Generate a new deployment ID
+ */
+export function generateDeploymentId(): DeploymentId {
+  const id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+  return id as DeploymentId;
+}
+
+/**
+ * Type guard for deployment ID
+ */
+export function isDeploymentId(value: unknown): value is DeploymentId {
+  return typeof value === 'string' && isValidDeploymentId(value);
+}
+
+// ============================================================================
+// Health Status Type Utilities
+// ============================================================================
+
+/**
+ * Valid health status values
+ */
+const VALID_HEALTH_STATUSES = ['healthy', 'warning', 'degraded', 'critical', 'unknown'] as const;
+export type ValidHealthStatus = typeof VALID_HEALTH_STATUSES[number];
+
+/**
+ * Validate health status
+ */
+export function isValidHealthStatus(status: string): status is ValidHealthStatus {
+  return VALID_HEALTH_STATUSES.includes(status as ValidHealthStatus);
+}
+
+/**
+ * Create a safe health status
+ */
+export function createHealthStatus(status: ValidHealthStatus): HealthStatus {
+  if (!isValidHealthStatus(status)) {
+    throw new Error(`Invalid health status: ${status}. Must be one of: ${VALID_HEALTH_STATUSES.join(', ')}`);
+  }
+  return status as HealthStatus;
+}
+
+/**
+ * Type guard for health status
+ */
+export function isHealthStatus(value: unknown): value is HealthStatus {
+  return typeof value === 'string' && isValidHealthStatus(value);
+}
+
+// ============================================================================
+// Canary Phase ID Type Utilities
+// ============================================================================
+
+/**
+ * Canary phase ID pattern
+ */
+const CANARY_PHASE_ID_PATTERN = /^phase_[a-z0-9]{8}$/;
+
+/**
+ * Validate canary phase ID
+ */
+export function isValidCanaryPhaseId(id: string): boolean {
+  return CANARY_PHASE_ID_PATTERN.test(id);
+}
+
+/**
+ * Create a safe canary phase ID
+ */
+export function createCanaryPhaseId(id: string): CanaryPhaseId {
+  if (!isValidCanaryPhaseId(id)) {
+    throw new Error(`Invalid canary phase ID: ${id}. Must match pattern phase_[a-z0-9]{8}`);
+  }
+  return id as CanaryPhaseId;
+}
+
+/**
+ * Generate a new canary phase ID
+ */
+export function generateCanaryPhaseId(): CanaryPhaseId {
+  const randomId = Math.random().toString(36).substring(2, 10);
+  const id = `phase_${randomId}`;
+  return id as CanaryPhaseId;
+}
+
+/**
+ * Type guard for canary phase ID
+ */
+export function isCanaryPhaseId(value: unknown): value is CanaryPhaseId {
+  return typeof value === 'string' && isValidCanaryPhaseId(value);
+}
+
+// ============================================================================
+// Alert ID Type Utilities
+// ============================================================================
+
+/**
+ * Alert ID pattern
+ */
+const ALERT_ID_PATTERN = /^alert_[a-z0-9]{12}$/;
+
+/**
+ * Validate alert ID
+ */
+export function isValidAlertId(id: string): boolean {
+  return ALERT_ID_PATTERN.test(id);
+}
+
+/**
+ * Create a safe alert ID
+ */
+export function createAlertId(id: string): AlertId {
+  if (!isValidAlertId(id)) {
+    throw new Error(`Invalid alert ID: ${id}. Must match pattern alert_[a-z0-9]{12}`);
+  }
+  return id as AlertId;
+}
+
+/**
+ * Generate a new alert ID
+ */
+export function generateAlertId(): AlertId {
+  const randomId = Math.random().toString(36).substring(2, 14);
+  const id = `alert_${randomId}`;
+  return id as AlertId;
+}
+
+/**
+ * Type guard for alert ID
+ */
+export function isAlertId(value: unknown): value is AlertId {
+  return typeof value === 'string' && isValidAlertId(value);
+}
+
+// ============================================================================
+// Traffic Percentage Type Utilities
+// ============================================================================
+
+/**
+ * Traffic percentage range
+ */
+const TRAFFIC_PERCENTAGE_RANGE = {
+  min: 0,
+  max: 100,
+} as const;
+
+/**
+ * Validate traffic percentage
+ */
+export function isValidTrafficPercentage(percentage: number): boolean {
+  return Number.isFinite(percentage) && percentage >= TRAFFIC_PERCENTAGE_RANGE.min && percentage <= TRAFFIC_PERCENTAGE_RANGE.max;
+}
+
+/**
+ * Create a safe traffic percentage
+ */
+export function createTrafficPercentage(percentage: number): TrafficPercentage {
+  if (!isValidTrafficPercentage(percentage)) {
+    throw new Error(`Invalid traffic percentage: ${percentage}. Must be between ${TRAFFIC_PERCENTAGE_RANGE.min} and ${TRAFFIC_PERCENTAGE_RANGE.max}`);
+  }
+  return percentage as TrafficPercentage;
+}
+
+/**
+ * Type guard for traffic percentage
+ */
+export function isTrafficPercentage(value: unknown): value is TrafficPercentage {
+  return typeof value === 'number' && isValidTrafficPercentage(value);
+}
+
+// ============================================================================
+// Threshold Value Type Utilities
+// ============================================================================
+
+/**
+ * Threshold value constraints
+ */
+const THRESHOLD_CONSTRAINTS = {
+  min: 0,
+  max: Number.MAX_SAFE_INTEGER,
+  maxDecimalPlaces: 6,
+} as const;
+
+/**
+ * Validate threshold value
+ */
+export function isValidThresholdValue(value: number): boolean {
+  if (!Number.isFinite(value) || value < THRESHOLD_CONSTRAINTS.min || value > THRESHOLD_CONSTRAINTS.max) {
+    return false;
+  }
+
+  // Check decimal places
+  const decimalPlaces = value.toString().split('.')[1]?.length || 0;
+  return decimalPlaces <= THRESHOLD_CONSTRAINTS.maxDecimalPlaces;
+}
+
+/**
+ * Create a safe threshold value
+ */
+export function createThresholdValue(value: number): ThresholdValue {
+  if (!isValidThresholdValue(value)) {
+    throw new Error(`Invalid threshold value: ${value}. Must be a finite number between ${THRESHOLD_CONSTRAINTS.min} and ${THRESHOLD_CONSTRAINTS.max} with at most ${THRESHOLD_CONSTRAINTS.maxDecimalPlaces} decimal places`);
+  }
+  return value as ThresholdValue;
+}
+
+/**
+ * Type guard for threshold value
+ */
+export function isThresholdValue(value: unknown): value is ThresholdValue {
+  return typeof value === 'number' && isValidThresholdValue(value);
+}
+
+// ============================================================================
+// Enhanced Branded Type Collections
+// ============================================================================
+
+/**
+ * Type-safe deployment registry
+ */
+export type DeploymentRegistry = Map<
+  DeploymentId,
+  {
+    serviceName: string;
+    stableVersion: string;
+    canaryVersion: string;
+    status: HealthStatus;
+    trafficPercentage: TrafficPercentage;
+    createdAt: Timestamp;
+  }
+>;
+
+/**
+ * Type-safe alert registry
+ */
+export type AlertRegistry = Map<
+  AlertId,
+  {
+    deploymentId: DeploymentId;
+    severity: string;
+    message: string;
+    triggeredAt: Timestamp;
+    resolved: boolean;
+    resolvedAt?: Timestamp;
+  }
+>;
+
+/**
+ * Type-safe threshold map
+ */
+export type ThresholdMap = Map<
+  string, // metric name
+  {
+    warning: ThresholdValue;
+    critical: ThresholdValue;
+    operator: 'gt' | 'lt' | 'eq';
+  }
+>;

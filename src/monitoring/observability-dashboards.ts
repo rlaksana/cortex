@@ -22,13 +22,13 @@
  * @since 2025
  */
 
-import { EventEmitter } from 'events';
-
-import { type DashboardWidget as CentralizedDashboardWidget } from '../types/slo-types.js';
 import path from 'path';
 
+import { EventEmitter } from 'events';
 import express, { static as serveStatic } from 'express';
 import { createServer } from 'http';
+
+import { type DashboardWidget as CentralizedDashboardWidget } from '../types/slo-types.js';
 
 // Socket.IO is optional at runtime. We type minimally and avoid adding a hard dep.
 type Socket = {
@@ -193,7 +193,7 @@ const slugify = (s: string): string =>
  */
 export class ObservabilityDashboards extends EventEmitter {
   private app: express.Application;
-  private server: any; // HTTP server - using any to avoid circular dependency
+  private server: unknown; // HTTP server - using any to avoid circular dependency
   private io: SocketServer | null = null;
   private config: ObservabilityDashboardConfig;
   private dashboardTemplates: Map<string, DashboardTemplate> = new Map();
@@ -265,12 +265,12 @@ export class ObservabilityDashboards extends EventEmitter {
 
       // Start HTTP server
       await new Promise<void>((resolve, reject) => {
-        if (!this.server || typeof this.server.listen !== 'function') {
+        if (!this.server || typeof (this.server as any).listen !== 'function') {
           reject(new Error('Server not properly initialized'));
           return;
         }
 
-        this.server.listen(this.config.server.port, this.config.server.host, (error?: Error) => {
+        (this.server as any).listen(this.config.server.port, this.config.server.host, (error?: Error) => {
           if (error) {
             reject(error);
           } else {
@@ -333,7 +333,7 @@ export class ObservabilityDashboards extends EventEmitter {
       logger.info('Stopping Observability Dashboards service...');
 
       this.io?.close?.();
-      this.server.close();
+      (this.server as any).close();
       this.isStarted = false;
 
       this.emit('stopped', 'Observability Dashboards service stopped successfully');

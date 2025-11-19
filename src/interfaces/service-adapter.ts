@@ -11,6 +11,8 @@
 
 import { randomUUID } from 'crypto';
 
+import { logger } from '@/utils/logger.js';
+
 import type {
   IBaseService,
   ServiceError,
@@ -18,7 +20,6 @@ import type {
   ServiceResponse,
 } from './service-interfaces.js';
 import { ServiceResponseHandler } from '../utils/service-response-handler-integration.js';
-import { logger } from '../utils/logger.js';
 
 /**
  * Service adapter base class that provides consistent error handling and response formatting

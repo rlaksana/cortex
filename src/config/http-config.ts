@@ -353,14 +353,17 @@ export class HttpConfigManager {
    */
   importConfig(configJson: string): void {
     try {
-      const data = JSON.parse(configJson);
+      const data = JSON.parse(configJson) as {
+        config?: Partial<HttpConfig>;
+        environment?: unknown;
+      };
 
       if (data.config) {
         this.updateConfig(data.config);
       }
 
       if (data.environment) {
-        this.environment = data.environment;
+        this.environment = String(data.environment);
       }
     } catch (error) {
       throw new Error(`Failed to import HTTP configuration: ${error}`);

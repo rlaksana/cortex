@@ -16,13 +16,14 @@ import {
   type ValidationErrorDetail,
   ValidationMode,
   type ValidationOptions,
-  type ValidationResult,
+  type ValidationResult
 } from './unified-knowledge-validator.js';
 import type {
   KnowledgeItem as IKnowledgeItem,
   StoreError,
   ValidationService as IValidationService,
 } from '../types/core-interfaces.js';
+import { hasStringProperty } from '../utils/type-fixes.js';
 
 // ============================================================================
 // Legacy Error Format Conversion
@@ -286,7 +287,7 @@ export class MCPValidationIntegration {
       // Basic validation for system status operations
       const validOperations = ['get_status', 'get_health', 'get_metrics'];
 
-      if (!input.operation) {
+      if (!hasStringProperty(input, 'operation')) {
         return {
           success: false,
           error: 'Operation is required',

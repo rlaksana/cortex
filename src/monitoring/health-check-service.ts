@@ -16,8 +16,8 @@ import { EventEmitter } from 'events';
 import { logger } from '@/utils/logger.js';
 
 import { metricsService } from './metrics-service.js';
-import { performanceCollector } from './performance-collector.js';
 import { OperationType } from './operation-types.js';
+import { performanceCollector } from './performance-collector.js';
 import { DependencyType } from '../services/deps-registry.js';
 import { EmbeddingService } from '../services/embeddings/embedding-service.js';
 import {

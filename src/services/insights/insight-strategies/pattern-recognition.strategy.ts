@@ -18,8 +18,14 @@ import type {
   PatternInsight,
 } from '../../../types/insight-interfaces.js';
 import type { ZAIChatRequest, ZAIChatResponse } from '../../../types/zai-interfaces.js';
-import { logger } from '../../../utils/logger.js';
+import {
+  hasProperty,
+  safeGetArrayProperty,
+  safeGetNumberProperty,
+  safeGetStringProperty,
+} from '../../../utils/type-fixes.js';
 import type { ZAIClientService } from '../../ai/zai-client.service';
+import { logger } from '../../utils/logger.js';
 
 export interface PatternRecognitionOptions {
   confidence_threshold: number;
@@ -145,7 +151,7 @@ export class PatternRecognitionStrategy {
       };
 
       const response = await this.zaiClient.generateCompletion(zaiRequest);
-      return this.parseSemanticPatternResponse(response, items);
+      return this.parseSemanticPatternResponse(response.data!, items);
     } catch (error) {
       logger.error({ error }, 'Semantic pattern analysis failed');
       return [];
@@ -164,7 +170,7 @@ export class PatternRecognitionStrategy {
       const structureGroups = this.groupByStructure(items);
       const analyses: PatternAnalysis[] = [];
 
-      for (const [structure, groupItems] of structureGroups.entries()) {
+      for (const [structure, groupItems] of Array.from(structureGroups.entries())) {
         if (groupItems.length >= 2) {
           const analysis: PatternAnalysis = {
             pattern_type: 'structural',
@@ -219,19 +225,25 @@ export class PatternRecognitionStrategy {
       const analyses: PatternAnalysis[] = [];
 
       for (const pattern of timePatterns) {
+        const patternName = safeGetStringProperty(pattern, 'name');
+        const patternDescription = safeGetStringProperty(pattern, 'description');
+        const patternConfidence = safeGetNumberProperty(pattern, 'confidence');
+        const patternItems = (pattern as unknown).items || [];
+        const patternStrength = safeGetNumberProperty(pattern, 'strength');
+
         const analysis: PatternAnalysis = {
           pattern_type: 'temporal',
-          pattern_name: `Temporal Pattern: ${(pattern as unknown).name}`,
-          description: (pattern as unknown).description,
-          confidence: (pattern as unknown).confidence,
-          frequency: pattern.items.length,
-          items: pattern.items.map((item: KnowledgeItem) => ({
+          pattern_name: `Temporal Pattern: ${patternName}`,
+          description: patternDescription,
+          confidence: patternConfidence,
+          frequency: patternItems.length,
+          items: patternItems.map((item: KnowledgeItem) => ({
             item_id: item.id || '',
             content: this.extractKeyContent(item),
             context: `Time: ${new Date(item.created_at!).toLocaleString()}`,
             confidence: 0.7,
           })),
-          strength: pattern.strength,
+          strength: patternStrength,
           metadata: {
             analysis_method: 'temporal_clustering',
             keywords: ['temporal', 'time', 'pattern'],
@@ -278,7 +290,7 @@ export class PatternRecognitionStrategy {
       };
 
       const response = await this.zaiClient.generateCompletion(zaiRequest);
-      return this.parseBehavioralPatternResponse(response, items);
+      return this.parseBehavioralPatternResponse(response.data!, items);
     } catch (error) {
       logger.error({ error }, 'Behavioral pattern analysis failed');
       return [];
@@ -290,10 +302,12 @@ export class PatternRecognitionStrategy {
    */
   private prepareAnalyzableItems(items: KnowledgeItem[]): KnowledgeItem[] {
     return items.filter((item) => {
-      const data = item.data as unknown;
+      const hasContent = safeGetStringProperty(item.data, 'content');
+      const hasTitle = safeGetStringProperty(item.data, 'title');
+      const hasDescription = safeGetStringProperty(item.data, 'description');
       return (
         item.data &&
-        (data.content || data.title || data.description || Object.keys(item.data).length > 0)
+        (hasContent || hasTitle || hasDescription || Object.keys(item.data || {}).length > 0)
       );
     });
   }
@@ -397,29 +411,39 @@ Return only the JSON response, no additional text.
       const analysis = JSON.parse(content);
       const patterns = analysis.patterns || [];
 
-      return patterns.map((pattern: unknown) => ({
-        pattern_type: 'semantic' as const,
-        pattern_name: (pattern as unknown).name,
-        description: (pattern as unknown).description,
-        confidence: pattern.confidence || 0.5,
-        frequency: pattern.item_indices?.length || 0,
-        items: (pattern.item_indices || []).map((index: number) => {
-          const item = items[index - 1];
-          return {
-            item_id: item.id,
-            content: this.extractKeyContent(item),
-            context: 'Semantic pattern match',
-            confidence: pattern.confidence || 0.5,
-          };
-        }),
-        strength: (pattern.item_indices?.length || 0) / items.length,
-        metadata: {
-          analysis_method: 'zai_semantic_analysis',
-          keywords: pattern.keywords || [],
-          entities: pattern.entities || [],
-          relationships: pattern.relationships || [],
-        },
-      }));
+      return patterns.map((pattern: unknown) => {
+        const patternName = safeGetStringProperty(pattern, 'name');
+        const patternDescription = safeGetStringProperty(pattern, 'description');
+        const patternConfidence = safeGetNumberProperty(pattern, 'confidence', 0.5);
+        const patternKeywords = safeGetArrayProperty(pattern, 'keywords') || [];
+        const patternEntities = safeGetArrayProperty(pattern, 'entities') || [];
+        const patternRelationships = safeGetArrayProperty(pattern, 'relationships') || [];
+        const itemIndices = (pattern as unknown).item_indices || [];
+
+        return {
+          pattern_type: 'semantic' as const,
+          pattern_name: patternName,
+          description: patternDescription,
+          confidence: patternConfidence,
+          frequency: itemIndices.length,
+          items: itemIndices.map((index: number) => {
+            const item = items[index - 1];
+            return {
+              item_id: item.id,
+              content: this.extractKeyContent(item),
+              context: 'Semantic pattern match',
+              confidence: patternConfidence,
+            };
+          }),
+          strength: itemIndices.length / items.length,
+          metadata: {
+            analysis_method: 'zai_semantic_analysis',
+            keywords: patternKeywords,
+            entities: patternEntities,
+            relationships: patternRelationships,
+          },
+        };
+      });
     } catch (error) {
       logger.error({ error }, 'Failed to parse semantic pattern response');
       return [];
@@ -442,29 +466,38 @@ Return only the JSON response, no additional text.
       const analysis = JSON.parse(content);
       const patterns = analysis.patterns || [];
 
-      return patterns.map((pattern: unknown) => ({
-        pattern_type: 'behavioral' as const,
-        pattern_name: (pattern as unknown).name,
-        description: (pattern as unknown).description,
-        confidence: pattern.confidence || 0.5,
-        frequency: pattern.item_indices?.length || 0,
-        items: (pattern.item_indices || []).map((index: number) => {
-          const item = items[index - 1];
-          return {
-            item_id: item.id,
-            content: this.extractKeyContent(item),
-            context: `Behavior: ${pattern.behavior_type}`,
-            confidence: pattern.confidence || 0.5,
-          };
-        }),
-        strength: (pattern.item_indices?.length || 0) / items.length,
-        metadata: {
-          analysis_method: 'zai_behavioral_analysis',
-          keywords: pattern.characteristics || [],
-          entities: [],
-          relationships: [],
-        },
-      }));
+      return patterns.map((pattern: unknown) => {
+        const patternName = safeGetStringProperty(pattern, 'name');
+        const patternDescription = safeGetStringProperty(pattern, 'description');
+        const patternConfidence = safeGetNumberProperty(pattern, 'confidence', 0.5);
+        const patternBehaviorType = safeGetStringProperty(pattern, 'behavior_type');
+        const patternCharacteristics = safeGetArrayProperty(pattern, 'characteristics') || [];
+        const itemIndices = (pattern as unknown).item_indices || [];
+
+        return {
+          pattern_type: 'behavioral' as const,
+          pattern_name: patternName,
+          description: patternDescription,
+          confidence: patternConfidence,
+          frequency: itemIndices.length,
+          items: itemIndices.map((index: number) => {
+            const item = items[index - 1];
+            return {
+              item_id: item.id,
+              content: this.extractKeyContent(item),
+              context: `Behavior: ${patternBehaviorType}`,
+              confidence: patternConfidence,
+            };
+          }),
+          strength: itemIndices.length / items.length,
+          metadata: {
+            analysis_method: 'zai_behavioral_analysis',
+            keywords: patternCharacteristics,
+            entities: [],
+            relationships: [],
+          },
+        };
+      });
     } catch (error) {
       logger.error({ error }, 'Failed to parse behavioral pattern response');
       return [];
@@ -492,10 +525,10 @@ Return only the JSON response, no additional text.
    * Get item structure signature
    */
   private getItemStructure(item: KnowledgeItem): string {
-    const data = (item.data as unknown) || {};
+    const data = item.data || {};
     const dataKeys = Object.keys(data).sort();
-    const hasContent = !!(data.content || data.title || data.description);
-    const hasMetadata = !!(data.metadata || data.tags || data.categories);
+    const hasContent = !!(safeGetStringProperty(data, 'content') || safeGetStringProperty(data, 'title') || safeGetStringProperty(data, 'description'));
+    const hasMetadata = !!(hasProperty(data, 'metadata') || hasProperty(data, 'tags') || hasProperty(data, 'categories'));
 
     return `keys:${dataKeys.length},content:${hasContent},metadata:${hasMetadata}`;
   }
@@ -510,13 +543,17 @@ Return only the JSON response, no additional text.
     const timeClusters = this.findTimeClusters(sortedItems);
 
     for (const cluster of timeClusters) {
-      if (cluster.items.length >= 2) {
+      const clusterItems = (cluster as unknown).items || [];
+      const clusterDescription = safeGetStringProperty(cluster, 'description');
+      const clusterTimeRange = safeGetStringProperty(cluster, 'timeRange');
+
+      if (clusterItems.length >= 2) {
         patterns.push({
-          name: `Time Cluster: ${cluster.description}`,
-          description: `Items clustered around ${cluster.timeRange}`,
+          name: `Time Cluster: ${clusterDescription}`,
+          description: `Items clustered around ${clusterTimeRange}`,
           confidence: 0.7,
-          strength: cluster.items.length / sortedItems.length,
-          items: cluster.items,
+          strength: clusterItems.length / sortedItems.length,
+          items: clusterItems,
         });
       }
     }

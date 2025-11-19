@@ -15,9 +15,9 @@
 import { type NextFunction, type Request, type Response } from 'express';
 
 import { logger } from '@/utils/logger.js';
+import { safeGetProperty } from '@/utils/property-access-guards.js';
 
 import { type AuthContext } from '../types/auth-types.js';
-import { safeGetProperty } from '@/utils/property-access-guards.js';
 
 import '../types/express.d.js'; // Reference the type extensions
 

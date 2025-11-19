@@ -11,12 +11,11 @@
  * @version 2.0.0 - Type Safety Implementation
  */
 
-import type {
+import {
   isJSONArray,
   isJSONObject,
   isJSONPrimitive,
-  JSONObject,
-  JSONValue,
+  type JSONValue,
 } from '../types/index.js';
 
 // ============================================================================
@@ -551,29 +550,43 @@ export class QdrantConfigBuilder {
 /**
  * Type-safe configuration merger
  */
-export function mergeConfigs<T extends JSONObject>(base: T, ...configs: Partial<T>[]): T {
-  return configs.reduce((merged, config) => ({ ...merged, ...config }), base);
+export function mergeConfigs<T extends Record<string, unknown>>(base: T, ...configs: Partial<T>[]): T {
+  return Object.assign({}, base, ...configs) as T;
 }
 
 /**
  * Deep configuration merger with type safety
  */
-export function deepMergeConfigs<T extends JSONObject>(base: T, ...configs: Partial<T>[]): T {
-  return configs.reduce((merged, config) => {
-    const result = { ...merged } as Record<string, unknown>;
+export function deepMergeConfigs<T extends Record<string, unknown>>(base: T, ...configs: Partial<T>[]): T {
+  const result = { ...base } as Record<string, unknown>;
 
+  for (const config of configs) {
     for (const [key, value] of Object.entries(config)) {
       if (value === undefined) continue;
 
-      const mergedValue = (merged as Record<string, unknown>)[key];
+      const mergedValue = result[key];
+      const baseValue = base[key];
 
-      if (isJSONObject(mergedValue) && isJSONObject(value)) {
-        result[key] = deepMergeConfigs(mergedValue as JSONObject, value as JSONObject);
+      if (
+        mergedValue &&
+        baseValue &&
+        typeof mergedValue === 'object' &&
+        typeof baseValue === 'object' &&
+        !Array.isArray(mergedValue) &&
+        !Array.isArray(baseValue) &&
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
+        result[key] = deepMergeConfigs(
+          baseValue as Record<string, unknown>,
+          value as Record<string, unknown>
+        );
       } else {
         result[key] = value;
       }
     }
+  }
 
-    return result as T;
-  }, base);
+  return result as T;
 }

@@ -7,9 +7,10 @@
 
 import { EventEmitter } from 'events';
 
+import { logger } from '@/utils/logger.js';
+
 import { OperationType } from './operation-types.js';
 import type { OperationMetadata } from '../types/monitoring-types.js';
-import { logger } from '../utils/logger.js';
 
 export interface PerformanceMetric {
   operation: OperationType;

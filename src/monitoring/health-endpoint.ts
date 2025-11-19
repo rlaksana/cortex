@@ -414,23 +414,23 @@ export class HealthEndpointManager {
   /**
    * Setup all health endpoints
    */
-  setupEndpoints(app: any): void {
+  setupEndpoints(app: unknown): void {
     // Check if app has the expected Express methods
-    if (!app || typeof app.get !== 'function') {
+    if (!app || typeof (app as any).get !== 'function') {
       this.logger.error('Invalid app object provided to setupEndpoints');
       return;
     }
 
     // Main health check endpoint
-    app.get('/health', this.authenticateHealthEndpoint.bind(this), this.healthCheck.bind(this));
+    (app as any).get('/health', this.authenticateHealthEndpoint.bind(this), this.healthCheck.bind(this));
 
     // Kubernetes/Docker-style probes
-    app.get(
+    (app as any).get(
       '/health/live',
       this.authenticateHealthEndpoint.bind(this),
       this.livenessProbe.bind(this)
     );
-    app.get(
+    (app as any).get(
       '/health/ready',
       this.authenticateHealthEndpoint.bind(this),
       this.readinessProbe.bind(this)
@@ -438,7 +438,7 @@ export class HealthEndpointManager {
 
     // Detailed endpoints (if enabled)
     if (this.config.enableDetailedEndpoints) {
-      app.get(
+      (app as any).get(
         '/health/detailed',
         this.authenticateHealthEndpoint.bind(this),
         this.detailedHealthCheck.bind(this)
@@ -447,7 +447,7 @@ export class HealthEndpointManager {
 
     // Metrics endpoint (if enabled)
     if (this.config.enableMetricsEndpoint) {
-      app.get('/metrics', this.authenticateHealthEndpoint.bind(this), this.metrics.bind(this));
+      (app as any).get('/metrics', this.authenticateHealthEndpoint.bind(this), this.metrics.bind(this));
     }
 
     this.logger.info('Health endpoints configured', {

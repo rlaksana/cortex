@@ -19,15 +19,15 @@ export async function storeIncident(data: IncidentData, scope: ScopeFilter): Pro
       severity: data.severity || 'medium',
       impact: data.impact_level || 'unknown',
       resolution_status: data.status || 'open',
-      affected_services: safePropertyAccess(data, 'affected_services', isArray as any) || undefined,
+      affected_services: safePropertyAccess(data, 'affected_services', isArray as unknown) || undefined,
       business_impact: data.description || '',
-      recovery_actions: safePropertyAccess(data, 'recovery_actions', isArray as any)
-        ? JSON.stringify(safePropertyAccess(data, 'recovery_actions', isArray as any))
+      recovery_actions: safePropertyAccess(data, 'recovery_actions', isArray as unknown)
+        ? JSON.stringify(safePropertyAccess(data, 'recovery_actions', isArray as unknown))
         : undefined,
-      follow_up_required: safePropertyAccess(data, 'follow_up_required', isBoolean as any) || false,
-      incident_commander: safePropertyAccess(data, 'incident_commander', isString as any) || undefined,
-      timeline: safePropertyAccess(data, 'timeline', isArray as any)
-        ? JSON.stringify(safePropertyAccess(data, 'timeline', isArray as any))
+      follow_up_required: safePropertyAccess(data, 'follow_up_required', isBoolean as unknown) || false,
+      incident_commander: safePropertyAccess(data, 'incident_commander', isString as unknown) || undefined,
+      timeline: safePropertyAccess(data, 'timeline', isArray as unknown)
+        ? JSON.stringify(safePropertyAccess(data, 'timeline', isArray as unknown))
         : undefined,
       root_cause_analysis: data.root_cause_analysis,
       resolution: data.resolution,
@@ -80,7 +80,7 @@ export async function findIncidents(
     }
 
     const incidentObj = incident as Record<string, unknown>;
-    const tags = safePropertyAccess(incidentObj, 'tags', isDict as any);
+    const tags = safePropertyAccess(incidentObj, 'tags', isDict as unknown);
 
     return {
       id: String(incidentObj.id || ''),
@@ -143,10 +143,10 @@ export async function updateIncident(
       safePropertyAccess(data, 'recovery_actions', isArray) ??
       safePropertyAccess(existingObj, 'recovery_actions', isArray),
     follow_up_required:
-      safePropertyAccess(data, 'follow_up_required', isBoolean as any) ??
+      safePropertyAccess(data, 'follow_up_required', isBoolean as unknown) ??
       (safePropertyAccess(existingObj, 'follow_up_required', isBoolean) || false),
     incident_commander:
-      safePropertyAccess(data, 'incident_commander', isString as any) ??
+      safePropertyAccess(data, 'incident_commander', isString as unknown) ??
       safePropertyAccess(existingObj, 'incident_commander', isString),
     timeline:
       safePropertyAccess(data, 'timeline', isArray) ??

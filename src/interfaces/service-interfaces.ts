@@ -9,15 +9,22 @@
  * @since 2025
  */
 
+import type { AuthContext as UnifiedAuthContext } from '../types/auth-unified.js';
 import type {
-  AnalyticsFilter,
-  AnalyticsQuery,
-  AnalyticsReport,
-  KnowledgeItem,
-  SearchResult,
+    AnalyticsFilter,
+    AnalyticsQuery,
+    AnalyticsReport,
+    KnowledgeItem,
+    SearchResult,
 } from '../types/core-interfaces.js';
 import type { Scoped } from '../types/index.js';
-import type { AuthContext as UnifiedAuthContext } from '../types/auth-unified.js';
+import type {
+    ZAIChatRequest,
+    ZAIChatResponse,
+    ZAIEventListener,
+    ZAIMetrics,
+    ZAIStreamChunk
+} from '../types/zai-interfaces.js';
 
 // Define Scope type as the Scoped interface for compatibility
 type Scope = Scoped['scope'];
@@ -27,14 +34,6 @@ export type AuthContext = UnifiedAuthContext;
 
 // Re-export User type for compatibility
 export type { User } from '../types/auth-unified.js';
-import type {
-  ZAIChatRequest,
-  ZAIChatResponse,
-  ZAIStreamChunk,
-  ZAIEventListener,
-  ZAIMetrics,
-  ZAIEvent,
-} from '../types/zai-interfaces.js';
 
 // ============================================================================
 // BASE SERVICE INTERFACES
@@ -666,14 +665,23 @@ export interface Observation {
 /**
  * Analytics type interfaces (re-exported from core-interfaces)
  */
-export type {
-  KnowledgeAnalytics,
-  PerformanceAnalytics,
-  PredictiveAnalytics,
-  RelationshipAnalytics,
-  StorageAnalytics,
-  UserBehaviorAnalytics,
+import type {
+    KnowledgeAnalytics,
+    PerformanceAnalytics,
+    PredictiveAnalytics,
+    RelationshipAnalytics,
+    StorageAnalytics,
+    UserBehaviorAnalytics,
 } from '../types/core-interfaces.js';
+
+export type {
+    KnowledgeAnalytics,
+    PerformanceAnalytics,
+    PredictiveAnalytics,
+    RelationshipAnalytics,
+    StorageAnalytics,
+    UserBehaviorAnalytics
+};
 
 // ============================================================================
 // AI SERVICE TYPE DEFINITIONS
@@ -695,13 +703,7 @@ export interface AIServiceStatus {
 /**
  * AI event
  */
-// Temporary type aliases for missing analytics types
-type KnowledgeAnalytics = Record<string, unknown>;
-type RelationshipAnalytics = Record<string, unknown>;
-type PerformanceAnalytics = Record<string, unknown>;
-type UserBehaviorAnalytics = Record<string, unknown>;
-type PredictiveAnalytics = Record<string, unknown>;
-type StorageAnalytics = Record<string, unknown>;
+
 
 // ZAIEvent is imported from '../types/zai-interfaces.js'
 
@@ -709,10 +711,10 @@ type StorageAnalytics = Record<string, unknown>;
  * ZAI interfaces (re-exported from zai-interfaces)
  */
 export type {
-  ZAIChatRequest,
-  ZAIChatResponse,
-  ZAIErrorResponse,
-  ZAIStreamChunk,
+    ZAIChatRequest,
+    ZAIChatResponse,
+    ZAIErrorResponse,
+    ZAIStreamChunk
 } from '../types/zai-interfaces.js';
 
 /**

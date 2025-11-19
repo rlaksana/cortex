@@ -91,9 +91,9 @@ export class RateLimitMiddleware {
    * Create middleware function for Express-style usage
    */
   createMiddleware() {
-    return async (req: any, res: any, next: any): Promise<void> => {
+    return async (req: unknown, res: unknown, next: unknown): Promise<void> => {
       try {
-        const authContext = req.auth as AuthContext;
+        const authContext = (req as any).auth;
         const result = await this.checkRateLimit(authContext, req);
 
         if (!result.allowed) {
@@ -104,24 +104,24 @@ export class RateLimitMiddleware {
             return;
           }
 
-          res.status(429).json(errorResponse);
+          (res as any).status(429).json(errorResponse);
           return;
         }
 
         // Add rate limit info to request
-        req.rateLimit = {
+        (req as any).rateLimit = {
           allowed: true,
           tokensAvailable: result.current_usage.tokens_available,
           windowCount: result.current_usage.window_count,
         };
 
-        next();
+        (next as any)();
       } catch (error) {
         logger.error({ error, operation: this.options.operation }, 'Rate limit middleware error');
 
         // Fail open - allow request if rate limiting fails
-        req.rateLimit = { allowed: true, error: true };
-        next();
+        (req as any).rateLimit = { allowed: true, error: true };
+        (next as any)();
       }
     };
   }

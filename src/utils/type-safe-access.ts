@@ -13,8 +13,6 @@ import {
   hasPropertySimple,
   hasPropertySimpleOfType,
   isObject,
-  safePropertyAccess,
-  safePropertyAccessEnhanced,
 } from './type-guards.js';
 
 // ============================================================================
@@ -388,9 +386,10 @@ export function validateAndExtractTypes(args: unknown): string[] {
  */
 export function safeExtractError(error: unknown): { message: string; code?: string | number } {
   if (error instanceof Error) {
+    const errorWithCode = error as Error & { code?: string | number };
     return {
       message: error.message,
-      code: (error as any).code,
+      code: errorWithCode.code,
     };
   }
 
@@ -859,13 +858,19 @@ export function safeExtractErrorDetails(error: unknown): {
   };
 
   if (error instanceof Error) {
+    const enrichedError = error as Error & {
+      code?: string | number;
+      details?: unknown;
+      retryable?: boolean;
+      retry_after_ms?: number;
+    };
     return {
       message: error.message,
-      code: (error as any).code,
+      code: enrichedError.code,
       stack: error.stack,
-      details: (error as any).details,
-      retryable: (error as any).retryable || false,
-      retry_after_ms: (error as any).retry_after_ms
+      details: enrichedError.details,
+      retryable: enrichedError.retryable || false,
+      retry_after_ms: enrichedError.retry_after_ms
     };
   }
 
@@ -913,7 +918,7 @@ export function safeExtractResponseEnvelope(response: unknown): {
   const responseObj = response as Record<string, unknown>;
   return {
     result: responseObj.result,
-    message: responseObj.message,
+    message: typeof responseObj.message === 'string' ? responseObj.message : undefined,
     hasResult: responseObj.result !== undefined,
     hasMessage: typeof responseObj.message === 'string',
     hasErrorHandlers: typeof responseObj.onError === 'function',

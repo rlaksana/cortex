@@ -8,8 +8,9 @@
  * Updated for MCP SDK v1.22.0 compatibility.
  */
 
-import { logger } from '@/utils/logger.js';
 import type { ContentBlock } from '@modelcontextprotocol/sdk/types.js';
+
+import { logger } from '@/utils/logger.js';
 
 /**
  * Standard MCP Error Codes (2025 specification)

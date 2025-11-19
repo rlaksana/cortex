@@ -545,7 +545,7 @@ export class ConfigurationValidator {
   /**
    * Validate complete configuration
    */
-  async validateConfiguration(config: CompleteDatabaseConfig): Promise<ValidationResult> {
+  validateConfiguration(config: CompleteDatabaseConfig): ValidationResult {
     const allErrors: ValidationError[] = [];
     const allWarnings: ValidationError[] = [];
     const allInfo: ValidationError[] = [];

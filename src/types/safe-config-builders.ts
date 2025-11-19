@@ -1030,7 +1030,7 @@ export class ConfigBuilder {
     const validationContext: ValidationContext = {
       path: propertyName,
       root: this.intermediate,
-      config: this.intermediate as any, // JSONObject compatibility
+      config: this.intermediate as unknown, // JSONObject compatibility
       strict: this.context.strict ?? false,
       mode: 'lenient',
       errors: [],

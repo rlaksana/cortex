@@ -27,12 +27,11 @@ import type {
   Tags,
 } from '../types/base-types.js';
 import type {
+  AssumptionResponse,
   DatabaseResponse,
   IncidentResponse,
   ReleaseResponse,
-  RiskResponse,
-  AssumptionResponse
-} from '../types/database.js';
+  RiskResponse} from '../types/database.js';
 
 // =============================================================================
 // JSON Type Guards (Enhanced versions)
@@ -2975,7 +2974,7 @@ export function isEmpty(value: unknown): boolean {
 /**
  * Type guard for functions
  */
-export function isFunction(value: unknown): value is Function {
+export function isFunction(value: unknown): value is (...args: unknown[]) => unknown {
   return typeof value === 'function';
 }
 

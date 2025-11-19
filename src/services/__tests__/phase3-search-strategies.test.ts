@@ -9,13 +9,13 @@
  * - Enhanced response metadata
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { type CoreFindParams, coreMemoryFind } from '../core-memory-find';
 import { getSearchStrategies, memoryFind, memoryFindWithStrategy } from '../memory-find';
 
 // Mock the logger to avoid noise in tests
-vi.mock('../../utils/logger.js', () => ({
+vi.mock('@/utils/logger.js', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -283,7 +283,7 @@ describe('Phase 3 Search Strategies', () => {
       // Test with an invalid query that should cause an error
       const params: CoreFindParams = {
         query: '',
-        mode: 'invalid-mode' as unknown,
+        mode: ('invalid-mode' as unknown) as CoreFindParams['mode'],
       };
 
       const result = await coreMemoryFind(params);

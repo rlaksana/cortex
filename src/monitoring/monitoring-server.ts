@@ -17,7 +17,6 @@ import express, {
   type Response,
   urlencoded,
 } from 'express';
-
 import type { Server } from 'http';
 
 import { logger } from '@/utils/logger.js';

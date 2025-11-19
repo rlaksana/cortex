@@ -211,11 +211,10 @@ export function getProperty<T>(obj: unknown, path: string, fallback?: T): T {
   let current: unknown = obj;
 
   for (const key of keys) {
-    if (current === null || current === undefined || !(key in (current as unknown))) {
+    if (current === null || current === undefined || typeof current !== 'object' || !(key in current)) {
       return fallback as T;
     }
-    const currentObj = current as unknown;
-    current = currentObj[key];
+    current = (current as Record<string, unknown>)[key];
   }
 
   return current as T;
@@ -231,10 +230,10 @@ export function setProperty(obj: unknown, path: string, value: unknown): Record<
 
   for (let i = 0; i < keys.length - 1; i++) {
     const key = keys[i];
-    if (!(key in (current as unknown)) || !isObject((current as unknown)[key])) {
-      (current as unknown)[key] = {};
+    if (typeof current !== 'object' || current === null || !(key in current) || !isObject((current as Record<string, unknown>)[key])) {
+      (current as Record<string, unknown>)[key] = {};
     }
-    current = (current as unknown)[key];
+    current = (current as Record<string, unknown>)[key];
   }
 
   current[keys[keys.length - 1]] = value;

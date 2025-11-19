@@ -867,7 +867,7 @@ export interface AnalyticsReport {
 }
 
 export interface AnalyticsQuery {
-  type: 'knowledge' | 'relationships' | 'performance' | 'user_behavior' | 'predictive';
+  type: 'knowledge' | 'relationships' | 'performance' | 'user_behavior' | 'predictive' | 'storage';
   title?: string;
   timeRange?: {
     startDate: Date;

@@ -457,7 +457,7 @@ export class BackupService {
           backup_id: backupId,
           backup_type: backupType,
           items_to_backup: itemsToBackup.length,
-          source_items: dbStats.totalItems,
+          source_items: dbStats.success ? (dbStats.data as any).totalItems : 0,
         },
         'Collected items for backup'
       );
@@ -473,8 +473,8 @@ export class BackupService {
         source: {
           database_type: 'qdrant',
           collection_name: 'cortex-memory',
-          total_items: dbStats.totalItems,
-          total_size_bytes: dbStats.storageSize,
+          total_items: dbStats.success ? (dbStats.data as any).totalItems : 0,
+          total_size_bytes: dbStats.success ? (dbStats.data as any).storageSize : 0,
         },
         performance: {
           duration_ms: 0, // Will be updated later
@@ -552,11 +552,11 @@ export class BackupService {
       return {
         success: destinationsCompleted > 0,
         items_processed: itemsToBackup.length,
-        source_items: dbStats.totalItems,
+        source_items: dbStats.success ? (dbStats.data as any).totalItems : 0,
         backup_size_bytes: processedData.length,
         compression_ratio:
-          this.config.strategy.compression_level > 0
-            ? dbStats.storageSize / processedData.length
+          this.config.strategy.compression_level > 0 && dbStats.success
+            ? (dbStats.data as any).storageSize / processedData.length
             : undefined,
         destinations_completed: destinationsCompleted,
         destinations_failed: destinationsFailed,
@@ -592,9 +592,12 @@ export class BackupService {
         const batchSize = this.config.strategy.batch_size;
 
         // Process in batches to manage memory
-        for (let offset = 0; offset < dbStats.totalItems; offset += batchSize) {
+        const totalItems = dbStats.success ? (dbStats.data as any).totalItems : 0;
+        for (let offset = 0; offset < totalItems; offset += batchSize) {
           const batch = await this.vectorAdapter.findByScope({}, { limit: batchSize });
-          allItems.push(...batch);
+          if (batch.success && Array.isArray(batch.data)) {
+            allItems.push(...batch.data);
+          }
 
           // Memory management
           if (offset % (batchSize * 10) === 0) {
@@ -602,7 +605,7 @@ export class BackupService {
               {
                 backup_type: 'full',
                 items_collected: allItems.length,
-                total_items: dbStats.totalItems,
+                total_items: totalItems,
               },
               'Collecting items for full backup'
             );

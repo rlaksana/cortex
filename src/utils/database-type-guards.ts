@@ -11,6 +11,7 @@
  * @since 2025
  */
 
+import type { MemoryFindResponse, SearchResult } from '../types/core-interfaces.js';
 import type {
   BatchError,
   BatchResult,
@@ -44,7 +45,6 @@ import type {
   VectorDatabaseConfig,
 } from '../types/database-generics.js';
 import { ValidationError } from '../types/database-generics.js';
-import type { MemoryFindResponse, SearchResult } from '../types/core-interfaces.js';
 
 // ============================================================================
 // Database Error Type Guards

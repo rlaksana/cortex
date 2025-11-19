@@ -313,7 +313,7 @@ export class TypeDebugger {
    */
   private debugValidateProperty(key: string, value: unknown, rule: unknown): DebugIssue[] {
     const issues: DebugIssue[] = [];
-    const typedRule = rule as any; // Type assertion for rule properties
+    const typedRule = rule as unknown; // Type assertion for rule properties
 
     try {
       // Type validation

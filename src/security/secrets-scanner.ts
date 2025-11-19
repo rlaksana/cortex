@@ -15,7 +15,9 @@
 import { readdirSync, readFileSync, statSync } from 'fs';
 import { extname, join, relative } from 'path';
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
+
+import { hasProperty } from '../utils/type-fixes.js';
 
 /**
  * Secret pattern definitions with high precision matching
@@ -526,10 +528,14 @@ export class SecretsScanner {
     // Sort files by severity
     const sortedFiles = Object.entries(findingsByFile).sort(([, a], [, b]) => {
       const aMaxSeverity = Math.max(
-        ...a.map((f: unknown) => this.getSeverityScore(f.pattern.severity))
+        ...a.map((f: unknown) => hasProperty(f, 'pattern') && hasProperty(f.pattern, 'severity')
+          ? this.getSeverityScore(f.pattern.severity as "critical" | "high" | "medium" | "low")
+          : 0)
       );
       const bMaxSeverity = Math.max(
-        ...b.map((f: unknown) => this.getSeverityScore(f.pattern.severity))
+        ...b.map((f: unknown) => hasProperty(f, 'pattern') && hasProperty(f.pattern, 'severity')
+          ? this.getSeverityScore(f.pattern.severity as "critical" | "high" | "medium" | "low")
+          : 0)
       );
       return bMaxSeverity - aMaxSeverity;
     });
@@ -541,30 +547,34 @@ export class SecretsScanner {
         report.push(`### ${file}`);
 
         // Sort findings by severity
-        const b = fileFindings;
-        fileFindings.sort(
-          (a: unknown, _b) =>
-            this.getSeverityScore(fileFindings[0].pattern.severity) -
-            this.getSeverityScore(a.pattern.severity)
-        );
+        fileFindings.sort((a: unknown, b: unknown) => {
+          const aSeverity = hasProperty(a, 'pattern') && hasProperty(a.pattern, 'severity')
+            ? this.getSeverityScore(a.pattern.severity as "critical" | "high" | "medium" | "low")
+            : 0;
+          const bSeverity = hasProperty(b, 'pattern') && hasProperty(b.pattern, 'severity')
+            ? this.getSeverityScore(b.pattern.severity as "critical" | "high" | "medium" | "low")
+            : 0;
+          return aSeverity - bSeverity;
+        });
 
         for (const finding of fileFindings) {
           report.push('');
           report.push(
-            `**Line ${finding.line}:** ${finding.pattern.name} (${finding.pattern.severity})`
+            `**Line ${hasProperty(finding, 'line') ? finding.line : 'unknown'}:** ${hasProperty(finding, 'pattern') && hasProperty(finding.pattern, 'name') && hasProperty(finding.pattern, 'severity') ? `${finding.pattern.name} (${finding.pattern.severity})` : 'Unknown pattern'}`
           );
           report.push(
-            `\`${finding.match}\` (confidence: ${String((finding.confidence * 100).toFixed(1))}%)`
+            `\`${finding.match}\` (confidence: ${String(((hasProperty(finding, 'confidence') && typeof finding.confidence === 'number' ? finding.confidence : 0) * 100).toFixed(1))}%)`
           );
-          report.push(`**Remediation:** ${finding.pattern.remediation}`);
+          report.push(`**Remediation:** ${hasProperty(finding, 'pattern') && hasProperty(finding.pattern, 'remediation') ? finding.pattern.remediation : 'No remediation available'}`);
 
           if (finding.context.length > 1) {
             report.push('**Context:**');
             report.push('```');
             report.push(
-              ...finding.context.map((line: unknown, _idx: unknown) => {
-                const lineNum = finding.line - finding.context.length + 1 + _idx;
-                const marker = _idx === Math.floor(finding.context.length / 2) ? '>>> ' : '    ';
+              ...finding.context.map((line: unknown, _idx: number) => {
+                const lineNum = (hasProperty(finding, 'line') && typeof finding.line === 'number' ? finding.line : 0) -
+                               (Array.isArray(finding.context) ? finding.context.length : 0) + 1 + _idx;
+                const marker = _idx === Math.floor((Array.isArray(finding.context) ? finding.context.length : 0) / 2) ? '>>> ' : '    ';
                 return `${String(marker)}${String(lineNum)}: ${String(line)}`;
               })
             );

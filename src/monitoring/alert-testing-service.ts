@@ -19,13 +19,13 @@
 import { EventEmitter } from 'events';
 
 import { logger } from '@/utils/logger.js';
+import { hasNumberProperty } from '@/utils/property-access-guards.js';
 
 import {
   AlertSeverity,
   type AlertTestResult,
   type AlertTestScenario,
 } from './alert-management-service.js';
-import { safeGetProperty, hasNumberProperty } from '@/utils/property-access-guards.js';
 import { DependencyType } from '../services/deps-registry.js';
 import { HealthStatus, type SystemHealthResult } from '../types/unified-health-interfaces.js';
 

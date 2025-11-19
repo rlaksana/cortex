@@ -16,24 +16,15 @@
 
 import { type QdrantClient } from '@qdrant/js-client-rest';
 
-import { logger } from '../utils/logger.js';
-import { type MetricOperation, isMetricOperation } from '../types/database-types-enhanced.js';
+import { logger } from '@/utils/logger.js';
+import { safeGetNumberProperty,safeGetProperty } from '@/utils/type-fixes.js';
 
-import {
-  hasPerformanceDetails,
-  hasDataIntegrity,
-  isPerformanceMetric,
-  isAlertData,
-  isIncidentDeclaration,
-  isBackupConfig,
-} from '../utils/property-access-guards.js';
-import { asPerformanceMetric, asAlertBase } from '../utils/type-conversion.js';
 import { type BackupConfiguration, BackupConfigurationManager } from './qdrant-backup-config.js';
 import {
   type Alert,
-  type PerformanceMetric,
   BackupRecoveryMonitoringService,
   type MonitoringConfiguration,
+  type PerformanceMetric,
 } from './qdrant-backup-monitoring.js';
 import { BackupRetentionManager } from './qdrant-backup-retention.js';
 import {
@@ -48,6 +39,12 @@ import {
 import { DisasterRecoveryManager, type IncidentDeclaration } from './qdrant-disaster-recovery.js';
 import { AutomatedRestoreTestingService } from './qdrant-restore-testing.js';
 import { type RPORTOComplianceReport, RPORTOManager } from './qdrant-rpo-rto-manager.js';
+import { isMetricOperation,type MetricOperation } from '../types/database-types-enhanced.js';
+import {
+  hasDataIntegrity,
+  hasPerformanceDetails,
+} from '../utils/property-access-guards.js';
+import { asAlertBase,asPerformanceMetric } from '../utils/type-conversion.js';
 
 /**
  * Backup system status
@@ -503,7 +500,7 @@ export class QdrantBackupIntegrationService {
           testId: testResult.id || 'unknown',
           scenarioId: testResult.scenarioId || 'default',
           dataIntegrityScore: hasDataIntegrity(testResult) ?
-            (testResult.dataIntegrity as any).overall?.score || 0 : 0,
+            safeGetNumberProperty(safeGetProperty(testResult.dataIntegrity, 'overall', {}), 'score', 0) : 0,
         },
       });
 

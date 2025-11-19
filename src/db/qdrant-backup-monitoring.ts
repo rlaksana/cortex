@@ -17,7 +17,7 @@
 import { EventEmitter } from 'node:events';
 import { writeFile } from 'fs/promises';
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 /**
  * Monitoring configuration

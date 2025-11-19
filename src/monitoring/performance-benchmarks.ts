@@ -20,9 +20,9 @@
 
 import { EventEmitter } from 'events';
 
-import { performanceMonitor } from './performance-monitor';
+import { logger } from '@/utils/logger.js';
+
 import { zaiServicesManager } from '../services/ai/index';
-import { logger } from '../utils/logger.js';
 
 /**
  * Performance benchmark configuration

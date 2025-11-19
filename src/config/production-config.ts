@@ -414,7 +414,7 @@ export class ProductionConfigManager {
   /**
    * Initialize all production components
    */
-  async initialize(): Promise<void> {
+  initialize(): void {
     this.logger.info('🚀 Initializing production environment');
 
     try {

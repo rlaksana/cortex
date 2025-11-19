@@ -27,7 +27,7 @@ import type { DatabaseConfig } from '../db/database-interface.js';
 import { safeDeepMerge, safeFetchPolyfill } from '../utils/configuration-type-guards.js';
 
 // Initialize polyfill
-safeFetchPolyfill().catch(err =>
+safeFetchPolyfill().catch((err: unknown) =>
   logger.warn('Failed to polyfill fetch', { error: err })
 );
 
@@ -329,12 +329,12 @@ export class DatabaseConfigManager {
   /**
    * Validate all database connections
    */
-  async validateConnections(): Promise<{
+  validateConnections(): {
     qdrant: boolean;
     openai: boolean;
     overall: boolean;
     errors: string[];
-  }> {
+  } {
     const errors: string[] = [];
     let qdrant = false;
     let openai = false;

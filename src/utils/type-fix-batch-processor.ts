@@ -9,16 +9,11 @@
  * @version 1.0.0
  */
 
-import { basename, extname, join } from 'path';
 import { readFileSync, writeFileSync } from 'fs';
-import { asPointIdArray, asPerformanceMetric, asDatabaseConfig, asUser, asSearchQuery } from './type-conversion';
-import {
-  assertPerformanceMetric,
-  assertPointIdArray,
-  assertQdrantDatabaseConfig,
-  assertUser,
-  assertSearchQuery,
-} from './type-assertions';
+import { basename } from 'path';
+
+import { execSync } from 'child_process';
+
 
 // ============================================================================
 // Fix Pattern Definitions
@@ -575,7 +570,7 @@ export async function processAllTypeScriptFiles(
   const processor = new TypeFixBatchProcessor();
 
   // Get all TypeScript files (this would typically use a proper file system walker)
-  const { execSync } = require('child_process');
+  // execSync is now imported at the top of the file
   const files = execSync(`find ${rootDir} -name "*.ts" -type f`, { encoding: 'utf-8' })
     .split('\n')
     .filter(Boolean)

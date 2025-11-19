@@ -213,7 +213,22 @@ export class ZAIServicesManager {
       // Get service statuses
       const orchestratorStatus = await aiOrchestratorService.getStatus();
       const processorStatus = backgroundProcessorService.getStatus();
-      const zaiMetrics = zaiClientService.getMetrics();
+      const zaiMetricsResponse = await zaiClientService.getMetrics();
+      const zaiMetrics = zaiMetricsResponse.success ? zaiMetricsResponse.data : {
+        timestamp: new Date(),
+        totalRequests: 0,
+        successfulRequests: 0,
+        failedRequests: 0,
+        averageResponseTime: 0,
+        p95ResponseTime: 0,
+        p99ResponseTime: 0,
+        totalTokensUsed: 0,
+        totalCost: 0,
+        cacheHitRate: 0,
+        errorRate: 1.0,
+        uptime: 0,
+        lastReset: Date.now(),
+      };
 
       return {
         status:
@@ -309,21 +324,44 @@ export class ZAIServicesManager {
   /**
    * Get comprehensive metrics
    */
-  getMetrics(): {
+  async getMetrics(): Promise<{
     config: unknown;
     zai: ZAIMetrics;
     orchestrator: unknown;
     backgroundProcessor: unknown;
     system: unknown;
-  } {
+  }> {
     if (!this.isInitialized) {
       throw new Error('ZAI services not initialized');
     }
 
+    const zaiMetricsResponse = await zaiClientService.getMetrics();
+
     return {
       config: zaiConfigManager.getConfigSummary(),
-      zai: zaiClientService.getMetrics(),
-      orchestrator: aiOrchestratorService.getMetrics(),
+      zai: zaiMetricsResponse.success ? zaiMetricsResponse.data : {
+        timestamp: new Date(),
+        totalRequests: 0,
+        successfulRequests: 0,
+        failedRequests: 0,
+        averageResponseTime: 0,
+        p95ResponseTime: 0,
+        p99ResponseTime: 0,
+        totalTokensUsed: 0,
+        totalCost: 0,
+        cacheHitRate: 0,
+        errorRate: 1.0,
+        uptime: 0,
+        lastReset: Date.now(),
+        requestCount: 0,
+        successCount: 0,
+        errorCount: 0,
+        throughput: 0,
+        circuitBreakerStatus: 'closed' as const,
+        tokensUsed: 0,
+        cost: 0,
+      },
+      orchestrator: await aiOrchestratorService.getMetrics(),
       backgroundProcessor: backgroundProcessorService.getMetrics(),
       system: {
         uptime: process.uptime(),
@@ -351,7 +389,7 @@ export class ZAIServicesManager {
       throw new Error('ZAI services not initialized');
     }
 
-    return await backgroundProcessorService.submitJob(type, payload, options);
+    return await backgroundProcessorService.submitJob(type as string, payload, options);
   }
 
   /**

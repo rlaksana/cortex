@@ -23,8 +23,8 @@ import {
 import { type Alert, retryAlertSystem } from './retry-alert-system.js';
 import { type RetryBudgetMetrics, retryBudgetMonitor } from './retry-budget-monitor.js';
 import {
-  type AnomalyDetection,
   AnalysisWindow,
+  type AnomalyDetection,
   type PredictiveAnalysis,
   retryTrendAnalyzer,
   type TrendAnalysis,
@@ -1412,7 +1412,7 @@ export class ComprehensiveRetryDashboard extends EventEmitter {
       servicesAtRisk: sloData.filter((s) => {
         const sObj = obj(s, {} as Record<string, unknown>);
         const compliance = obj(sObj.compliance, {} as Record<string, unknown>);
-        return !Boolean(compliance.overall);
+        return !compliance.overall;
       }).length,
     };
   }
@@ -1431,7 +1431,7 @@ export class ComprehensiveRetryDashboard extends EventEmitter {
     const nonCompliantServices = sloData.filter((s) => {
       const sObj = obj(s, {} as Record<string, unknown>);
       const compliance = obj(sObj.compliance, {} as Record<string, unknown>);
-      return !Boolean(compliance.overall);
+      return !compliance.overall;
     });
 
     if (nonCompliantServices.length > 0) {
